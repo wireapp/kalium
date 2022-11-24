@@ -126,6 +126,46 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForSelfUserAndMembers() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
+        result.shouldSucceed()
+
+        verify(arrangement.keyPackageRepository)
+            .suspendFunction(arrangement.keyPackageRepository::claimKeyPackages)
+            .with(matching { it.containsAll(listOf(TestConversation.USER_1, TestUser.SELF.id)) })
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNoOtherClients_whenCallingEstablishMLSGroup_thenCommitIsCreatedByUpdatingKeyMaterial() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(keyPackages = emptyList())
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, emptyList())
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::updateKeyingMaterial)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_thenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
@@ -670,11 +710,11 @@ class MLSConversationRepositoryTest {
                 .thenDoNothing()
         }
 
-        fun withClaimKeyPackagesSuccessful() = apply {
+        fun withClaimKeyPackagesSuccessful(keyPackages: List<KeyPackageDTO> = listOf(KEY_PACKAGE)) = apply {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::claimKeyPackages)
                 .whenInvokedWith(anything())
-                .then { Either.Right(listOf(KEY_PACKAGE)) }
+                .then { Either.Right(keyPackages) }
         }
 
         fun withGetPublicKeysSuccessful() = apply {
@@ -787,6 +827,7 @@ class MLSConversationRepositoryTest {
         }
 
         fun arrange() = this to MLSConversationDataSource(
+            TestUser.SELF.id,
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
