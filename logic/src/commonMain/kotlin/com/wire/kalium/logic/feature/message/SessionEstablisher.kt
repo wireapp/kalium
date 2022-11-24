@@ -135,7 +135,7 @@ internal class CryptoSessionMapperImpl internal constructor(
                         } else {
                             true
                         }
-                    }.mapValues {(_, prekeyDTO) ->
+                    }.mapValues { (_, prekeyDTO) ->
                         preKeyMapper.fromPreKeyDTO(prekeyDTO!!) // null pre-keys are filtered in the step above
                     }
                 }
