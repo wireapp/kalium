@@ -191,6 +191,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
@@ -551,7 +552,7 @@ class UserSessionScope internal constructor(
         get() = EventDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
             userStorage.database.metadataDAO,
-            clientRepository
+            clientIdProvider
         )
 
     internal val keyPackageManager: KeyPackageManager =
@@ -646,6 +647,8 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
+    private val messageEncoder get() = MessageContentEncoder()
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -663,6 +666,7 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            messageEncoder
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl

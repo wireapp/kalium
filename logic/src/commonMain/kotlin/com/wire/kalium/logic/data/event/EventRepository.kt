@@ -2,9 +2,10 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -29,7 +30,7 @@ import kotlin.coroutines.coroutineContext
 interface EventRepository {
     suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>>
-    suspend fun updateLastProcessedEventId(eventId: String)
+    suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
 
     /**
      * Gets the last processed event ID, if it exists.
@@ -42,17 +43,17 @@ interface EventRepository {
 class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,
-    private val clientRepository: ClientRepository,
+    private val currentClientId: CurrentClientIdProvider,
     private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
 
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
-        clientRepository.currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
+        currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
-        clientRepository.currentClientId().map { clientId -> liveEventsFlow(clientId) }
+        currentClientId().map { clientId -> liveEventsFlow(clientId) }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<WebSocketEvent<Event>> =
         notificationApi.listenToLiveEvents(clientId.value).map { webSocketEvent ->
@@ -102,17 +103,22 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastEventId(): Either<CoreFailure, String> = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)?.let {
+    override suspend fun lastEventId(): Either<CoreFailure, String> = wrapStorageRequest {
+        metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+    }.fold({
+        currentClientId()
+            .flatMap { currentClientId ->
+                wrapApiRequest { notificationApi.lastNotification(currentClientId.value) }
+                    .flatMap { lastEvent ->
+                        updateLastProcessedEventId(lastEvent.id).map { lastEvent.id }
+                    }
+            }
+    }, {
         Either.Right(it)
-    } ?: run {
-        clientRepository.currentClientId().flatMap { clientId ->
-            wrapApiRequest { notificationApi.lastNotification(clientId.value) }.map { it.id }
-        }
-    }
+    })
 
-    override suspend fun updateLastProcessedEventId(eventId: String) {
+    override suspend fun updateLastProcessedEventId(eventId: String) =
         wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }
-    }
 
     private suspend fun getNextPendingEventsPage(
         lastFetchedNotificationId: String?,
