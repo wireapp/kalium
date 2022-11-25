@@ -93,6 +93,7 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
+    private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
@@ -228,7 +229,7 @@ class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO)
+            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO, true)
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event)
             }
@@ -276,7 +277,14 @@ class MLSConversationDataSource(
                             }
 
                         wrapMLSRequest {
-                            mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
+                            if (userIdList.contains(selfUserId) && clientKeyPackageList.isEmpty()) {
+                                // We are creating a group with only our self client which technically
+                                // doesn't need be added with a commit, but our backend API requires one,
+                                // so we create a commit by updating our key material.
+                                mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))
+                            } else {
+                                mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
+                            }
                         }.flatMap { commitBundle ->
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
@@ -324,7 +332,7 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members)
+                addMemberToMLSGroup(groupID, members + selfUserId)
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(

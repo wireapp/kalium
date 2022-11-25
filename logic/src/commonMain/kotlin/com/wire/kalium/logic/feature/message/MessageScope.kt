@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -55,6 +57,7 @@ class MessageScope internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
     private val applicationMessageHandler: ApplicationMessageHandler,
+    private val userStorage: UserStorage,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -63,7 +66,7 @@ class MessageScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl(selfUserId = userId)
@@ -85,6 +88,10 @@ class MessageScope internal constructor(
     private val idMapper: IdMapper
         get() = IdMapperImpl()
 
+    private val messageContentEncoder = MessageContentEncoder()
+    private val messageSendingInterceptor: MessageSendingInterceptor
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
+
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
@@ -96,6 +103,7 @@ class MessageScope internal constructor(
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
+            messageSendingInterceptor,
             timeParser,
             scope
         )

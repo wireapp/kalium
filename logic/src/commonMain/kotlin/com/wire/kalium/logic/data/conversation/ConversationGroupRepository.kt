@@ -145,7 +145,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event))
+                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event, true))
             }
         }.map {
             Either.Right(Unit)
@@ -181,7 +181,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event))
+                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event, false))
             }
         }.map { }
 }

@@ -191,6 +191,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
@@ -298,6 +299,7 @@ class UserSessionScope internal constructor(
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
+            userId,
             keyPackageRepository,
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
@@ -427,7 +429,7 @@ class UserSessionScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
@@ -642,6 +644,8 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
+    private val messageEncoder get() = MessageContentEncoder()
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -659,6 +663,7 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            messageEncoder
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
@@ -807,8 +812,9 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
-            this
-        )
+            userStorage,
+             this,
+            )
     val messages: MessageScope
         get() = MessageScope(
             connectionRepository,
@@ -829,6 +835,7 @@ class UserSessionScope internal constructor(
             messageSendingScheduler,
             timeParser,
             applicationMessageHandler,
+            userStorage,
             this
         )
     val users: UserScope
