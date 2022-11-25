@@ -95,6 +95,26 @@ actual class MLSClientImpl actual constructor(
         )
     }
 
+    override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
+        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState)))
+    }
+
+    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+        val conf = ConversationConfiguration(
+            emptyList(),
+            CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+            keyRotationDuration,
+            emptyList<Ed22519Key>().map { toUByteList(it.value) }
+        )
+
+        val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
+        coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes, conf)
+    }
+
+    override fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
+        coreCrypto.clearPendingGroupFromExternalCommit(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
     override fun createConversation(
         groupId: MLSGroupId,
         externalSenders: List<Ed22519Key>
@@ -180,6 +200,12 @@ actual class MLSClientImpl actual constructor(
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             toByteArray(value.commit),
             value.welcome?.let { toByteArray(it) },
+            toPublicGroupStateBundle(value.publicGroupState)
+        )
+
+        fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
+            toByteArray(value.commit),
+            null,
             toPublicGroupStateBundle(value.publicGroupState)
         )
 

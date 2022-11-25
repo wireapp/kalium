@@ -12,7 +12,26 @@ import com.wire.kalium.network.api.base.model.UserId
 
 object EventContentDTOJson {
 
-    private val jsonProvider = { serializable: EventContentDTO.Conversation.AccessUpdate ->
+    private val jsonProviderAccessUpdate = { serializable: EventContentDTO.Conversation.AccessUpdate ->
+        """
+        |{
+        |  "qualified_conversation" : {
+        |    "id" : "${serializable.qualifiedConversation.value}",
+        |    "domain" : "${serializable.qualifiedConversation.domain}"
+        |  },
+        |  "qualified_from" : {
+        |     "id" : "${serializable.qualifiedFrom.value}",
+        |     "domain" : "${serializable.qualifiedFrom.domain}"
+        |  }, 
+        |  "data" : {
+        |       "access": [code],
+        |       "access_role": [team_member]
+        |  }
+        |}
+        """.trimMargin()
+    }
+
+    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField = { serializable: EventContentDTO.Conversation.AccessUpdate ->
         """
         |{
         |  "qualified_conversation" : {
@@ -82,7 +101,19 @@ object EventContentDTOJson {
                 setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
             )
         ),
-        jsonProvider
+        jsonProviderAccessUpdate
+    )
+
+    val validAccessUpdateWithDeprecatedAccessRoleField = ValidJsonProvider(
+        EventContentDTO.Conversation.AccessUpdate(
+            qualifiedConversation = ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            qualifiedFrom = UserId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            data = ConversationAccessInfoDTO(
+                setOf(ConversationAccessDTO.CODE),
+                setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
+            )
+        ),
+        jsonProviderAccessUpdateWithDeprecatedAccessRoleField
     )
 
     val validMemberJoin = ValidJsonProvider(
