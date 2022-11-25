@@ -116,9 +116,9 @@ interface MLSClient {
     /**
      * Clear pending external commits
      *
-     * @param qualifiedID MLS group CryptoQualifiedID
+     * @param groupId MLS group ID provided by BE
      */
-    fun clearPendingGroupExternalCommit(qualifiedID: CryptoQualifiedID)
+    fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
 
     /**
      * Query if a conversation exists

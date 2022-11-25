@@ -20,6 +20,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -48,11 +49,13 @@ data class ApplicationMessage(
     val message: ByteArray,
     val senderClientID: ClientId
 )
+
 data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?
 )
+
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
@@ -63,8 +66,8 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit>
-    suspend fun clearJoinViaExternalCommit(conversationId: QualifiedID)
+    suspend fun joinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit>
+    suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
@@ -199,7 +202,7 @@ class MLSConversationDataSource(
         }
     }
 
-    override suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit> {
+    override suspend fun joinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit> {
         kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
         return wrapApiRequest {
             conversationApi.fetchGroupInfo(idMapper.toApiModel(conversationId))
@@ -209,19 +212,24 @@ class MLSConversationDataSource(
                     mlsClient.joinByExternalCommit(it)
                 }.flatMap { commitBundle ->
                     sendCommitBundle(groupID, commitBundle)
-                }.flatMap {
+                }.fold({
                     wrapMLSRequest {
                         mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
                     }
-                }
+                }, {
+                    wrapMLSRequest {
+                        mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                    }
+                })
             }
         }
     }
 
-    override suspend fun clearJoinViaExternalCommit(conversationId: QualifiedID) {
+
+    override suspend fun clearJoinViaExternalCommit(groupID: GroupID) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
-                mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(conversationId))
+                mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(groupID))
             }
         }
     }

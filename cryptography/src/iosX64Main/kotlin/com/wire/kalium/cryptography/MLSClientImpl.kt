@@ -38,7 +38,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun clearPendingGroupExternalCommit(qualifiedID: CryptoQualifiedID) {
+    override fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 

@@ -71,7 +71,7 @@ class JoinExistingMLSConversationsUseCaseImpl(
                             }
                         }
                     } else {
-                        conversationGroupRepository.clearMLSGroupJoinViaExternalCommit(conversation.id)
+                        conversationGroupRepository.clearMLSGroupJoinViaExternalCommit(conversation)
                         Either.Left(failure)
                     }
                 }

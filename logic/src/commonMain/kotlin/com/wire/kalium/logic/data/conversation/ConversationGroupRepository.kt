@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.first
 interface ConversationGroupRepository {
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
     suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun clearMLSGroupJoinViaExternalCommit(conversationId: ConversationId)
+    suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation)
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -68,14 +68,16 @@ internal class ConversationGroupRepositoryImpl(
 
     override suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit> {
         return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.requestToJoinGroupByExternalCommit(conversation.protocol.groupId, conversation.id)
+            mlsConversationRepository.joinGroupByExternalCommit(conversation.protocol.groupId, conversation.id)
         } else {
             Either.Right(Unit)
         }
     }
 
-    override suspend fun clearMLSGroupJoinViaExternalCommit(conversationId: ConversationId) {
-        mlsConversationRepository.clearJoinViaExternalCommit(conversationId)
+    override suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation) {
+        if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.clearJoinViaExternalCommit(conversation.protocol.groupId)
+        }
     }
 
     override suspend fun createGroupConversation(

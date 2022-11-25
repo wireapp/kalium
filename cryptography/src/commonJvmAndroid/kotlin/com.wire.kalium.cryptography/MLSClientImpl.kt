@@ -111,8 +111,8 @@ actual class MLSClientImpl actual constructor(
         coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes, conf)
     }
 
-    override fun clearPendingGroupExternalCommit(qualifiedID: CryptoQualifiedID) {
-        coreCrypto.clearPendingGroupFromExternalCommit(toUByteList(qualifiedID.toString()))
+    override fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
+        coreCrypto.clearPendingGroupFromExternalCommit(toUByteList(groupId.decodeBase64Bytes()))
     }
 
     override fun createConversation(

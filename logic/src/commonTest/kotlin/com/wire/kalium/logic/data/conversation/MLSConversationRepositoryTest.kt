@@ -387,7 +387,7 @@ class MLSConversationRepositoryTest {
             .withPublicGroupStateSuccessful()
             .arrange()
 
-        mlsConversationRepository.requestToJoinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.CONVERSATION_ID)
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.CONVERSATION_ID)
 
         verify(arrangement.conversationApi)
             .suspendFunction(arrangement.conversationApi::fetchGroupInfo)
