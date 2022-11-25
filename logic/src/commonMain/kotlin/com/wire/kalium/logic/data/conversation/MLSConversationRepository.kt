@@ -211,16 +211,8 @@ class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.joinByExternalCommit(it)
                 }.flatMap { commitBundle ->
-                    sendCommitBundle(groupID, commitBundle)
-                }.fold({
-                    wrapMLSRequest {
-                        mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
-                    }
-                }, {
-                    wrapMLSRequest {
-                        mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
-                    }
-                })
+                    sendCommitBundleForExternalCommit(groupID, commitBundle)
+                }
             }
         }
     }
@@ -264,6 +256,22 @@ class MLSConversationDataSource(
                     mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 }
             }
+        }
+    }
+
+    private suspend fun sendCommitBundleForExternalCommit(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapApiRequest {
+                mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
+            }.fold({
+                wrapMLSRequest {
+                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                }
+            }, {
+                wrapMLSRequest {
+                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                }
+            })
         }
     }
 
