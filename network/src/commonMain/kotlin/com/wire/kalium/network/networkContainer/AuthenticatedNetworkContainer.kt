@@ -35,6 +35,12 @@ import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
 
+    /**
+     * Clear any cached token on the http clients. This will trigger a reloading
+     * of the access token from the session manager on the next request.
+     */
+    suspend fun clearCachedToken()
+
     val accessTokenApi: AccessTokenApi
 
     val logoutApi: LogoutApi

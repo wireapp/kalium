@@ -105,7 +105,7 @@ internal class KaliumHttpLogger : Logger {
 
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
-    installCompression: Boolean = true,
+    installCompression: Boolean = false,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
 
