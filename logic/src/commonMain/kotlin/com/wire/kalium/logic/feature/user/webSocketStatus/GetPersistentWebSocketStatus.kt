@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
-
 interface GetPersistentWebSocketStatus {
     suspend operator fun invoke(): Boolean
 }
