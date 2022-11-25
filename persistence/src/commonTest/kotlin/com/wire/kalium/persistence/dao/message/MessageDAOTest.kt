@@ -46,13 +46,15 @@ class MessageDAOTest : BaseDatabaseTest() {
                 "1",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                senderName = userInQuestion.name!!
             ),
             newRegularMessageEntity(
                 "2",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                senderName = userInQuestion.name!!
             )
         )
 
@@ -62,14 +64,16 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 // Different status
-                status = MessageEntity.Status.READ
+                status = MessageEntity.Status.READ,
+                senderName = userInQuestion.name!!
             ),
             newRegularMessageEntity(
                 "4",
                 conversationId = conversationEntity1.id,
                 // Different user
                 senderUserId = otherUser.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                senderName = otherUser.name!!
             )
         )
 
@@ -204,14 +208,16 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
-                visibility = visibilityInQuestion
+                visibility = visibilityInQuestion,
+                senderName = userEntity1.name!!
             ),
             newRegularMessageEntity(
                 "2",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
-                visibility = visibilityInQuestion
+                visibility = visibilityInQuestion,
+                senderName = userEntity1.name!!
             )
         )
 
@@ -222,7 +228,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
-                visibility = visibilityInQuestion
+                visibility = visibilityInQuestion,
+                senderName = userEntity1.name!!
             ),
             newRegularMessageEntity(
                 "4",
@@ -230,7 +237,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
-                visibility = visibilityInQuestion
+                visibility = visibilityInQuestion,
+                senderName = userEntity1.name!!
             ),
             newRegularMessageEntity(
                 "5",
@@ -238,7 +246,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
-                visibility = otherVisibility
+                visibility = otherVisibility,
+                senderName = userEntity1.name!!
             )
         )
 
@@ -263,6 +272,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 // date after
                 date = "2022-03-30T15:37:00.000Z",
+                senderName = userEntity1.name!!
             )
         )
 
@@ -274,7 +284,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date before
                 date = "2022-03-30T15:35:00.000Z",
-            )
+                senderName = userEntity1.name!!
+                )
         )
 
         messageDAO.insertMessages(allMessages)

@@ -547,7 +547,8 @@ class GetNotificationsUseCaseTest {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-            creatorId = null
+            creatorId = null,
+            firstUnreadMessageDate = null
         )
 
         private fun entityTextMessage(
