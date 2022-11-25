@@ -102,7 +102,6 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
-    private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,

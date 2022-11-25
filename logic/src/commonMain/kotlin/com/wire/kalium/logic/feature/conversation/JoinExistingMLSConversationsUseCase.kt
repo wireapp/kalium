@@ -60,9 +60,10 @@ class JoinExistingMLSConversationsUseCaseImpl(
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
             if (conversation.protocol.epoch == 0UL) {
-                if (conversation.type == Conversation.Type.GLOBAL_TEAM ||
-                    conversation.type == Conversation.Type.SELF)
-                {
+                if (
+                    conversation.type == Conversation.Type.GLOBAL_TEAM ||
+                    conversation.type == Conversation.Type.SELF
+                ) {
                     kaliumLogger.i("Establish group for ${conversation.type}")
                     mlsConversationRepository.establishMLSGroup(
                         conversation.protocol.groupId,
