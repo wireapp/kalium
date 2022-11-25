@@ -107,7 +107,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldFail()
         verify(arrangement.conversationGroupRepository)
             .suspendFunction(arrangement.conversationGroupRepository::clearMLSGroupJoinViaExternalCommit)
-            .with(eq(Arrangement.MLS_CONVERSATION1.id))
+            .with(eq(Arrangement.MLS_CONVERSATION1))
             .wasInvoked(once)
     }
 
