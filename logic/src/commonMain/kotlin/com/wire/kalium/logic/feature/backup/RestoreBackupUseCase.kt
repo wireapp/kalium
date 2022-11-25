@@ -73,7 +73,7 @@ internal class RestoreBackupUseCaseImpl(
                         doSanityChecksAndImport(extractedBackupRootPath)
                     })
                 } else {
-                    RestoreBackupResult.Failure(BackupIOFailure("Backup file is empty"))
+                    RestoreBackupResult.Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
                 }
             } else {
                 doSanityChecksAndImport(extractedBackupRootPath)

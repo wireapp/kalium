@@ -129,7 +129,7 @@ class ChaCha20Utils {
         } catch (e: IllegalStateException) {
             kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
         } catch (e: SecretStreamCorruptedOrTamperedDataException) {
-            kaliumLogger.e("There was an error while decrypting the backup data with ChaCha20:\n $e}")
+            kaliumLogger.e("Error while decrypting the backup data with ChaCha20. Probably the provided password is wrong:\n $e}")
         } finally {
             encryptedDataSource.close()
             decryptionBufferedSink.close()
