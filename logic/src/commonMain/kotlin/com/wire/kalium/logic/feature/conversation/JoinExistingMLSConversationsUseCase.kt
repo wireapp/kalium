@@ -6,12 +6,16 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsMissingGroupInfo
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
@@ -21,8 +25,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 
 /**
- * Send an external add proposal to join all MLS conversations which the user is member
- * of but has not yet joined the corresponding MLS group.
+ * Send an external commit to join all MLS conversations for which the user is a member,
+ * but has not yet joined the corresponding MLS group.
  */
 interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
@@ -30,8 +34,10 @@ interface JoinExistingMLSConversationsUseCase {
 
 class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
+    private val conversationApi: ConversationApi,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationsUseCase {
     private val dispatcher = kaliumDispatcher.io
@@ -73,10 +79,14 @@ class JoinExistingMLSConversationsUseCaseImpl(
                     Either.Right(Unit)
                 }
             } else {
-                mlsConversationRepository.joinGroupByExternalCommit(
-                    conversation.protocol.groupId,
-                    conversation.id
-                )
+                wrapApiRequest {
+                    conversationApi.fetchGroupInfo(idMapper.toApiModel(conversation.id))
+                }.flatMap { groupInfo ->
+                    mlsConversationRepository.joinGroupByExternalCommit(
+                        conversation.protocol.groupId,
+                        groupInfo
+                    )
+                }
             }
         } else {
             Either.Right(Unit)
