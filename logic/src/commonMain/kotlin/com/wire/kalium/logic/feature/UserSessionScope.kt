@@ -299,6 +299,7 @@ class UserSessionScope internal constructor(
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
+            userId,
             keyPackageRepository,
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
@@ -428,7 +429,7 @@ class UserSessionScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
@@ -811,8 +812,9 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
-            this
-        )
+            userStorage,
+             this,
+            )
     val messages: MessageScope
         get() = MessageScope(
             connectionRepository,
@@ -833,6 +835,7 @@ class UserSessionScope internal constructor(
             messageSendingScheduler,
             timeParser,
             applicationMessageHandler,
+            userStorage,
             this
         )
     val users: UserScope
