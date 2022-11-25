@@ -383,6 +383,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withJoinConversationSuccessful()
             .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
             .withPublicGroupStateSuccessful()
             .arrange()

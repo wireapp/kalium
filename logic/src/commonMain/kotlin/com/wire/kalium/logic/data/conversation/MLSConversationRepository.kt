@@ -217,7 +217,6 @@ class MLSConversationDataSource(
         }
     }
 
-
     override suspend fun clearJoinViaExternalCommit(groupID: GroupID) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
