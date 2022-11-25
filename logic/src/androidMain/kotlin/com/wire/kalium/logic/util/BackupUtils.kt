@@ -2,7 +2,10 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.functional.Either
+import okio.Path
+import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -28,10 +31,13 @@ actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: S
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to create and compress the backup file", e)))
 }
 
-actual fun extractCompressedFile(inputSource: Source, outputSink: Sink): Either<CoreFailure, Unit> = try {
+actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Unit> = try {
     ZipInputStream(inputSource.buffer().inputStream()).use { zipInputStream ->
         var entry: ZipEntry? = zipInputStream.nextEntry
+        var entryPathName: Path
         while (entry != null) {
+            entryPathName = "${outputRootPath}/${entry.name}".toPath()
+            val outputSink = fileSystem.sink(entryPathName)
             outputSink.buffer().use { output ->
                 output.write(zipInputStream.readBytes())
             }

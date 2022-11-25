@@ -2,6 +2,7 @@ package com.wire.kalium.cryptography.utils
 
 import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
+import com.ionspin.kotlin.crypto.secretstream.SecretStreamCorruptedOrTamperedDataException
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_ABYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_HEADERBYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
@@ -17,7 +18,6 @@ import okio.buffer
 @OptIn(ExperimentalUnsignedTypes::class)
 class ChaCha20Utils {
 
-    @Suppress("TooGenericExceptionCaught")
     suspend fun encryptBackupFile(
         backupDataSource: Source,
         outputSink: Sink,
@@ -70,7 +70,7 @@ class ChaCha20Utils {
                 outputBufferedSink.write(encryptedData.toByteArray())
                 encryptedDataSize += encryptedData.size
             }
-        } catch (e: Exception) {
+        } catch (e: SecretStreamCorruptedOrTamperedDataException) {
             kaliumLogger.e("There was an error while encrypting the backup data with ChaCha20:\n $e}")
         } finally {
             backupDataSource.close()
@@ -79,8 +79,6 @@ class ChaCha20Utils {
         return encryptedDataSize
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    @Throws(Exception::class)
     suspend fun decryptBackupFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
@@ -96,6 +94,8 @@ class ChaCha20Utils {
             val additionalInformation: UByteArray = BackupCoder.version.encodeToByteArray().toUByteArray()
             val backupCoder = BackupCoder(userId, passphrase)
             val header = backupCoder.decodeHeader(encryptedDataSource)
+
+            // We need to read the ChaCha20 generated header prior to the encrypted backup file data to run some sanity checks
 
             val key = backupCoder.generateChaCha20Key(header).toUByteArray()
 
@@ -126,7 +126,9 @@ class ChaCha20Utils {
                     break
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
+        } catch (e: SecretStreamCorruptedOrTamperedDataException) {
             kaliumLogger.e("There was an error while decrypting the backup data with ChaCha20:\n $e}")
         } finally {
             encryptedDataSource.close()

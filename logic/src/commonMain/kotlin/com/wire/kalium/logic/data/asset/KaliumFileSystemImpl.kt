@@ -47,11 +47,18 @@ interface KaliumFileSystem {
     fun createDirectory(dir: Path, mustCreate: Boolean = false)
 
     /**
-     * This will delete the content of the given [path]
+     * This will delete the content of the given file [path]
      * @param path the path to be deleted
      * @param mustExist whether it is certain that [path] exists before the deletion
      */
     fun delete(path: Path, mustExist: Boolean = false)
+
+    /**
+     * This will delete recursively the given [dir] and all its content
+     * @param dir the directory to be deleted
+     * @param mustExist whether it is certain that [dir] exists before the deletion
+     */
+    fun deleteContents(dir: Path, mustExist: Boolean = false)
 
     /**
      * Checks whether the given [path] is already created and exists on the current file system
@@ -96,4 +103,11 @@ interface KaliumFileSystem {
      * @return the number of bytes written
      */
     suspend fun writeData(outputSink: Sink, dataSource: Source): Long
+
+    /**
+     * Provides a list of paths found in the given [dir] path from where the call is being invoked.
+     * @param dir the path from where the list of paths will be fetched
+     * @return the list of paths found.
+     */
+    suspend fun list(dir: Path): List<Path>
 }

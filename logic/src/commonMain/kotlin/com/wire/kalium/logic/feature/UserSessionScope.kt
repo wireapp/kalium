@@ -401,7 +401,9 @@ class UserSessionScope internal constructor(
 
     val restoreBackup: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
-            userStorage.database.databaseImporter
+            userStorage.database.databaseImporter,
+            kaliumFileSystem,
+            userId
         )
 
     val persistMessage: PersistMessageUseCase

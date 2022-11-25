@@ -59,6 +59,13 @@ actual class KaliumFileSystemImpl actual constructor(
     override fun delete(path: Path, mustExist: Boolean) = SYSTEM.delete(path, mustExist)
 
     /**
+     * This will delete recursively the given [dir] and all its content
+     * @param dir the directory to be deleted
+     * @param mustExist whether it is certain that [dir] exists before the deletion
+     */
+    override fun deleteContents(dir: Path, mustExist: Boolean) = SYSTEM.deleteRecursively(dir, mustExist)
+
+    /**
      * Checks whether the given [path] is already created and exists on the current file system
      * @return whether the given [path] exists in the current file system
      */
@@ -120,4 +127,6 @@ actual class KaliumFileSystemImpl actual constructor(
      * Fetches the persistent [Path] of the current user's avatar in the [KaliumFileSystem]
      */
     override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
+
+    override suspend fun list(dir: Path): List<Path> = SYSTEM.list(dir)
 }
