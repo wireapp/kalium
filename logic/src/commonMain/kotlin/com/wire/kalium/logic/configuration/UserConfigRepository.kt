@@ -18,6 +18,8 @@ interface UserConfigRepository {
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun isReadReceiptsEnabled(): Either<StorageFailure, Boolean>
+    fun setReadReceiptsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
 class UserConfigDataSource(
@@ -68,5 +70,14 @@ class UserConfigDataSource(
     override fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
+        }
+
+    override fun isReadReceiptsEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        userConfigStorage.isReadReceiptsEnabled()
+    }
+
+    override fun setReadReceiptsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistReadReceipts(enabled)
         }
 }

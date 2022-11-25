@@ -851,6 +851,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
+            userConfigRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase
