@@ -36,7 +36,7 @@ class ClientScope(
     private val featureSupport: FeatureSupport,
     private val clientIdProvider: CurrentClientIdProvider
 ) {
-    val register: RegisterClientUseCase
+    private val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
             featureSupport,
             clientRepository,
