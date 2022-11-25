@@ -1,6 +1,7 @@
 package com.wire.kalium.cryptography
 
 typealias MLSGroupId = String
+
 data class CryptoClientId(val value: String) {
     override fun toString() = value
 }
