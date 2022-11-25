@@ -40,6 +40,7 @@ private class ConversationMapper {
             lastNotificationDate = lastNotifiedMessageDate,
             lastModifiedDate = last_modified_date,
             lastReadDate = lastReadDate,
+            firstUnreadMessageDate = firstUnreadMessageDate,
             accessList = access_list,
             accessRoleList = access_role_list,
             protocol = protocol,
@@ -86,6 +87,7 @@ private class ConversationMapper {
                 lastNotificationDate = lastNotifiedMessageDate,
                 lastModifiedDate = last_modified_date,
                 lastReadDate = lastReadDate,
+                firstUnreadMessageDate = firstUnreadMessageDate,
                 accessList = access_list,
                 accessRoleList = access_role_list,
                 protocol = protocol,
@@ -255,10 +257,11 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationViewEntity? {
-        return memberQueries.selectConversationByMember(userId).executeAsOneOrNull().let {
-            conversationMapper.fromOneToOneToModel(it)
-        }
+    override suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+        return memberQueries.selectConversationByMember(userId)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {

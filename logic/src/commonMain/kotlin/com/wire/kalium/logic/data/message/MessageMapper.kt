@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -26,7 +27,8 @@ class MessageMapperImpl(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper()
+    private val selfUserId: UserId,
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message): MessageEntity {
@@ -50,7 +52,9 @@ class MessageMapperImpl(
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
                 },
-                visibility = visibility
+                visibility = visibility,
+                senderName = message.senderUserName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is Message.System -> MessageEntity.System(
@@ -60,7 +64,9 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderName = message.senderUserName,
+                isSelfMessage = message.isSelfMessage
             )
         }
     }
@@ -91,7 +97,9 @@ class MessageMapperImpl(
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
                 visibility = visibility,
-                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions)
+                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+                senderUserName = message.senderName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is MessageEntity.System -> Message.System(
@@ -101,7 +109,9 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderUserName = message.senderName,
+                isSelfMessage = message.isSelfMessage
             )
         }
     }

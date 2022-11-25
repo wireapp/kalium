@@ -172,15 +172,15 @@ class FeatureConfigEventReceiverTest {
 
         fun newMLSUpdatedEvent(
             model: MLSModel
-        ) = Event.FeatureConfig.MLSUpdated("eventId", model)
+        ) = Event.FeatureConfig.MLSUpdated("eventId", false, model)
 
         fun newFileSharingUpdatedEvent(
             model: ConfigsStatusModel
-        ) = Event.FeatureConfig.FileSharingUpdated("eventId", model)
+        ) = Event.FeatureConfig.FileSharingUpdated("eventId", false, model)
 
         fun newConferenceCallingUpdatedEvent(
             model: ConferenceCallingModel
-        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", model)
+        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", false, model)
 
         fun arrange() = this to featureConfigEventReceiver
     }

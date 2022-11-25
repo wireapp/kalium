@@ -227,6 +227,7 @@ internal class ConnectionDataSource(
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
                         lastNotificationDate = null,
+                        firstUnreadMessageDate = connection.lastUpdate,
                         lastModifiedDate = connection.lastUpdate,
                         lastReadDate = connection.lastUpdate,
                         access = emptyList(),

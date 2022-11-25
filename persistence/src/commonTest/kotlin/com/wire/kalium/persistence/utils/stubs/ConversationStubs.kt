@@ -14,7 +14,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     lastModifiedDate = "2022-03-30T15:36:00.000Z",
     lastReadDate = "2000-01-01T12:00:00.000Z",
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-    accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+    accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+    firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
 )
 
 fun newConversationEntity(
@@ -32,5 +33,6 @@ fun newConversationEntity(
     lastReadDate = lastReadDate,
     lastModifiedDate = lastModified,
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-    accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+    accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+    firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
 )

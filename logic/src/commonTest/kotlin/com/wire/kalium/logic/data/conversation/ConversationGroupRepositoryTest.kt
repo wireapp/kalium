@@ -81,7 +81,6 @@ class ConversationGroupRepositoryTest {
     fun setup() {
         conversationGroupRepository = ConversationGroupRepositoryImpl(
             userRepository,
-            conversationRepository,
             mlsConversationRepository,
             memberJoinEventHandler,
             memberLeaveEventHandler,
@@ -454,7 +453,6 @@ class ConversationGroupRepositoryTest {
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 userRepository,
-                conversationRepository,
                 mlsConversationRepository,
                 memberJoinEventHandler,
                 memberLeaveEventHandler,

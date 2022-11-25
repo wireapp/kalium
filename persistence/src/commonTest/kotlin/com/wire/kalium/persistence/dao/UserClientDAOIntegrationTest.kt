@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -27,7 +28,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
     @Test
     fun givenClientsAreInserted_whenDeletingTheUser_thenTheClientsAreDeleted() = runTest {
         userDAO.insertUser(user)
-        clientDAO.insertClient(client)
+        clientDAO.insertClient(insertClientParam)
 
         userDAO.deleteUserByQualifiedID(user.id)
 
@@ -39,13 +40,14 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
     fun givenUserIsNotInserted_whenInsertingClient_thenAnExceptionIsThrown() = runTest {
         // Exception depends on each platform/sqlite driver, can't assert exception type or message in common source
         assertFails {
-            clientDAO.insertClient(client)
+            clientDAO.insertClient(insertClientParam)
         }
     }
 
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(qualifiedID = userId)
-        val client = Client(user.id, "id1", null)
+        val client = Client(user.id, "id1", null, true)
+        val insertClientParam = InsertClientParam(client.userId, client.id, client.deviceType)
     }
 }

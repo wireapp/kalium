@@ -21,6 +21,7 @@ data class ConversationEntity(
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
+    val firstUnreadMessageDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>
 ) {
@@ -76,6 +77,7 @@ data class ConversationViewEntity(
     val teamId: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
+    val firstUnreadMessageDate: String?,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,
     val botService: BotEntity?,
@@ -133,7 +135,7 @@ interface ConversationDAO {
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
-    suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationViewEntity?
+    suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>

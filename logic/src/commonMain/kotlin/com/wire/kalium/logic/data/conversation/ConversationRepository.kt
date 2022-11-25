@@ -16,7 +16,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
@@ -43,11 +42,11 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
@@ -92,7 +91,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
+    suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
@@ -171,7 +170,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId)
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -274,30 +273,22 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModelToDetails) }
-
+        conversationDAO.getAllConversationDetails().combine(messageDAO.observeLastMessages()) { conversationList, lastMessageList ->
+            conversationList.map { conversation -> conversationMapper.fromDaoModelToDetails(conversation,
+                lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) }) }
+        }
     /**
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-            .mapRight { conversationMapper.fromDaoModelToDetails(it) }
-            .flatMapRight { conversationDetails ->
-                when (conversationDetails) {
-                    is ConversationDetails.OneOne -> observeLastUnreadMessage(conversationID)
-                        .map { conversationDetails.copy(lastUnreadMessage = it) }
-
-                    is ConversationDetails.Group -> observeLastUnreadMessage(conversationID)
-                        .map { conversationDetails.copy(lastUnreadMessage = it) }
-
-                    else -> flowOf(conversationDetails)
-                }
-            }
+                // we don't need last message here
+            .mapRight { conversationMapper.fromDaoModelToDetails(it, null) }
             .distinctUntilChanged()
 
-    private suspend fun observeLastUnreadMessage(conversationId: ConversationId): Flow<Message?> =
-        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversationId))
+    private suspend fun observeLastMessage(conversationId: ConversationId): Flow<Message?> =
+        messageDAO.observeConversationLastMessage(idMapper.toDaoModel(conversationId))
             .map { it?.let { messageMapper.fromEntityToMessage(it) } }
             .distinctUntilChanged()
 
@@ -457,7 +448,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
         wrapStorageRequest {
             memberMapper.fromMapOfClientsEntityToRecipients(
-                clientDAO.getClientsOfConversation(idMapper.toDaoModel(conversationId))
+                clientDAO.conversationRecipient(idMapper.toDaoModel(conversationId))
             )
         }
 
@@ -469,11 +460,10 @@ internal class ConversationDataSource internal constructor(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
-        return wrapStorageRequest {
-            val conversationEntity = conversationDAO.getConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
-            conversationEntity?.let { conversationMapper.fromDaoModel(it) }
-        }
+    override suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, Conversation>> {
+            return conversationDAO.observeConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+                .wrapStorageRequest()
+                .mapRight { conversationMapper.fromDaoModel(it) }
     }
 
     override suspend fun updateMutedStatusLocally(

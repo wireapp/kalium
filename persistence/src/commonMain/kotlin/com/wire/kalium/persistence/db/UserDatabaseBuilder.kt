@@ -29,6 +29,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -74,6 +76,7 @@ class UserDatabaseBuilder internal constructor(
         MessageTextContentAdapter = TableMapper.messageTextContentAdapter,
         MessageUnknownContentAdapter = TableMapper.messageUnknownContentAdapter,
         ReactionAdapter = TableMapper.reactionAdapter,
+        ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
         UserAdapter = TableMapper.userAdapter
     )
@@ -118,6 +121,9 @@ class UserDatabaseBuilder internal constructor(
 
     val reactionDAO: ReactionDAO
         get() = ReactionDAOImpl(database.reactionsQueries)
+
+    val receiptDAO: ReceiptDAO
+        get() = ReceiptDAOImpl(database.receiptsQueries)
 
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries)
