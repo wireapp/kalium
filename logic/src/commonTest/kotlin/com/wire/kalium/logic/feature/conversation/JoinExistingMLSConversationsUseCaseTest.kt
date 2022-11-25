@@ -38,13 +38,13 @@ class JoinExistingMLSConversationsUseCaseTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(false)
                 .withGetConversationsByGroupStateSuccessful()
-                .withRequestToJoinMLSGroupSuccessful()
+                .withJoinByExternalCommitSuccessful()
                 .arrange()
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
             verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
+                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
                 .with(eq(Arrangement.MLS_CONVERSATION1))
                 .wasNotInvoked()
         }
@@ -55,18 +55,18 @@ class JoinExistingMLSConversationsUseCaseTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
                 .withGetConversationsByGroupStateSuccessful()
-                .withRequestToJoinMLSGroupSuccessful()
+                .withJoinByExternalCommitSuccessful()
                 .arrange()
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
             verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
+                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
                 .with(eq(Arrangement.MLS_CONVERSATION1))
                 .wasInvoked(once)
 
             verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
+                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
                 .with(eq(Arrangement.MLS_CONVERSATION2))
                 .wasInvoked(once)
         }
@@ -76,8 +76,8 @@ class JoinExistingMLSConversationsUseCaseTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_CONVERSATION1))
-            .withRequestToJoinMLSGroupSuccessful()
-            .withRequestToJoinMLSGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
+            .withJoinByExternalCommitSuccessful()
+            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
             .withFetchConversationSuccessful()
             .withGetConversationByIdSuccessful()
             .arrange()
@@ -90,7 +90,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             .wasInvoked(once)
 
         verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
+            .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
             .with(eq(Arrangement.MLS_CONVERSATION1))
             .wasInvoked(twice)
 
@@ -98,13 +98,17 @@ class JoinExistingMLSConversationsUseCaseTest {
 
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
-        val (_, joinExistingMLSConversationsUseCase) = Arrangement()
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withGetConversationsByGroupStateSuccessful()
-            .withRequestToJoinMLSGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
+            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
             .arrange()
 
         joinExistingMLSConversationsUseCase().shouldFail()
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::clearMLSGroupJoinViaExternalCommit)
+            .with(eq(Arrangement.MLS_CONVERSATION1.id))
+            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -143,17 +147,17 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .then { Either.Right(MLS_CONVERSATION1) }
         }
 
-        fun withRequestToJoinMLSGroupSuccessful() = apply {
+        fun withJoinByExternalCommitSuccessful() = apply {
             given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::requestToJoinMLSGroup)
+                .suspendFunction(conversationGroupRepository::joinMLSGroupViaExternalCommit)
                 .whenInvokedWith(anything())
                 .then { Either.Right(Unit) }
         }
 
-        fun withRequestToJoinMLSGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
+        fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
             given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::requestToJoinMLSGroup)
+                .suspendFunction(conversationGroupRepository::joinMLSGroupViaExternalCommit)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { Either.Left(failure) }
         }
