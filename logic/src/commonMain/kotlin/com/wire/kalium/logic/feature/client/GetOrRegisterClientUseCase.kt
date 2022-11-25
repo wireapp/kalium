@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
 
 interface GetOrRegisterClientUseCase {
@@ -38,9 +39,11 @@ class GetOrRegisterClientUseCaseImpl(
                 }
             )
 
-        return (result ?: registerClient(registerClientParam)).also {
-            if (it is RegisterClientResult.Success) {
-                upgradeCurrentSessionUseCase(it.client.id)
+        return (result ?: registerClient(registerClientParam)).also { result ->
+            if (result is RegisterClientResult.Success) {
+                upgradeCurrentSessionUseCase(result.client.id).flatMap {
+                    clientRepository.persistClientId(result.client.id)
+                }
             }
         }
     }

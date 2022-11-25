@@ -29,7 +29,6 @@ internal class PersistRegisteredClientIdUseCaseImpl(
             }, { listOfClients ->
                 val client = listOfClients.firstOrNull { it.id == clientId }
                 if (client != null) {
-                    clientRepository.persistClientId(client.id)
                     PersistRegisteredClientIdResult.Success(client)
                 } else {
                     PersistRegisteredClientIdResult.Failure.ClientNotRegistered
