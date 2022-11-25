@@ -32,7 +32,7 @@ class GetOrRegisterClientUseCaseTest {
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Success(client))
+            .withPersistRegisteredClientIdResult(VerifyExistingClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .arrange()
 
@@ -56,7 +56,7 @@ class GetOrRegisterClientUseCaseTest {
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Failure.ClientNotRegistered)
+            .withPersistRegisteredClientIdResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -118,10 +118,10 @@ class GetOrRegisterClientUseCaseTest {
         val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
 
         @Mock
-        val persistRegisteredClientIdUseCase = mock(classOf<PersistRegisteredClientIdUseCase>())
+        val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase, upgradeCurrentSessionUseCase
+            clientRepository, registerClientUseCase, clearClientDataUseCase, verifyExistingClientUseCase, upgradeCurrentSessionUseCase
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
@@ -142,9 +142,9 @@ class GetOrRegisterClientUseCaseTest {
                 .whenInvoked()
                 .thenReturn(result)
         }
-        fun withPersistRegisteredClientIdResult(result: PersistRegisteredClientIdResult) = apply {
-            given(persistRegisteredClientIdUseCase)
-                .suspendFunction(persistRegisteredClientIdUseCase::invoke)
+        fun withPersistRegisteredClientIdResult(result: VerifyExistingClientResult) = apply {
+            given(verifyExistingClientUseCase)
+                .suspendFunction(verifyExistingClientUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

@@ -16,7 +16,7 @@ class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val registerClient: RegisterClientUseCase,
     private val clearClientData: ClearClientDataUseCase,
-    private val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase,
+    private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
 ) : GetOrRegisterClientUseCase {
 
@@ -27,10 +27,10 @@ class GetOrRegisterClientUseCaseImpl(
                     if (it is CoreFailure.MissingClientRegistration) null
                     else RegisterClientResult.Failure.Generic(it)
                 }, { retainedClientId ->
-                    when (val result = persistRegisteredClientIdUseCase(retainedClientId)) {
-                        is PersistRegisteredClientIdResult.Success -> RegisterClientResult.Success(result.client)
-                        is PersistRegisteredClientIdResult.Failure.Generic -> RegisterClientResult.Failure.Generic(result.genericFailure)
-                        is PersistRegisteredClientIdResult.Failure.ClientNotRegistered -> {
+                    when (val result = verifyExistingClientUseCase(retainedClientId)) {
+                        is VerifyExistingClientResult.Success -> RegisterClientResult.Success(result.client)
+                        is VerifyExistingClientResult.Failure.Generic -> RegisterClientResult.Failure.Generic(result.genericFailure)
+                        is VerifyExistingClientResult.Failure.ClientNotRegistered -> {
                             clearClientData()
                             clientRepository.clearRetainedClientId()
                             null
