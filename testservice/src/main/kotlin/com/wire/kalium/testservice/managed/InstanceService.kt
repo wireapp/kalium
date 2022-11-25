@@ -136,7 +136,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
-                    when (val result = client.register(
+                    when (val result = client.getOrRegister(
                         RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList(), ClientType.Permanent)
                     )) {
                         is RegisterClientResult.Failure ->
