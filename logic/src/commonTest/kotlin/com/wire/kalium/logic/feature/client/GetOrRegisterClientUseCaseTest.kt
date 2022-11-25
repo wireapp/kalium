@@ -32,8 +32,9 @@ class GetOrRegisterClientUseCaseTest {
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withPersistRegisteredClientIdResult(VerifyExistingClientResult.Success(client))
+            .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -48,6 +49,10 @@ class GetOrRegisterClientUseCaseTest {
             .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
             .with(eq(clientId))
             .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
+            .with(eq(clientId))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -56,10 +61,11 @@ class GetOrRegisterClientUseCaseTest {
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withPersistRegisteredClientIdResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
+            .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -77,6 +83,10 @@ class GetOrRegisterClientUseCaseTest {
             .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
             .with(eq(clientId))
             .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
+            .with(eq(clientId))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -87,6 +97,7 @@ class GetOrRegisterClientUseCaseTest {
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -99,6 +110,10 @@ class GetOrRegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
         verify(arrangement.upgradeCurrentSessionUseCase)
             .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
+            .with(eq(clientId))
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(eq(clientId))
             .wasInvoked(exactly = once)
     }
@@ -142,7 +157,14 @@ class GetOrRegisterClientUseCaseTest {
                 .whenInvoked()
                 .thenReturn(result)
         }
-        fun withPersistRegisteredClientIdResult(result: VerifyExistingClientResult) = apply {
+
+        fun withPersistClientIdResult(result: Either<CoreFailure, Unit>) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::persistClientId)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+        fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
             given(verifyExistingClientUseCase)
                 .suspendFunction(verifyExistingClientUseCase::invoke)
                 .whenInvokedWith(any())
