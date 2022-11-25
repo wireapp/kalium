@@ -160,7 +160,7 @@ class PendingProposalSchedulerTest {
         val sessionRepository = mock(classOf<SessionRepository>())
 
         @Mock
-        val incrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+        val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())

@@ -134,6 +134,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatus
+import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatusImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -444,9 +446,7 @@ class UserSessionScope internal constructor(
         )
 
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
-        InMemoryIncrementalSyncRepository(
-            globalScope.sessionRepository
-        )
+        InMemoryIncrementalSyncRepository()
     }
 
     private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
@@ -757,8 +757,8 @@ class UserSessionScope internal constructor(
             messageSendingScheduler,
             timeParser,
             userStorage,
-             this,
-            )
+            this,
+        )
     val messages: MessageScope
         get() = MessageScope(
             connectionRepository,
@@ -811,6 +811,9 @@ class UserSessionScope internal constructor(
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)
+
+    val getPersistentWebSocketStatus: GetPersistentWebSocketStatus
+        get() = GetPersistentWebSocketStatusImpl(userId, globalScope.sessionRepository)
 
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(

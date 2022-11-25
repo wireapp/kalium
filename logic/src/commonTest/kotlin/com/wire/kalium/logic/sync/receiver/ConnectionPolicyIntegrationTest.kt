@@ -21,7 +21,7 @@ class ConnectionPolicyIntegrationTest {
     @Mock
     val sessionRepository = mock(classOf<SessionRepository>())
 
-    private val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+    private val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
     private val setConnectionPolicyUseCase = SetConnectionPolicyUseCase(incrementalSyncRepository)
 

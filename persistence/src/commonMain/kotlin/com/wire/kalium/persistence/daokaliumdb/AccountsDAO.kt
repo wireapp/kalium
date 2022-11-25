@@ -96,6 +96,7 @@ interface AccountsDAO {
     suspend fun deleteAccount(userIDEntity: UserIDEntity)
     suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason)
     suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean)
+    suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
@@ -187,6 +188,9 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) {
         queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
     }
+
+    override suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean =
+        queries.persistentWebSocketStatus(userIDEntity).executeAsOne()
 
     override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
         queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus).asFlow().mapToList()

@@ -1,13 +1,10 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 
@@ -31,9 +28,7 @@ internal interface IncrementalSyncRepository {
     suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
 }
 
-internal class InMemoryIncrementalSyncRepository(
-    private val sessionRepository: SessionRepository
-) : IncrementalSyncRepository {
+internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     private val _syncState = MutableSharedFlow<IncrementalSyncStatus>(
         replay = 1,
         extraBufferCapacity = BUFFER_SIZE
@@ -63,22 +58,8 @@ internal class InMemoryIncrementalSyncRepository(
     }
 
     override suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        if (connectionPolicy == ConnectionPolicy.KEEP_ALIVE) {
-            kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
-            _connectionPolicy.emit(connectionPolicy)
-        } else {
-            sessionRepository.getAllValidAccountPersistentWebSocketStatus().fold({
-                kaliumLogger.withFeatureId(SYNC).i("Error while fetching valid accounts persistent web socket status ")
-
-            }, {
-                it.collect { persistWebSocketStatusList ->
-                    if (!persistWebSocketStatusList.map { it.isPersistentWebSocketEnabled }.contains(true)) {
-                        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
-                        _connectionPolicy.emit(connectionPolicy)
-                    }
-                }
-            })
-        }
+        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
+        _connectionPolicy.emit(connectionPolicy)
     }
 
     private companion object {

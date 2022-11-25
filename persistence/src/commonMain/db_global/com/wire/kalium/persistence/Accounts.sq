@@ -49,6 +49,9 @@ UPDATE Accounts SET logout_reason = :logoutReason WHERE id = :userId;
 allValidAccountsPersistentWebSocketStatus:
 SELECT id, isPersistentWebSocketEnabled FROM Accounts WHERE logout_reason IS NULL;
 
+persistentWebSocketStatus:
+SELECT isPersistentWebSocketEnabled FROM Accounts WHERE logout_reason IS NULL AND id = :userId;
+
 updatePersistentWebSocketStatus:
 UPDATE Accounts SET isPersistentWebSocketEnabled = :isPersistentWebSocketEnabled WHERE id = :userId;
 

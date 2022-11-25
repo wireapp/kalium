@@ -128,7 +128,7 @@ class KeyingMaterialsManagerTests {
         @Mock
         val sessionRepository = mock(classOf<SessionRepository>())
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())

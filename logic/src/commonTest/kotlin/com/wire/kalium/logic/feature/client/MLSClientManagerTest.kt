@@ -87,7 +87,7 @@ class MLSClientManagerTest {
         @Mock
         val sessionRepository = mock(classOf<SessionRepository>())
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         var slowSyncRepository = mock(classOf<SlowSyncRepository>())

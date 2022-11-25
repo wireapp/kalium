@@ -52,6 +52,7 @@ interface SessionRepository {
     suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
     fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
+    suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -175,4 +176,8 @@ internal class SessionDataSource(
                 }
             }
         }
+
+    override suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        accountsDAO.persistentWebSocketStatus(idMapper.toDaoModel(userId))
+    }
 }

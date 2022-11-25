@@ -151,7 +151,7 @@ class SyncManagerTest {
         @Mock
         val sessionRepository = mock(classOf<SessionRepository>())
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         private val syncManager = SyncManagerImpl(
             slowSyncRepository, incrementalSyncRepository

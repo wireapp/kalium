@@ -29,7 +29,7 @@ class IncrementalSyncRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        incrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
+        incrementalSyncRepository = InMemoryIncrementalSyncRepository()
     }
 
     @Test
