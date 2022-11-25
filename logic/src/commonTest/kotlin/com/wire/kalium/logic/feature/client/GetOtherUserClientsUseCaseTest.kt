@@ -25,7 +25,7 @@ class GetOtherUserClientsUseCaseTest {
         // Given
         val userId = UserId("123", "wire.com")
         val otherUserClients = listOf(
-            OtherUserClient(DeviceType.Phone, "111"), OtherUserClient(DeviceType.Desktop, "2222")
+            OtherUserClient(DeviceType.Phone, "111", true), OtherUserClient(DeviceType.Desktop, "2222", true)
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
             .withSuccessfulResponse(otherUserClients)
@@ -74,7 +74,7 @@ class GetOtherUserClientsUseCaseTest {
 
             given(clientRepository)
                 .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             return this
         }
