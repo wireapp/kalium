@@ -184,7 +184,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -218,7 +217,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -494,7 +492,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         // when
@@ -503,7 +500,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
+            assertTrue { conversationDetail.value.unreadEventCount.values.sum() == 5 }
 
             awaitComplete()
         }
@@ -518,7 +515,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(null)
             .arrange()
 
         // when
@@ -528,7 +524,7 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
@@ -544,7 +540,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(null)
             .arrange()
 
         // when
@@ -554,7 +549,7 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
@@ -572,7 +567,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         // when
@@ -581,9 +575,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
-            assertTrue(conversationDetail.value.lastUnreadMessage != null)
-
+            assertTrue { conversationDetail.value.unreadEventCount.values.sum() == 5 }
             awaitComplete()
         }
     }
@@ -898,13 +890,6 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withLastUnreadMessage(message: MessageEntity?) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::observeLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(message))
-        }
-
         fun withUnreadConversationCount(count: Long) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadConversationCount)
@@ -982,13 +967,6 @@ class ConversationRepositoryTest {
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchConversationDetails)
                 .whenInvokedWith(idMatcher)
-                .thenReturn(response)
-        }
-
-        fun withCreateNewConversation(response: NetworkResponse<ConversationResponse>) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::createNewConversation)
-                .whenInvokedWith(anything())
                 .thenReturn(response)
         }
 
@@ -1092,7 +1070,8 @@ class ConversationRepositoryTest {
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited
+                editStatus = MessageEntity.EditStatus.NotEdited,
+                senderName = "sender"
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")

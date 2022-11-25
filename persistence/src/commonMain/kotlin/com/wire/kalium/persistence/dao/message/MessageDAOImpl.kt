@@ -40,6 +40,9 @@ class MessageDAOImpl(
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
+    override suspend fun observeLastMessages(): Flow<List<MessageEntity>> =
+        queries.getLastMessages(mapper::toEntityMessageFromView).asFlow().mapToList()
+
     override suspend fun insertMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
@@ -302,9 +305,9 @@ class MessageDAOImpl(
         queries.deleteAllConversationMessages(conversationId)
     }
 
-    override suspend fun observeLastUnreadMessage(
+    override suspend fun observeConversationLastMessage(
         conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(
+    ): Flow<MessageEntity?> = queries.getConversationLastMessage(
         conversationID,
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
