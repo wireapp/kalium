@@ -184,7 +184,7 @@ internal class ConversationDataSource internal constructor(
         return fetchAllConversationsFromAPI()
     }
 
-    // TODO temporary method until backend API changed
+    // TODO temporary method until backend API is changed: https://wearezeta.atlassian.net/browse/FS-1260
     override suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit> =
         selfTeamIdProvider().flatMap { teamId ->
             teamId?.let {
@@ -239,6 +239,7 @@ internal class ConversationDataSource internal constructor(
         originatedFromEvent: Boolean,
     ) = wrapStorageRequest {
         val conversationEntities = conversations
+            // TODO work-around for a bug in the backend. Can be removed when fixed: https://wearezeta.atlassian.net/browse/FS-1262
             .filter { !(it.type == ConversationResponse.Type.GLOBAL_TEAM && it.protocol == ConvProtocol.PROTEUS) }
             .map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(
