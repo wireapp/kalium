@@ -8,9 +8,7 @@ import com.wire.kalium.logic.functional.flatMap
 class SyncConversationsUseCase(private val conversationRepository: ConversationRepository) {
 
     suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return conversationRepository.fetchGlobalTeamConversation().flatMap {
-            conversationRepository.fetchConversations()
-        }
+        return conversationRepository.fetchConversations()
     }
 
 }
