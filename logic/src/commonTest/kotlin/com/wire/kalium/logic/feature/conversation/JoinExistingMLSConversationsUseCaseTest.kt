@@ -259,7 +259,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 KaliumException.InvalidRequestError(
                     ErrorResponse(
                         403,
-                        "The con = versation epoch in a message is too old",
+                        "The conversation epoch in a message is too old",
                         "mls-stale-message"
                     )
                 )
