@@ -32,7 +32,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-abstract class ApiTest {
+open class ApiTest {
 
     private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManagerV0 = TestSessionManagerV0()
