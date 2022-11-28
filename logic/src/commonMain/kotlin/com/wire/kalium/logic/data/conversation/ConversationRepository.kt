@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Clock
 
 interface ConversationRepository {
@@ -273,7 +274,15 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails().combine(messageDAO.observeLastMessages()) { conversationList, lastMessageList ->
+        conversationDAO.getAllConversationDetails()
+            .onEach {
+                kaliumLogger.d("KBX getAllConversationDetails")
+            }
+            .combine(messageDAO.observeLastMessages()
+                .onEach {
+                    kaliumLogger.d("KBX observeLastMessages")
+                }
+            ) { conversationList, lastMessageList ->
             conversationList.map { conversation -> conversationMapper.fromDaoModelToDetails(conversation,
                 lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) }) }
         }
