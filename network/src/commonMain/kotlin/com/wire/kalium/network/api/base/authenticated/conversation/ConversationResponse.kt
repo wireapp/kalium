@@ -31,7 +31,8 @@ data class GlobalTeamConversationResponse(
     @SerialName("cipher_suite")
     val mlsCipherSuiteTag: Int?,
 
-    @SerialName("access") val access: Set<ConversationAccessDTO>
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>
 )
 
 @Serializable
