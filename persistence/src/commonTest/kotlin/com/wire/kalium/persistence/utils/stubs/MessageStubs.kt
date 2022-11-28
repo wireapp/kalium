@@ -15,8 +15,7 @@ fun newRegularMessageEntity(
     status: MessageEntity.Status = MessageEntity.Status.PENDING,
     editStatus: MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
     date: String = "2022-03-30T15:36:00.000Z",
-    visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
-    senderName: String = "senderName"
+    visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE
 ) = MessageEntity.Regular(
     id = id,
     content = content,
@@ -26,8 +25,7 @@ fun newRegularMessageEntity(
     senderClientId = senderClientId,
     status = status,
     editStatus = editStatus,
-    visibility = visibility,
-    senderName = senderName
+    visibility = visibility
 )
 
 @Suppress("LongParameterList")
@@ -49,6 +47,5 @@ fun newSystemMessageEntity(
     date = date,
     senderUserId = senderUserId,
     status = status,
-    visibility = visibility,
-    senderName = "senderName"
+    visibility = visibility
 )
