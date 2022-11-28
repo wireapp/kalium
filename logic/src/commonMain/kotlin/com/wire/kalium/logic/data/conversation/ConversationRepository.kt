@@ -16,6 +16,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
@@ -42,11 +43,11 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
@@ -273,22 +274,30 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails().combine(messageDAO.observeLastMessages()) { conversationList, lastMessageList ->
-            conversationList.map { conversation -> conversationMapper.fromDaoModelToDetails(conversation,
-                lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) }) }
-        }
+        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModelToDetails) }
+
     /**
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-                // we don't need last message here
-            .mapRight { conversationMapper.fromDaoModelToDetails(it, null) }
+            .mapRight { conversationMapper.fromDaoModelToDetails(it) }
+            .flatMapRight { conversationDetails ->
+                when (conversationDetails) {
+                    is ConversationDetails.OneOne -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    is ConversationDetails.Group -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    else -> flowOf(conversationDetails)
+                }
+            }
             .distinctUntilChanged()
 
-    private suspend fun observeLastMessage(conversationId: ConversationId): Flow<Message?> =
-        messageDAO.observeConversationLastMessage(idMapper.toDaoModel(conversationId))
+    private suspend fun observeLastUnreadMessage(conversationId: ConversationId): Flow<Message?> =
+        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversationId))
             .map { it?.let { messageMapper.fromEntityToMessage(it) } }
             .distinctUntilChanged()
 
