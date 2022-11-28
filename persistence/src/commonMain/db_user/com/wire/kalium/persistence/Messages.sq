@@ -191,7 +191,6 @@ User.user_availability_status AS senderAvailabilityStatus,
 User.user_type AS senderUserType,
 User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
-(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
@@ -459,26 +458,12 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
--- TODO remove
 getLastUnreadMessage:
 SELECT * FROM MessageDetailsView AS message
 WHERE message.conversationId
 IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 ORDER BY message.date ASC
 LIMIT  1;
-
-getConversationLastMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id
-ORDER BY message.date ASC
-LIMIT  1;
-
-getLastMessages:
-SELECT * FROM MessageDetailsView AS message
-GROUP BY conversationId
-HAVING date = MAX(date) AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
-ORDER BY message.date ASC;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;

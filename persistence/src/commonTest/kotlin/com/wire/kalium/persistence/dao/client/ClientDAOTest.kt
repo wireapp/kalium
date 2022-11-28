@@ -223,8 +223,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
     }
 }

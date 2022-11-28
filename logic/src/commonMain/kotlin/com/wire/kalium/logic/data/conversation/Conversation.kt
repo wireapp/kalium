@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -27,7 +26,6 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
-    val firstUnreadMessageDate: String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val creatorId: String?
@@ -145,8 +143,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
-        val unreadEventCount: UnreadEventCount,
-        val lastMessage: Message?
+        val unreadContentCount: UnreadContentCount,
+        val lastUnreadMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -155,8 +153,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val hasOngoingCall: Boolean = false,
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
-        val unreadEventCount: UnreadEventCount,
-        val lastMessage: Message?,
+        val unreadContentCount: UnreadContentCount,
+        val lastUnreadMessage: Message?,
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean
     ) : ConversationDetails(conversation)
@@ -184,8 +182,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole,
-            creatorId = null,
-            firstUnreadMessageDate = EPOCH_FIRST_DAY
+            creatorId = null
         )
     )
 }
@@ -197,5 +194,8 @@ data class MemberDetails(val user: User, val role: Conversation.Member.Role)
 typealias ClientId = PlainId
 
 data class Recipient(val id: UserId, val clients: List<ClientId>)
+enum class UnreadContentType {
+    TEXT_OR_ASSET, KNOCK, MISSED_CALL, UNKNOWN, SYSTEM
+}
 
-typealias UnreadEventCount = Map<UnreadEventType, Int>
+typealias UnreadContentCount = Map<UnreadContentType, Int>
