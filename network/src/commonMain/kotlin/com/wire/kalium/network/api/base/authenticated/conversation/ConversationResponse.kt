@@ -82,6 +82,7 @@ data class ConversationResponse(
             Type.WAIT_FOR_CONNECTION
         )
 
+    @Suppress("MagicNumber")
     enum class Type(val id: Int) {
         GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), GLOBAL_TEAM(4);
 
