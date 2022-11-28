@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @IgnoreIOS
-class MessageApiV0Test : ApiTest {
+class MessageApiV0Test : ApiTest() {
     // valid
     @Test
     fun givenAValidIgnoreAlloption_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =

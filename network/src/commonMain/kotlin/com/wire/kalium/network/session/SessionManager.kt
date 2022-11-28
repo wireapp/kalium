@@ -10,8 +10,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.HttpClientCall
 import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.utils.buildHeaders
@@ -31,24 +30,13 @@ interface SessionManager {
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
-fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi) {
+fun HttpClientConfig<*>.installAuth(bearerAuthProvider: BearerAuthProvider) {
     install("Add_WWW-Authenticate_Header") {
         addWWWAuthenticateHeaderIfNeeded()
     }
-    install(Auth) {
-        bearer {
-            loadTokens {
-                val session = sessionManager.session() ?: error("missing user session")
-                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
-            }
 
-            refreshTokens {
-                val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-                newSession?.let {
-                    BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
-                }
-            }
-        }
+    install(Auth) {
+        providers.add(bearerAuthProvider)
     }
 }
 
