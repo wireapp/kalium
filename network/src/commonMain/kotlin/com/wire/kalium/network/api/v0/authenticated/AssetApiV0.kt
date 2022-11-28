@@ -72,7 +72,7 @@ internal open class AssetApiV0 internal constructor(
             wrapKaliumResponse<Unit> { httpResponse }.onFailure {
                 if (it.kException is KaliumException.InvalidRequestError &&
                     it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value) {
-                    kaliumLogger.d("""ASSETS 401: WWWAuthenticate: ${httpResponse.headers[HttpHeaders.WWWAuthenticate]}""")
+                    kaliumLogger.d("""ASSETS 401: "WWWAuthenticate header": "${httpResponse.headers[HttpHeaders.WWWAuthenticate]}"""")
                 }
             }
         }
