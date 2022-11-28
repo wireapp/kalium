@@ -67,9 +67,10 @@ internal open class ConversationApiV0 internal constructor(
             )
         }
 
-    override suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse> =
+        NetworkResponse.Error(
+            APINotSupported("fetchGlobalTeamConversationDetails api is only available on API V3")
+        )
 
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
