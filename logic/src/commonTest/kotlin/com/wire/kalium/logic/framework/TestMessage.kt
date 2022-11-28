@@ -69,7 +69,6 @@ object TestMessage {
         visibility = MessageEntity.Visibility.VISIBLE,
         content = MessageEntityContent.Text("Ciao!"),
         senderClientId = "clientId",
-        editStatus = MessageEntity.EditStatus.NotEdited,
-        senderName = "senderName"
+        editStatus = MessageEntity.EditStatus.NotEdited
     )
 }

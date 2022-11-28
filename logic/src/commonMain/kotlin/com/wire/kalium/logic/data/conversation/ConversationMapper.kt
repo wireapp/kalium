@@ -3,8 +3,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
@@ -35,7 +33,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message?): ConversationDetails
+    fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -73,7 +71,6 @@ internal class ConversationMapperImpl(
         removedBy = null,
         creatorId = apiModel.creator,
         lastReadDate = EPOCH_FIRST_DAY,
-        firstUnreadMessageDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
@@ -101,61 +98,22 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
-            creatorId = creatorId,
-            firstUnreadMessageDate = firstUnreadMessageDate
+            creatorId = creatorId
         )
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message?): ConversationDetails =
-        with(daoModel) {
-            when (type) {
-                ConversationEntity.Type.SELF -> {
-                    ConversationDetails.Self(fromDaoModel(daoModel))
-                }
+    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails = with(daoModel) {
+        when (type) {
 
-                ConversationEntity.Type.ONE_ON_ONE -> {
-                    ConversationDetails.OneOne(
-                        conversation = fromDaoModel(daoModel),
-                        otherUser = OtherUser(
-                            id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
-                            name = name,
-                            accentId = 0,
-                            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                            availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                            deleted = userDeleted ?: false,
-                            botService = botService?.let { BotService(it.id, it.provider) },
-                            handle = null,
-                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
-                        ),
-                        legalHoldStatus = LegalHoldStatus.DISABLED,
-                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        unreadMessagesCount = unreadContentCountEntity.values.sum(),
-                        unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
-                        lastMessage = lastMessage,
-                    )
-                }
+            ConversationEntity.Type.SELF -> {
+                ConversationDetails.Self(fromDaoModel(daoModel))
+            }
 
-                ConversationEntity.Type.GROUP -> {
-                    ConversationDetails.Group(
-                        conversation = fromDaoModel(daoModel),
-                        legalHoldStatus = LegalHoldStatus.DISABLED,
-                        hasOngoingCall = callStatus != null, // todo: we can do better!
-                        unreadMessagesCount = unreadContentCountEntity.values.sum(),
-                        unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
-                        lastMessage = lastMessage,
-                        isSelfUserMember = isMember == 1L,
-                        isSelfUserCreator = isCreator == 1L
-                    )
-                }
-
-                ConversationEntity.Type.CONNECTION_PENDING -> {
-                    val otherUser = OtherUser(
+            ConversationEntity.Type.ONE_ON_ONE -> {
+                ConversationDetails.OneOne(
+                    conversation = fromDaoModel(daoModel),
+                    otherUser = OtherUser(
                         id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
                         name = name,
                         accentId = 0,
@@ -166,31 +124,69 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
                         previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                        teamId = teamId?.let { TeamId(it) }
-                    )
+                        teamId = teamId?.let { TeamId(it) },
+                        connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                    ),
+                    legalHoldStatus = LegalHoldStatus.DISABLED,
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
+                    unreadMentionsCount = unreadMentionsCount,
+                    unreadContentCount = unreadContentCountEntity.toUnreadModel(),
+                    lastUnreadMessage = null,
+                )
+            }
 
-                    ConversationDetails.Connection(
-                        conversationId = idMapper.fromDaoModel(id),
-                        otherUser = otherUser,
-                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        lastModifiedDate = lastModifiedDate.orEmpty(),
-                        connection = Connection(
-                            conversationId = id.value,
-                            from = "",
-                            lastUpdate = "",
-                            qualifiedConversationId = idMapper.fromDaoModel(id),
-                            qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
-                            status = connectionStatusMapper.fromDaoModel(connectionStatus),
-                            toId = "", // todo
-                            fromUser = otherUser
-                        ),
-                        protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
-                        access = accessList.map { it.toDAO() },
-                        accessRole = accessRoleList.map { it.toDAO() },
-                    )
-                }
+            ConversationEntity.Type.GROUP -> {
+                ConversationDetails.Group(
+                    conversation = fromDaoModel(daoModel),
+                    legalHoldStatus = LegalHoldStatus.DISABLED,
+                    hasOngoingCall = callStatus != null, // todo: we can do better!
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
+                    unreadMentionsCount = unreadMentionsCount,
+                    unreadContentCount = unreadContentCountEntity.toUnreadModel(),
+                    lastUnreadMessage = null,
+                    isSelfUserMember = isMember == 1L,
+                    isSelfUserCreator = isCreator == 1L
+                )
+            }
+
+            ConversationEntity.Type.CONNECTION_PENDING -> {
+                val otherUser = OtherUser(
+                    id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                    name = name,
+                    accentId = 0,
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                    deleted = userDeleted ?: false,
+                    botService = botService?.let { BotService(it.id, it.provider) },
+                    handle = null,
+                    completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                    previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                    teamId = teamId?.let { TeamId(it) }
+                )
+
+                ConversationDetails.Connection(
+                    conversationId = idMapper.fromDaoModel(id),
+                    otherUser = otherUser,
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    lastModifiedDate = lastModifiedDate.orEmpty(),
+                    connection = Connection(
+                        conversationId = id.value,
+                        from = "",
+                        lastUpdate = "",
+                        qualifiedConversationId = idMapper.fromDaoModel(id),
+                        qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
+                        status = connectionStatusMapper.fromDaoModel(connectionStatus),
+                        toId = "", // todo
+                        fromUser = otherUser
+                    ),
+                    protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
+                    access = accessList.map { it.toDAO() },
+                    accessRole = accessRoleList.map { it.toDAO() },
+                )
             }
         }
+    }
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
         ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)
@@ -278,7 +274,6 @@ internal class ConversationMapperImpl(
             creatorId = creatorId.orEmpty(),
             lastNotificationDate = "",
             lastModifiedDate = "",
-            firstUnreadMessageDate = "",
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() }
@@ -381,23 +376,23 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }
 
-fun MessageEntity.ContentType.toUnreadEventTypeModel(): UnreadEventType = when (this) {
-    MessageEntity.ContentType.TEXT -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.KNOCK -> UnreadEventType.KNOCK
-    MessageEntity.ContentType.MEMBER_CHANGE -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.MISSED_CALL -> UnreadEventType.MISSED_CALL
-    MessageEntity.ContentType.RESTRICTED_ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.CONVERSATION_RENAMED -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.UNKNOWN -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.FAILED_DECRYPTION -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadEventType.IGNORED
+fun MessageEntity.ContentType.toUnreadModel(): UnreadContentType = when (this) {
+    MessageEntity.ContentType.TEXT -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.ASSET -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.KNOCK -> UnreadContentType.KNOCK
+    MessageEntity.ContentType.MEMBER_CHANGE -> UnreadContentType.SYSTEM
+    MessageEntity.ContentType.MISSED_CALL -> UnreadContentType.MISSED_CALL
+    MessageEntity.ContentType.RESTRICTED_ASSET -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.CONVERSATION_RENAMED -> UnreadContentType.SYSTEM
+    MessageEntity.ContentType.UNKNOWN -> UnreadContentType.UNKNOWN
+    MessageEntity.ContentType.FAILED_DECRYPTION -> UnreadContentType.UNKNOWN
+    MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadContentType.SYSTEM
 }
 
-fun Map<MessageEntity.ContentType, Int>.toUnreadEventCountModel(): UnreadEventCount {
-    val unreadContent = mutableMapOf<UnreadEventType, Int>()
+fun Map<MessageEntity.ContentType, Int>.toUnreadModel(): Map<UnreadContentType, Int> {
+    val unreadContent = mutableMapOf<UnreadContentType, Int>()
     forEach { contentEntity ->
-        val contentType = contentEntity.key.toUnreadEventTypeModel()
+        val contentType = contentEntity.key.toUnreadModel()
         unreadContent[contentType] = unreadContent[contentType]?.let { it + contentEntity.value } ?: contentEntity.value
     }
     return unreadContent
