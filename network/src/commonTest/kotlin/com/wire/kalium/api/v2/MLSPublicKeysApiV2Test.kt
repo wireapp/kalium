@@ -13,7 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MLSPublicKeysApiV2Test : ApiTest {
+class MLSPublicKeysApiV2Test : ApiTest() {
 
     @Test
     fun givenWhenGetMLSPublicKeys_theRequestShouldBeConfiguredCorrectly() = runTest {
