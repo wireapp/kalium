@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.utils.ChaCha20Utils
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
@@ -47,9 +48,8 @@ internal class CreateBackupUseCaseImpl(
     private val getCurrentClientId: ObserveCurrentClientIdUseCase,
     private val kaliumFileSystem: KaliumFileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
-
-    val idMapper = MapperProvider.idMapper()
 
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
         createBackupFile(userId).fold(

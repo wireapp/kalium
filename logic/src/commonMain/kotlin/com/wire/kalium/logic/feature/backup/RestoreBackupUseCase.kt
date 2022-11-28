@@ -46,7 +46,7 @@ internal class RestoreBackupUseCaseImpl(
     override suspend operator fun invoke(extractedBackupRootPath: Path, password: String?): RestoreBackupResult =
         withContext(dispatchers.io) {
             val idMapper = MapperProvider.idMapper()
-            val encryptedFilePath = kaliumFileSystem.list(extractedBackupRootPath).firstOrNull { it.name.contains(".cc20") }
+            val encryptedFilePath = kaliumFileSystem.listDirectories(extractedBackupRootPath).firstOrNull { it.name.contains(".cc20") }
             val isPasswordProtected = !password.isNullOrEmpty()
 
             // Check if the backup file is encrypted and if the password is provided
@@ -96,9 +96,9 @@ internal class RestoreBackupUseCaseImpl(
     }.fold({ RestoreBackupResult.Failure(BackupIOFailure("There was an error when importing the DB")) }, { RestoreBackupResult.Success })
 
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
-        kaliumFileSystem.list(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
+        kaliumFileSystem.listDirectories(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
 
-    private suspend fun validateBackupAuthor(extractedBackupPath: Path): Boolean = kaliumFileSystem.list(extractedBackupPath).firstOrNull {
+    private suspend fun validateBackupAuthor(extractedBackupPath: Path): Boolean = kaliumFileSystem.listDirectories(extractedBackupPath).firstOrNull {
         it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
     }?.let { metadataFile ->
         kaliumFileSystem.source(metadataFile).buffer().use {

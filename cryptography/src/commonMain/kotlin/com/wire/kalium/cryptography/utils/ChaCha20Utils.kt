@@ -11,6 +11,7 @@ import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
+import okio.IOException
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -70,6 +71,10 @@ class ChaCha20Utils {
                 outputBufferedSink.write(encryptedData.toByteArray())
                 encryptedDataSize += encryptedData.size
             }
+        } catch (e: IOException) {
+            kaliumLogger.e("There was an error encrypting backup data:\n $e}")
+        } catch (e: IllegalStateException) {
+            kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
         } catch (e: SecretStreamCorruptedOrTamperedDataException) {
             kaliumLogger.e("There was an error while encrypting the backup data with ChaCha20:\n $e}")
         } finally {
@@ -96,14 +101,13 @@ class ChaCha20Utils {
             val header = backupCoder.decodeHeader(encryptedDataSource)
 
             // We need to read the ChaCha20 generated header prior to the encrypted backup file data to run some sanity checks
-
-            val key = backupCoder.generateChaCha20Key(header).toUByteArray()
+            val chaChaHeaderKey = backupCoder.generateChaCha20Key(header).toUByteArray()
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
             val chaChaHeaderBuffer = Buffer()
             encryptedDataSource.read(chaChaHeaderBuffer, crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
             val chaChaHeader = chaChaHeaderBuffer.readByteArray()
-            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, chaChaHeader.toUByteArray())
+            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(chaChaHeaderKey, chaChaHeader.toUByteArray())
 
             // Decrypt the backup file data reading it in chunks
             val contentBuffer = Buffer()
@@ -126,6 +130,8 @@ class ChaCha20Utils {
                     break
                 }
             }
+        } catch (e: IOException) {
+            kaliumLogger.e("There was an error decrypting backup data:\n $e}")
         } catch (e: IllegalStateException) {
             kaliumLogger.e("There was an error decoding backup header data. Stored hashed userId differs from the provided one:\n $e}")
         } catch (e: SecretStreamCorruptedOrTamperedDataException) {

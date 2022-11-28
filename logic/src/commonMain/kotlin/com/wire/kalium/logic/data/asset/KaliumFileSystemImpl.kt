@@ -110,5 +110,5 @@ interface KaliumFileSystem {
      * @param dir the path from where the list of paths will be fetched
      * @return the list of paths found.
      */
-    suspend fun list(dir: Path): List<Path>
+    suspend fun listDirectories(dir: Path): List<Path>
 }
