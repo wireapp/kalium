@@ -109,6 +109,8 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
+
+    suspend fun clearCachedToken()
 }
 
 internal class AuthenticatedHttpClientProviderImpl(
@@ -116,6 +118,10 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
 ) : AuthenticatedHttpClientProvider {
+
+    override suspend fun clearCachedToken() {
+        bearerAuthProvider.clearToken()
+    }
 
     private val loadToken: suspend () -> BearerTokens? = {
         val session = sessionManager.session() ?: error("missing user session")

@@ -43,9 +43,6 @@ import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderI
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerAuthProvider
-import io.ktor.client.plugins.plugin
 
 internal class AuthenticatedNetworkContainerV3 internal constructor(
     private val sessionManager: SessionManager,
@@ -56,11 +53,6 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
         { httpClient -> AccessTokenApiV3(httpClient) },
         engine
     ) {
-
-    override suspend fun clearCachedToken() {
-        networkClient.httpClient.plugin(Auth).providers.filterIsInstance<BearerAuthProvider>()
-            .firstOrNull()?.clearToken()
-    }
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV3(networkClient.httpClient)
 
