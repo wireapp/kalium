@@ -96,6 +96,31 @@ interface MLSClient {
     ): HandshakeMessage
 
     /**
+     * Request to join an existing conversation by external commit
+     *
+     * @param publicGroupState MLS group state for an existing conversation
+     *
+     * @return commit bundle, which needs to be sent to the distribution service.
+     */
+    fun joinByExternalCommit(
+        publicGroupState: ByteArray
+    ): CommitBundle
+
+    /**
+     * Request to merge an existing conversation by external commit
+     *
+     * @param groupId MLS group ID provided by BE
+     */
+    fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
+
+    /**
+     * Clear pending external commits
+     *
+     * @param groupId MLS group ID provided by BE
+     */
+    fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
+
+    /**
      * Query if a conversation exists
      *
      * @param groupId MLS group ID provided by BE
