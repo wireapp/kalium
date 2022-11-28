@@ -8,7 +8,7 @@ import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.onFailure
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -65,14 +65,17 @@ internal open class AssetApiV0 internal constructor(
                         channel.cancel()
                         sink.close()
                     }
+                    NetworkResponse.Success(Unit, httpResponse)
                 } catch (e: Exception) {
                     NetworkResponse.Error(KaliumException.GenericError(e))
                 }
-            }
-            wrapKaliumResponse<Unit> { httpResponse }.onFailure {
-                if (it.kException is KaliumException.InvalidRequestError &&
-                    it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value) {
-                    kaliumLogger.d("""ASSETS 401: "WWWAuthenticate header": "${httpResponse.headers[HttpHeaders.WWWAuthenticate]}"""")
+            } else {
+                handleUnsuccessfulResponse(httpResponse).also {
+                    if (it.kException is KaliumException.InvalidRequestError &&
+                        it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
+                    ) {
+                        kaliumLogger.d("""ASSETS 401: "WWWAuthenticate header": "${httpResponse.headers[HttpHeaders.WWWAuthenticate]}"""")
+                    }
                 }
             }
         }

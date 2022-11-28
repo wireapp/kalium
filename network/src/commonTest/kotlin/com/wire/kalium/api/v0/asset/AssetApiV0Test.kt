@@ -21,6 +21,7 @@ import okio.blackholeSink
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -107,7 +108,7 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-        // todo: assert response
+        assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
     @Test
@@ -130,7 +131,7 @@ class AssetApiV0Test : ApiTest {
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
-        // todo: assert response
+        assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
     @Test
@@ -176,8 +177,8 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.GenericError)
+        assertIs<NetworkResponse.Error>(response)
+        assertIs<KaliumException.InvalidRequestError>(response.kException)
     }
 
     companion object {
