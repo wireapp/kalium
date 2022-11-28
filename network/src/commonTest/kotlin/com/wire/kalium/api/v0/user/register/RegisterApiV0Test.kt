@@ -13,7 +13,7 @@ import kotlin.test.Test
 
 // test ignored until mocking is added to network
 @Ignore
-class RegisterApiV0Test : ApiTest {
+class RegisterApiV0Test : ApiTest() {
 
     @Test
     fun givenAValidEmail_whenRegisteringAccountWithEMail_theRequestShouldBeConfiguredCorrectly() = runTest {

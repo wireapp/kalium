@@ -18,7 +18,7 @@ import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
-class UserDetailsApiV0Test : ApiTest {
+class UserDetailsApiV0Test : ApiTest() {
 
     @Test
     fun givenListOfQualifiedIds_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
