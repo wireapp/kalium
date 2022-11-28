@@ -1211,8 +1211,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsProposalTimer = null,
             mutedTime = mutedTime,
             creatorId = creatorId,
-            unreadContentCountEntity = emptyMap(),
-            firstUnreadMessageDate = null
+            unreadContentCountEntity = emptyMap()
         )
     }
 
@@ -1237,8 +1236,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1258,8 +1256,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1282,8 +1279,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1306,8 +1302,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            firstUnreadMessageDate = "2000-01-01T12:00:00.000Z"
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)

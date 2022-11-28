@@ -44,8 +44,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        firstUnreadMessageDate = null
+        creatorId = null
     )
     val SELF = Conversation(
         ID.copy(value = "SELF ID"),
@@ -60,8 +59,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        firstUnreadMessageDate = null
+        creatorId = null
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -77,8 +75,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        firstUnreadMessageDate = null
+        creatorId = null
     )
 
     fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
@@ -92,8 +89,7 @@ object TestConversation {
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z"
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -106,7 +102,6 @@ object TestConversation {
         "teamId",
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z",
         null,
         null,
         null,
@@ -146,8 +141,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z"
+        creatorId = null
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -219,7 +213,6 @@ object TestConversation {
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
@@ -233,7 +226,6 @@ object TestConversation {
         "teamId",
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z",
         null,
         null,
         null,
@@ -273,7 +265,6 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z",
         creatorId = null
     )
 
@@ -296,7 +287,6 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        firstUnreadMessageDate = "2022-03-30T15:36:00.000Z",
         creatorId = null
     )
 }
