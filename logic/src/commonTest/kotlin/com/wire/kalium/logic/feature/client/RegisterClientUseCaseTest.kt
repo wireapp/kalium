@@ -191,47 +191,6 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenRegisteringSucceeds_whenRegistering_thenThePersistenceShouldBeCalledWithCorrectId() = runTest {
-        val registeredClient = CLIENT
-
-        val (arrangement, registerClient) = Arrangement()
-            .withRegisterClient(Either.Right(registeredClient))
-            .withMLSClient(Either.Right(MLS_CLIENT))
-            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
-            .withRegisterMLSClient(Either.Right(Unit))
-            .withUploadNewKeyPackages(Either.Right(Unit))
-            .withPersistClientId(Either.Right(Unit))
-            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
-            .arrange()
-
-        registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
-
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(eq(registeredClient.id))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenRegisteringSucceedsAndPersistingClientIdFails_whenRegistering_thenTheFailureShouldBePropagated() = runTest {
-        val persistFailure = TEST_FAILURE
-
-        val (arrangement, registerClient) = Arrangement()
-            .withRegisterClient(Either.Right(CLIENT))
-            .withMLSClient(Either.Right(MLS_CLIENT))
-            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
-            .withRegisterMLSClient(Either.Right(Unit))
-            .withUploadNewKeyPackages(Either.Right(Unit))
-            .withPersistClientId(Either.Left(persistFailure))
-            .arrange()
-
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
-
-        assertIs<RegisterClientResult.Failure.Generic>(result)
-        assertEquals(persistFailure, result.genericFailure)
-    }
-
-    @Test
     fun givenRegisteringSucceedsAndPersistingClientIdSucceeds_whenRegistering_thenSuccessShouldBePropagated() = runTest {
         val registeredClient = CLIENT
 
@@ -241,7 +200,6 @@ class RegisterClientUseCaseTest {
             .withGetMLSPublicKey(MLS_PUBLIC_KEY)
             .withRegisterMLSClient(Either.Right(Unit))
             .withUploadNewKeyPackages(Either.Right(Unit))
-            .withPersistClientId(Either.Right(Unit))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
             .arrange()
 
@@ -308,7 +266,6 @@ class RegisterClientUseCaseTest {
         val (arrangement, registerClient) = Arrangement()
             .withIsMLSSupported(false)
             .withRegisterClient(Either.Right(registeredClient))
-            .withPersistClientId(Either.Right(Unit))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
             .arrange()
 
@@ -433,13 +390,6 @@ class RegisterClientUseCaseTest {
                 .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
                 .whenInvokedWith(anything(), eq(100))
                 .thenReturn(result)
-        }
-
-        fun withPersistClientId(result: Either<CoreFailure, Unit>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::persistClientId)
-                .whenInvokedWith(anything())
-                .then { result }
         }
 
         fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {

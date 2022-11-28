@@ -1,7 +1,6 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -13,7 +12,6 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -22,33 +20,28 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PersistRegisteredClientIdUseCaseTest {
+class VerifyExistingClientUseCaseTest {
 
     @Test
-    fun givenRegisteredClientId_whenPersisting_thenReturnSuccess() = runTest {
+    fun givenRegisteredClientId_whenInvoking_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
-        val (arrangement, useCase) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf(client)))
-            .withPersistClientResult(Either.Right(Unit))
             .arrange()
         val result = useCase.invoke(clientId)
-        assertIs<PersistRegisteredClientIdResult.Success>(result)
+        assertIs<VerifyExistingClientResult.Success>(result)
         assertEquals(client, result.client)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenNotRegisteredClientId_whenPersisting_thenReturnClientNotRegisteredFailure() = runTest {
+    fun givenNotRegisteredClientId_whenInvoking_thenReturnClientNotRegisteredFailure() = runTest {
         val clientId = ClientId("clientId")
         val (arrangement, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf()))
             .arrange()
         val result = useCase.invoke(clientId)
-        assertIs<PersistRegisteredClientIdResult.Failure.ClientNotRegistered>(result)
+        assertIs<VerifyExistingClientResult.Failure.ClientNotRegistered>(result)
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(any())
@@ -60,7 +53,7 @@ class PersistRegisteredClientIdUseCaseTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
-        val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase = PersistRegisteredClientIdUseCaseImpl(clientRepository)
+        val verifyExistingClientUseCase: VerifyExistingClientUseCase = VerifyExistingClientUseCaseImpl(clientRepository)
 
         fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
             given(clientRepository)
@@ -69,14 +62,7 @@ class PersistRegisteredClientIdUseCaseTest {
                 .thenReturn(result)
             return this
         }
-        fun withPersistClientResult(result: Either<CoreFailure, Unit>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::persistClientId)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-            return this
-        }
 
-        fun arrange() = this to persistRegisteredClientIdUseCase
+        fun arrange() = this to verifyExistingClientUseCase
     }
 }
