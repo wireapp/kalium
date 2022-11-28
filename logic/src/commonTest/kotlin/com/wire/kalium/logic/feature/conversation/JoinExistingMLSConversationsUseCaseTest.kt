@@ -75,6 +75,57 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
     @Test
+    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID3), eq(emptyList()))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID_SELF), eq(emptyList()))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenGlobalTeamConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GLOBAL_TEAM_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID_TEAM), eq(emptyList()))
+                .wasInvoked(once)
+        }
+
+    @Test
     fun givenOutOfDateEpochFailure_whenInvokingUseCase_ThenRetryWithNewEpoch() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
@@ -156,6 +207,13 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .then { Either.Right(MLS_CONVERSATION1) }
         }
 
+        fun withEstablishMLSGroupSuccessful() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withJoinByExternalCommitSuccessful() = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
@@ -209,6 +267,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
+            val GROUP_ID3 = GroupID("group3")
+            val GROUP_ID_SELF = GroupID("group-self")
+            val GROUP_ID_TEAM = GroupID("group-team")
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
@@ -229,6 +290,36 @@ class JoinExistingMLSConversationsUseCaseTest {
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
+
+            val MLS_UNESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id3", "domain"))
+
+            val MLS_UNESTABLISHED_SELF_CONVERSATION = TestConversation.SELF(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_SELF,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("self", "domain"))
+
+            val MLS_UNESTABLISHED_GLOBAL_TEAM_CONVERSATION = TestConversation.GLOBAL_TEAM(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_TEAM,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("team", "domain"))
         }
     }
 }
