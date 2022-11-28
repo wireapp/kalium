@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider

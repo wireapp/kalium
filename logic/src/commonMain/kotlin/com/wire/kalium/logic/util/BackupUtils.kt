@@ -7,7 +7,7 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-expect val clientPlatform: String
+expect val CLIENT_PLATFORM: String
 
 expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Unit>
 expect fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Unit>

@@ -10,6 +10,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 
+@Suppress("TooManyFunctions")
 actual class KaliumFileSystemImpl actual constructor(
     private val dataStoragePaths: DataStoragePaths,
     private val dispatcher: KaliumDispatcher
@@ -128,5 +129,10 @@ actual class KaliumFileSystemImpl actual constructor(
      */
     override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
 
+    /**
+     * Provides a list of paths found in the given [dir] path from where the call is being invoked.
+     * @param dir the path from where the list of paths will be fetched
+     * @return the list of paths found.
+     */
     override suspend fun list(dir: Path): List<Path> = SYSTEM.list(dir)
 }

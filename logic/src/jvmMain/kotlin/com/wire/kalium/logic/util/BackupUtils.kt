@@ -13,8 +13,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-actual val clientPlatform: String = "jvm"
+actual const val CLIENT_PLATFORM: String = "jvm"
 
+@Suppress("NestedBlockDepth", "TooGenericExceptionCaught")
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Unit> = try {
     ZipOutputStream(outputSink.buffer().outputStream()).use { zipOutputStream ->
         files.forEach { (fileSource, fileName) ->
@@ -28,16 +29,17 @@ actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: S
     }
     Either.Right(Unit)
 } catch (e: Exception) {
-    Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to create and compress the backup file", e)))
+    Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to compress the provided files", e)))
 }
 
+@Suppress("NestedBlockDepth", "TooGenericExceptionCaught")
 actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Unit> = try {
     ZipInputStream(inputSource.buffer().inputStream()).use { zipInputStream ->
         var entry: ZipEntry? = zipInputStream.nextEntry
-        var entryPathName: Path
+        var entryPathName: String
         while (entry != null) {
-            entryPathName = "${outputRootPath}/${entry.name}".toPath()
-            val outputSink = fileSystem.sink(entryPathName)
+            entryPathName = "$outputRootPath/${entry.name}"
+            val outputSink = fileSystem.sink(entryPathName.toPath())
             outputSink.buffer().use { output ->
                 output.write(zipInputStream.readBytes())
             }
@@ -47,5 +49,5 @@ actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, file
     }
     Either.Right(Unit)
 } catch (e: Exception) {
-    Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the backup file", e)))
+    Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
 }

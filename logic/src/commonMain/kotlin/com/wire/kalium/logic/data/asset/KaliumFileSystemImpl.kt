@@ -9,6 +9,7 @@ import okio.Source
 expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
     KaliumFileSystem
 
+@Suppress("TooManyFunctions")
 interface KaliumFileSystem {
     /**
      * Provides the root of the cache path, used to store temporary files

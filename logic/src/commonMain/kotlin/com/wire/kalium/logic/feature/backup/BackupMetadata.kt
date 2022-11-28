@@ -5,7 +5,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BackupMetadata(
+    @SerialName("platform")
     val platform: String,
+    @SerialName("version")
     val version: String,
     @SerialName("user_id")
     val userId: String,
