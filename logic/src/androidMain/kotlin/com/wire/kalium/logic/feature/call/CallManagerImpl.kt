@@ -179,7 +179,10 @@ class CallManagerImpl internal constructor(
         conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
-        callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+        callingLogger.d(
+            "$TAG -> starting call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+        )
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
@@ -201,23 +204,35 @@ class CallManagerImpl internal constructor(
                 isAudioCbr.toInt()
             )
 
-            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
+            callingLogger.d(
+                "$TAG - wcall_start() called -> Call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} started"
+            )
         }
     }
 
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
+        callingLogger.d(
+            "$TAG -> answering call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+        )
         wcall_answer(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
-        callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
+        callingLogger.d(
+            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} answered"
+        )
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("[$TAG][endCall] -> ConversationId: [$conversationId]")
+        callingLogger.d(
+            "[$TAG][endCall] -> ConversationId: " +
+                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+        )
         val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
 
         callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
@@ -234,7 +249,10 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("[$TAG][rejectCall] -> ConversationId: [$conversationId]")
+        callingLogger.d(
+            "[$TAG][rejectCall] -> ConversationId: " +
+                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+        )
         val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
 
         callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
