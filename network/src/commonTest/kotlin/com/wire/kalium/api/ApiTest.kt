@@ -37,17 +37,19 @@ internal interface ApiTest {
     private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
 
-    private val loadToken: suspend () -> BearerTokens? get() = {
-        val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
-        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
-    }
-
-    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? get() = {
-        val newSession = TEST_SESSION_NAMAGER.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-        newSession?.let {
-            BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+    private val loadToken: suspend () -> BearerTokens?
+        get() = {
+            val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
-    }
+
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens?
+        get() = {
+            val newSession = TEST_SESSION_NAMAGER.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+            newSession?.let {
+                BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+            }
+        }
 
     val TEST_BEARER_AUTH_PROVIDER get() = BearerAuthProvider(refreshToken, loadToken, { true }, null)
 
@@ -145,7 +147,7 @@ internal interface ApiTest {
         val headers: Map<String, String>? = null
     )
 
-     fun mockUnauthenticatedNetworkClient(
+    fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>
     ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
