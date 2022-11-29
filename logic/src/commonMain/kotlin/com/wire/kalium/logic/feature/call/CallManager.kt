@@ -4,15 +4,13 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.SignalingMessage
-import com.wire.kalium.logic.data.user.UserId
 
 interface CallManager {
     suspend fun onCallingMessageReceived(
-        message: SignalingMessage,
+        message: Message.Signaling,
         content: MessageContent.Calling,
     )
     suspend fun startCall(

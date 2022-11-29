@@ -9,15 +9,36 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
-sealed class Message(
-    open val id: String,
-    open val content: MessageContent,
-    open val conversationId: ConversationId,
-    open val date: String,
-    open val senderUserId: UserId,
-    open val status: Status,
-    open val visibility: Visibility
-) {
+sealed interface Message {
+    val id: String
+    val content: MessageContent
+    val conversationId: ConversationId
+    val date: String
+    val senderUserId: UserId
+    val status: Status
+
+    /**
+     * Messages that can be sent from one client to another.
+     */
+    sealed interface Sendable : Message {
+        val senderClientId: ClientId
+        override val content: MessageContent.FromProto
+    }
+
+    /**
+     * Messages with a content that stands by itself in
+     * the list of messages within a conversation.
+     * For example, a text message or system message.
+     *
+     * A counter example would be a message edit or a reaction.
+     * These are just "attached" to another message.
+     *
+     * @see MessageContent.Regular
+     * @see MessageContent.System
+     */
+    sealed interface Standalone : Message {
+        val visibility: Visibility
+    }
 
     data class Regular(
         override val id: String,
@@ -27,10 +48,10 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
-        val senderClientId: ClientId,
+        override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+    ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
             val typeKey = "type"
@@ -88,6 +109,82 @@ sealed class Message(
         }
     }
 
+    data class Signaling(
+        override val id: String,
+        override val content: MessageContent.Signaling,
+        override val conversationId: ConversationId,
+        override val date: String,
+        override val senderUserId: UserId,
+        override val senderClientId: ClientId,
+        override val status: Status,
+    ) : Sendable {
+        override fun toString(): String {
+            val typeKey = "type"
+
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.TextEdited -> mutableMapOf(
+                    typeKey to "textEdit"
+                )
+
+                is MessageContent.Calling -> mutableMapOf(
+                    typeKey to "calling"
+                )
+
+                is MessageContent.DeleteMessage -> mutableMapOf(
+                    typeKey to "delete"
+                )
+
+                is MessageContent.DeleteForMe -> mutableMapOf(
+                    typeKey to "deleteForMe",
+                    "messageId" to content.messageId.obfuscateId(),
+                )
+
+                is MessageContent.LastRead -> mutableMapOf(
+                    typeKey to "lastRead",
+                    "time" to "${content.time}",
+                )
+
+                is MessageContent.Availability -> mutableMapOf(
+                    typeKey to "availability",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Cleared -> mutableMapOf(
+                    typeKey to "cleared",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Reaction -> mutableMapOf(
+                    typeKey to "reaction",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Receipt -> mutableMapOf(
+                    typeKey to "receipt",
+                    "content" to "$content",
+                )
+
+                MessageContent.Ignored -> mutableMapOf(
+                    typeKey to "ignored",
+                    "content" to "$content",
+                )
+            }
+
+            val standardProperties = mapOf(
+                "id" to id.obfuscateId(),
+                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "date" to date,
+                "senderUserId" to senderUserId.value.obfuscateId(),
+                "senderClientId" to senderClientId.value.obfuscateId(),
+            )
+
+            properties.putAll(standardProperties)
+
+            return Json.encodeToString(properties.toMap())
+        }
+
+    }
+
     data class System(
         override val id: String,
         override val content: MessageContent.System,
@@ -96,7 +193,7 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+    ) : Message, Standalone {
         override fun toString(): String {
 
             val typeKey = "type"

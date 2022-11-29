@@ -18,7 +18,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
-    fun fromMessageToEntity(message: Message): MessageEntity
+    fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
@@ -31,7 +31,7 @@ class MessageMapperImpl(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
-    override fun fromMessageToEntity(message: Message): MessageEntity {
+    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
             Message.Status.SENT -> MessageEntity.Status.SENT

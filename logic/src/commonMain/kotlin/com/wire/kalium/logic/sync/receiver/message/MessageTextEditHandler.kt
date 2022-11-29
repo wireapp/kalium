@@ -3,13 +3,12 @@ package com.wire.kalium.logic.sync.receiver.message
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.SignalingMessage
 import com.wire.kalium.logic.functional.flatMap
 
 class MessageTextEditHandler(private val messageRepository: MessageRepository) {
 
     suspend fun handle(
-        message: SignalingMessage,
+        message: Message.Signaling,
         messageContent: MessageContent.TextEdited
     ) = messageRepository.updateTextMessageContent(
         conversationId = message.conversationId,

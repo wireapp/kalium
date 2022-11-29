@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.SignalingMessage
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -32,11 +31,7 @@ import com.wire.kalium.util.string.toHexString
 internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(
-        conversationId: ConversationId,
-        timestampIso: String,
-        senderUserId: UserId,
-        senderClientId: ClientId,
-        content: ProtoContent.Readable
+        conversationId: ConversationId, timestampIso: String, senderUserId: UserId, senderClientId: ClientId, content: ProtoContent.Readable
     )
 
     @Suppress("LongParameterList")
@@ -70,11 +65,7 @@ internal class ApplicationMessageHandlerImpl(
 
     @Suppress("ComplexMethod")
     override suspend fun handleContent(
-        conversationId: ConversationId,
-        timestampIso: String,
-        senderUserId: UserId,
-        senderClientId: ClientId,
-        content: ProtoContent.Readable
+        conversationId: ConversationId, timestampIso: String, senderUserId: UserId, senderClientId: ClientId, content: ProtoContent.Readable
     ) {
         when (val protoContent = content.messageContent) {
             is MessageContent.Regular -> {
@@ -82,9 +73,8 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
-                    is MessageContent.Unknown ->
-                        if (protoContent.hidden) Message.Visibility.HIDDEN
-                        else Message.Visibility.VISIBLE
+                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN
+                    else Message.Visibility.VISIBLE
 
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
@@ -110,15 +100,24 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Signaling -> {
-                val signalingMessage = SignalingMessage(
-                    content.messageUid, protoContent, conversationId, timestampIso, senderUserId, senderClientId
+                val signalingMessage = Message.Signaling(
+                    content.messageUid,
+                    protoContent,
+                    conversationId,
+                    timestampIso,
+                    senderUserId,
+                    senderClientId,
+                    status = Message.Status.SENT
                 )
                 processSignaling(signalingMessage)
             }
         }
     }
 
-    private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
+    private fun updateAssetMessageWithDecryptionKeys(
+        persistedMessage: Message.Regular,
+        remoteData: AssetContent.RemoteData
+    ): Message.Regular   {
         val assetMessageContent = persistedMessage.content as MessageContent.Asset
         // The message was previously received with just metadata info, so let's update it with the raw data info
         return persistedMessage.copy(
@@ -126,32 +125,28 @@ internal class ApplicationMessageHandlerImpl(
                 value = assetMessageContent.value.copy(
                     remoteData = remoteData
                 )
-            ),
-            visibility = Message.Visibility.VISIBLE
+            ), visibility = Message.Visibility.VISIBLE
         )
     }
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false
         messageRepository.getMessageById(
-            messageUuid = messageId,
-            conversationId = conversationId
+            messageUuid = messageId, conversationId = conversationId
         ).onSuccess {
             verified = senderUserId == it.senderUserId
         }
         return verified
     }
 
-    private suspend fun processSignaling(signaling: SignalingMessage) {
+    private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
-                logger
-                    .i(message = "Ignored Signaling Message received: $signaling")
+                logger.i(message = "Ignored Signaling Message received: $signaling")
             }
 
             is MessageContent.Availability -> {
-                logger
-                    .i(message = "Availability status update received: ${content.status}")
+                logger.i(message = "Availability status update received: ${content.status}")
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
 
@@ -169,6 +164,7 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
+            is MessageContent.Receipt -> TODO("Receiving of read receipts not yet implemented")
         }
     }
 
@@ -210,8 +206,7 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun handleTextMessage(
-        message: Message.Regular,
-        messageContent: MessageContent.Text
+        message: Message.Regular, messageContent: MessageContent.Text
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
@@ -224,8 +219,7 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun verifyMessageQuote(
-        quotedReference: MessageContent.QuoteReference,
-        message: Message.Regular
+        quotedReference: MessageContent.QuoteReference, message: Message.Regular
     ): MessageContent.QuoteReference {
         val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
             logger.i("Quote message received with null hash. Marking as unverified.")
@@ -266,64 +260,57 @@ internal class ApplicationMessageHandlerImpl(
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
         val assetContent = message.content as MessageContent.Asset
         val isPreviewMessage = assetContent.value.sizeInBytes > 0 && !assetContent.value.hasValidRemoteData()
-        messageRepository.getMessageById(message.conversationId, message.id)
-            .onFailure {
-                // No asset message was received previously, so just persist the preview of the asset message
-                val isValidImage = assetContent.value.metadata?.let {
-                    it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
-                } ?: false
+        messageRepository.getMessageById(message.conversationId, message.id).onFailure {
+            // No asset message was received previously, so just persist the preview of the asset message
+            val isValidImage = assetContent.value.metadata?.let {
+                it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+            } ?: false
 
-                // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
-                // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
-                // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
-                val previewMessage = message.copy(
-                    content = message.content.copy(value = assetContent.value),
-                    visibility = if (isPreviewMessage && !isValidImage)
-                        Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
-                )
-                persistMessage(previewMessage)
-            }
-            .onSuccess { persistedMessage ->
-                val validDecryptionKeys = message.content.value.remoteData
-                // Check the second asset message is from the same original sender
-                if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                    persistedMessage is Message.Regular
-                ) {
-                    // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
-                    // the preview message persisted previously with the rest of the data
-                    persistMessage(
-                        updateAssetMessageWithDecryptionKeys(
-                            persistedMessage,
-                            validDecryptionKeys
-                        )
+            // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
+            // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
+            // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
+            val previewMessage = message.copy(
+                content = message.content.copy(value = assetContent.value),
+                visibility = if (isPreviewMessage && !isValidImage) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
+            )
+            persistMessage(previewMessage)
+        }.onSuccess { persistedMessage ->
+            val validDecryptionKeys = message.content.value.remoteData
+            // Check the second asset message is from the same original sender
+            if (isSenderVerified(
+                    persistedMessage.id,
+                    persistedMessage.conversationId,
+                    message.senderUserId
+                ) && persistedMessage is Message.Regular
+            ) {
+                // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
+                // the preview message persisted previously with the rest of the data
+                persistMessage(
+                    updateAssetMessageWithDecryptionKeys(
+                        persistedMessage, validDecryptionKeys
                     )
-                }
+                )
             }
+        }
     }
 
     private suspend fun handleDeleteMessage(
-        content: MessageContent.DeleteMessage,
-        conversationId: ConversationId,
-        senderUserId: UserId
+        content: MessageContent.DeleteMessage, conversationId: ConversationId, senderUserId: UserId
     ) {
         if (isSenderVerified(content.messageId, conversationId, senderUserId)) {
-            messageRepository.getMessageById(conversationId, content.messageId)
-                .onSuccess { messageToRemove ->
-                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-                        assetRepository.deleteAssetLocally(
-                            AssetId(
-                                assetToRemove.assetId,
-                                assetToRemove.assetDomain.orEmpty()
-                            )
-                        ).onFailure {
-                            logger.withFeatureId(ApplicationFlow.ASSETS)
-                                .w("delete messageToRemove asset locally failure: $it")
-                        }
+            messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
+                (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+                    assetRepository.deleteAssetLocally(
+                        AssetId(
+                            assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()
+                        )
+                    ).onFailure {
+                        logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
                     }
                 }
+            }
             messageRepository.markMessageAsDeleted(
-                messageUuid = content.messageId,
-                conversationId = conversationId
+                messageUuid = content.messageId, conversationId = conversationId
             )
         } else logger.i(message = "Delete message sender is not verified: $content")
     }

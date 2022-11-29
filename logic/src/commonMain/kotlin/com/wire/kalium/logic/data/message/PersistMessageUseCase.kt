@@ -9,14 +9,14 @@ import com.wire.kalium.util.DelicateKaliumApi
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
 interface PersistMessageUseCase {
-    suspend operator fun invoke(message: Message): Either<CoreFailure, Unit>
+    suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUser: UserId
 ) : PersistMessageUseCase {
-    override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
+    override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val isMyMessage = message.senderUserId == selfUser
         @OptIn(DelicateKaliumApi::class)
         return messageRepository
@@ -51,5 +51,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Cleared -> false
             is MessageContent.ConversationRenamed -> true
             is MessageContent.TeamMemberRemoved -> false
+            is MessageContent.Receipt -> false
         }
 }

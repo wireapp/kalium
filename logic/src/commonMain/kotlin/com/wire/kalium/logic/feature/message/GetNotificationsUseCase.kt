@@ -259,10 +259,11 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         is MessageContent.Cleared -> false
         is MessageContent.ConversationRenamed -> false
         is MessageContent.TeamMemberRemoved -> false
+        is MessageContent.Receipt -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
-        message.visibility == Message.Visibility.VISIBLE
+        message is Message.Standalone && message.visibility == Message.Visibility.VISIBLE
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
 
