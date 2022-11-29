@@ -54,14 +54,14 @@ internal class CreateBackupUseCaseImpl(
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
         createBackupFile(userId).fold(
             { error -> CreateBackupResult.Failure(error) },
-            { backupFilePath ->
+            { (backupFilePath, backupSize) ->
                 val isBackupEncrypted = password.isNotEmpty()
-                var encryptedDataSize = 0L
+                var backupDataSize = backupSize
                 var finalBackupFilePath = backupFilePath
 
                 if (isBackupEncrypted) {
                     val encryptedBackupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ENCRYPTED_FILE_NAME)
-                    encryptedDataSize = encryptBackup(
+                    backupDataSize = encryptBackup(
                         kaliumFileSystem.source(backupFilePath),
                         kaliumFileSystem.sink(encryptedBackupFilePath),
                         BackupCoder.Passphrase(password)
@@ -77,25 +77,28 @@ internal class CreateBackupUseCaseImpl(
                         )
                     }
 
-                    // Delete the temporary files
-                    kaliumFileSystem.delete(backupFilePath)
-                    kaliumFileSystem.delete(encryptedBackupFilePath)
-                    kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME))
+                    deleteTempFiles(backupFilePath, encryptedBackupFilePath)
 
-                    if (encryptedDataSize > 0) {
-                        CreateBackupResult.Success(finalBackupFilePath, encryptedDataSize, finalBackupFilePath.name)
+                    if (backupDataSize > 0) {
+                        CreateBackupResult.Success(finalBackupFilePath, backupDataSize, finalBackupFilePath.name)
                     } else {
                         CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
                     }
-                } else CreateBackupResult.Success(finalBackupFilePath, encryptedDataSize, finalBackupFilePath.name)
+                } else CreateBackupResult.Success(finalBackupFilePath, backupDataSize, finalBackupFilePath.name)
             })
+    }
+
+    private fun deleteTempFiles(backupFilePath: Path, encryptedBackupFilePath: Path) {
+        kaliumFileSystem.delete(backupFilePath)
+        kaliumFileSystem.delete(encryptedBackupFilePath)
+        kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME))
     }
 
     private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: BackupCoder.Passphrase) =
         ChaCha20Utils().encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
 
     private suspend fun createMetadataFile(userId: UserId): Path {
-        val clientId = getCurrentClientId.invoke().first()
+        val clientId = getCurrentClientId().first()
         val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
         val metadataJson = BackupMetadata(CLIENT_PLATFORM, BackupCoder.version, userId.toString(), creationTime, clientId.toString())
             .toMap().toJsonObject().toString()
@@ -106,7 +109,7 @@ internal class CreateBackupUseCaseImpl(
         return metadataFilePath
     }
 
-    private suspend fun createBackupFile(userId: UserId): Either<CoreFailure, Path> {
+    private suspend fun createBackupFile(userId: UserId): Either<CoreFailure, Pair<Path, Long>> {
         val backupFilePath = kaliumFileSystem.tempFilePath(BACKUP_UNENCRYPTED_FILE_NAME)
         val backupSink = kaliumFileSystem.sink(backupFilePath)
         val backupMetadataPath = createMetadataFile(userId)
@@ -117,8 +120,8 @@ internal class CreateBackupUseCaseImpl(
                 kaliumFileSystem.source(backupMetadataPath) to BACKUP_METADATA_FILE_NAME,
                 kaliumFileSystem.source(userDBData) to BACKUP_USER_DB_NAME
             ), backupSink
-        ).flatMap {
-            Either.Right(backupFilePath)
+        ).flatMap { compressedFileSize ->
+            Either.Right(backupFilePath to compressedFileSize)
         }
     }
 
