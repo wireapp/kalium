@@ -177,6 +177,17 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAClientId_whenPersistingRetainedClientId_thenTheStorageShouldBeCalledWithRightParameter() = runTest {
+        val clientId = CLIENT_ID
+
+        clientRepository.persistRetainedClientId(clientId)
+
+        verify(clientRegistrationStorage)
+            .suspendFunction(clientRegistrationStorage::setRetainedClientId)
+            .with(eq(clientRepository))
+    }
+
     // clientInfo
     @Test
     fun givenClientId_whenGettingClientInformationSuccess_thenTheSuccessIsReturned() = runTest {
