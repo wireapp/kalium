@@ -38,7 +38,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val conversations = listOf(selfConversation, groupConversation)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails =
@@ -73,7 +73,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         // Given
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(selfConversation, groupConversation)
 
@@ -185,7 +185,7 @@ class ObserveConversationListDetailsUseCaseTest {
             unreadContentCount = emptyMap()
         )
 
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
 
         val firstConversationsList = listOf(groupConversation)
