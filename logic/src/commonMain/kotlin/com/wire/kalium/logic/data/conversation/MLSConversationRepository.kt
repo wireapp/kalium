@@ -264,7 +264,7 @@ class MLSConversationDataSource(
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.fold({
                 wrapMLSRequest {
-                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                    mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(groupID))
                 }
             }, {
                 wrapMLSRequest {
