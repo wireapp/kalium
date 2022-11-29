@@ -21,12 +21,12 @@ internal class ReceiptsMapperImpl(
     private val domainUserTypeMapper: DomainUserTypeMapper
 ) : ReceiptsMapper {
 
-    override fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity = when(type) {
+    override fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity = when (type) {
         ReceiptType.READ -> ReceiptTypeEntity.READ
         ReceiptType.DELIVERY -> ReceiptTypeEntity.DELIVERY
     }
 
-    override fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType = when(type) {
+    override fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType = when (type) {
         ReceiptTypeEntity.READ -> ReceiptType.READ
         ReceiptTypeEntity.DELIVERY -> ReceiptType.DELIVERY
     }

@@ -59,7 +59,6 @@ class ObserveMessageReceiptsUseCaseTest {
             assertEquals(MESSAGE_ID, usedMessageId)
             assertEquals(RECEIPT_TYPE, usedReceiptType)
 
-
             assertContentEquals(listOf(DETAILED_RECEIPT), result)
 
             cancelAndIgnoreRemainingEvents()
