@@ -27,6 +27,7 @@ import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.logic.util.MessageContentEncoder
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -133,7 +134,8 @@ class ApplicationMessageHandlerTest {
                 messageRepository = messageRepository,
                 selfUserId = TestUser.USER_ID,
                 selfConversationIdProvider = selfConversationIdProvider
-            )
+            ),
+            MessageContentEncoder()
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {

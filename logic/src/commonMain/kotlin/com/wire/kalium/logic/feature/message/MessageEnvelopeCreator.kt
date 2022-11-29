@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
@@ -42,7 +43,8 @@ interface MessageEnvelopeCreator {
 
 class MessageEnvelopeCreatorImpl(
     private val proteusClientProvider: ProteusClientProvider,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
+    private val selfUserId: UserId,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MessageEnvelopeCreator {
 

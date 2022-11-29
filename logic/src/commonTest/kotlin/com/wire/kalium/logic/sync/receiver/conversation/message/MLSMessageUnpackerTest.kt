@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -71,6 +72,7 @@ class MLSMessageUnpackerTest {
             mlsClientProvider,
             conversationRepository,
             pendingProposalScheduler,
+            SELF_USER_ID,
             protoContentMapper
         )
 
@@ -111,5 +113,8 @@ class MLSMessageUnpackerTest {
 
         fun arrange() = this to mlsMessageUnpacker
 
+    }
+    companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
     }
 }

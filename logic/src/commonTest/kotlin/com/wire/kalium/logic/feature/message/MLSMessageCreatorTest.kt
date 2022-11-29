@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -35,7 +36,7 @@ class MLSMessageCreatorTest {
 
     @BeforeTest
     fun setup() {
-        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, SELF_USER_ID, protoContentMapper)
     }
 
     @Test
@@ -66,6 +67,7 @@ class MLSMessageCreatorTest {
     }
 
     private companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
         val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
         val MLS_CLIENT = mock(classOf<MLSClient>())

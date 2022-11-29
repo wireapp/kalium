@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.first
 
 interface ConversationGroupRepository {
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
+    suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit>
+    suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation)
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -40,7 +42,6 @@ interface ConversationGroupRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
@@ -62,6 +63,20 @@ internal class ConversationGroupRepositoryImpl(
             )
         } else {
             Either.Right(Unit)
+        }
+    }
+
+    override suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit> {
+        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.joinGroupByExternalCommit(conversation.protocol.groupId, conversation.id)
+        } else {
+            Either.Right(Unit)
+        }
+    }
+
+    override suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation) {
+        if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.clearJoinViaExternalCommit(conversation.protocol.groupId)
         }
     }
 
@@ -145,7 +160,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event))
+                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event, true))
             }
         }.map {
             Either.Right(Unit)
@@ -181,7 +196,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event))
+                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event, false))
             }
         }.map { }
 }

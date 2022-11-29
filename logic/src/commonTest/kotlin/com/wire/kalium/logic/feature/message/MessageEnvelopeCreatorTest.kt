@@ -57,7 +57,7 @@ class MessageEnvelopeCreatorTest {
 
     @BeforeTest
     fun setup() {
-        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, SELF_USER_ID, protoContentMapper)
     }
 
     @Test
@@ -256,5 +256,6 @@ class MessageEnvelopeCreatorTest {
         val TEST_MEMBER_2 = UserId("value2", "domain2")
         val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
         val TEST_RECIPIENTS = listOf(TEST_RECIPIENT_1, TEST_RECIPIENT_2)
+        val SELF_USER_ID = UserId("user-id", "domain")
     }
 }

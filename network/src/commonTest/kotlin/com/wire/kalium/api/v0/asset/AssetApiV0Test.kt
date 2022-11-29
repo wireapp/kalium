@@ -11,6 +11,8 @@ import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +23,7 @@ import okio.blackholeSink
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -101,13 +104,14 @@ class AssetApiV0Test : ApiTest {
                 assertAuthorizationHeaderExist()
                 assertHeaderExist(HEADER_ASSET_TOKEN)
                 assertPathEqual(apiPath)
-            }
+            },
+            headers = mapOf(HttpHeaders.ContentType to ContentType.Application.OctetStream.toString())
         )
 
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-        // todo: assert response
+        assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
     @Test
@@ -123,14 +127,15 @@ class AssetApiV0Test : ApiTest {
                 assertAuthorizationHeaderExist()
                 assertHeaderExist(HEADER_ASSET_TOKEN)
                 assertPathEqual("$PATH_ASSETS_V3/$ASSET_KEY")
-            }
+            },
+            headers = mapOf(HttpHeaders.ContentType to ContentType.Application.OctetStream.toString())
         )
 
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
-        // todo: assert response
+        assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
     @Test
@@ -176,8 +181,8 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.GenericError)
+        assertIs<NetworkResponse.Error>(response)
+        assertIs<KaliumException.InvalidRequestError>(response.kException)
     }
 
     companion object {

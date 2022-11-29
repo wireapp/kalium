@@ -6,8 +6,8 @@ import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.model.UserSsoIdDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.UserSsoIdDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity

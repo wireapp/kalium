@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
@@ -22,10 +23,13 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
+import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -51,6 +55,7 @@ class DebugScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
+    private val userStorage: UserStorage,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -68,16 +73,28 @@ class DebugScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
+        get() = ProtoContentMapperImpl(selfUserId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = proteusClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
+
+    private val messageContentEncoder = MessageContentEncoder()
+    private val messageSendingInterceptor: MessageSendingInterceptor
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -90,6 +107,7 @@ class DebugScope internal constructor(
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
+            messageSendingInterceptor,
             timeParser,
             scope
         )

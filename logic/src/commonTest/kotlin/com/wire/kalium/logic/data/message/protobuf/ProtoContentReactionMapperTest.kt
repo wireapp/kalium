@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -20,10 +21,11 @@ import kotlin.test.assertTrue
 class ProtoContentReactionMapperTest {
 
     private lateinit var protoContentMapper: ProtoContentMapper
+    val selfUserId = UserId("user-id", "domain")
 
     @BeforeTest
     fun setup() {
-        protoContentMapper = ProtoContentMapperImpl()
+        protoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     }
 
     @Test

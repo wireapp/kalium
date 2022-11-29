@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
@@ -430,16 +431,16 @@ class GetNotificationsUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val connectionRepository: ConnectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository = mock(classOf<ConnectionRepository>())
 
         @Mock
-        val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
-        val userRepository: UserRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(classOf<UserRepository>())
 
         @Mock
-        val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
         private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
@@ -451,6 +452,7 @@ class GetNotificationsUseCaseTest {
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
+            selfUserId = SELF_USER_ID,
             timeParser = timeParser,
             ephemeralNotificationsManager = ephemeralNotifications
         )
@@ -520,7 +522,7 @@ class GetNotificationsUseCaseTest {
     }
 
     companion object {
-
+        val SELF_USER_ID = UserId("user-id", "domain")
         private val MY_ID = TestUser.USER_ID
         private const val TIME = "2000-01-23T01:23:35.678+09:00"
         private const val TIME_EARLIER = "2000-01-23T01:23:30.678+09:00"
