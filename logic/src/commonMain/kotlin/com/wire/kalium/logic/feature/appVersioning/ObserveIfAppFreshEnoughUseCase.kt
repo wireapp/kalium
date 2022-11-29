@@ -19,16 +19,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 
-interface CheckIfAppFreshEnoughForAllUsersUseCase {
+interface ObserveIfAppFreshEnoughUseCase {
     suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
 }
 
-class CheckIfAppFreshEnoughForAllUsersUseCaseImpl internal constructor(
+class ObserveIfAppFreshEnoughUseCaseImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val timeParser: TimeParser = TimeParserImpl()
-) : CheckIfAppFreshEnoughForAllUsersUseCase {
+) : ObserveIfAppFreshEnoughUseCase {
 
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = timeParser.currentTimeStamp()
@@ -88,7 +88,7 @@ class CheckIfAppFreshEnoughForAllUsersUseCaseImpl internal constructor(
 
     companion object {
         private const val CHECK_APP_VERSION_FREQUENCY_MS = 24 * 60 * 60 * 1000L
-        private const val TAG = "CheckIfAppFreshEnoughForAllUsersUseCase"
+        private const val TAG = "ObserveIfAppFreshEnoughUseCase"
     }
 
 }
