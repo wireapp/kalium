@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map

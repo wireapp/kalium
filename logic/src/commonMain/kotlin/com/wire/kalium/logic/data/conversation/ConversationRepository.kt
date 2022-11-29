@@ -275,10 +275,12 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         conversationDAO.getAllConversationDetails()
+//             .debounce(1.seconds) TODO check performance
             .onEach {
                 kaliumLogger.d("KBX getAllConversationDetails")
             }
             .combine(messageDAO.observeLastMessages()
+//                 .debounce(1.seconds)
                 .onEach {
                     kaliumLogger.d("KBX observeLastMessages")
                 }
