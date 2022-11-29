@@ -22,7 +22,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class LoginApiV0Test : ApiTest() {
+class LoginApiV0Test : ApiTest {
 
     @Test
     fun givenAValidLoginRequest_whenCallingTheLoginEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
