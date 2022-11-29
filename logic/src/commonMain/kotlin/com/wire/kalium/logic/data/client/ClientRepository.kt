@@ -33,6 +33,7 @@ interface ClientRepository {
     @Deprecated("this function is not cached use CurrentClientIdProvider")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
+    suspend fun persistRetainedClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
@@ -62,6 +63,9 @@ class ClientDataSource(
 
     override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(clientId.value) }
+
+    override suspend fun persistRetainedClientId(clientId: ClientId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.setRetainedClientId(clientId.value) }
 
     override suspend fun clearCurrentClientId(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearRegisteredClientId() }
