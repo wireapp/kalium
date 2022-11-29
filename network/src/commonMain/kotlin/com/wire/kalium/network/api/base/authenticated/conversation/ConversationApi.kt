@@ -53,4 +53,6 @@ interface ConversationApi {
     ): NetworkResponse<Unit>
 
     suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit>
+
+    suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
 }

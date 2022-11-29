@@ -77,8 +77,8 @@ sealed class Message(
                 }
 
                 is MessageContent.RestrictedAsset -> {
-                    properties = mutableMapOf(
-                        typeKey to "restrictedAsset",
+                     properties = mutableMapOf(
+                         typeKey to "restrictedAsset",
                         "sizeInBytes" to "${content.sizeInBytes}",
                         "mimeType" to content.mimeType,
                     )
@@ -185,8 +185,6 @@ sealed class Message(
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
                 "visibility" to "$visibility",
-                "senderUserName" to "$senderUserName",
-                "isSelfMessage" to "$isSelfMessage"
             )
 
             properties.putAll(standardProperties)

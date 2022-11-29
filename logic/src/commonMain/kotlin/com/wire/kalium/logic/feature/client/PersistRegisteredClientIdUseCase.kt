@@ -9,6 +9,7 @@ import com.wire.kalium.logic.functional.fold
 /**
  * Checks if the given ClientId is currently registered and persists it in the local storage if so, otherwise returns failure.
  */
+// TODO remove
 interface PersistRegisteredClientIdUseCase {
 
     /**

@@ -2,7 +2,6 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
-import com.wire.kalium.network.utils.sensitiveJsonKeys
 import com.wire.kalium.network.utils.toJsonElement
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -98,8 +97,17 @@ public class KaliumKtorCustomLogging private constructor(
 
         when {
             level.info -> {
+                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+
+                properties["headers"] = obfuscatedHeaders.toMap()
+
                 val jsonElement = properties.toJsonElement()
+
                 kaliumLogger.v("REQUEST: $jsonElement")
+
             }
 
             level.headers -> {
@@ -117,7 +125,16 @@ public class KaliumKtorCustomLogging private constructor(
             }
 
             level.body -> {
-                return logRequestBody(content)
+                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+
+                properties["headers"] = obfuscatedHeaders.toMap()
+
+                val jsonElement = properties.toJsonElement()
+
+                kaliumLogger.v("REQUEST: $jsonElement")
             }
         }
         return null
@@ -156,11 +173,7 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
         headers.associate {
-            if (sensitiveJsonKeys.contains(it.first.lowercase())) {
-                it.first to "***"
-            } else {
                 it.first to it.second.joinToString(",")
-            }
         }
 
     private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {

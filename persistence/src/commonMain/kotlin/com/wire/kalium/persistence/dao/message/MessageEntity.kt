@@ -126,7 +126,6 @@ sealed class MessageEntity(
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
-
         val isVisible get() = this == VISIBLE
     }
 

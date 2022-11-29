@@ -25,7 +25,7 @@ actual class MessageExtensionsImpl actual constructor(
         pagingConfig: PagingConfig
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
-        return KaliumPager(
+        return  KaliumPager(
             Pager(pagingConfig) { getPagingSource(conversationId, visibilities) },
             getPagingSource(conversationId, visibilities)
         )
