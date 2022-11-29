@@ -17,7 +17,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.util.CLIENT_PLATFORM
+import com.wire.kalium.logic.util.clientPlatform
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -99,7 +99,7 @@ internal class CreateBackupUseCaseImpl(
     private suspend fun createMetadataFile(userId: UserId): Path {
         val clientId = getCurrentClientId().first()
         val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
-        val metadataJson = BackupMetadata(CLIENT_PLATFORM, BackupCoder.version, userId.toString(), creationTime, clientId.toString())
+        val metadataJson = BackupMetadata(clientPlatform, BackupCoder.version, userId.toString(), creationTime, clientId.toString())
             .toString()
         val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {

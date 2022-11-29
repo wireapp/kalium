@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.util
 
-actual const val CLIENT_PLATFORM: String = "iOS"
+@Suppress("MayBeConst")
+actual val clientPlatform: String = "jvm"
 
 expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> =
     TODO("Implement own iOS compression method")
