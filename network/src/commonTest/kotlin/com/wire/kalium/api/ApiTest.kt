@@ -10,6 +10,9 @@ import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.ContentType
 import io.ktor.http.HeadersImpl
@@ -29,10 +32,24 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-internal interface ApiTest {
+open class ApiTest {
 
     private val json get() = KtxSerializer.json
-    val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
+    val TEST_SESSION_NAMAGER: TestSessionManagerV0 = TestSessionManagerV0()
+
+    private val loadToken: suspend () -> BearerTokens? = {
+        val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
+        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+    }
+
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+        val newSession = TEST_SESSION_NAMAGER.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+        newSession?.let {
+            BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+        }
+    }
+
+    val TEST_BEARER_AUTH_PROVIDER = BearerAuthProvider(refreshToken, loadToken, { true }, null)
 
     /**
      * creates an authenticated mock Ktor Http client
@@ -41,13 +58,13 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedNetworkClient(
+    internal fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {}
     ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
 
-    private fun mockAuthenticatedNetworkClient(
+    internal fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {}
@@ -66,7 +83,7 @@ internal interface ApiTest {
         ).networkClient
     }
 
-    fun mockWebsocketClient(): AuthenticatedWebSocketClient {
+    internal fun mockWebsocketClient(): AuthenticatedWebSocketClient {
         val mockEngine = MockEngine {
             TODO("It's not yet possible to mock WebSockets from the client side")
         }
@@ -76,7 +93,7 @@ internal interface ApiTest {
         ).websocketClient
     }
 
-    fun mockAssetsHttpClient(
+    internal fun mockAssetsHttpClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
@@ -85,8 +102,8 @@ internal interface ApiTest {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            { httpClient -> AccessTokenApiV0(httpClient) }
+            serverConfigDTO = TEST_SESSION_NAMAGER.serverConfig(),
+            bearerAuthProvider = TEST_BEARER_AUTH_PROVIDER
         )
     }
 
@@ -97,7 +114,7 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockUnauthenticatedNetworkClient(
+    internal fun mockUnauthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
@@ -128,7 +145,7 @@ internal interface ApiTest {
         val headers: Map<String, String>? = null
     )
 
-    fun mockUnauthenticatedNetworkClient(
+    internal fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>
     ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
@@ -162,7 +179,7 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedNetworkClient(
+    internal fun mockAuthenticatedNetworkClient(
         responseBody: ByteArray,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
@@ -187,7 +204,7 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockUnboundNetworkClient(
+    internal fun mockUnboundNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},

@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
-class CallApiV0Test : ApiTest {
+class CallApiV0Test : ApiTest() {
 
     @Test
     fun givenCallApi_whenGettingCallConfigWithNoLimit_theRequestShouldBeConfiguredCorrectly() = runTest {

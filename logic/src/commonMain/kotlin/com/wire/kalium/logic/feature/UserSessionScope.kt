@@ -513,7 +513,12 @@ class UserSessionScope internal constructor(
     }
 
     private val upgradeCurrentSessionUseCase
-        get() = UpgradeCurrentSessionUseCaseImpl(authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi, sessionManager)
+        get() =
+            UpgradeCurrentSessionUseCaseImpl(
+                authenticatedDataSourceSet.authenticatedNetworkContainer,
+                authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi,
+                sessionManager
+            )
 
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(

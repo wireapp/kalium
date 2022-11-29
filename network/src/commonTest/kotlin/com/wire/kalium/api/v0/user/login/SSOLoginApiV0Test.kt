@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SSOLoginApiV0Test : ApiTest {
+class SSOLoginApiV0Test : ApiTest() {
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest {

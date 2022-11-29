@@ -14,7 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class MLSMessageApiV3Test : ApiTest {
+class MLSMessageApiV3Test : ApiTest() {
 
     @Test
     fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =

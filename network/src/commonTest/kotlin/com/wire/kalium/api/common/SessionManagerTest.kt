@@ -15,6 +15,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondError
 import io.ktor.client.engine.mock.respondOk
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.request.get
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -30,6 +33,21 @@ class SessionManagerTest {
     @Test
     fun givenClientWithAuth_whenServerReturns401_thenShouldTryAgainWithNewToken() = runTest {
         val sessionManager = createFakeSessionManager()
+
+        val loadToken: suspend () -> BearerTokens? = {
+            val session = sessionManager.session() ?: error("missing user session")
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        }
+
+        val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+            val newSession = sessionManager.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+            newSession?.let {
+                BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+            }
+        }
+
+        val bearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
         var callCount = 0
         var didFail = false
         val mockEngine = MockEngine() {
@@ -47,7 +65,7 @@ class SessionManagerTest {
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
+            installAuth(bearerAuthProvider)
             expectSuccess = false
         }
 
@@ -59,12 +77,26 @@ class SessionManagerTest {
     fun givenClientWithAuth_whenServerReturnsOK_thenShouldNotAddBearerWWWAuthHeader() = runTest {
         val sessionManager = createFakeSessionManager()
 
+        val loadToken: suspend () -> BearerTokens? = {
+            val session = sessionManager.session() ?: error("missing user session")
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        }
+
+        val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+            val newSession = sessionManager.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+            newSession?.let {
+                BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+            }
+        }
+
+        val bearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
         val mockEngine = MockEngine() {
             respondOk()
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
+            installAuth(bearerAuthProvider)
             expectSuccess = false
         }
 
