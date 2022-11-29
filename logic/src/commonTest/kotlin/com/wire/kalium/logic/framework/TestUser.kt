@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 
 object TestUser {
     val USER_ID = UserId("value", "domain")
+    val OTHER_USER_ID = USER_ID.copy(value = "otherValue")
     val ENTITY_ID = QualifiedIDEntity("entityUserValue", "entityDomain")
     val NETWORK_ID = com.wire.kalium.network.api.base.model.UserId(
         value = "networkValue",
@@ -43,7 +44,7 @@ object TestUser {
     )
 
     val OTHER = OtherUser(
-        USER_ID.copy(value = "otherValue"),
+        OTHER_USER_ID,
         name = "otherUsername",
         handle = "otherHandle",
         email = "otherEmail",
