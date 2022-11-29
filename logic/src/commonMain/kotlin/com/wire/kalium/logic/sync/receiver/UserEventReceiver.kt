@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -11,7 +12,6 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 
 interface UserEventReceiver : EventReceiver<Event.User>
 
@@ -22,6 +22,7 @@ class UserEventReceiverImpl internal constructor(
     private val logout: LogoutUseCase,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val logger: KaliumLogger
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User) {
@@ -35,13 +36,13 @@ class UserEventReceiverImpl internal constructor(
 
     private suspend fun handleUserUpdate(event: Event.User.Update) {
         userRepository.updateUserFromEvent(event)
-            .onSuccess { kaliumLogger.d("$TAG - user was updated from event: $it") }
-            .onFailure { kaliumLogger.e("$TAG - failure updating user from event: $it") }
+            .onSuccess { logger.d("$TAG - user was updated from event: $it") }
+            .onFailure { logger.e("$TAG - failure updating user from event: $it") }
     }
 
     private suspend fun handleNewConnection(event: Event.User.NewConnection) =
         connectionRepository.insertConnectionFromEvent(event)
-            .onFailure { kaliumLogger.e("$TAG - failure on new connection event: $it") }
+            .onFailure { logger.e("$TAG - failure on new connection event: $it") }
 
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         currentClientIdProvider().map { currentClientId ->
@@ -56,7 +57,7 @@ class UserEventReceiverImpl internal constructor(
         } else {
             userRepository.removeUser(event.userId)
                 .onSuccess { conversationRepository.deleteUserFromConversations(event.userId) }
-                .onFailure { kaliumLogger.e("$TAG - failure on user delete event: $it") }
+                .onFailure { logger.e("$TAG - failure on user delete event: $it") }
         }
     }
 

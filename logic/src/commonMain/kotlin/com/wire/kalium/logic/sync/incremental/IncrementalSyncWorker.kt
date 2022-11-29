@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
@@ -26,7 +26,8 @@ interface IncrementalSyncWorker {
 
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
-    private val eventProcessor: EventProcessor
+    private val eventProcessor: EventProcessor,
+    private val logger: KaliumLogger
 ) : IncrementalSyncWorker {
 
     override suspend fun processEventsWhilePolicyAllowsFlow() = channelFlow {
@@ -40,7 +41,7 @@ internal class IncrementalSyncWorkerImpl(
             }
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()
-            kaliumLogger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
+            logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
         }
     }
 }

@@ -48,7 +48,7 @@ enum class KaliumLogLevel {
  * in the android case we use it to write the logs on file
  *
  */
-class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
+open class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
     private var kermitLogger: KermitLogger
 
@@ -127,6 +127,14 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
                 severity = KaliumLogLevel.DISABLED,
                 tag = "KaliumLogger"
             )
+
+            fun userConfig(userId: String, userDomain: String, tag: String): Config {
+                val userIdHash = (userId + userDomain).hashCode()
+                return Config(
+                    severity = KaliumLogLevel.DISABLED,
+                    tag = "$tag:$userIdHash"
+                )
+            }
         }
     }
 

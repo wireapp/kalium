@@ -41,7 +41,6 @@ abstract class CoreLogicCommon internal constructor(
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials? = null): AuthenticationScope =
-        // TODO(logic): make it lazier
         AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
@@ -49,7 +48,6 @@ abstract class CoreLogicCommon internal constructor(
 
     abstract fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
-    // TODO: make globalScope a singleton
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
     inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =

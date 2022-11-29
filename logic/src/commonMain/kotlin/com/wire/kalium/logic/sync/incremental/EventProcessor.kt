@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
@@ -29,18 +29,19 @@ internal class EventProcessorImpl(
     private val userEventReceiver: UserEventReceiver,
     private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
+    private val logger: KaliumLogger
 ) : EventProcessor {
 
     override suspend fun processEvent(event: Event) {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Processing event ${event.id.obfuscateId()}")
+        logger.withFeatureId(EVENT_RECEIVER).i("Processing event ${event.id.obfuscateId()}")
         when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event)
             is Event.User -> userEventReceiver.onEvent(event)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-            is Event.Unknown -> kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Unhandled event id=${event.id.obfuscateId()}")
+            is Event.Unknown -> logger.withFeatureId(EVENT_RECEIVER).i("Unhandled event id=${event.id.obfuscateId()}")
             is Event.Team -> teamEventReceiver.onEvent(event)
         }
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Updating lastProcessedEventId ${event.id.obfuscateId()}")
+        logger.withFeatureId(EVENT_RECEIVER).i("Updating lastProcessedEventId ${event.id.obfuscateId()}")
         if (event.shouldUpdateLastProcessedEventId()) {
             eventRepository.updateLastProcessedEventId(event.id)
         }

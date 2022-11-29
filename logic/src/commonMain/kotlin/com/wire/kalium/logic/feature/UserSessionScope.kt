@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logger.UserScopedLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -229,6 +230,8 @@ class UserSessionScope internal constructor(
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties
 ) : CoroutineScope {
+
+    private val userScopedLogger: UserScopedLogger = UserScopedLogger(userId.value, userId.domain)
 
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
@@ -465,7 +468,8 @@ class UserSessionScope internal constructor(
             conversationEventReceiver,
             userEventReceiver,
             teamEventReceiver,
-            featureConfigEventReceiver
+            featureConfigEventReceiver,
+            userScopedLogger
         )
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
@@ -519,7 +523,7 @@ class UserSessionScope internal constructor(
     }
 
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
-        IncrementalSyncWorkerImpl(eventGatherer, eventProcessor)
+        IncrementalSyncWorkerImpl(eventGatherer, eventProcessor, userScopedLogger)
     }
 
     private val incrementalSyncManager by lazy {
@@ -733,7 +737,8 @@ class UserSessionScope internal constructor(
             userRepository,
             logout,
             userId,
-            clientIdProvider
+            clientIdProvider,
+            userScopedLogger
         )
 
     private val teamEventReceiver: TeamEventReceiver
