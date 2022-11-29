@@ -27,7 +27,6 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
-    val firstUnreadMessageDate: String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val creatorId: String?
@@ -188,8 +187,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole,
-            creatorId = null,
-            firstUnreadMessageDate = EPOCH_FIRST_DAY
+            creatorId = null
         )
     )
 }
