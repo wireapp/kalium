@@ -6,7 +6,9 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -15,9 +17,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
@@ -38,34 +42,43 @@ internal open class AssetApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> {
-        return try {
-            httpClient.prepareGet(buildAssetsPath(assetId)) {
-                assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
-            }.execute { httpResponse ->
-                val channel = httpResponse.body<ByteReadChannel>()
-                tempFileSink.use { sink ->
-                    while (!channel.isClosedForRead) {
-                        val packet = channel.readRemaining(BUFFER_SIZE, 0)
-                        while (packet.isNotEmpty) {
-                            val (bytes, size) = packet.readBytes().let { byteArray ->
-                                Buffer().write(byteArray) to byteArray.size.toLong()
-                            }
-                            sink.write(bytes, size).also {
-                                bytes.clear()
-                                sink.flush()
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> =
+        httpClient.prepareGet(buildAssetsPath(assetId)) {
+            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
+        }.execute<NetworkResponse<Unit>> { httpResponse ->
+            if (httpResponse.status.isSuccess()) {
+                try {
+                    val channel = httpResponse.body<ByteReadChannel>()
+                    tempFileSink.use { sink ->
+                        while (!channel.isClosedForRead) {
+                            val packet = channel.readRemaining(BUFFER_SIZE, 0)
+                            while (packet.isNotEmpty) {
+                                val (bytes, size) = packet.readBytes().let { byteArray ->
+                                    Buffer().write(byteArray) to byteArray.size.toLong()
+                                }
+                                sink.write(bytes, size).also {
+                                    bytes.clear()
+                                    sink.flush()
+                                }
                             }
                         }
+                        channel.cancel()
+                        sink.close()
                     }
-                    channel.cancel()
-                    sink.close()
+                    NetworkResponse.Success(Unit, httpResponse)
+                } catch (e: Exception) {
+                    NetworkResponse.Error(KaliumException.GenericError(e))
                 }
-                NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value)
+            } else {
+                handleUnsuccessfulResponse(httpResponse).also {
+                    if (it.kException is KaliumException.InvalidRequestError &&
+                        it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
+                    ) {
+                        kaliumLogger.d("""ASSETS 401: "WWWAuthenticate header": "${httpResponse.headers[HttpHeaders.WWWAuthenticate]}"""")
+                    }
+                }
             }
-        } catch (exception: Exception) {
-            NetworkResponse.Error(KaliumException.GenericError(exception))
         }
-    }
 
     /**
      * Build path for assets endpoint download.
