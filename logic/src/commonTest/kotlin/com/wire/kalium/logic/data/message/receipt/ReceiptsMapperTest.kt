@@ -1,10 +1,7 @@
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.data.message.receipt.ReceiptsMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
