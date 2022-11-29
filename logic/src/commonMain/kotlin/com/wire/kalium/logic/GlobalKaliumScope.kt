@@ -9,7 +9,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughForAllUsersUseCase
+import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughForAllUsersUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
@@ -62,7 +65,8 @@ class GlobalKaliumScope internal constructor(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
+    private val authenticationScopeProvider: AuthenticationScopeProvider
 ) {
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
@@ -133,4 +137,11 @@ class GlobalKaliumScope internal constructor(
     val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() =
             ServerConfigForAccountUseCase(serverConfigRepository)
+
+    val checkIfAppFreshEnoughForAllUsers: CheckIfAppFreshEnoughForAllUsersUseCase
+        get() = CheckIfAppFreshEnoughForAllUsersUseCaseImpl(
+            serverConfigRepository,
+            authenticationScopeProvider,
+            userSessionScopeProvider.value
+        )
 }

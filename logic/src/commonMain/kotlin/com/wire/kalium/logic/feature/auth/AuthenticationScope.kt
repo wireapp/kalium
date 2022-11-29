@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
+import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
@@ -9,9 +11,16 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughUseCase
+import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+
+class AuthenticationScopeProvider(private val clientLabel: String) {
+    fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
+        AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
+}
 
 class AuthenticationScope(
     private val clientLabel: String,
@@ -38,6 +47,9 @@ class AuthenticationScope(
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
+    private val appVersionRepository: AppVersionRepository
+        get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
+
     val login: LoginUseCase
         get() = LoginUseCaseImpl(
             loginRepository,
@@ -50,4 +62,6 @@ class AuthenticationScope(
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     val ssoLoginScope: SSOLoginScope
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
+    val checkIfAppFreshEnough: CheckIfAppFreshEnoughUseCase
+        get() = CheckIfAppFreshEnoughUseCaseImpl(appVersionRepository)
 }

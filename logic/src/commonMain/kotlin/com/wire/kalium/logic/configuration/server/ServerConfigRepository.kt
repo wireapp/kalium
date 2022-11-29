@@ -81,6 +81,16 @@ internal interface ServerConfigRepository {
      * Return the server links and metadata for the given userId
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
+
+    /**
+     * @return the list of [ServerConfigWithUserId] that were checked "if app needs to be updated" after the date
+     */
+    suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>>
+
+    /**
+     * updates lastBlackListCheckDate for the Set of configIds
+     */
+    suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -186,6 +196,14 @@ internal class ServerConfigDataSource(
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
             .map { serverConfigMapper.fromEntity(it) }
+
+    override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
+        wrapStorageRequest { dao.getServerConfigsWithAccIdWithLastCheckAfterDate(date) }
+            .map { it.map { list -> list.map(serverConfigMapper::fromEntity) } }
+
+    override suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String) {
+        wrapStorageRequest { dao.updateBlackListCheckDate(configIds, date) }
+    }
 
     private suspend fun fetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig.MetaData> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(serverLinks.api)) }

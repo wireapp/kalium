@@ -27,6 +27,7 @@ interface SessionMapper {
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
     fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
     fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
+    fun fromDTOToProxyCredentialsModel(proxyCredentialsDTO: ProxyCredentialsDTO?): ProxyCredentials?
 }
 
 internal class SessionMapperImpl(
@@ -107,4 +108,11 @@ internal class SessionMapperImpl(
 
     override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsModel.username, proxyCredentialsModel.password)
+
+    override fun fromDTOToProxyCredentialsModel(proxyCredentialsDTO: ProxyCredentialsDTO?): ProxyCredentials? =
+        proxyCredentialsDTO?.let { (username, password) ->
+            if (username != null && password != null) ProxyCredentials(username, password)
+            else null
+        }
+
 }
