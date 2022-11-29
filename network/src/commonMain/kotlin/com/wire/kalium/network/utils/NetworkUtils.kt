@@ -166,7 +166,7 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
     }
 }
 
-private suspend fun handleUnsuccessfulResponse(
+internal suspend fun handleUnsuccessfulResponse(
     result: HttpResponse
 ): NetworkResponse.Error {
     val status = result.status

@@ -10,6 +10,9 @@ import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.ContentType
 import io.ktor.http.HeadersImpl
@@ -34,6 +37,22 @@ internal interface ApiTest {
     private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
 
+    private val loadToken: suspend () -> BearerTokens?
+        get() = {
+            val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        }
+
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens?
+        get() = {
+            val newSession = TEST_SESSION_NAMAGER.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+            newSession?.let {
+                BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+            }
+        }
+
+    val TEST_BEARER_AUTH_PROVIDER get() = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
     /**
      * creates an authenticated mock Ktor Http client
      * @param responseBody the response body as Json string
@@ -47,7 +66,7 @@ internal interface ApiTest {
         assertion: suspend (HttpRequestData.() -> Unit) = {}
     ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
 
-    private fun mockAuthenticatedNetworkClient(
+    fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {}
@@ -85,8 +104,8 @@ internal interface ApiTest {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            { httpClient -> AccessTokenApiV0(httpClient) }
+            serverConfigDTO = TEST_SESSION_NAMAGER.serverConfig(),
+            bearerAuthProvider = TEST_BEARER_AUTH_PROVIDER
         )
     }
 
@@ -209,7 +228,7 @@ internal interface ApiTest {
         headers: Map<String, String>? = null
     ): MockEngine {
         val newHeaders: Map<String, List<String>> = (headers?.let {
-            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+            headers.mapValues { listOf(it.value) }
         } ?: run {
             mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
         })

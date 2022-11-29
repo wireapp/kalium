@@ -8,6 +8,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 
 /**
@@ -18,6 +19,7 @@ interface UpgradeCurrentSessionUseCase {
 }
 
 class UpgradeCurrentSessionUseCaseImpl(
+    private val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
     private val accessTokenApi: AccessTokenApi,
     private val sessionManager: SessionManager
 ) : UpgradeCurrentSessionUseCase {
@@ -28,6 +30,8 @@ class UpgradeCurrentSessionUseCaseImpl(
                     accessTokenApi.getToken(refreshToken, clientId.value)
                 }.flatMap {
                     wrapStorageRequest { sessionManager.updateLoginSession(it.first, it.second) }
-                }.map { Unit }
+                }.map {
+                    authenticatedNetworkContainer.clearCachedToken()
+                }
             }
     }

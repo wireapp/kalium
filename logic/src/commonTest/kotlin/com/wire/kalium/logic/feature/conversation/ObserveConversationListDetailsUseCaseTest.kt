@@ -46,10 +46,10 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastMessage = null,
+                lastUnreadMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadContentCount = emptyMap()
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -82,10 +82,10 @@ class ObserveConversationListDetailsUseCaseTest {
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastMessage = null,
+            lastUnreadMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadContentCount = emptyMap()
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -120,10 +120,10 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastMessage = null,
+                lastUnreadMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadContentCount = emptyMap()
             )
         )
 
@@ -133,8 +133,8 @@ class ObserveConversationListDetailsUseCaseTest {
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastMessage = null,
-            unreadEventCount = emptyMap()
+            lastUnreadMessage = null,
+            unreadContentCount = emptyMap()
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
@@ -142,8 +142,8 @@ class ObserveConversationListDetailsUseCaseTest {
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastMessage = null,
-            unreadEventCount = emptyMap()
+            lastUnreadMessage = null,
+            unreadContentCount = emptyMap()
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -179,10 +179,10 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastMessage = null,
+            lastUnreadMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadContentCount = emptyMap()
         )
 
         val selfConversation = TestConversation.SELF
@@ -217,10 +217,10 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastMessage = null,
+            lastUnreadMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadContentCount = emptyMap()
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -249,10 +249,10 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastMessage = null,
+            lastUnreadMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadContentCount = emptyMap()
         )
 
         val firstConversationsList = listOf(groupConversation)
