@@ -8,6 +8,7 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
@@ -135,6 +136,9 @@ class EventProcessorTest {
 
         @Mock
         val teamEventReceiver = configure(mock(TeamEventReceiver::class)) { stubsUnitByDefault = true }
+
+        @Mock
+        val userPropertiesEventReceiver = configure(mock(UserPropertiesEventReceiver::class)) { stubsUnitByDefault = true }
 
         val eventProcessor: EventProcessor =
             EventProcessorImpl(
