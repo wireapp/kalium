@@ -11,6 +11,8 @@ import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -102,7 +104,8 @@ class AssetApiV0Test : ApiTest {
                 assertAuthorizationHeaderExist()
                 assertHeaderExist(HEADER_ASSET_TOKEN)
                 assertPathEqual(apiPath)
-            }
+            },
+            headers = mapOf(HttpHeaders.ContentType to ContentType.Application.OctetStream.toString())
         )
 
         // When
@@ -124,7 +127,8 @@ class AssetApiV0Test : ApiTest {
                 assertAuthorizationHeaderExist()
                 assertHeaderExist(HEADER_ASSET_TOKEN)
                 assertPathEqual("$PATH_ASSETS_V3/$ASSET_KEY")
-            }
+            },
+            headers = mapOf(HttpHeaders.ContentType to ContentType.Application.OctetStream.toString())
         )
 
         // When

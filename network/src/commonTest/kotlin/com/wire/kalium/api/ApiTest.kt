@@ -226,7 +226,7 @@ internal interface ApiTest {
         headers: Map<String, String>? = null
     ): MockEngine {
         val newHeaders: Map<String, List<String>> = (headers?.let {
-            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+            headers.mapValues { listOf(it.value) }
         } ?: run {
             mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
         })
