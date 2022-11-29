@@ -59,7 +59,42 @@ internal class ChaCha20UtilsTest {
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
+            val (_, decryptedDataSize) = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
+
+            val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
+                readByteArray()
+            }
+
+            assertEquals(fakeData.decodeToString(), decryptedOutputContent.decodeToString())
+            assertTrue(outputSize > 0)
+            assertEquals(decryptedDataSize, fakeData.size.toLong())
+        }
+    }
+
+    @Test
+    fun `given some dummy backup data, when decrypting an old backup format, the appropriate error is returned`() = runTest {
+        // Given
+        val fakeData = "Some file data to be encrypted".toByteArray()
+        val arrangement = Arrangement().arrange()
+
+        with(arrangement) {
+            val inputPath = "$rootPath/test-data.txt".toPath()
+            val encryptedOutputPath = "$rootPath/test-data.cc20".toPath()
+            fakeFileSystem.write(inputPath) {
+                write(fakeData)
+            }
+            val decryptedOutputPath = "$rootPath/test-data-decrypted.txt".toPath()
+            val inputDataSource = fakeFileSystem.source(inputPath)
+            val encryptedOutputSink = fakeFileSystem.sink(encryptedOutputPath)
+            val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
+            val password = "some password"
+            val userId = CryptoUserID("some-user-id", "some-domain.com")
+            val passphrase = BackupCoder.Passphrase(password)
+
+            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
+
+            val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
+            val (_, decryptedDataSize) = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()
@@ -92,7 +127,7 @@ internal class ChaCha20UtilsTest {
             val passphrase = BackupCoder.Passphrase(password)
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
+            val (_, decryptedDataSize) = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()

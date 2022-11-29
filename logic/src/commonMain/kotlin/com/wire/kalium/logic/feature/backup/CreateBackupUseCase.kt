@@ -19,7 +19,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.util.CLIENT_PLATFORM
 import com.wire.kalium.logic.util.createCompressedFile
-import com.wire.kalium.network.utils.toJsonObject
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -101,7 +100,7 @@ internal class CreateBackupUseCaseImpl(
         val clientId = getCurrentClientId().first()
         val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
         val metadataJson = BackupMetadata(CLIENT_PLATFORM, BackupCoder.version, userId.toString(), creationTime, clientId.toString())
-            .toMap().toJsonObject().toString()
+            .toString()
         val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
             it.write(metadataJson.encodeToByteArray())

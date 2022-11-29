@@ -2,6 +2,8 @@ package com.wire.kalium.logic.feature.backup
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 
 @Serializable
 data class BackupMetadata(
@@ -16,13 +18,5 @@ data class BackupMetadata(
     @SerialName("client_id")
     val clientId: String
 ) {
-    fun toMap(): Map<String, String> {
-        return mapOf(
-            "platform" to platform,
-            "version" to version,
-            "user_id" to userId,
-            "creation_time" to creationTime,
-            "client_id" to clientId
-        )
-    }
+    override fun toString(): String = Json.encodeToString(this)
 }

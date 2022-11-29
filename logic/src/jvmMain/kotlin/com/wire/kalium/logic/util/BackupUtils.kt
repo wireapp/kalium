@@ -14,7 +14,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-actual const val CLIENT_PLATFORM: String = "jvm"
+actual val CLIENT_PLATFORM: String = "jvm"
 
 @Suppress("TooGenericExceptionCaught")
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {

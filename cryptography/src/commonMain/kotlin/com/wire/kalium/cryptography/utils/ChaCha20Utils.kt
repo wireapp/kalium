@@ -89,7 +89,7 @@ class ChaCha20Utils {
         decryptedDataSink: Sink,
         passphrase: BackupCoder.Passphrase,
         userId: CryptoUserID
-    ): Long {
+    ): Pair<BackupCoder.Header.HeaderDecodingErrors?, Long> {
 
         initializeLibsodiumIfNeeded()
         var decryptedDataSize = 0L
@@ -98,7 +98,10 @@ class ChaCha20Utils {
         try {
             val additionalInformation: UByteArray = BackupCoder.version.encodeToByteArray().toUByteArray()
             val backupCoder = BackupCoder(userId, passphrase)
-            val header = backupCoder.decodeHeader(encryptedDataSource)
+            val (decodingError, header) = backupCoder.decodeHeader(encryptedDataSource)
+
+            // If there was an error decoding the header, we return it
+            decodingError?.let { return it to 0L }
 
             // We need to read the ChaCha20 generated header prior to the encrypted backup file data to run some sanity checks
             val chaChaHeaderKey = backupCoder.generateChaCha20Key(header).toUByteArray()
@@ -140,7 +143,7 @@ class ChaCha20Utils {
             encryptedDataSource.close()
             decryptionBufferedSink.close()
         }
-        return decryptedDataSize
+        return null to decryptedDataSize
     }
 
     private companion object {

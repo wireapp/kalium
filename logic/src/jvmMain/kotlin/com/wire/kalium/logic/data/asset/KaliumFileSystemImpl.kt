@@ -134,5 +134,5 @@ actual class KaliumFileSystemImpl actual constructor(
      * @param dir the path from where the list of paths will be fetched
      * @return the list of paths found.
      */
-    override suspend fun list(dir: Path): List<Path> = SYSTEM.list(dir)
+    override suspend fun listDirectories(dir: Path): List<Path> = SYSTEM.list(dir)
 }
