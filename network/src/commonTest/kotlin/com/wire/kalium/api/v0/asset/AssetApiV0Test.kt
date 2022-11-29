@@ -25,7 +25,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class AssetApiV0Test : ApiTest() {
+class AssetApiV0Test : ApiTest {
     @Test
     fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         // Given
