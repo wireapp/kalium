@@ -61,7 +61,7 @@ interface UserConfigStorage {
     /**
      * get the saved flag to know if user's Read Receipts are enabled or not
      */
-    fun isReadReceiptsEnabled(): Boolean
+    fun isReadReceiptsEnabled(): Flow<Boolean>
 
     /**
      * save the flag to know if user's Read Receipts are enabled or not
@@ -86,6 +86,9 @@ data class ClassifiedDomainsEntity(
 internal class UserConfigStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
+
+    private val isReadReceiptsEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isFileSharingEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -152,11 +155,18 @@ internal class UserConfigStorageImpl internal constructor(
         kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
 
 
-    override fun isReadReceiptsEnabled() =
-        kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)
+    override fun isReadReceiptsEnabled(): Flow<Boolean> {
+        val isReadReceipts = kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)
+        return isReadReceiptsEnabledFlow
+            .map { isReadReceipts }
+            .onStart { emit(isReadReceipts) }
+            .distinctUntilChanged()
+    }
 
     override fun persistReadReceipts(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled)
+        kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled).also {
+            isReadReceiptsEnabledFlow.tryEmit(Unit)
+        }
     }
 
     private companion object {

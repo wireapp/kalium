@@ -6,6 +6,9 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * UseCase that allow us to persist the configuration of read receipts to enabled or not
+ */
 interface PersistReadReceiptsStatusConfigUseCase {
     operator fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult
 }

@@ -24,8 +24,8 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
-import com.wire.kalium.logic.feature.user.readReceipts.IsReadReceiptsEnabledUseCase
-import com.wire.kalium.logic.feature.user.readReceipts.IsReadReceiptsEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
+import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -79,8 +79,8 @@ class UserScope internal constructor(
             sessionRepository = sessionRepository
         )
 
-    val isReadReceiptsEnabled: IsReadReceiptsEnabledUseCase
-        get() = IsReadReceiptsEnabledUseCaseImpl(
+    val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
+        get() = ObserveReadReceiptsEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
     val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
