@@ -27,9 +27,9 @@ data class ConversationEntity(
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
-    enum class Access { PRIVATE, INVITE, LINK, CODE; }
+    enum class Access { PRIVATE, INVITE, SELF_INVITE, LINK, CODE; }
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING, GLOBAL_TEAM }
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
@@ -122,7 +122,7 @@ data class ProposalTimerEntity(
 )
 
 interface ConversationDAO {
-    suspend fun getSelfConversationId(): QualifiedIDEntity?
+    suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)

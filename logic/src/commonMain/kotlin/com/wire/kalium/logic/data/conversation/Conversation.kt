@@ -51,7 +51,8 @@ data class Conversation(
         SELF,
         ONE_ON_ONE,
         GROUP,
-        CONNECTION_PENDING;
+        CONNECTION_PENDING,
+        GLOBAL_TEAM;
     }
 
     enum class AccessRole {
@@ -65,6 +66,7 @@ data class Conversation(
     enum class Access {
         PRIVATE,
         INVITE,
+        SELF_INVITE,
         LINK,
         CODE;
     }
@@ -135,6 +137,8 @@ data class Conversation(
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
+
+    data class Team(override val conversation: Conversation) : ConversationDetails(conversation)
 
     data class Self(override val conversation: Conversation) : ConversationDetails(conversation)
 

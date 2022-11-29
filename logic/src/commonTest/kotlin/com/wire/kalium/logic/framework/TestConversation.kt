@@ -47,12 +47,28 @@ object TestConversation {
         creatorId = null,
         firstUnreadMessageDate = null
     )
-    val SELF = Conversation(
+    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
         Conversation.Type.SELF,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        protocolInfo,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
+    )
+
+    fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
+        ID.copy(value = "GLOBAL TEAM ID"),
+        "GLOBAL TEAM Name",
+        Conversation.Type.GLOBAL_TEAM,
+        TestTeam.TEAM_ID,
+        protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
         null,
