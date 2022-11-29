@@ -33,80 +33,42 @@ sealed class Message(
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         @Suppress("LongMethod")
         override fun toString(): String {
-            val properties: MutableMap<String, String>
             val typeKey = "type"
-            when (content) {
-                is MessageContent.Text -> {
-                    properties = mutableMapOf(
-                        typeKey to "text"
-                    )
-                }
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.Text -> mutableMapOf(
+                    typeKey to "text"
+                )
 
-                is MessageContent.TextEdited -> {
-                    properties = mutableMapOf(
-                        typeKey to "textEdit"
-                    )
-                }
+                is MessageContent.Asset -> mutableMapOf(
+                    typeKey to "asset",
+                    "sizeInBytes" to "${content.value.sizeInBytes}",
+                    "mimeType" to content.value.mimeType,
+                    "metaData" to "${content.value.metadata}",
+                    "downloadStatus" to "${content.value.downloadStatus}",
+                    "uploadStatus" to "${content.value.uploadStatus}",
+                    "otrKeySize" to "${content.value.remoteData.otrKey.size}",
+                )
 
-                is MessageContent.Calling -> {
-                    properties = mutableMapOf(
-                        typeKey to "calling"
-                    )
-                }
-
-                is MessageContent.DeleteMessage -> {
-                    properties = mutableMapOf(
-                        typeKey to "delete"
-                    )
-                }
-
-                is MessageContent.Asset -> {
-                    properties = mutableMapOf(
-                        typeKey to "asset",
-                        "sizeInBytes" to "${content.value.sizeInBytes}",
-                        "mimeType" to content.value.mimeType,
-                        "metaData" to "${content.value.metadata}",
-                        "downloadStatus" to "${content.value.downloadStatus}",
-                        "uploadStatus" to "${content.value.uploadStatus}",
-                        "otrKeySize" to "${content.value.remoteData.otrKey.size}",
-                    )
-                }
-
-                is MessageContent.RestrictedAsset -> {
-                     properties = mutableMapOf(
-                         typeKey to "restrictedAsset",
-                        "sizeInBytes" to "${content.sizeInBytes}",
-                        "mimeType" to content.mimeType,
-                    )
-                }
-
-                is MessageContent.DeleteForMe -> {
-                    properties = mutableMapOf(
-                        typeKey to "deleteForMe",
-                        "messageId" to content.messageId.obfuscateId(),
-                    )
-                }
-
-                is MessageContent.LastRead -> {
-                    properties = mutableMapOf(
-                        typeKey to "lastRead",
-                        "time" to "${content.time}",
-                    )
-                }
+                is MessageContent.RestrictedAsset -> mutableMapOf(
+                    typeKey to "restrictedAsset",
+                    "sizeInBytes" to "${content.sizeInBytes}",
+                    "mimeType" to content.mimeType,
+                )
 
                 is MessageContent.FailedDecryption -> {
-                    properties = mutableMapOf(
+                    mutableMapOf(
                         typeKey to "failedDecryption",
                         "size" to "${content.encodedData?.size}",
                     )
                 }
 
-                else -> {
-                    properties = mutableMapOf(
-                        typeKey to "unknown",
-                        "content" to "$content",
-                    )
-                }
+                is MessageContent.Knock -> mutableMapOf(
+                    typeKey to "knock"
+                )
+
+                is MessageContent.Unknown -> mutableMapOf(
+                    typeKey to "unknown"
+                )
             }
 
             val standardProperties = mapOf(
@@ -137,24 +99,26 @@ sealed class Message(
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
 
-            var properties: MutableMap<String, String>
             val typeKey = "type"
-            when (content) {
-                is MessageContent.MemberChange -> {
-                    properties = mutableMapOf(
-                        typeKey to "memberChange",
-                        "members" to content.members.fold("") { acc, member ->
-                            return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
-                        }
-                    )
-                }
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.MemberChange -> mutableMapOf(
+                    typeKey to "memberChange",
+                    "members" to content.members.fold("") { acc, member ->
+                        return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
+                )
 
-                else -> {
-                    properties = mutableMapOf(
-                        typeKey to "system",
-                        "content" to content.toString()
-                    )
-                }
+                is MessageContent.ConversationRenamed -> mutableMapOf(
+                    typeKey to "conversationRenamed"
+                )
+
+                MessageContent.MissedCall -> mutableMapOf(
+                    typeKey to "missedCall"
+                )
+
+                is MessageContent.TeamMemberRemoved -> mutableMapOf(
+                    typeKey to "teamMemberRemoved"
+                )
             }
 
             val standardProperties = mapOf(
