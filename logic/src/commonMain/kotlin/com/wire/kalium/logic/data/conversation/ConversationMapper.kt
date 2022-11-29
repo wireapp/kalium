@@ -113,8 +113,9 @@ internal class ConversationMapperImpl(
                 }
 
                 ConversationEntity.Type.GLOBAL_TEAM -> {
-                ConversationDetails.Team(fromDaoModel(daoModel))
-            }ConversationEntity.Type.ONE_ON_ONE -> {
+                    ConversationDetails.Team(fromDaoModel(daoModel))
+                }
+                ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
                         otherUser = OtherUser(
@@ -154,43 +155,43 @@ internal class ConversationMapperImpl(
                     )
                 }
 
-            ConversationEntity.Type.CONNECTION_PENDING -> {
-                val otherUser = OtherUser(
-                    id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
-                    name = name,
-                    accentId = 0,
-                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                    availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                    deleted = userDeleted ?: false,
-                    botService = botService?.let { BotService(it.id, it.provider) },
-                    handle = null,
-                    completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                    previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                    teamId = teamId?.let { TeamId(it) }
-                )
+                ConversationEntity.Type.CONNECTION_PENDING -> {
+                    val otherUser = OtherUser(
+                        id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                        name = name,
+                        accentId = 0,
+                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                        deleted = userDeleted ?: false,
+                        botService = botService?.let { BotService(it.id, it.provider) },
+                        handle = null,
+                        completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                        previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                        teamId = teamId?.let { TeamId(it) }
+                    )
 
-                ConversationDetails.Connection(
-                    conversationId = idMapper.fromDaoModel(id),
-                    otherUser = otherUser,
-                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                    lastModifiedDate = lastModifiedDate.orEmpty(),
-                    connection = Connection(
-                        conversationId = id.value,
-                        from = "",
-                        lastUpdate = "",
-                        qualifiedConversationId = idMapper.fromDaoModel(id),
-                        qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
-                        status = connectionStatusMapper.fromDaoModel(connectionStatus),
-                        toId = "", // todo
-                        fromUser = otherUser
-                    ),
-                    protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
-                    access = accessList.map { it.toDAO() },
-                    accessRole = accessRoleList.map { it.toDAO() },
-                )
+                    ConversationDetails.Connection(
+                        conversationId = idMapper.fromDaoModel(id),
+                        otherUser = otherUser,
+                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        lastModifiedDate = lastModifiedDate.orEmpty(),
+                        connection = Connection(
+                            conversationId = id.value,
+                            from = "",
+                            lastUpdate = "",
+                            qualifiedConversationId = idMapper.fromDaoModel(id),
+                            qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
+                            status = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            toId = "", // todo
+                            fromUser = otherUser
+                        ),
+                        protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
+                        access = accessList.map { it.toDAO() },
+                        accessRole = accessRoleList.map { it.toDAO() },
+                    )
+                }
             }
         }
-    }
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
         ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)
