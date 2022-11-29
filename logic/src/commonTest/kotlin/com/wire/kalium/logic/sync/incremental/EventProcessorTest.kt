@@ -142,7 +142,8 @@ class EventProcessorTest {
                 conversationEventReceiver,
                 userEventReceiver,
                 teamEventReceiver,
-                featureConfigEventReceiver
+                featureConfigEventReceiver,
+                userPropertiesEventReceiver
             )
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {

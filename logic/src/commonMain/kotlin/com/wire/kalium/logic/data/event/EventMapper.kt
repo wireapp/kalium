@@ -59,7 +59,33 @@ class EventMapper(
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.User.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
+            is EventContentDTO.User.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
         }
+
+    private fun updateUserProperties(
+        id: String,
+        eventContentDTO: EventContentDTO.User.PropertiesSetDTO,
+        transient: Boolean
+    ): Event {
+        return if (EventContentDTO.User.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
+            Event.UserProperty.ReadReceiptModeSet(id, transient, eventContentDTO.value == 1)
+        } else {
+            Event.Unknown(id, transient)
+        }
+    }
+
+    private fun deleteUserProperties(
+        id: String,
+        eventContentDTO: EventContentDTO.User.PropertiesDeleteDTO,
+        transient: Boolean
+    ): Event {
+        return if (EventContentDTO.User.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
+            Event.UserProperty.ReadReceiptModeSet(id, transient, false)
+        } else {
+            Event.Unknown(id, transient)
+        }
+    }
 
     private fun welcomeMessage(
         id: String,

@@ -161,6 +161,8 @@ import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -465,7 +467,8 @@ class UserSessionScope internal constructor(
             conversationEventReceiver,
             userEventReceiver,
             teamEventReceiver,
-            featureConfigEventReceiver
+            featureConfigEventReceiver,
+            userPropertiesEventReceiver
         )
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
@@ -736,6 +739,9 @@ class UserSessionScope internal constructor(
             clientIdProvider
         )
 
+    private val userPropertiesEventReceiver: UserPropertiesEventReceiver
+        get() = UserPropertiesEventReceiverImpl(userConfigRepository)
+
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
@@ -817,8 +823,8 @@ class UserSessionScope internal constructor(
             messageSendingScheduler,
             timeParser,
             userStorage,
-             this,
-            )
+            this,
+        )
     val messages: MessageScope
         get() = MessageScope(
             connectionRepository,

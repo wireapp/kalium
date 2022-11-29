@@ -1,8 +1,5 @@
 package com.wire.kalium.network.api.base.authenticated.notification
 
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.TeamId
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
@@ -19,6 +16,9 @@ import com.wire.kalium.network.api.base.authenticated.notification.team.TeamUpda
 import com.wire.kalium.network.api.base.authenticated.notification.user.NewClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.UserUpdateEventData
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.TeamId
+import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -257,9 +257,24 @@ sealed class EventContentDTO {
             @SerialName("client") val client: RemoveClientEventData,
         ) : User()
 
-        // TODO user.properties-set
+        @Serializable
+        @SerialName("user.properties-set")
+        data class PropertiesSetDTO(
+            @SerialName("key") val key: String,
+            @SerialName("value") val value: Int?,
+        ) : User()
 
-        // TODO user.properties-delete
+        @Serializable
+        @SerialName("user.properties-delete")
+        data class PropertiesDeleteDTO(
+            @SerialName("key") val key: String,
+        ) : User()
+
+
+        enum class PropertyKey(val key: String) {
+            WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE")
+            // TODO map other like. 'labels'
+        }
 
         @Serializable
         @SerialName("user.update")
