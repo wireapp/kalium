@@ -2,9 +2,9 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
 import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
 import com.wire.kalium.cryptography.utils.ChaCha20Utils
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -19,7 +19,6 @@ import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFai
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest

@@ -14,7 +14,8 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-actual val CLIENT_PLATFORM: String = "android"
+@Suppress("MayBeConst")
+actual const val CLIENT_PLATFORM: String = "android"
 
 @Suppress("TooGenericExceptionCaught")
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
@@ -30,7 +31,7 @@ actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: S
 }
 
 private fun addToCompressedFile(zipOutputStream: ZipOutputStream, fileSource: Source, fileName: String): Long {
-    val bufferSize = 1024L * 8
+    val bufferSize = 8192L
     var compressedFileSize = 0L
     var byteCount: Long
     val entry = ZipEntry(fileName)
@@ -47,7 +48,7 @@ private fun addToCompressedFile(zipOutputStream: ZipOutputStream, fileSource: So
     return compressedFileSize
 }
 
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
 actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Long> = try {
     var totalExtractedFilesSize = 0L
     ZipInputStream(inputSource.buffer().inputStream()).use { zipInputStream ->
