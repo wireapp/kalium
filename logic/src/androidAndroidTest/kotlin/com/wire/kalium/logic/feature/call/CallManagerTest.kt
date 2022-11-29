@@ -89,8 +89,11 @@ class CallManagerTest {
         val expectedConversationId = "conversationId"
 
         callManagerImpl.onCallingMessageReceived(
-            message = CALL_MESSAGE,
-            content = CALL_CONTENT
+            content = CALL_CONTENT,
+            conversationId = CALL_MESSAGE.conversationId,
+            senderUserId = CALL_MESSAGE.senderUserId,
+            senderClientId = CALL_MESSAGE.senderClientId,
+            messageDate = CALL_MESSAGE.date
         )
 
         verify(calling)

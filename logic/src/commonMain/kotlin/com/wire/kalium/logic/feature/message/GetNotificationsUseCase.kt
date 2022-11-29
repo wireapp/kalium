@@ -254,7 +254,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         is MessageContent.Availability -> false
         is MessageContent.FailedDecryption -> false
         is MessageContent.MissedCall -> true
-        is MessageContent.Empty -> false
         is MessageContent.Ignored -> false
         is MessageContent.LastRead -> false
         is MessageContent.Cleared -> false

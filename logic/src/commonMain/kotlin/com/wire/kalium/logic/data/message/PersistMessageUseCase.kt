@@ -45,7 +45,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Availability -> false
             is MessageContent.FailedDecryption -> true
             is MessageContent.MissedCall -> true
-            is MessageContent.Empty -> false
             is MessageContent.Ignored -> false
             is MessageContent.LastRead -> false
             is MessageContent.Reaction -> false

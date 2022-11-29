@@ -179,15 +179,7 @@ class MessageMapperImpl(
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Calling -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
-        is MessageContent.Reaction -> MessageEntityContent.Unknown()
-        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
-        is MessageContent.Empty -> MessageEntityContent.Unknown()
-        is MessageContent.LastRead -> MessageEntityContent.Unknown()
-        is MessageContent.Cleared -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.message.SignalingMessage
 import com.wire.kalium.logic.feature.conversation.ClearConversationContent
 import com.wire.kalium.logic.functional.fold
 
@@ -15,7 +16,7 @@ internal class ClearConversationContentHandler(
 ) {
 
     suspend fun handle(
-        message: Message,
+        message: SignalingMessage,
         messageContent: MessageContent.Cleared
     ) {
         val isMessageComingFromOtherClient = message.senderUserId == selfUserId

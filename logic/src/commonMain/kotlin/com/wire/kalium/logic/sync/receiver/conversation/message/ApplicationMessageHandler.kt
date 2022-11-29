@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.SignalingMessage
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -75,19 +76,17 @@ internal class ApplicationMessageHandlerImpl(
         senderClientId: ClientId,
         content: ProtoContent.Readable
     ) {
-        when (content.messageContent) {
+        when (val protoContent = content.messageContent) {
             is MessageContent.Regular -> {
-                val visibility = when (content.messageContent) {
+                val visibility = when (protoContent) {
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
-                    is MessageContent.Empty -> Message.Visibility.HIDDEN
                     is MessageContent.Unknown ->
-                        if (content.messageContent.hidden) Message.Visibility.HIDDEN
+                        if (protoContent.hidden) Message.Visibility.HIDDEN
                         else Message.Visibility.VISIBLE
 
                     is MessageContent.Text -> Message.Visibility.VISIBLE
-                    is MessageContent.Reaction -> Message.Visibility.HIDDEN
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                     is MessageContent.Knock -> Message.Visibility.VISIBLE
@@ -98,7 +97,7 @@ internal class ApplicationMessageHandlerImpl(
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
-                    content = content.messageContent,
+                    content = protoContent,
                     conversationId = conversationId,
                     date = timestampIso,
                     senderUserId = senderUserId,
@@ -111,7 +110,10 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Signaling -> {
-                processSignaling(senderUserId, content.messageContent)
+                val signalingMessage = SignalingMessage(
+                    content.messageUid, protoContent, conversationId, timestampIso, senderUserId, senderClientId
+                )
+                processSignaling(signalingMessage)
             }
         }
     }
@@ -140,8 +142,8 @@ internal class ApplicationMessageHandlerImpl(
         return verified
     }
 
-    private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
-        when (signaling) {
+    private suspend fun processSignaling(signaling: SignalingMessage) {
+        when (val content = signaling.content) {
             MessageContent.Ignored -> {
                 logger
                     .i(message = "Ignored Signaling Message received: $signaling")
@@ -149,9 +151,24 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.Availability -> {
                 logger
-                    .i(message = "Availability status update received: ${signaling.status}")
-                userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
+                    .i(message = "Availability status update received: ${content.status}")
+                userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
+
+            is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
+            is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
+            is MessageContent.DeleteForMe -> deleteForMeHandler.handle(content, signaling.conversationId)
+            is MessageContent.Calling -> {
+                logger.d("MessageContent.Calling")
+                callManagerImpl.value.onCallingMessageReceived(
+                    message = signaling,
+                    content = content,
+                )
+            }
+
+            is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
+            is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
+            is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
         }
     }
 
@@ -170,27 +187,13 @@ internal class ApplicationMessageHandlerImpl(
                 }
 
                 is MessageContent.Knock -> persistMessage(message)
-                is MessageContent.Reaction -> persistReaction(message, content)
                 is MessageContent.Asset -> handleAssetMessage(message)
-                is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
-                is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message, content)
-                is MessageContent.Calling -> {
-                    logger.d("MessageContent.Calling")
-                    callManagerImpl.value.onCallingMessageReceived(
-                        message = message,
-                        content = content
-                    )
-                }
 
-                is MessageContent.TextEdited -> editTextHandler.handle(message, content)
-                is MessageContent.LastRead -> lastReadContentHandler.handle(message, content)
                 is MessageContent.Unknown -> {
                     logger.i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
 
-                is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
-                is MessageContent.Empty -> TODO()
                 is MessageContent.RestrictedAsset -> TODO()
             }
 
@@ -300,10 +303,11 @@ internal class ApplicationMessageHandlerImpl(
 
     private suspend fun handleDeleteMessage(
         content: MessageContent.DeleteMessage,
-        message: Message
+        conversationId: ConversationId,
+        senderUserId: UserId
     ) {
-        if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId)) {
-            messageRepository.getMessageById(message.conversationId, content.messageId)
+        if (isSenderVerified(content.messageId, conversationId, senderUserId)) {
+            messageRepository.getMessageById(conversationId, content.messageId)
                 .onSuccess { messageToRemove ->
                     (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
                         assetRepository.deleteAssetLocally(
@@ -319,9 +323,9 @@ internal class ApplicationMessageHandlerImpl(
                 }
             messageRepository.markMessageAsDeleted(
                 messageUuid = content.messageId,
-                conversationId = message.conversationId
+                conversationId = conversationId
             )
-        } else logger.i(message = "Delete message sender is not verified: $message")
+        } else logger.i(message = "Delete message sender is not verified: $content")
     }
 
     @Suppress("LongParameterList")

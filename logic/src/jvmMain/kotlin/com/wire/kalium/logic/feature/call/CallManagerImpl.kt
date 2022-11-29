@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -59,6 +58,7 @@ import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 
 import com.sun.jna.Pointer
+import com.wire.kalium.logic.data.message.SignalingMessage
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -153,7 +153,10 @@ class CallManagerImpl internal constructor(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(
+        message: SignalingMessage,
+        content: MessageContent.Calling,
+    ) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()

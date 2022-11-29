@@ -10,7 +10,27 @@ sealed class MessageContent {
 
     sealed class System : MessageContent()
     sealed class FromProto : MessageContent()
+
+    /**
+     * Main content of messages created by users/bot,
+     * It's expected that this content will form the
+     * main "Conversation View" (_i.e._ the list of
+     * messages inside a conversation).
+     *
+     * Examples: [Text], [Asset], [Knock], Locations (coordinates).
+     */
     sealed class Regular : FromProto()
+
+    /**
+     * Content that is transferred between clients, but
+     * do NOT bring a standalone content to users, that is:
+     * these are helping to enrich already existing messages,
+     * or provide other sorts of auxiliary features.
+     *
+     * Examples: [Receipt], [Reaction], [DeleteMessage],
+     * [DeleteForMe], [TextEdited],[UserAvailabilityStatus],
+     * [Calling], crypto session reset, etc.
+     */
     sealed class Signaling : FromProto()
 
     // client message content types
@@ -81,14 +101,7 @@ sealed class MessageContent {
         object Invalid : Content
     }
 
-    data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
-    data class DeleteMessage(val messageId: String) : Regular()
-    data class TextEdited(
-        val editMessageId: String,
-        val newContent: String,
-        val newMentions: List<MessageMention> = listOf()
-    ) : Regular()
 
     data class RestrictedAsset(
         val mimeType: String,
@@ -101,12 +114,17 @@ sealed class MessageContent {
         @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
         val unqualifiedConversationId: String,
         val conversationId: ConversationId?,
-    ) : Regular()
+    ) : Signaling()
 
-    data class Reaction(
-        val messageId: String,
-        val emojiSet: Set<String>
-    ) : Regular()
+    data class Calling(val value: String) : Signaling()
+
+    data class DeleteMessage(val messageId: String) : Signaling()
+
+    data class TextEdited(
+        val editMessageId: String,
+        val newContent: String,
+        val newMentions: List<MessageMention> = listOf()
+    ) : Signaling()
 
     data class Knock(val hotKnock: Boolean) : Regular()
 
@@ -116,14 +134,12 @@ sealed class MessageContent {
         val hidden: Boolean = false
     ) : Regular()
 
-    object Empty : Regular()
-
     data class Cleared(
         @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
         val unqualifiedConversationId: String,
         val conversationId: ConversationId?,
         val time: Instant
-    ) : Regular()
+    ) : Signaling()
 
     // server message content types
     // TODO: rename members to userList
@@ -138,7 +154,7 @@ sealed class MessageContent {
         val unqualifiedConversationId: String,
         val conversationId: ConversationId?,
         val time: Instant
-    ) : Regular()
+    ) : Signaling()
 
     data class ConversationRenamed(val conversationName: String) : System()
 
@@ -146,7 +162,16 @@ sealed class MessageContent {
 
     object MissedCall : System()
 
+    data class Reaction(
+        val messageId: String,
+        val emojiSet: Set<String>
+    ) : Signaling()
+
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
+
+    data class Receipt(val type: Type, val messageIds: List<String>): Signaling() {
+        enum class Type { READ, DELIVERY }
+    }
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way

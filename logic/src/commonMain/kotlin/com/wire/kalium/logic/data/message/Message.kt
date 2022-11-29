@@ -101,19 +101,6 @@ sealed class Message(
                     )
                 }
 
-                is MessageContent.Reaction -> {
-                    val empty = if (content.emojiSet.isEmpty()) {
-                        "empty"
-                    } else {
-                        "not_empty"
-                    }
-
-                    properties = mutableMapOf(
-                        typeKey to "reactions",
-                        "emojiSet" to empty
-                    )
-                }
-
                 else -> {
                     properties = mutableMapOf(
                         typeKey to "unknown",
