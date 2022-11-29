@@ -10,7 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 
 @ExperimentalCoroutinesApi
-class MLSMessageApiV0Test : ApiTest() {
+class MLSMessageApiV0Test : ApiTest {
 
     @Test
     fun givenMessage_whenSendingMessage_theRequestShouldFail() =
