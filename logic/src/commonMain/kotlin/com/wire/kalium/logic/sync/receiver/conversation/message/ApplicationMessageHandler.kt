@@ -163,7 +163,7 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
-            is MessageContent.DeleteForMe -> deleteForMeHandler.handle(content, signaling.conversationId)
+            is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
                 logger.d("MessageContent.Calling")
                 callManagerImpl.value.onCallingMessageReceived(

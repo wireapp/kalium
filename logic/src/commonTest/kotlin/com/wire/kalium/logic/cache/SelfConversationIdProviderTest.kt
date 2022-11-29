@@ -32,7 +32,7 @@ class SelfConversationIdProviderTest {
         }
 
         verify(arrangment.conversationRepository)
-            .suspendFunction(arrangment.conversationRepository::getSelfConversationId)
+            .suspendFunction(arrangment.conversationRepository::getProteusSelfConversationId)
             .wasInvoked(exactly = once)
     }
 
@@ -54,7 +54,7 @@ class SelfConversationIdProviderTest {
         }
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::getSelfConversationId)
+            .suspendFunction(arrangement.conversationRepository::getProteusSelfConversationId)
             .wasInvoked(exactly = twice)
     }
 
@@ -72,7 +72,7 @@ class SelfConversationIdProviderTest {
             }
         }
         verify(arrangment.conversationRepository)
-            .suspendFunction(arrangment.conversationRepository::getSelfConversationId)
+            .suspendFunction(arrangment.conversationRepository::getProteusSelfConversationId)
             .wasInvoked(exactly = once)
     }
 
@@ -88,7 +88,7 @@ class SelfConversationIdProviderTest {
         val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(conversationRepository)
 
         suspend fun withSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
-            given(conversationRepository).coroutine { getSelfConversationId() }.then { result }
+            given(conversationRepository).coroutine { getProteusSelfConversationId() }.then { result }
         }
 
         fun arrange() = this to selfConversationIdProvider

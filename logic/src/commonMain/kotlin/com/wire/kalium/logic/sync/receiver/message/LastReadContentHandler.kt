@@ -4,15 +4,14 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 
 // This class handles the messages that arrive when some client has read the conversation.
 internal class LastReadContentHandler internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
 ) {
 
     suspend fun handle(
@@ -20,7 +19,7 @@ internal class LastReadContentHandler internal constructor(
         messageContent: MessageContent.LastRead
     ) {
         val isMessageComingFromOtherClient = message.senderUserId == selfUserId
-        val isMessageDestinedForSelfConversation: Boolean = selfConversationIdProvider().fold({ false }, { it == message.conversationId })
+        val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
         if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
             // If the message is coming from other client, it means that the user has read
