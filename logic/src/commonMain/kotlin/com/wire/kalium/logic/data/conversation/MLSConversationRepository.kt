@@ -271,12 +271,18 @@ class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
+                mlsMessageApi.sendMessage(MLSMessageApi.Message(bundle.commit))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)
                 wrapMLSRequest {
                     mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 }
+            }.flatMap {
+                bundle.welcome?.let {
+                    wrapApiRequest {
+                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(it))
+                    }
+                } ?: Either.Right(Unit)
             }
         }
     }

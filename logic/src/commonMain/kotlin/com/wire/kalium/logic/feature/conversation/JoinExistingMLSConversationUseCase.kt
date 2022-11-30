@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
@@ -36,7 +35,6 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsMissingGroupInfo
@@ -97,14 +95,10 @@ class JoinExistingMLSConversationUseCaseImpl(
                     Either.Right(Unit)
                 }
             } else {
-                wrapApiRequest {
-                    conversationApi.fetchGroupInfo(conversation.id.toApi())
-                }.flatMap { groupInfo ->
-                    mlsConversationRepository.joinGroupByExternalCommit(
-                        conversation.protocol.groupId,
-                        groupInfo
-                    )
-                }
+                mlsConversationRepository.requestToJoinGroup(
+                    conversation.protocol.groupId,
+                    conversation.protocol.epoch
+                )
             }
         } else {
             Either.Right(Unit)
