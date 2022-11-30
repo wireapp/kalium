@@ -18,6 +18,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_TEAM
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
@@ -148,6 +149,10 @@ fun KaliumException.InvalidRequestError.isMlsClientMismatch(): Boolean {
 
 fun KaliumException.InvalidRequestError.isMlsCommitMissingReferences(): Boolean {
     return errorResponse.label == MLS_COMMIT_MISSING_REFERENCES
+}
+
+fun KaliumException.InvalidRequestError.isMlsMissingGroupInfo(): Boolean {
+    return errorResponse.label == MLS_MISSING_GROUP_INFO
 }
 
 fun KaliumException.ServerError.isFederationError(): Boolean {
