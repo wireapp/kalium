@@ -26,9 +26,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.flow.first
 
 interface ConversationGroupRepository {
-    suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation)
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -54,31 +51,6 @@ internal class ConversationGroupRepositoryImpl(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
-
-    override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.requestToJoinGroup(
-                conversation.protocol.groupId,
-                conversation.protocol.epoch
-            )
-        } else {
-            Either.Right(Unit)
-        }
-    }
-
-    override suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.joinGroupByExternalCommit(conversation.protocol.groupId, conversation.id)
-        } else {
-            Either.Right(Unit)
-        }
-    }
-
-    override suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation) {
-        if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.clearJoinViaExternalCommit(conversation.protocol.groupId)
-        }
-    }
 
     override suspend fun createGroupConversation(
         name: String?,
@@ -108,7 +80,7 @@ internal class ConversationGroupRepositoryImpl(
 
                         is Conversation.ProtocolInfo.MLS ->
                             persistMembersFromConversationResponse(conversationResponse)
-                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList) }
+                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList + selfUserId) }
                     }
                 }.flatMap {
                     wrapStorageRequest {

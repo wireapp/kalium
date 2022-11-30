@@ -11,6 +11,8 @@ enum class ConversationAccessDTO {
     CODE,
     @SerialName("invite")
     INVITE,
+    @SerialName("self_invite")
+    SELF_INVITE,
     @SerialName("link")
     LINK;
 

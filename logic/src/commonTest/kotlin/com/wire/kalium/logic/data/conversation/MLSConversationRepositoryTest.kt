@@ -129,7 +129,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForSelfUserAndMembers() = runTest {
+    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -144,7 +144,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.keyPackageRepository)
             .suspendFunction(arrangement.keyPackageRepository::claimKeyPackages)
-            .with(matching { it.containsAll(listOf(TestConversation.USER_1, TestUser.SELF.id)) })
+            .with(matching { it.containsAll(listOf(TestConversation.USER_1)) })
             .wasInvoked(once)
     }
 
@@ -385,15 +385,9 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
-            .withPublicGroupStateSuccessful()
             .arrange()
 
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.CONVERSATION_ID)
-
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::fetchGroupInfo)
-            .with(anything())
-            .wasInvoked(once)
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::joinByExternalCommit)
@@ -804,13 +798,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
-        fun withPublicGroupStateSuccessful() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::fetchGroupInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(NetworkResponse.Success("".decodeBase64Bytes(), mapOf(), 201))
-        }
-
         fun withProcessWelcomeMessageSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::processWelcomeMessage)
@@ -893,11 +880,9 @@ class MLSConversationRepositoryTest {
         }
 
         fun arrange() = this to MLSConversationDataSource(
-            TestUser.SELF.id,
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
-            conversationApi,
             conversationDAO,
             clientApi,
             syncManager,
@@ -928,12 +913,13 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
-            val PUBLIC_GROUP_STATE = PublicGroupStateBundle(
+            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val PUBLIC_GROUP_STATE_BUNDLE = PublicGroupStateBundle(
                 PublicGroupStateEncryptionType.PLAINTEXT,
                 RatchetTreeType.FULL,
-                "public_group_state".encodeToByteArray()
+                PUBLIC_GROUP_STATE
             )
-            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
+            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

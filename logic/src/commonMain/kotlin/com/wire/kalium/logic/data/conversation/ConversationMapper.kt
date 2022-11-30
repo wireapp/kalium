@@ -110,6 +110,10 @@ internal class ConversationMapperImpl(
                 ConversationDetails.Self(fromDaoModel(daoModel))
             }
 
+            ConversationEntity.Type.GLOBAL_TEAM -> {
+                ConversationDetails.Team(fromDaoModel(daoModel))
+            }
+
             ConversationEntity.Type.ONE_ON_ONE -> {
                 ConversationDetails.OneOne(
                     conversation = fromDaoModel(daoModel),
@@ -196,6 +200,7 @@ internal class ConversationMapperImpl(
             ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
             ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
             ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+            ConversationAccessDTO.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
             ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
         }
     }
@@ -245,6 +250,7 @@ internal class ConversationMapperImpl(
         Conversation.Access.PRIVATE -> ConversationAccessDTO.PRIVATE
         Conversation.Access.CODE -> ConversationAccessDTO.CODE
         Conversation.Access.INVITE -> ConversationAccessDTO.INVITE
+        Conversation.Access.SELF_INVITE -> ConversationAccessDTO.SELF_INVITE
         Conversation.Access.LINK -> ConversationAccessDTO.LINK
     }
 
@@ -311,8 +317,8 @@ internal class ConversationMapperImpl(
             }
 
             ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
-            ConversationResponse.Type.INCOMING_CONNECTION,
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
+            ConversationResponse.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
         }
     }
 }
@@ -322,6 +328,7 @@ private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = wh
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
     ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
+    ConversationEntity.Type.GLOBAL_TEAM -> Conversation.Type.GLOBAL_TEAM
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -336,12 +343,14 @@ private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (thi
     ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
     ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
     ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+    ConversationAccessDTO.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
 }
 
 private fun ConversationEntity.Access.toDAO(): Conversation.Access = when (this) {
     ConversationEntity.Access.PRIVATE -> Conversation.Access.PRIVATE
     ConversationEntity.Access.INVITE -> Conversation.Access.INVITE
+    ConversationEntity.Access.SELF_INVITE -> Conversation.Access.SELF_INVITE
     ConversationEntity.Access.LINK -> Conversation.Access.LINK
     ConversationEntity.Access.CODE -> Conversation.Access.CODE
 }
@@ -359,6 +368,7 @@ private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
     Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
     Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
     Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
+    Conversation.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
 }
 
 private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -372,6 +382,7 @@ private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = whe
 private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this) {
     Conversation.Access.PRIVATE -> ConversationEntity.Access.PRIVATE
     Conversation.Access.INVITE -> ConversationEntity.Access.INVITE
+    Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }
