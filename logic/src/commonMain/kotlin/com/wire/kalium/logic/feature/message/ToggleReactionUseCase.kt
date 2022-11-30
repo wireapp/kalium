@@ -40,7 +40,7 @@ class ToggleReactionUseCase internal constructor(
             .flatMap { reactions ->
                 currentClientIdProvider().map { it to reactions }
             }
-            .flatMap {(currentClientId, currentReactions) ->
+            .flatMap { (currentClientId, currentReactions) ->
                 if (currentReactions.contains(reaction)) {
                     // Remove reaction
                     removeReaction(
@@ -76,7 +76,7 @@ class ToggleReactionUseCase internal constructor(
 
         return reactionRepository
             .persistReaction(messageId, conversationId, userId, date, newReaction).flatMap {
-                val regularMessage = Message.Regular(
+                val regularMessage = Message.Signaling(
                     id = uuid4().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions + newReaction),
                     conversationId = conversationId,
@@ -84,7 +84,6 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited,
                 )
                 messageSender.sendMessage(regularMessage)
             }
@@ -103,7 +102,7 @@ class ToggleReactionUseCase internal constructor(
     ): Either<CoreFailure, Unit> {
         return reactionRepository.deleteReaction(messageId, conversationId, userId, removedReaction)
             .flatMap {
-                val regularMessage = Message.Regular(
+                val regularMessage = Message.Signaling(
                     id = uuid4().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions - removedReaction),
                     conversationId = conversationId,
@@ -111,7 +110,6 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited,
                 )
                 messageSender.sendMessage(regularMessage)
             }.flatMapLeft {

@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -58,6 +57,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.wire.kalium.logic.data.message.Message
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -152,7 +152,10 @@ class CallManagerImpl internal constructor(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(
+        message: Message.Signaling,
+        content: MessageContent.Calling,
+    ) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()

@@ -33,7 +33,7 @@ class UpdateConversationReadDateUseCase internal constructor(
         val generatedMessageUuid = uuid4().toString()
 
         clientRepository.currentClientId().flatMap { currentClientId ->
-            val regularMessage = Message.Regular(
+            val regularMessage = Message.Signaling(
                 id = generatedMessageUuid,
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
@@ -45,8 +45,7 @@ class UpdateConversationReadDateUseCase internal constructor(
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited,
+                status = Message.Status.PENDING
             )
             messageSender.sendMessage(regularMessage)
         }
