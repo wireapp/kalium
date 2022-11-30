@@ -57,7 +57,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
-import com.wire.kalium.logic.data.message.SignalingMessage
+import com.wire.kalium.logic.data.message.Message
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -153,7 +153,7 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun onCallingMessageReceived(
-        message: SignalingMessage,
+        message: Message.Signaling,
         content: MessageContent.Calling,
     ) =
         withCalling {
