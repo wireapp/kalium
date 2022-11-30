@@ -32,7 +32,7 @@ class ReceiptRepositoryTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsPreviouslyStore() = runTest {
+    fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsPreviouslyStored() = runTest {
         insertInitialData()
 
         val date = Clock.System.now()
@@ -57,8 +57,45 @@ class ReceiptRepositoryTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsPreviouslyStoredAndOrdered() = runTest {
+        insertInitialData()
+
+        val date = Clock.System.now()
+
+        receiptRepository.persistReceipts(
+            userId = TestUser.OTHER_USER_ID_2,
+            conversationId = TEST_CONVERSATION_ID,
+            date = date,
+            type = ReceiptType.READ,
+            messageIds = arrayOf(TEST_MESSAGE_ID)
+        )
+
+        receiptRepository.persistReceipts(
+            userId = TestUser.OTHER_USER_ID,
+            conversationId = TEST_CONVERSATION_ID,
+            date = date,
+            type = ReceiptType.READ,
+            messageIds = arrayOf(TEST_MESSAGE_ID)
+        )
+
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            receiptRepository.observeMessageReceipts(
+                conversationId = TEST_CONVERSATION_ID,
+                messageId = TEST_MESSAGE_ID,
+                type = ReceiptType.READ
+            ).test {
+                val result = awaitItem()
+                assertTrue(result.size == 2)
+                assertTrue { awaitItem().first().userName == TEST_OTHER_USER_ENTITY.name }
+                assertTrue { awaitItem().last().userName == TEST_OTHER_USER_ENTITY_2.name }
+            }
+        }
+    }
+
     suspend fun insertInitialData() {
-        userDao.insertOrIgnoreUsers(listOf(TEST_SELF_USER_ENTITY, TEST_OTHER_USER_ENTITY))
+        userDao.insertOrIgnoreUsers(listOf(TEST_SELF_USER_ENTITY, TEST_OTHER_USER_ENTITY, TEST_OTHER_USER_ENTITY_2))
         conversationDao.insertConversation(TEST_CONVERSATION_ENTITY)
         messageDao.insertMessage(TEST_MESSAGE_ENTITY)
     }
@@ -72,9 +109,17 @@ class ReceiptRepositoryTest {
             )
         )
         private val TEST_OTHER_USER_ENTITY = TestUser.ENTITY.copy(
+            name = "First User",
             id = QualifiedIDEntity(
                 TestUser.OTHER_USER_ID.value,
                 TestUser.OTHER_USER_ID.domain
+            )
+        )
+        private val TEST_OTHER_USER_ENTITY_2 = TestUser.ENTITY.copy(
+            name = "Second User",
+            id = QualifiedIDEntity(
+                TestUser.OTHER_USER_ID_2.value,
+                TestUser.OTHER_USER_ID_2.domain
             )
         )
         private val TEST_CONVERSATION_ID = TestConversation.ID
