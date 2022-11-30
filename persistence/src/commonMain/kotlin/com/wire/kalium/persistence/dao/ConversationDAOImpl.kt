@@ -157,6 +157,7 @@ class ConversationDAOImpl(
     private val conversationMapper = ConversationMapper()
     override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) =
         conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
+
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
     }
