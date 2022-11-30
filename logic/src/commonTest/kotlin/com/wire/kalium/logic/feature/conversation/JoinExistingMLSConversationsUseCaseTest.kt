@@ -3,8 +3,8 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -12,8 +12,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -43,9 +45,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
-                .with(eq(Arrangement.MLS_CONVERSATION1))
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+                .with(eq(Arrangement.MLS_CONVERSATION1), anything())
                 .wasNotInvoked()
         }
 
@@ -55,19 +57,71 @@ class JoinExistingMLSConversationsUseCaseTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
                 .withGetConversationsByGroupStateSuccessful()
+                .withFetchingGroupInfoSuccessful()
                 .withJoinByExternalCommitSuccessful()
                 .arrange()
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
-                .with(eq(Arrangement.MLS_CONVERSATION1))
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+                .with(eq(Arrangement.GROUP_ID1), anything())
                 .wasInvoked(once)
 
-            verify(arrangement.conversationGroupRepository)
-                .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
-                .with(eq(Arrangement.MLS_CONVERSATION2))
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+                .with(eq(Arrangement.GROUP_ID2), anything())
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID3), eq(emptyList()))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID_SELF), eq(emptyList()))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenGlobalTeamConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishGroup() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GLOBAL_TEAM_CONVERSATION))
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID_TEAM), eq(emptyList()))
                 .wasInvoked(once)
         }
 
@@ -79,6 +133,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             .withJoinByExternalCommitSuccessful()
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
             .withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful()
             .withGetConversationByIdSuccessful()
             .arrange()
 
@@ -89,9 +144,9 @@ class JoinExistingMLSConversationsUseCaseTest {
             .with(eq(Arrangement.MLS_CONVERSATION1.id))
             .wasInvoked(once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinMLSGroupViaExternalCommit)
-            .with(eq(Arrangement.MLS_CONVERSATION1))
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+            .with(eq(Arrangement.GROUP_ID1), anything())
             .wasInvoked(twice)
 
     }
@@ -101,14 +156,11 @@ class JoinExistingMLSConversationsUseCaseTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withGetConversationsByGroupStateSuccessful()
+            .withFetchingGroupInfoSuccessful()
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
             .arrange()
 
         joinExistingMLSConversationsUseCase().shouldFail()
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::clearMLSGroupJoinViaExternalCommit)
-            .with(eq(Arrangement.MLS_CONVERSATION1))
-            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -117,12 +169,20 @@ class JoinExistingMLSConversationsUseCaseTest {
         val featureSupport = mock(classOf<FeatureSupport>())
 
         @Mock
+        val conversationApi = mock(classOf<ConversationApi>())
+
+        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
-        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
-        fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(featureSupport, conversationRepository, conversationGroupRepository)
+        fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(
+            featureSupport,
+            conversationApi,
+            conversationRepository,
+            mlsConversationRepository
+        )
 
         @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
@@ -147,19 +207,33 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .then { Either.Right(MLS_CONVERSATION1) }
         }
 
+        fun withEstablishMLSGroupSuccessful() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withJoinByExternalCommitSuccessful() = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::joinMLSGroupViaExternalCommit)
-                .whenInvokedWith(anything())
-                .then { Either.Right(Unit) }
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::joinMLSGroupViaExternalCommit)
-                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
-                .then { Either.Left(failure) }
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
+                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times }, anything())
+                .thenReturn(Either.Left(failure))
+        }
+
+        fun withFetchingGroupInfoSuccessful() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::fetchGroupInfo)
+                .whenInvokedWith(anything())
+                .thenReturn(NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
@@ -169,6 +243,8 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         companion object {
+            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+
             val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
                     ErrorResponse(
@@ -189,9 +265,15 @@ class JoinExistingMLSConversationsUseCaseTest {
                 )
             )
 
+            val GROUP_ID1 = GroupID("group1")
+            val GROUP_ID2 = GroupID("group2")
+            val GROUP_ID3 = GroupID("group3")
+            val GROUP_ID_SELF = GroupID("group-self")
+            val GROUP_ID_TEAM = GroupID("group-team")
+
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
-                    GroupID("group1"),
+                    GROUP_ID1,
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = Clock.System.now(),
@@ -201,13 +283,43 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             val MLS_CONVERSATION2 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
-                    GroupID("group1"),
+                    GROUP_ID2,
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = Clock.System.now(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
+
+            val MLS_UNESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id3", "domain"))
+
+            val MLS_UNESTABLISHED_SELF_CONVERSATION = TestConversation.SELF(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_SELF,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("self", "domain"))
+
+            val MLS_UNESTABLISHED_GLOBAL_TEAM_CONVERSATION = TestConversation.GLOBAL_TEAM(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_TEAM,
+                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("team", "domain"))
         }
     }
 }
