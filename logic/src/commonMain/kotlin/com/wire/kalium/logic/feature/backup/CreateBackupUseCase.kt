@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.utils.ChaCha20Utils
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -17,7 +18,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.util.clientPlatform
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

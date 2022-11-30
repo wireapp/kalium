@@ -14,9 +14,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-@Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"
-
 @Suppress("TooGenericExceptionCaught")
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
     var compressedFileSize = 0L
@@ -32,12 +29,13 @@ actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: S
 
 private fun addToCompressedFile(zipOutputStream: ZipOutputStream, fileSource: Source, fileName: String): Long {
     var compressedFileSize = 0L
+    val bufferSize = 8192L
     var byteCount: Long
     val entry = ZipEntry(fileName)
     zipOutputStream.putNextEntry(entry)
     fileSource.buffer().use { input ->
         val readBuffer = Buffer()
-        while (input.read(readBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+        while (input.read(readBuffer, bufferSize).also { byteCount = it } != -1L) {
             zipOutputStream.write(readBuffer.readByteArray())
             compressedFileSize += byteCount
         }
