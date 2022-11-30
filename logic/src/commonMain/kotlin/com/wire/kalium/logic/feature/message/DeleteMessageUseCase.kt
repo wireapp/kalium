@@ -46,7 +46,7 @@ class DeleteMessageUseCase internal constructor(
                     val generatedMessageUuid = uuid4().toString()
 
                     return clientRepository.currentClientId().flatMap { currentClientId ->
-                        val regularMessage = Message.Regular(
+                        val regularMessage = Message.Signaling(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
@@ -58,7 +58,6 @@ class DeleteMessageUseCase internal constructor(
                             senderUserId = selfUser.id,
                             senderClientId = currentClientId,
                             status = Message.Status.PENDING,
-                            editStatus = Message.EditStatus.NotEdited,
                         )
                         messageSender.sendMessage(regularMessage)
                     }

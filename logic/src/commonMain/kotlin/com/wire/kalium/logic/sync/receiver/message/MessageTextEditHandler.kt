@@ -8,7 +8,7 @@ import com.wire.kalium.logic.functional.flatMap
 class MessageTextEditHandler(private val messageRepository: MessageRepository) {
 
     suspend fun handle(
-        message: Message,
+        message: Message.Signaling,
         messageContent: MessageContent.TextEdited
     ) = messageRepository.updateTextMessageContent(
         conversationId = message.conversationId,

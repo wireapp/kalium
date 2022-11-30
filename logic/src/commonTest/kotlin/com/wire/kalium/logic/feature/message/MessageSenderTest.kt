@@ -357,7 +357,7 @@ class MessageSenderTest {
             .withSendProteusMessage()
             .arrange()
 
-        val message = Message.Regular(
+        val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
@@ -365,7 +365,6 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
 
         val messageTarget = MessageTarget.Client(
@@ -408,7 +407,7 @@ class MessageSenderTest {
             .withSendProteusMessage()
             .arrange()
 
-        val message = Message.Regular(
+        val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
@@ -416,7 +415,6 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
 
         val messageTarget = MessageTarget.Conversation
@@ -481,7 +479,7 @@ class MessageSenderTest {
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
-            override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
+            override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
                 return Either.Right(message)
             }
         }
