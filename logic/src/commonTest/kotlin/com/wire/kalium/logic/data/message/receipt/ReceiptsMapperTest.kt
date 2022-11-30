@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
@@ -108,15 +109,17 @@ class ReceiptsMapperTest {
 
         val expectedDetailedReceipt = DetailedReceipt(
             type = ReceiptType.READ,
-            userId = SELF_USER_ID,
-            userName = "Self User Name",
-            userHandle = "selfuserhandle",
-            userPreviewAssetId = null,
-            userType = UserType.INTERNAL,
-            isUserDeleted = false,
-            connectionStatus = ConnectionState.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatus.NONE,
-            date = date
+            date = date,
+            userSummary = UserSummary(
+                userId = SELF_USER_ID,
+                userName = "Self User Name",
+                userHandle = "selfuserhandle",
+                userPreviewAssetId = null,
+                userType = UserType.INTERNAL,
+                isUserDeleted = false,
+                connectionStatus = ConnectionState.ACCEPTED,
+                availabilityStatus = UserAvailabilityStatus.NONE
+            )
         )
 
         val (_, receiptsMapper) = Arrangement()

@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -37,14 +38,16 @@ internal class ReceiptsMapperImpl(
             DetailedReceipt(
                 type = fromTypeEntity(type),
                 date = date,
-                userId = messageUserId,
-                userName = userName,
-                userHandle = userHandle,
-                userPreviewAssetId = userPreviewAssetId?.let { idMapper.fromDaoModel(it) },
-                userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                isUserDeleted = isUserDeleted,
-                connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
-                availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                userSummary = UserSummary(
+                    userId = messageUserId,
+                    userName = userName,
+                    userHandle = userHandle,
+                    userPreviewAssetId = userPreviewAssetId?.let { idMapper.fromDaoModel(it) },
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    isUserDeleted = isUserDeleted,
+                    connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
+                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                )
             )
         }
 }

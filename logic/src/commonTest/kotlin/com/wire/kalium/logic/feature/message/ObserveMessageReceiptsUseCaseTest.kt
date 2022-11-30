@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -77,14 +78,16 @@ class ObserveMessageReceiptsUseCaseTest {
         val DETAILED_RECEIPT = DetailedReceipt(
             type = RECEIPT_TYPE,
             date = receiptDate,
-            userId = USER_ID,
-            userName = "user name",
-            userHandle = "userhandle",
-            userPreviewAssetId = null,
-            userType = UserType.INTERNAL,
-            isUserDeleted = false,
-            connectionStatus = ConnectionState.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatus.NONE
+            userSummary = UserSummary(
+                userId = USER_ID,
+                userName = "user name",
+                userHandle = "userhandle",
+                userPreviewAssetId = null,
+                userType = UserType.INTERNAL,
+                isUserDeleted = false,
+                connectionStatus = ConnectionState.ACCEPTED,
+                availabilityStatus = UserAvailabilityStatus.NONE
+            )
         )
     }
 }
