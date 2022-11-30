@@ -1,2 +1,4 @@
-ALTER TABLE ServerConfiguration
-ADD COLUMN lastBlackListCheck TEXT;
+import kotlin.Boolean;
+
+ALTER TABLE Accounts
+ADD COLUMN isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL;
