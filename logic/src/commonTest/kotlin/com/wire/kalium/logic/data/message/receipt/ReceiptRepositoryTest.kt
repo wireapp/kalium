@@ -110,14 +110,14 @@ class ReceiptRepositoryTest {
             )
         )
         private val TEST_OTHER_USER_ENTITY = TestUser.ENTITY.copy(
-            name = "First User",
+            name = "AAA - First User Alphabetically",
             id = QualifiedIDEntity(
                 TestUser.OTHER_USER_ID.value,
                 TestUser.OTHER_USER_ID.domain
             )
         )
         private val TEST_OTHER_USER_ENTITY_2 = TestUser.ENTITY.copy(
-            name = "Second User",
+            name = "ZZZ - Second User Alphabetically",
             id = QualifiedIDEntity(
                 TestUser.OTHER_USER_ID_2.value,
                 TestUser.OTHER_USER_ID_2.domain
