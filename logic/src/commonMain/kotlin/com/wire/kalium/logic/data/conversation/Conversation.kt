@@ -149,7 +149,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
         val unreadEventCount: UnreadEventCount,
-        val lastMessage: Message?
+        val lastMessage: Message.Standalone?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -159,7 +159,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
         val unreadEventCount: UnreadEventCount,
-        val lastMessage: Message?,
+        val lastMessage: Message.Standalone?,
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean
     ) : ConversationDetails(conversation)
