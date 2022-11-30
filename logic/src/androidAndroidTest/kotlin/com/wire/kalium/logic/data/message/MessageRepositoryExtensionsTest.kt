@@ -42,9 +42,9 @@ class MessageRepositoryExtensionsTest {
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()
-
+        MessageRepositoryExtensionsTest
         val visibilities = listOf(Message.Visibility.VISIBLE)
-        val result: Flow<PagingData<Message>> = messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
+        messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
             TestConversation.ID,
             visibilities,
             pagingConfig
