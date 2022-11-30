@@ -316,7 +316,7 @@ sealed class EventContentDTO {
 
         enum class PropertyKey(val key: String) {
             WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE")
-            // TODO map other like -ie. 'labels'-
+            // TODO map other event like -ie. 'labels'-
         }
     }
 
