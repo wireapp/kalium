@@ -65,7 +65,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                         visibility = MessageEntity.Visibility.values().random(),
                         content = MessageEntityContent.Text("Text content for message $it"),
                         senderClientId = Random.nextLong(2_000).toString(),
-                        editStatus = MessageEntity.EditStatus.NotEdited
+                        editStatus = MessageEntity.EditStatus.NotEdited,
+                        senderName = "senderName"
                     )
                 )
 
@@ -80,7 +81,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                         content = MessageEntityContent.MemberChange(
                             listOf(UserIDEntity("value", "domain")),
                             MessageEntity.MemberChangeType.REMOVED
-                        )
+                        ),
+                        senderName = "senderName"
                     )
                 )
 
@@ -109,7 +111,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                             assetNormalizedLoudness = byteArrayOf(1),
                         ),
                         senderClientId = Random.nextLong(2_000).toString(),
-                        editStatus = MessageEntity.EditStatus.NotEdited
+                        editStatus = MessageEntity.EditStatus.NotEdited,
+                        senderName = "senderName"
                     )
                 )
 
@@ -126,7 +129,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                             Random.nextBytes(100000)
                         ),
                         senderClientId = Random.nextLong(2_000).toString(),
-                        editStatus = MessageEntity.EditStatus.NotEdited
+                        editStatus = MessageEntity.EditStatus.NotEdited,
+                        senderName = "senderName"
                     )
                 )
             }
