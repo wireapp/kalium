@@ -19,7 +19,7 @@ interface MLSMessageCreator {
 
     suspend fun createOutgoingMLSMessage(
         groupId: GroupID,
-        message: Message.Regular
+        message: Message.Sendable
     ): Either<CoreFailure, MLSMessageApi.Message>
 
 }
@@ -31,7 +31,7 @@ class MLSMessageCreatorImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MLSMessageCreator {
 
-    override suspend fun createOutgoingMLSMessage(groupId: GroupID, message: Message.Regular): Either<CoreFailure, MLSMessageApi.Message> {
+    override suspend fun createOutgoingMLSMessage(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, MLSMessageApi.Message> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             kaliumLogger.i("Creating outgoing MLS message (groupID = $groupId)")
             val content = protoContentMapper.encodeToProtobuf(ProtoContent.Readable(message.id, message.content))

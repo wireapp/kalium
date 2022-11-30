@@ -47,6 +47,7 @@ class OnHttpRequest(
                             arg = context
                         )
                     }
+
                     is Either.Left -> {
                         callingLogger.i("[OnHttpRequest] -> Error")
                         calling.wcall_resp(
@@ -70,7 +71,7 @@ class OnHttpRequest(
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
-        val message = Message.Regular(
+        val message = Message.Signaling(
             id = uuid4().toString(),
             content = messageContent,
             conversationId = conversationId,
@@ -78,7 +79,6 @@ class OnHttpRequest(
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
         return messageSender.sendMessage(message, messageTarget)
     }
