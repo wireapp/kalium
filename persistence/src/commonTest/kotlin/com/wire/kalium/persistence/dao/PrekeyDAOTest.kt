@@ -39,7 +39,6 @@ class PrekeyDAOTest : BaseDatabaseTest() {
         assertEquals(50, prekeyDAO.lastOTRPrekeyId())
     }
 
-
     @Test
     fun whenNotLastPreKeyIdIsStored_thenReturnNull() = runTest {
         assertEquals(null, prekeyDAO.lastOTRPrekeyId())
