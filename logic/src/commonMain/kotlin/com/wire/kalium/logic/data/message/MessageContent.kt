@@ -44,7 +44,7 @@ sealed class MessageContent {
      * or provide other sorts of auxiliary features.
      *
      * Examples: [Receipt], [Reaction], [DeleteMessage],
-     * [DeleteForMe], [TextEdited],[UserAvailabilityStatus],
+     * [DeleteForMe], [TextEdited], [UserAvailabilityStatus],
      * [Calling], crypto session reset, etc.
      */
     sealed class Signaling : FromProto()
@@ -185,7 +185,7 @@ sealed class MessageContent {
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
-    data class Receipt(val type: Type, val messageIds: List<String>): Signaling() {
+    data class Receipt(val type: Type, val messageIds: List<String>) : Signaling() {
         enum class Type { READ, DELIVERY }
     }
 
