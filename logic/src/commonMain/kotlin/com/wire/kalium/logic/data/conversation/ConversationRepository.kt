@@ -55,6 +55,7 @@ interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
     suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
 
+    @DelicateKaliumApi("this function does not get values from cache")
     suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
     suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>

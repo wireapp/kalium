@@ -2,6 +2,10 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
+import com.wire.kalium.logic.cache.MLSSelfConversationIdProviderImpl
+import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
+import com.wire.kalium.logic.cache.ProteusSelfConversationIdProviderImpl
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProviderImpl
 import com.wire.kalium.logic.configuration.ClientConfig
@@ -49,6 +53,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -258,7 +264,24 @@ class UserSessionScope internal constructor(
         )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
+    private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
+        MLSSelfConversationIdProviderImpl(
+            conversationRepository
+        )
+    }
+    private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider by lazy {
+        ProteusSelfConversationIdProviderImpl(
+            conversationRepository
+        )
+    }
+    private val selfConversationIdProvider: SelfConversationIdProvider by
+    lazy {
+        SelfConversationIdProviderImpl(
+            isMLSEnabled,
+            mlsSelfConversationIdProvider,
+            proteusSelfConversationIdProvider
+        )
+    }
 
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
@@ -623,6 +646,9 @@ class UserSessionScope internal constructor(
         receiptRepository = receiptRepository
     )
 
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+        get() = IsMessageSentInSelfConversationUseCaseImpl(mlsSelfConversationIdProvider, proteusSelfConversationIdProvider)
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -633,13 +659,13 @@ class UserSessionScope internal constructor(
             persistMessage,
             persistReaction,
             MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
+            LastReadContentHandler(conversationRepository, userId, isMessageSentInSelfConversation),
             ClearConversationContentHandler(
                 ClearConversationContentImpl(conversationRepository, assetRepository),
                 userId,
-                selfConversationIdProvider,
+                isMessageSentInSelfConversation,
             ),
-            DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            DeleteForMeHandler(messageRepository, userId, isMessageSentInSelfConversation),
             messageEncoder,
             receiptMessageHandler
         )
@@ -752,7 +778,8 @@ class UserSessionScope internal constructor(
             userId,
             selfConversationIdProvider,
             persistMessage,
-            updateKeyingMaterialThresholdProvider
+            updateKeyingMaterialThresholdProvider,
+            clientIdProvider
         )
     val debug: DebugScope
         get() = DebugScope(
@@ -779,6 +806,7 @@ class UserSessionScope internal constructor(
             connectionRepository,
             userId,
             clientIdProvider,
+            selfConversationIdProvider,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,

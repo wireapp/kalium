@@ -26,7 +26,6 @@ internal class SelfConversationIdProviderImpl(
     private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
 ) : SelfConversationIdProvider {
 
-    @OptIn(DelicateKaliumApi::class)
     override suspend fun invoke(): Either<StorageFailure, ConversationId> {
         return if (isMLSEnabled()) {
             mlsSelfConversationIdProvider()
@@ -36,30 +35,28 @@ internal class SelfConversationIdProviderImpl(
     }
 }
 
-internal class MLSConversationIdProviderImpl(
-    private val conversationRepository: ConversationRepository
-) : MLSSelfConversationIdProvider {
+@OptIn(DelicateKaliumApi::class)
+internal class MLSSelfConversationIdProviderImpl(
+    val conversationRepository: ConversationRepository
+) : MLSSelfConversationIdProvider, CachingProviderImpl<StorageFailure, ConversationId>({
+    conversationRepository.getMLSSelfConversationId()
+})
 
-    private var selfConversationId: ConversationId? = null
+@OptIn(DelicateKaliumApi::class)
+internal class ProteusSelfConversationIdProviderImpl(
+    val conversationRepository: ConversationRepository
+) : ProteusSelfConversationIdProvider, CachingProviderImpl<StorageFailure, ConversationId>({
+    conversationRepository.getProteusSelfConversationId()
+})
 
-    @OptIn(DelicateKaliumApi::class)
-    override suspend fun invoke(): Either<StorageFailure, ConversationId> =
-        selfConversationId?.let { Either.Right(it) }
-            ?: conversationRepository.getMLSSelfConversationId().onSuccess {
-                selfConversationId = it
-            }
-}
+internal open class CachingProviderImpl<Error, T>(
+    private val getter: suspend () -> Either<Error, T>
+) {
+    private var value: T? = null
 
-internal class ProteusConversationIdProviderImpl(
-    private val conversationRepository: ConversationRepository
-) : ProteusSelfConversationIdProvider {
-
-    private var selfConversationId: ConversationId? = null
-
-    @OptIn(DelicateKaliumApi::class)
-    override suspend fun invoke(): Either<StorageFailure, ConversationId> =
-        selfConversationId?.let { Either.Right(it) }
-            ?: conversationRepository.getProteusSelfConversationId().onSuccess {
-                selfConversationId = it
+    suspend fun invoke(): Either<Error, T> =
+        value?.let { Either.Right(it) }
+            ?: getter().onSuccess {
+                value = it
             }
 }

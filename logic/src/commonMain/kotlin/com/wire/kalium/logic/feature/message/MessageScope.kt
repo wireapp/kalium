@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -43,6 +44,7 @@ class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val userId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -157,10 +159,11 @@ class MessageScope internal constructor(
         get() = DeleteMessageUseCase(
             messageRepository,
             userRepository,
-            clientRepository,
             assetRepository,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            currentClientIdProvider,
+            selfConversationIdProvider
         )
 
     val toggleReaction: ToggleReactionUseCase
