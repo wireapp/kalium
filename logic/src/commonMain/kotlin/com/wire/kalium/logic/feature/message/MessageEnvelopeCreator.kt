@@ -36,7 +36,7 @@ interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message.Regular
+        message: Message.Sendable
     ): Either<CoreFailure, MessageEnvelope>
 
 }
@@ -50,7 +50,7 @@ class MessageEnvelopeCreatorImpl(
 
     override suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message.Regular
+        message: Message.Sendable
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
 
