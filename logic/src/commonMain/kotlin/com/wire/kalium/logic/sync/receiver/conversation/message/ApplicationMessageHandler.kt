@@ -31,7 +31,11 @@ import com.wire.kalium.util.string.toHexString
 internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(
-        conversationId: ConversationId, timestampIso: String, senderUserId: UserId, senderClientId: ClientId, content: ProtoContent.Readable
+        conversationId: ConversationId,
+        timestampIso: String,
+        senderUserId: UserId,
+        senderClientId: ClientId,
+        content: ProtoContent.Readable,
     )
 
     @Suppress("LongParameterList")
@@ -65,7 +69,11 @@ internal class ApplicationMessageHandlerImpl(
 
     @Suppress("ComplexMethod")
     override suspend fun handleContent(
-        conversationId: ConversationId, timestampIso: String, senderUserId: UserId, senderClientId: ClientId, content: ProtoContent.Readable
+        conversationId: ConversationId,
+        timestampIso: String,
+        senderUserId: UserId,
+        senderClientId: ClientId,
+        content: ProtoContent.Readable
     ) {
         when (val protoContent = content.messageContent) {
             is MessageContent.Regular -> {
@@ -117,7 +125,7 @@ internal class ApplicationMessageHandlerImpl(
     private fun updateAssetMessageWithDecryptionKeys(
         persistedMessage: Message.Regular,
         remoteData: AssetContent.RemoteData
-    ): Message.Regular   {
+    ): Message.Regular {
         val assetMessageContent = persistedMessage.content as MessageContent.Asset
         // The message was previously received with just metadata info, so let's update it with the raw data info
         return persistedMessage.copy(
@@ -125,7 +133,8 @@ internal class ApplicationMessageHandlerImpl(
                 value = assetMessageContent.value.copy(
                     remoteData = remoteData
                 )
-            ), visibility = Message.Visibility.VISIBLE
+            ),
+            visibility = Message.Visibility.VISIBLE
         )
     }
 
@@ -168,45 +177,33 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    // TODO(qol): split this function so it's easier to maintain
-    @Suppress("ComplexMethod", "LongMethod")
-    private suspend fun processMessage(message: Message) {
+    @Suppress("ComplexMethod")
+    private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : $message }")
 
-        when (message) {
-            is Message.Regular -> when (val content = message.content) {
-                // Persist Messages - > lists
-                is MessageContent.Text -> handleTextMessage(message, content)
+        when (val content = message.content) {
+            // Persist Messages - > lists
+            is MessageContent.Text -> handleTextMessage(message, content)
 
-                is MessageContent.FailedDecryption -> {
-                    persistMessage(message)
-                }
-
-                is MessageContent.Knock -> persistMessage(message)
-                is MessageContent.Asset -> handleAssetMessage(message)
-
-                is MessageContent.Unknown -> {
-                    logger.i(message = "Unknown Message received: $message")
-                    persistMessage(message)
-                }
-
-                is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.FailedDecryption -> {
+                persistMessage(message)
             }
 
-            is Message.System -> when (message.content) {
-                is MessageContent.MemberChange -> {
-                    logger.i(message = "System MemberChange Message received: $message")
-                    persistMessage(message)
-                }
+            is MessageContent.Knock -> persistMessage(message)
+            is MessageContent.Asset -> handleAssetMessage(message)
 
-                is MessageContent.ConversationRenamed -> TODO()
-                is MessageContent.MissedCall -> TODO()
+            is MessageContent.Unknown -> {
+                logger.i(message = "Unknown Message received: $message")
+                persistMessage(message)
             }
+
+            is MessageContent.RestrictedAsset -> TODO()
         }
     }
 
     private suspend fun handleTextMessage(
-        message: Message.Regular, messageContent: MessageContent.Text
+        message: Message.Regular,
+        messageContent: MessageContent.Text
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
@@ -219,7 +216,8 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun verifyMessageQuote(
-        quotedReference: MessageContent.QuoteReference, message: Message.Regular
+        quotedReference: MessageContent.QuoteReference,
+        message: Message.Regular
     ): MessageContent.QuoteReference {
         val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
             logger.i("Quote message received with null hash. Marking as unverified.")
@@ -295,7 +293,9 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun handleDeleteMessage(
-        content: MessageContent.DeleteMessage, conversationId: ConversationId, senderUserId: UserId
+        content: MessageContent.DeleteMessage,
+        conversationId: ConversationId,
+        senderUserId: UserId
     ) {
         if (isSenderVerified(content.messageId, conversationId, senderUserId)) {
             messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
