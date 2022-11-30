@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -19,54 +21,49 @@ class PersistWebSocketStatusUseCaseTest {
     @Test
     fun givenATrueValue_persistWebSocketInvoked() = runTest {
         val expectedValue = Unit
-
-        val (arrangement, persistPersistentWebSocketConnectionStatusUseCase) = Arrangement()
-            .withSuccessfulResponse(expectedValue)
+        val (_, persistPersistentWebSocketConnectionStatusUseCase) = Arrangement()
+            .withSuccessfulResponse()
             .arrange()
 
         val actual = persistPersistentWebSocketConnectionStatusUseCase(true)
         assertEquals(expectedValue, actual)
-
-        verify(arrangement.globalConfigRepository).invocation { persistPersistentWebSocketConnectionStatus(true) }
-            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenStorageFailure_thenDataNotFoundReturned() = runTest {
         // Given
-        val dataNotFound = StorageFailure.DataNotFound
+        val storageFailure = StorageFailure.DataNotFound
         val (arrangement, persistPersistentWebSocketConnectionStatusUseCase) = Arrangement()
-            .withPersistWebSocketErrorResponse(dataNotFound)
+            .withPersistWebSocketErrorResponse(storageFailure)
             .arrange()
 
         // When
         persistPersistentWebSocketConnectionStatusUseCase(true)
 
-        verify(arrangement.globalConfigRepository)
-            .function(arrangement.globalConfigRepository::persistPersistentWebSocketConnectionStatus).with(any())
+        verify(arrangement.sessionRepository)
+            .suspendFunction(arrangement.sessionRepository::updatePersistentWebSocketStatus).with(any(), any())
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val globalConfigRepository: GlobalConfigRepository = mock(GlobalConfigRepository::class)
+        val sessionRepository = mock(classOf<SessionRepository>())
 
         val persistPersistentWebSocketConnectionStatusUseCaseImpl =
-            PersistPersistentWebSocketConnectionStatusUseCaseImpl(globalConfigRepository)
+            PersistPersistentWebSocketConnectionStatusUseCaseImpl(UserId("test", "domain"), sessionRepository)
 
-        fun withSuccessfulResponse(expectedValue: Unit): Arrangement {
-            given(globalConfigRepository)
-                .function(globalConfigRepository::persistPersistentWebSocketConnectionStatus)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(expectedValue))
+        fun withSuccessfulResponse(): Arrangement {
+            given(sessionRepository)
+                .suspendFunction(sessionRepository::updatePersistentWebSocketStatus)
+                .whenInvokedWith(any(), any()).thenReturn(Either.Right(Unit))
 
             return this
         }
 
         fun withPersistWebSocketErrorResponse(storageFailure: StorageFailure): Arrangement {
-            given(globalConfigRepository)
-                .function(globalConfigRepository::persistPersistentWebSocketConnectionStatus)
-                .whenInvokedWith(any())
+            given(sessionRepository)
+                .suspendFunction(sessionRepository::updatePersistentWebSocketStatus)
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Left(storageFailure))
             return this
         }

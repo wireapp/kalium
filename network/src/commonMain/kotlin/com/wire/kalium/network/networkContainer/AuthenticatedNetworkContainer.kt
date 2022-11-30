@@ -28,9 +28,18 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
+
+    /**
+     * Clear any cached token on the http clients. This will trigger a reloading
+     * of the access token from the session manager on the next request.
+     */
+    suspend fun clearCachedToken()
 
     val accessTokenApi: AccessTokenApi
 
@@ -100,6 +109,8 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
+
+    suspend fun clearCachedToken()
 }
 
 internal class AuthenticatedHttpClientProviderImpl(
@@ -107,19 +118,38 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
 ) : AuthenticatedHttpClientProvider {
+
+    override suspend fun clearCachedToken() {
+        bearerAuthProvider.clearToken()
+    }
+
+    private val loadToken: suspend () -> BearerTokens? = {
+        val session = sessionManager.session() ?: error("missing user session")
+        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+    }
+
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+        val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+        newSession?.let {
+            BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+        }
+    }
+
+    private val bearerAuthProvider: BearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
     override val backendConfig = sessionManager.serverConfig().links
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
             engine,
-            sessionManager,
-            accessTokenApi
+            sessionManager.serverConfig(),
+            bearerAuthProvider
         )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager, accessTokenApi)
+        AuthenticatedWebSocketClient(engine, bearerAuthProvider, sessionManager.serverConfig())
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, accessTokenApi, installCompression = false)
+        AuthenticatedNetworkClient(engine, sessionManager.serverConfig(), bearerAuthProvider, installCompression = false)
     }
 }
