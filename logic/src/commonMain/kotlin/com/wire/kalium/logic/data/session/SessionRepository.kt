@@ -12,6 +12,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.Account
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -47,8 +48,11 @@ interface SessionRepository {
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
+    suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
     fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
+    suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -70,7 +74,8 @@ internal class SessionDataSource(
             accountsDAO.insertOrReplace(
                 idMapper.toDaoModel(authTokens.userId),
                 sessionMapper.toSsoIdEntity(ssoId),
-                serverConfigId
+                serverConfigId,
+                isPersistentWebSocketEnabled = false
             )
         }.flatMap {
             wrapStorageRequest {
@@ -147,11 +152,32 @@ internal class SessionDataSource(
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
         wrapStorageNullableRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
 
+    override suspend fun updatePersistentWebSocketStatus(
+        userId: UserId,
+        isPersistentWebSocketEnabled: Boolean
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            accountsDAO.updatePersistentWebSocketStatus(idMapper.toDaoModel(userId), isPersistentWebSocketEnabled)
+        }
+
     override suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
         accountsDAO.updateSsoId(idMapper.toDaoModel(userId), idMapper.toSsoIdEntity(ssoId))
     }
 
     override fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         accountsDAO.isFederated(idMapper.toDaoModel(userId))
+    }
+
+    override suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>> =
+        wrapStorageRequest {
+            accountsDAO.getAllValidAccountPersistentWebSocketStatus().map {
+                it.map { persistentWebSocketStatusEntity ->
+                    sessionMapper.fromPersistentWebSocketStatusEntity(persistentWebSocketStatusEntity)
+                }
+            }
+        }
+
+    override suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        accountsDAO.persistentWebSocketStatus(idMapper.toDaoModel(userId))
     }
 }
