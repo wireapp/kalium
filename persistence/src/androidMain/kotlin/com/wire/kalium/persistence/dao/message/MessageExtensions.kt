@@ -43,7 +43,8 @@ actual class MessageExtensionsImpl actual constructor(
                 visibilities,
                 limit,
                 offset,
-                messageMapper::toEntityMessageFromView)
+                messageMapper::toEntityMessageFromView
+            )
         }
     )
 }
