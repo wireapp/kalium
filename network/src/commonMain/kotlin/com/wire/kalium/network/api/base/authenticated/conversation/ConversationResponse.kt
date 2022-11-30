@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class GlobalTeamConversationResponse(
@@ -73,8 +74,17 @@ data class ConversationResponse(
     @SerialName("cipher_suite")
     val mlsCipherSuiteTag: Int?,
 
-    @SerialName("access") val access: Set<ConversationAccessDTO>,
-    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+
+    /**
+     * **Deprecation info**: Since API v3 `access_role_v2` is deprecated and replaced by `access_role`,
+     * when the minimum supported version is API v3 we can remove `access_role_v2`.
+     *
+     * Further info: https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/672006169/API+changes+v2+v3
+     */
+    @SerialName("access_role_v2") @JsonNames("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 ) {
 
     val isOneOnOneConversation: Boolean

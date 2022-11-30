@@ -157,6 +157,21 @@ class ConversationApiV0Test : ApiTest {
     }
 
     @Test
+    fun givenSuccessAccessUpdateResponseWithDeprecatedAccessRoleField_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
+        val accessRoles = ConversationAccessInfoDTO(
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
+        )
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validAccessUpdateWithDeprecatedAccessRoleField.rawJson, statusCode = HttpStatusCode.OK
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+            assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
+        }
+    }
+
+    @Test
     fun givenResponseWithNullAccessRole_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
         val accessRoles = ConversationAccessInfoDTO(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()

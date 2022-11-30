@@ -23,6 +23,15 @@ data class ConversationAccessInfoDTO constructor(
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
 )
 
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+internal data class ConversationAccessInfoDTOV3 constructor(
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
+)
+
 sealed class UpdateConversationAccessResponse {
     object AccessUnchanged : UpdateConversationAccessResponse()
     data class AccessUpdated(val event: EventContentDTO.Conversation.AccessUpdate) : UpdateConversationAccessResponse()
