@@ -190,8 +190,9 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         // update NotificationDate for all needed Conversations in one, instead of doing it one by one
         // that makes conversationRepository.getConversationsForNotifications() emits new value after each DB update
         conversation.lastNotificationDate.let {
-            if (it == null || timeParser.calculateMillisDifference(it, newNotificationDate) > 0)
+            if (it == null || timeParser.calculateMillisDifference(it, newNotificationDate) > 0) {
                 conversationRepository.updateConversationNotificationDate(conversation.id, newNotificationDate)
+            }
         }
     }
 
