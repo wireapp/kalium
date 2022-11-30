@@ -89,8 +89,8 @@ class CallManagerTest {
         val expectedConversationId = "conversationId"
 
         callManagerImpl.onCallingMessageReceived(
+            content = CALL_CONTENT,
             message = CALL_MESSAGE,
-            content = CALL_CONTENT
         )
 
         verify(calling)
@@ -112,7 +112,7 @@ class CallManagerTest {
         val CLIENT_ID = ClientId(value = "clientId")
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val CALL_CONTENT = MessageContent.Calling(value = "content")
-        val CALL_MESSAGE = Message.Regular(
+        val CALL_MESSAGE = Message.Signaling(
             id = "id",
             content = CALL_CONTENT,
             conversationId = ConversationId(value = "value", domain = "domain"),
@@ -120,7 +120,6 @@ class CallManagerTest {
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

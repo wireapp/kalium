@@ -2,10 +2,10 @@ package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.functional.fold
 
 // This class handles the messages that arrive when some client has read the conversation.
@@ -16,7 +16,7 @@ internal class LastReadContentHandler internal constructor(
 ) {
 
     suspend fun handle(
-        message: Message,
+        message: Message.Signaling,
         messageContent: MessageContent.LastRead
     ) {
         val isMessageComingFromOtherClient = message.senderUserId == selfUserId
