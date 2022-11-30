@@ -34,7 +34,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
                             else -> InteractionAvailability.ENABLED
                         }
                     }
-                    is ConversationDetails.Self -> InteractionAvailability.DISABLED
+                    is ConversationDetails.Self, is ConversationDetails.Team -> InteractionAvailability.DISABLED
                 }
                 IsInteractionAvailableResult.Success(availability)
             })
