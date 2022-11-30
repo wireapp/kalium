@@ -86,13 +86,20 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
+
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+
         val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)

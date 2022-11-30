@@ -8,7 +8,6 @@ import okio.Source
 import okio.blackholeSink
 import okio.buffer
 import java.security.MessageDigest
-import kotlin.io.use
 
 actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     val md = MessageDigest.getInstance("MD5")

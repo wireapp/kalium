@@ -66,3 +66,5 @@ abstract class CoreLogicCommon internal constructor(
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(serverLinks, this)
 }
+
+expect val clientPlatform: String

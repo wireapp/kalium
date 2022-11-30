@@ -4,6 +4,11 @@ import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.kaliumLogger
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
 import okio.Buffer
 import okio.IOException
 import okio.Source
@@ -19,16 +24,28 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
         return Header(format, version, salt, hashedUserId, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
     }
 
-    fun decodeHeader(encryptedDataSource: Source): Header {
+    fun decodeHeader(encryptedDataSource: Source): Pair<HeaderDecodingErrors?, Header> {
         val decodedHeader = encryptedDataSource.readBackupHeader()
 
         // Sanity checks
         val expectedHashedUserId = hashUserId(userId, decodedHeader.salt, decodedHeader.opslimit, decodedHeader.memlimit)
         val storedHashedUserId = decodedHeader.hashedUserId
-        check(expectedHashedUserId.contentEquals(storedHashedUserId.toUByteArray())) {
-            "The hashed user id in the backup file header does not match the expected one"
+        val decodingError = when {
+            !expectedHashedUserId.contentEquals(storedHashedUserId.toUByteArray()) -> {
+                kaliumLogger.e("The hashed user id in the backup file header does not match the expected one")
+                INVALID_USER_ID
+            }
+            decodedHeader.format != format -> {
+                kaliumLogger.e("The backup format found in the backup file header is not a valid one")
+                INVALID_FORMAT
+            }
+            decodedHeader.version.toInt() < version.toInt() -> {
+                kaliumLogger.e("The backup version found in the backup file header is not a valid one")
+                INVALID_VERSION
+            }
+            else -> null
         }
-        return decodedHeader
+        return decodingError to decodedHeader
     }
 
     data class Passphrase(val password: String)
@@ -54,6 +71,10 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
 
             return buffer.readByteArray()
         }
+
+        enum class HeaderDecodingErrors {
+            INVALID_USER_ID, INVALID_VERSION, INVALID_FORMAT
+        }
     }
 
     @Suppress("ComplexMethod")
@@ -64,7 +85,6 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
         // We read the backup header and execute some sanity checks
         val format = this.read(readBuffer, BACKUP_HEADER_FORMAT_LENGTH).let { size ->
             readBuffer.readByteArray(size).decodeToString().also {
-                if (it != format) throw IllegalStateException("Backup format is not valid")
                 readBuffer.clear()
             }
         }
@@ -74,7 +94,6 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
 
         val version = read(readBuffer, BACKUP_HEADER_VERSION_LENGTH).let { size ->
             readBuffer.readByteArray(size).decodeToString().also {
-                if (it != version) throw IllegalStateException("Backup version is not valid")
                 readBuffer.clear()
             }
         }
