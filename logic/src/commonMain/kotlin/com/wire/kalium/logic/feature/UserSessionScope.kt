@@ -293,11 +293,9 @@ class UserSessionScope internal constructor(
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
-            userId,
             keyPackageRepository,
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
@@ -485,7 +483,10 @@ class UserSessionScope internal constructor(
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCaseImpl(
-            featureSupport, conversationRepository, conversationGroupRepository
+            featureSupport,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            conversationRepository,
+            mlsConversationRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {

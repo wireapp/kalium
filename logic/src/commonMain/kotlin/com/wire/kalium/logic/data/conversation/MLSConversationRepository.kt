@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -29,7 +28,6 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -66,7 +64,7 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun joinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit>
+    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
     suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
@@ -100,11 +98,9 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
-    private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
-    private val conversationApi: ConversationApi,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val syncManager: SyncManager,
@@ -202,17 +198,13 @@ class MLSConversationDataSource(
         }
     }
 
-    override suspend fun joinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit> {
+    override suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit> {
         kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
-        return wrapApiRequest {
-            conversationApi.fetchGroupInfo(idMapper.toApiModel(conversationId))
-        }.flatMap {
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.joinByExternalCommit(it)
-                }.flatMap { commitBundle ->
-                    sendCommitBundleForExternalCommit(groupID, commitBundle)
-                }
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.joinByExternalCommit(groupInfo)
+            }.flatMap { commitBundle ->
+                sendCommitBundleForExternalCommit(groupID, commitBundle)
             }
         }
     }
@@ -324,7 +316,7 @@ class MLSConversationDataSource(
                             }
 
                         wrapMLSRequest {
-                            if (userIdList.contains(selfUserId) && clientKeyPackageList.isEmpty()) {
+                            if (userIdList.isEmpty()) {
                                 // We are creating a group with only our self client which technically
                                 // doesn't need be added with a commit, but our backend API requires one,
                                 // so we create a commit by updating our key material.
@@ -379,7 +371,7 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members + selfUserId)
+                addMemberToMLSGroup(groupID, members)
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(
