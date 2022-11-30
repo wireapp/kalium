@@ -18,7 +18,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
-    fun fromMessageToEntity(message: Message): MessageEntity
+    fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
@@ -31,7 +31,7 @@ class MessageMapperImpl(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
-    override fun fromMessageToEntity(message: Message): MessageEntity {
+    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
             Message.Status.SENT -> MessageEntity.Status.SENT
@@ -52,7 +52,9 @@ class MessageMapperImpl(
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
                 },
-                visibility = visibility
+                visibility = visibility,
+                senderName = message.senderUserName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is Message.System -> MessageEntity.System(
@@ -62,7 +64,8 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderName = message.senderUserName,
             )
         }
     }
@@ -93,7 +96,9 @@ class MessageMapperImpl(
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
                 visibility = visibility,
-                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions)
+                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+                senderUserName = message.senderName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is MessageEntity.System -> Message.System(
@@ -103,7 +108,8 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderUserName = message.senderName,
             )
         }
     }
@@ -179,15 +185,7 @@ class MessageMapperImpl(
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Calling -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
-        is MessageContent.Reaction -> MessageEntityContent.Unknown()
-        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
-        is MessageContent.Empty -> MessageEntityContent.Unknown()
-        is MessageContent.LastRead -> MessageEntityContent.Unknown()
-        is MessageContent.Cleared -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
