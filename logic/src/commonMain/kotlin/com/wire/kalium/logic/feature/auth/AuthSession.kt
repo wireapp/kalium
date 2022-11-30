@@ -26,6 +26,11 @@ sealed class AccountInfo {
     }
 }
 
+data class PersistentWebSocketStatus(
+    val userId: UserId,
+    val isPersistentWebSocketEnabled: Boolean
+)
+
 data class Account(
     val info: AccountInfo,
     val serverConfig: ServerConfig,
