@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
+@Suppress("TooManyFunctions")
 interface SessionMapper {
     fun toSessionDTO(authSession: AuthTokens): SessionDTO
     fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO
@@ -35,6 +36,7 @@ interface SessionMapper {
     fun fromDTOToProxyCredentialsModel(proxyCredentialsDTO: ProxyCredentialsDTO?): ProxyCredentials?
 }
 
+@Suppress("TooManyFunctions")
 internal class SessionMapperImpl(
     private val idMapper: IdMapper
 ) : SessionMapper {
