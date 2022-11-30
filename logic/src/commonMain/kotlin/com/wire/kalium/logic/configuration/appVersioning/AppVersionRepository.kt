@@ -6,20 +6,20 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 
 internal interface AppVersionRepository {
-    suspend fun isAppVersionFreshEnough(currentVersion: Int, blackListUrl: String): Boolean
+    suspend fun isUpdateRequired(currentVersion: Int, blackListUrl: String): Boolean
 }
 
 internal class AppVersionRepositoryImpl(
     private val api: AppVersioningApi,
 ) : AppVersionRepository {
 
-    override suspend fun isAppVersionFreshEnough(currentVersion: Int, blackListUrl: String): Boolean =
+    override suspend fun isUpdateRequired(currentVersion: Int, blackListUrl: String): Boolean =
         wrapApiRequest { api.fetchAppVersionBlackList(blackListUrl) }
             .fold({
                 kaliumLogger.e("$TAG: error while fetching VersionBlacklist: $it")
                 true
             }) {
-                !it.isAppNeedsToBeUpdated(currentVersion)
+                it.isAppNeedsToBeUpdated(currentVersion)
             }
 
     companion object {

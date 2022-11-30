@@ -25,6 +25,7 @@ import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 internal interface ServerConfigRepository {
     /**
      * download an on premise server configuration from a json file
@@ -198,7 +199,7 @@ internal class ServerConfigDataSource(
             .map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
-        wrapStorageRequest { dao.getServerConfigsWithAccIdWithLastCheckAfterDate(date) }
+        wrapStorageRequest { dao.getServerConfigsWithAccIdWithLastCheckBeforeDate(date) }
             .map { it.map { list -> list.map(serverConfigMapper::fromEntity) } }
 
     override suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String) {

@@ -11,8 +11,8 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughUseCase
-import com.wire.kalium.logic.feature.appVersioning.CheckIfAppFreshEnoughUseCaseImpl
+import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
+import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
@@ -62,6 +62,6 @@ class AuthenticationScope(
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     val ssoLoginScope: SSOLoginScope
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
-    val checkIfAppFreshEnough: CheckIfAppFreshEnoughUseCase
-        get() = CheckIfAppFreshEnoughUseCaseImpl(appVersionRepository)
+    val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
+        get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
 }

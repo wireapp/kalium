@@ -4,8 +4,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl.Companion.CHECK_APP_VERSION_FREQUENCY_MS
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.TimeParser
@@ -14,29 +16,40 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 
-interface ObserveIfAppFreshEnoughUseCase {
+/**
+ *
+ * Observes ServerConfigs and checks if App needs to be updated for each of it.
+ * Checking happens every [CHECK_APP_VERSION_FREQUENCY_MS] milliseconds, or when config was added into DB.
+ * @return Flow<Boolean> emits true if at least one ServerConfig requires app updating, false - otherwise.
+ *
+ */
+interface ObserveIfAppUpdateRequiredUseCase {
     suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
 }
 
-class ObserveIfAppFreshEnoughUseCaseImpl internal constructor(
+class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val timeParser: TimeParser = TimeParserImpl()
-) : ObserveIfAppFreshEnoughUseCase {
+) : ObserveIfAppUpdateRequiredUseCase {
 
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = timeParser.currentTimeStamp()
         val dateForChecking = timeParser.dateMinusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
 
-        return serverConfigRepository.getServerConfigsWithUserIdAfterTheDate(dateForChecking)
-            .onFailure { kaliumLogger.e("$TAG: error while getting configs for checking $it") }
-            .getOrElse(flowOf(listOf()))
+        return intervalFlow(CHECK_APP_VERSION_FREQUENCY_MS)
+            .flatMapLatest {
+                serverConfigRepository.getServerConfigsWithUserIdAfterTheDate(dateForChecking)
+                    .onFailure { kaliumLogger.e("$TAG: error while getting configs for checking $it") }
+                    .getOrElse(flowOf(listOf()))
+            }
             .distinctUntilChanged()
             .map { serverConfigsWithUserId ->
                 val configIdWithFreshFlag = serverConfigsWithUserId
@@ -64,17 +77,17 @@ class ObserveIfAppFreshEnoughUseCaseImpl internal constructor(
 
                         withContext(coroutineContext) {
                             async {
-                                val isFreshEnough = authenticationScopeProvider
+                                val isUpdateRequired = authenticationScopeProvider
                                     .provide(serverConfig, proxyCredentials)
-                                    .checkIfAppFreshEnough(currentAppVersion, serverConfig.links.blackList)
-                                serverConfig.id to isFreshEnough
+                                    .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
+                                serverConfig.id to isUpdateRequired
                             }
                         }
                     }
                     .awaitAll()
 
                 val noUpdateRequiredConfigIds = configIdWithFreshFlag
-                    .filter { (_, isFreshEnough) -> isFreshEnough }
+                    .filter { (_, isUpdateRequired) -> isUpdateRequired }
                     .map { (configId, _) -> configId }
                     .toSet()
 
@@ -82,7 +95,7 @@ class ObserveIfAppFreshEnoughUseCaseImpl internal constructor(
                     serverConfigRepository.updateAppBlackListCheckDate(noUpdateRequiredConfigIds, currentDate)
                 }
 
-                configIdWithFreshFlag.any { (_, isFreshEnough) -> !isFreshEnough }
+                configIdWithFreshFlag.any { (_, isUpdateRequired) -> isUpdateRequired }
             }
     }
 

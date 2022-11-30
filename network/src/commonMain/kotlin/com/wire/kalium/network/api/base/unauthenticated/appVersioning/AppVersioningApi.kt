@@ -1,7 +1,6 @@
 package com.wire.kalium.network.api.base.unauthenticated.appVersioning
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse

@@ -107,7 +107,7 @@ interface ServerConfigurationDAO {
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     fun configForUser(userId: UserIDEntity): ServerConfigEntity?
     fun setFederationToTrue(id: String)
-    fun getServerConfigsWithAccIdWithLastCheckAfterDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
+    fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     fun updateBlackListCheckDate(configIds: Set<String>, date: String)
 
     data class InsertData(
@@ -189,8 +189,8 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override fun setFederationToTrue(id: String) = queries.setFederationToTrue(id)
 
-    override fun getServerConfigsWithAccIdWithLastCheckAfterDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
-        queries.getServerConfigsWithAccIdWithLastCheckAfterDate(date, mapper::serverConfigWithAccId).asFlow().mapToList()
+    override fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
+        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().mapToList()
 
     override fun updateBlackListCheckDate(configIds: Set<String>, date: String) =
         queries.updateLastBlackListCheckByIds(date, configIds)
