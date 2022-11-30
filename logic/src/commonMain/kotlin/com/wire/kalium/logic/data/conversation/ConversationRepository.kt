@@ -107,6 +107,7 @@ interface ConversationRepository {
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
     ): Either<NetworkFailure, Unit>
+
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
@@ -241,12 +242,17 @@ internal class ConversationDataSource internal constructor(
             // TODO work-around for a bug in the backend. Can be removed when fixed: https://wearezeta.atlassian.net/browse/FS-1262
             .filter { !(it.type == ConversationResponse.Type.GLOBAL_TEAM && it.protocol == ConvProtocol.PROTEUS) }
             .map { conversationResponse ->
-            conversationMapper.fromApiModelToDaoModel(
-                conversationResponse,
-                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
-                selfTeamIdProvider().getOrNull(),
-            )
-        }
+                conversationMapper.fromApiModelToDaoModel(
+                    conversationResponse,
+                    mlsGroupState = conversationResponse.groupId?.let {
+                        mlsGroupState(
+                            idMapper.fromGroupIDEntity(it),
+                            originatedFromEvent
+                        )
+                    },
+                    selfTeamIdProvider().getOrNull(),
+                )
+            }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
             conversationDAO.insertMembersWithQualifiedId(
@@ -292,20 +298,22 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         conversationDAO.getAllConversationDetails()
-//             .debounce(1.seconds) TODO check performance
-            .combine(messageDAO.observeLastMessages()
-//                 .debounce(1.seconds)
+            .combine(
+                messageDAO.observeLastMessages()
             ) { conversationList, lastMessageList ->
-            conversationList.map { conversation -> conversationMapper.fromDaoModelToDetails(conversation,
-                lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) }) }
-        }
+                conversationList.map { conversation ->
+                    conversationMapper.fromDaoModelToDetails(conversation,
+                        lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) })
+                }
+            }
+
     /**
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-                // we don't need last message here
+            // we don't need last message here
             .mapRight { conversationMapper.fromDaoModelToDetails(it, null) }
             .distinctUntilChanged()
 
@@ -483,9 +491,9 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, Conversation>> {
-            return conversationDAO.observeConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
-                .wrapStorageRequest()
-                .mapRight { conversationMapper.fromDaoModel(it) }
+        return conversationDAO.observeConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+            .wrapStorageRequest()
+            .mapRight { conversationMapper.fromDaoModel(it) }
     }
 
     override suspend fun updateMutedStatusLocally(

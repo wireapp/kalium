@@ -186,7 +186,7 @@ AND (protocol IS "PROTEUS" OR (protocol IS "MLS" AND mls_group_state IS "ESTABLI
 ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 
 selectAllConversations:
-SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' AND type IS NOT 'SENT' ORDER BY last_modified_date DESC, name ASC;
+SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
