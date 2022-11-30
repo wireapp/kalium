@@ -404,12 +404,11 @@ class MLSConversationRepositoryTest {
     fun givenNonRecoverableError_whenCallingJoinByExternalCommit_ThenClearCommit() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withPublicGroupStateSuccessful()
             .withJoinByExternalCommitSuccessful()
             .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.CONVERSATION_ID)
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::clearPendingGroupExternalCommit)
