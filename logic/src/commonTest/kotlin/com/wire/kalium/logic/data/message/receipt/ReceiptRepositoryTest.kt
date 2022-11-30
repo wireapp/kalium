@@ -59,7 +59,7 @@ class ReceiptRepositoryTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsPreviouslyStoredAndNameOrderedAlphabetically() =
+    fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsStoredAndNameOrderedAlphabetically() =
         runTest {
             insertInitialData()
 
@@ -89,8 +89,8 @@ class ReceiptRepositoryTest {
                 ).test {
                     val result = awaitItem()
                     assertTrue(result.size == 2)
-                    assertTrue { awaitItem().first().userName == TEST_OTHER_USER_ENTITY.name }
-                    assertTrue { awaitItem().last().userName == TEST_OTHER_USER_ENTITY_2.name }
+                    assertTrue { awaitItem().first().userSummary.userName == TEST_OTHER_USER_ENTITY.name }
+                    assertTrue { awaitItem().last().userSummary.userName == TEST_OTHER_USER_ENTITY_2.name }
                 }
             }
         }
