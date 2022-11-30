@@ -6,11 +6,13 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
+import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
@@ -25,6 +27,9 @@ interface SessionMapper {
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
+    fun fromPersistentWebSocketStatusEntity(
+        persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
+    ): PersistentWebSocketStatus
     fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
     fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
 }
@@ -102,6 +107,12 @@ internal class SessionMapperImpl(
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
 
+    override fun fromPersistentWebSocketStatusEntity(
+        persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
+    ): PersistentWebSocketStatus = PersistentWebSocketStatus(
+        idMapper.fromDaoModel(persistentWebSocketStatusEntity.userIDEntity),
+        persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
+    )
     override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =
         ProxyCredentialsEntity(proxyCredentialsModel.username, proxyCredentialsModel.password)
 

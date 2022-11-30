@@ -21,8 +21,10 @@ sealed interface Message {
      * Messages that can be sent from one client to another.
      */
     sealed interface Sendable : Message {
-        val senderClientId: ClientId
         override val content: MessageContent.FromProto
+        val senderUserName: String? // TODO we can get it from entity but this will need a lot of changes in use cases,
+        val isSelfMessage: Boolean
+        val senderClientId: ClientId
     }
 
     /**
@@ -48,6 +50,8 @@ sealed interface Message {
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY
@@ -117,6 +121,8 @@ sealed interface Message {
         override val senderUserId: UserId,
         override val senderClientId: ClientId,
         override val status: Status,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
     ) : Sendable {
         override fun toString(): String {
             val typeKey = "type"
@@ -192,7 +198,10 @@ sealed interface Message {
         override val date: String,
         override val senderUserId: UserId,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
+        override val visibility: Visibility = Visibility.VISIBLE,
+        // TODO(refactor): move senderName to inside the specific `content`
+        //                 instead of having it nullable in all system messages
+        val senderUserName: String? = null,
     ) : Message, Standalone {
         override fun toString(): String {
 
@@ -309,5 +318,17 @@ sealed interface Message {
         }
     }
 }
+
+@Suppress("MagicNumber")
+enum class UnreadEventType(val priority: Int) {
+    KNOCK(1),
+    MISSED_CALL(2),
+    MENTION(3),
+    MESSAGE(4), // text or asset
+
+    //     REPLY(5), TODO in development
+    IGNORED(10),
+}
+
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>
