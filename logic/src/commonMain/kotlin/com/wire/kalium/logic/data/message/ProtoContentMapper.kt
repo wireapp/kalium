@@ -32,6 +32,7 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
+@Suppress("TooManyFunctions")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
@@ -53,66 +54,22 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> {
-                val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
-                val quote = readableContent.quotedMessageReference?.let {
-                    Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-                }
-                GenericMessage.Content.Text(
-                    Text(
-                        content = readableContent.value,
-                        mentions = mentions,
-                        quote = quote
-                    )
-                )
-            }
+            is MessageContent.Text -> packText(readableContent)
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
-            is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
-                MessageHide(
-                    messageId = readableContent.messageId,
-                    qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                    conversationId = readableContent.unqualifiedConversationId
-                )
-            )
+            is MessageContent.DeleteForMe -> packHidden(readableContent)
 
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
 
-            is MessageContent.LastRead -> {
-                GenericMessage.Content.LastRead(
-                    LastRead(
-                        conversationId = readableContent.unqualifiedConversationId,
-                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                        lastReadTimestamp = readableContent.time.toEpochMilliseconds()
-                    )
-                )
-            }
+            is MessageContent.LastRead -> packLastRead(readableContent)
 
-            is MessageContent.Cleared -> {
-                GenericMessage.Content.Cleared(
-                    Cleared(
-                        conversationId = readableContent.unqualifiedConversationId,
-                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                        clearedTimestamp = readableContent.time.toEpochMilliseconds()
-                    )
-                )
-            }
+            is MessageContent.Cleared -> packCleared(readableContent)
 
-            is MessageContent.Reaction -> {
-                GenericMessage.Content.Reaction(
-                    Reaction(
-                        emoji = readableContent.emojiSet
-                            .map { it.trim() }
-                            .filter { it.isNotBlank() }
-                            .joinToString(separator = ",") { it },
-                        messageId = readableContent.messageId
-                    )
-                )
-            }
+            is MessageContent.Reaction -> packReaction(readableContent)
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
@@ -189,6 +146,16 @@ class ProtoContentMapperImpl(
         return readableContent
     }
 
+    private fun packReaction(readableContent: MessageContent.Reaction) = GenericMessage.Content.Reaction(
+        Reaction(
+            emoji = readableContent.emojiSet
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .joinToString(separator = ",") { it },
+            messageId = readableContent.messageId
+        )
+    )
+
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji
         val emojiSet = emoji?.split(',')
@@ -198,6 +165,14 @@ class ProtoContentMapperImpl(
         return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
     }
 
+    private fun packLastRead(readableContent: MessageContent.LastRead) = GenericMessage.Content.LastRead(
+        LastRead(
+            conversationId = readableContent.unqualifiedConversationId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            lastReadTimestamp = readableContent.time.toEpochMilliseconds()
+        )
+    )
+
     private fun unpackLastRead(
         genericMessage: GenericMessage,
         protoContent: GenericMessage.Content.LastRead
@@ -206,6 +181,14 @@ class ProtoContentMapperImpl(
         unqualifiedConversationId = protoContent.value.conversationId,
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
         time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
+    )
+
+    private fun packHidden(readableContent: MessageContent.DeleteForMe) = GenericMessage.Content.Hidden(
+        MessageHide(
+            messageId = readableContent.messageId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            conversationId = readableContent.unqualifiedConversationId
+        )
     )
 
     private fun unpackHidden(
@@ -253,11 +236,33 @@ class ProtoContentMapperImpl(
         }
     }
 
+    private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
+        Cleared(
+            conversationId = readableContent.unqualifiedConversationId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            clearedTimestamp = readableContent.time.toEpochMilliseconds()
+        )
+    )
+
     private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
         unqualifiedConversationId = protoContent.value.conversationId,
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
+
+    private fun packText(readableContent: MessageContent.Text): GenericMessage.Content.Text {
+        val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+        val quote = readableContent.quotedMessageReference?.let {
+            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+        }
+        return GenericMessage.Content.Text(
+            Text(
+                content = readableContent.value,
+                mentions = mentions,
+                quote = quote
+            )
+        )
+    }
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
         protoContent.value.content,
