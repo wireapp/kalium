@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
+import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -52,6 +53,7 @@ class MessageScope internal constructor(
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val reactionRepository: ReactionRepository,
+    private val receiptRepository: ReceiptRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -173,6 +175,11 @@ class MessageScope internal constructor(
     val observeMessageReactions: ObserveMessageReactionsUseCase
         get() = ObserveMessageReactionsUseCaseImpl(
             reactionRepository = reactionRepository
+        )
+
+    val observeMessageReceipts: ObserveMessageReceiptsUseCase
+        get() = ObserveMessageReceiptsUseCaseImpl(
+            receiptRepository = receiptRepository
         )
 
     val sendKnock: SendKnockUseCase

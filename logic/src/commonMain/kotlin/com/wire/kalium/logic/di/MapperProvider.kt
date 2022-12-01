@@ -48,6 +48,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapperImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
@@ -88,6 +90,7 @@ internal object MapperProvider {
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
+    fun receiptsMapper(): ReceiptsMapper = ReceiptsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
         idMapper = idMapper(),
