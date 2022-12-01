@@ -6,12 +6,19 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
 
-internal class ReceiptMessageHandler(
+interface ReceiptMessageHandler {
+    suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.Receipt
+    )
+}
+
+internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
     private val receiptRepository: ReceiptRepository
-) {
+): ReceiptMessageHandler {
 
-    suspend fun handle(
+    override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.Receipt
     ) {

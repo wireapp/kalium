@@ -28,7 +28,6 @@ import kotlinx.datetime.Instant
 
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
-
     fun id(suffix: Int = 0) = ConversationId("valueConvo_$suffix", "domainConvo")
 
     val ONE_ON_ONE = Conversation(

@@ -2,12 +2,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.Times
@@ -44,10 +43,6 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
-            verify(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
-                .wasNotInvoked()
-
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -55,6 +50,7 @@ class ClearConversationContentUseCaseTest {
         }
     }
 
+    @Test
     fun givenGettingClientIdFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
         // given
         val (arrangement, useCase) = Arrangement()
@@ -74,10 +70,6 @@ class ClearConversationContentUseCaseTest {
             verify(clearConversationContent)
                 .suspendFunction(clearConversationContent::invoke)
                 .with(anything())
-                .wasInvoked(Times(1))
-
-            verify(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
                 .wasInvoked(Times(1))
 
             verify(messageSender)
@@ -109,10 +101,6 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
-            verify(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
-                .wasInvoked(Times(1))
-
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -142,10 +130,6 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
-            verify(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
-                .wasInvoked(Times(1))
-
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -160,13 +144,10 @@ class ClearConversationContentUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
+        val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         val clearConversationContent: ClearConversationContent = mock(classOf<ClearConversationContent>())
-
-        @Mock
-        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
 
         @Mock
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
@@ -184,11 +165,11 @@ class ClearConversationContentUseCaseTest {
         }
 
         fun withCurrentClientId(isSuccessFull: Boolean): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(
-                    if (isSuccessFull) Either.Right(ClientId("someValue"))
+                    if (isSuccessFull) Either.Right(TestClient.CLIENT_ID)
                     else Either.Left(CoreFailure.Unknown(Throwable("an error")))
                 )
 
@@ -210,9 +191,9 @@ class ClearConversationContentUseCaseTest {
 
         fun arrange() = this to ClearConversationContentUseCaseImpl(
             clearConversationContent,
-            clientRepository,
             messageSender,
-            UserId("someValue", "someDomain"),
+            TestUser.SELF.id,
+            currentClientIdProvider,
             selfConversationIdProvider
         )
     }
