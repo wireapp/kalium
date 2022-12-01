@@ -62,8 +62,8 @@ import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.properties.PropertiesDataSource
-import com.wire.kalium.logic.data.properties.PropertiesRepository
+import com.wire.kalium.logic.data.properties.UserPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
@@ -278,8 +278,8 @@ class UserSessionScope internal constructor(
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
 
-    private val propertiesRepository: PropertiesRepository
-        get() = PropertiesDataSource(
+    private val userPropertyRepository: UserPropertyRepository
+        get() = UserPropertyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.propertiesApi,
             userConfigRepository
         )
@@ -819,7 +819,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
-            propertiesRepository
+            userPropertyRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase

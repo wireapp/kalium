@@ -8,16 +8,16 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import kotlinx.coroutines.flow.Flow
 
-interface PropertiesRepository {
+interface UserPropertyRepository {
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
 }
 
-internal class PropertiesDataSource(
+internal class UserPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
-) : PropertiesRepository {
+) : UserPropertyRepository {
 
     override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
 

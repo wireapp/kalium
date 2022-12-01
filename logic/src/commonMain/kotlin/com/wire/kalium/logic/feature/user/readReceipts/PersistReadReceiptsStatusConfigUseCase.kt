@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.user.readReceipts
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.properties.PropertiesRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -14,15 +14,15 @@ interface PersistReadReceiptsStatusConfigUseCase {
 }
 
 internal class PersistReadReceiptsStatusConfigUseCaseImpl(
-    private val propertiesRepository: PropertiesRepository,
+    private val userPropertyRepository: UserPropertyRepository,
 ) : PersistReadReceiptsStatusConfigUseCase {
 
     private val logger by lazy { kaliumLogger.withFeatureId(LOCAL_STORAGE) }
 
     override suspend fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult {
         val result = when (enabled) {
-            true -> propertiesRepository.setReadReceiptsEnabled()
-            false -> propertiesRepository.deleteReadReceiptsProperty()
+            true -> userPropertyRepository.setReadReceiptsEnabled()
+            false -> userPropertyRepository.deleteReadReceiptsProperty()
         }
 
         return result.fold({
