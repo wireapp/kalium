@@ -618,7 +618,7 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val receiptMessageHandler = ReceiptMessageHandler(
+    private val receiptMessageHandler get() = ReceiptMessageHandler(
         selfUserId = this.userId,
         receiptRepository = receiptRepository
     )
