@@ -167,7 +167,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun setAllConnectionsAsNotified() {
-        connectionDAO.updateAllNotificationFlags(false)
+        connectionDAO.setAllConnectionsAsNotified()
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =

@@ -443,7 +443,7 @@ countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
