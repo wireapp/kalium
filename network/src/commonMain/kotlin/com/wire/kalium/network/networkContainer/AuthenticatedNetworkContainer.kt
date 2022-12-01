@@ -16,6 +16,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
@@ -76,6 +77,8 @@ interface AuthenticatedNetworkContainer {
     val featureConfigApi: FeatureConfigApi
 
     val mlsPublicKeyApi: MLSPublicKeyApi
+
+    val propertiesApi: PropertiesApi
 
     companion object {
         fun create(

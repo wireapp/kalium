@@ -63,6 +63,8 @@ import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.UserPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
@@ -166,6 +168,8 @@ import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -275,6 +279,12 @@ class UserSessionScope internal constructor(
 
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
+
+    private val userPropertyRepository: UserPropertyRepository
+        get() = UserPropertyDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.propertiesApi,
+            userConfigRepository
+        )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -455,7 +465,12 @@ class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
-            eventRepository, conversationEventReceiver, userEventReceiver, teamEventReceiver, featureConfigEventReceiver
+            eventRepository,
+            conversationEventReceiver,
+            userEventReceiver,
+            teamEventReceiver,
+            featureConfigEventReceiver,
+            userPropertiesEventReceiver
         )
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
@@ -695,6 +710,9 @@ class UserSessionScope internal constructor(
             connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
 
+    private val userPropertiesEventReceiver: UserPropertiesEventReceiver
+        get() = UserPropertiesEventReceiverImpl(userConfigRepository)
+
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
@@ -811,6 +829,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
+            userPropertyRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase
