@@ -3,7 +3,6 @@ package com.wire.kalium.logic.sync.receiver.message
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -19,15 +18,15 @@ internal class DeleteForMeHandler internal constructor(
 ) {
 
     suspend fun handle(
-        message: Message,
-        messageContent: MessageContent.DeleteForMe
+        messageContent: MessageContent.DeleteForMe,
+        conversationId: ConversationId
     ) {
         // The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
         // we need to get the DOMAIN from the self conversationId[here is the message.conversationId]
         val conversationId = messageContent.conversationId
             ?: ConversationId(messageContent.unqualifiedConversationId, selfUserId.domain)
 
-        val isMessageReceivedFromSelfConversation: Boolean = selfConversationIdProvider().fold({ false }, { message.conversationId == it })
+        val isMessageReceivedFromSelfConversation: Boolean = selfConversationIdProvider().fold({ false }, { conversationId == it })
         if (isMessageReceivedFromSelfConversation) {
             messageRepository.deleteMessage(
                 messageUuid = messageContent.messageId,
@@ -35,7 +34,7 @@ internal class DeleteForMeHandler internal constructor(
             )
         } else {
             kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
-                .i(message = "Delete message sender is not verified: $message")
+                .i(message = "Delete message sender is not verified: $messageContent")
         }
     }
 
