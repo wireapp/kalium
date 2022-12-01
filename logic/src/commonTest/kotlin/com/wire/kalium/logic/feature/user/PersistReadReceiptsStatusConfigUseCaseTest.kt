@@ -60,7 +60,7 @@ class PersistReadReceiptsStatusConfigUseCaseTest {
 
         assertTrue(actual is ReadReceiptStatusConfigResult.Failure)
     }
-    
+
     private class Arrangement {
         @Mock
         val userPropertyRepository = mock(classOf<UserPropertyRepository>())
