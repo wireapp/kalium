@@ -314,10 +314,6 @@ sealed class EventContentDTO {
             @SerialName("key") val key: String,
         ) : UserProperty()
 
-        enum class PropertyKey(val key: String) {
-            WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE")
-            // TODO map other event like -ie. 'labels'-
-        }
     }
 
     @Serializable(with = FieldKeyValueDeserializer::class)
@@ -338,7 +334,7 @@ sealed class EventContentDTO {
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
 @Serializer(EventContentDTO.FieldKeyValue::class)
-class FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
+object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
     override val descriptor = buildSerialDescriptor("value", PolymorphicKind.SEALED)
     override fun serialize(encoder: Encoder, value: EventContentDTO.FieldKeyValue) {
         when (value) {
@@ -351,8 +347,10 @@ class FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
         return try {
             EventContentDTO.FieldKeyNumberValue(decoder.decodeInt())
         } catch (exception: Exception) {
-            kaliumLogger.w("Error deserializing 'user.properties-set' fallback to unknown: $exception")
-            EventContentDTO.FieldUnknownValue(decoder.toJsonElement().toString())
+            val jsonElement = decoder.toJsonElement().toString()
+            kaliumLogger.d("Error deserializing 'user.properties-set', prop: $jsonElement")
+            kaliumLogger.w("Error deserializing 'user.properties-set', error: $exception")
+            EventContentDTO.FieldUnknownValue(jsonElement)
         }
     }
 }

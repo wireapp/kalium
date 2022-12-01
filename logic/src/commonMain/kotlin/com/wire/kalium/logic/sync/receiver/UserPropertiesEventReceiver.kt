@@ -16,7 +16,7 @@ class UserPropertiesEventReceiverImpl internal constructor(
     }
 
     private fun handleReadReceiptMode(event: Event.UserProperty.ReadReceiptModeSet) {
-        userConfigRepository.setReadReceiptsEnabled(event.value)
+        userConfigRepository.setReadReceiptsStatus(event.value)
     }
 
     private companion object {

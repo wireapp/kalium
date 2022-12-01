@@ -20,7 +20,7 @@ internal class PersistReadReceiptsStatusConfigUseCaseImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(LOCAL_STORAGE) }
 
     override fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult =
-        userConfigRepository.setReadReceiptsEnabled(enabled)
+        userConfigRepository.setReadReceiptsStatus(enabled)
             .fold({
                 logger.e("Failed trying to update read receipts configuration")
                 ReadReceiptStatusConfigResult.Failure(it)

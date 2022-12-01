@@ -15,6 +15,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
@@ -33,6 +34,7 @@ import com.wire.kalium.network.api.v3.authenticated.MLSPublicKeyApiV3
 import com.wire.kalium.network.api.v3.authenticated.MessageApiV3
 import com.wire.kalium.network.api.v3.authenticated.NotificationApiV3
 import com.wire.kalium.network.api.v3.authenticated.PreKeyApiV3
+import com.wire.kalium.network.api.v3.authenticated.PropertiesApiV3
 import com.wire.kalium.network.api.v3.authenticated.SelfApiV3
 import com.wire.kalium.network.api.v3.authenticated.TeamsApiV3
 import com.wire.kalium.network.api.v3.authenticated.UserDetailsApiV3
@@ -89,4 +91,6 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
     override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV3(networkClient)
 
     override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV3(networkClient)
+
+    override val propertiesApi: PropertiesApi get() = PropertiesApiV3(networkClient)
 }

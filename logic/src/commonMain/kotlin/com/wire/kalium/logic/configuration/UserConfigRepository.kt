@@ -19,7 +19,7 @@ interface UserConfigRepository {
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
-    fun setReadReceiptsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
 class UserConfigDataSource(
@@ -76,7 +76,7 @@ class UserConfigDataSource(
         userConfigStorage.isReadReceiptsEnabled().wrapStorageRequest()
 
 
-    override fun setReadReceiptsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+    override fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistReadReceipts(enabled)
         }
