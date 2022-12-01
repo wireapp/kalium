@@ -343,6 +343,7 @@ object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun deserialize(decoder: Decoder): EventContentDTO.FieldKeyValue {
         return try {
             EventContentDTO.FieldKeyNumberValue(decoder.decodeInt())

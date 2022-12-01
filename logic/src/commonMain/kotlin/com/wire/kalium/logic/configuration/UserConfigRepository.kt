@@ -75,7 +75,6 @@ class UserConfigDataSource(
     override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isReadReceiptsEnabled().wrapStorageRequest()
 
-
     override fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistReadReceipts(enabled)

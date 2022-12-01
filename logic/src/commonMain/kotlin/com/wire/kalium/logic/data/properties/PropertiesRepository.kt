@@ -21,7 +21,6 @@ internal class PropertiesDataSource(
 
     override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
 
-
     override suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE, 1)
     }.flatMap {

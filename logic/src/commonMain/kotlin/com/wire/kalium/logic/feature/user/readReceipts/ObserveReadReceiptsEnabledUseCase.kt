@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-
 /**
  * UseCase that allow us to get the configuration of read receipts enabled or not
  */
