@@ -9,7 +9,7 @@ CREATE TABLE Accounts (
     tenant TEXT,
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
-    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL
+    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 insertOrReplace:
