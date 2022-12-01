@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.user.readReceipts
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.properties.PropertiesRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -10,23 +10,28 @@ import com.wire.kalium.logic.kaliumLogger
  * UseCase that allow us to persist the configuration of read receipts to enabled or not
  */
 interface PersistReadReceiptsStatusConfigUseCase {
-    operator fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult
+    suspend operator fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult
 }
 
 internal class PersistReadReceiptsStatusConfigUseCaseImpl(
-    val userConfigRepository: UserConfigRepository,
+    private val propertiesRepository: PropertiesRepository,
 ) : PersistReadReceiptsStatusConfigUseCase {
 
     private val logger by lazy { kaliumLogger.withFeatureId(LOCAL_STORAGE) }
 
-    override fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult =
-        userConfigRepository.setReadReceiptsStatus(enabled)
-            .fold({
-                logger.e("Failed trying to update read receipts configuration")
-                ReadReceiptStatusConfigResult.Failure(it)
-            }, {
-                ReadReceiptStatusConfigResult.Success
-            })
+    override suspend fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult {
+        val result = when (enabled) {
+            true -> propertiesRepository.setReadReceiptsEnabled()
+            false -> propertiesRepository.deleteReadReceiptsProperty()
+        }
+
+        return result.fold({
+            logger.e("Failed trying to update read receipts configuration")
+            ReadReceiptStatusConfigResult.Failure(it)
+        }) {
+            ReadReceiptStatusConfigResult.Success
+        }
+    }
 }
 
 sealed class ReadReceiptStatusConfigResult {

@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.user.readReceipts
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.properties.PropertiesRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -10,15 +10,15 @@ import kotlinx.coroutines.flow.map
  * UseCase that allow us to get the configuration of read receipts enabled or not
  */
 interface ObserveReadReceiptsEnabledUseCase {
-    operator fun invoke(): Flow<Boolean>
+    suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class ObserveReadReceiptsEnabledUseCaseImpl(
-    val userConfigRepository: UserConfigRepository,
+    val propertiesRepository: PropertiesRepository,
 ) : ObserveReadReceiptsEnabledUseCase {
 
-    override fun invoke(): Flow<Boolean> {
-        return userConfigRepository.isReadReceiptsEnabled().map { result ->
+    override suspend fun invoke(): Flow<Boolean> {
+        return propertiesRepository.observeReadReceiptsStatus().map { result ->
             result.fold({
                 true
             }, {

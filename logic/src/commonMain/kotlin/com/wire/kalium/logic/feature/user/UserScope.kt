@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.properties.PropertiesRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -44,7 +44,7 @@ class UserScope internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val selfUserId: UserId,
     private val metadataDAO: MetadataDAO,
-    private val userConfigRepository: UserConfigRepository,
+    private val propertiesRepository: PropertiesRepository,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -81,10 +81,10 @@ class UserScope internal constructor(
 
     val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
         get() = ObserveReadReceiptsEnabledUseCaseImpl(
-            userConfigRepository = userConfigRepository
+            propertiesRepository = propertiesRepository
         )
     val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
-        get() = PersistReadReceiptsStatusConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+        get() = PersistReadReceiptsStatusConfigUseCaseImpl(propertiesRepository = propertiesRepository)
 
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
