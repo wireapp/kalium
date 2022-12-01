@@ -35,8 +35,7 @@ UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;
 
 setAllConnectionsAsNotified:
 UPDATE Connection SET should_notify = 0
-WHERE qualified_to IN
-(SELECT qualified_conversation FROM Connection WHERE status = 'PENDING' AND should_notify = 1);
+WHERE status = 'PENDING' AND should_notify = 1;
 
 getConnections:
 SELECT * FROM Connection;

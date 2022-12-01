@@ -68,7 +68,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
             lastUpdate = "2022-03-30T15:36:00.000Z",
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = QualifiedIDEntity("me", "wire.com"),
-            status = ConnectionEntity.State.SENT,
+            status = ConnectionEntity.State.PENDING,
             toId = "me@wire.com",
             shouldNotify = true
         )
