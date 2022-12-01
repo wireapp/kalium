@@ -154,13 +154,10 @@ internal class UserConfigStorageImpl internal constructor(
     override fun isConferenceCallingEnabled(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
 
-    override fun isReadReceiptsEnabled(): Flow<Boolean> {
-        val isReadReceipts = kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)
-        return isReadReceiptsEnabledFlow
-            .map { isReadReceipts }
-            .onStart { emit(isReadReceipts) }
-            .distinctUntilChanged()
-    }
+    override fun isReadReceiptsEnabled(): Flow<Boolean> = isReadReceiptsEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
+        .distinctUntilChanged()
 
     override fun persistReadReceipts(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled).also {
