@@ -55,7 +55,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     fun givenFewConnections_WhenUpdateNotifyFlagForAll_ThenItIsUpdated() = runTest {
         db.connectionDAO.insertConnection(connection1)
         db.connectionDAO.insertConnection(connection2)
-        db.connectionDAO.updateAllNotificationFlags(false)
+        db.connectionDAO.setAllConnectionsAsNotified()
         val result = db.connectionDAO.getConnectionRequests().first()
         assertEquals(false, result[0].shouldNotify)
         assertEquals(false, result[1].shouldNotify)

@@ -66,6 +66,16 @@ UPDATE Conversation
 SET last_notified_message_date = ?
 WHERE qualified_id = ?;
 
+updateAllUnNotifiedConversationsNotificationsDate:
+UPDATE Conversation
+SET last_notified_message_date = ?
+WHERE qualified_id IN
+(SELECT qualified_id FROM ConversationDetails
+ WHERE mutedStatus != 'ALL_MUTED'
+ AND (lastNotifiedMessageDate ISNULL
+ OR DateTime(last_modified_date) > DateTime(lastNotifiedMessageDate))
+);
+
 updateConversationModifiedDate:
 UPDATE Conversation
 SET last_modified_date = ?
