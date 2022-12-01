@@ -113,6 +113,12 @@ object TestEvent {
         transient = false
     )
 
+    fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
+        id = eventId,
+        transient = false,
+        value = true
+    )
+
     fun newMessageEvent(
         encryptedContent: String,
         senderUserId: UserId = TestUser.USER_ID,

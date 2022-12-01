@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.user.readReceipts
 
-import com.wire.kalium.logic.data.properties.PropertiesRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -13,11 +13,11 @@ interface ObserveReadReceiptsEnabledUseCase {
 }
 
 internal class ObserveReadReceiptsEnabledUseCaseImpl(
-    val propertiesRepository: PropertiesRepository,
+    val userPropertyRepository: UserPropertyRepository,
 ) : ObserveReadReceiptsEnabledUseCase {
 
     override suspend fun invoke(): Flow<Boolean> {
-        return propertiesRepository.observeReadReceiptsStatus().map { result ->
+        return userPropertyRepository.observeReadReceiptsStatus().map { result ->
             result.fold({
                 true
             }, {

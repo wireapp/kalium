@@ -83,7 +83,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun givenNonTransintEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
+    fun givenNonTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
         // Given
         val event = TestEvent.newConnection().copy(transient = false)
 
@@ -102,7 +102,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun givenTransintEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
+    fun givenTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
         // Given
         val event = TestEvent.newConnection().copy(transient = true)
 
@@ -117,6 +117,23 @@ class EventProcessorTest {
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
             .with(any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserPropertyEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
+        // Given
+        val event = TestEvent.userPropertyReadReceiptMode()
+
+        val (arrangement, eventProcessor) = Arrangement()
+            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+            .arrange()
+
+        eventProcessor.processEvent(event)
+
+        verify(arrangement.userPropertiesEventReceiver)
+            .suspendFunction(arrangement.userPropertiesEventReceiver::onEvent)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
