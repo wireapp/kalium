@@ -35,7 +35,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message?): ConversationDetails
+    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message.Standalone?): ConversationDetails
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -105,7 +105,7 @@ internal class ConversationMapperImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message?): ConversationDetails =
+    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message.Standalone?): ConversationDetails =
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {

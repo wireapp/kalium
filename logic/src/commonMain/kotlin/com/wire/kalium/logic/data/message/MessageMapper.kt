@@ -19,7 +19,7 @@ import kotlinx.datetime.Instant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
-    fun fromEntityToMessage(message: MessageEntity): Message
+    fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
@@ -70,7 +70,7 @@ class MessageMapperImpl(
         }
     }
 
-    override fun fromEntityToMessage(message: MessageEntity): Message {
+    override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
