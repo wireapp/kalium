@@ -1,91 +1,115 @@
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.reaction.MessageReaction
-import com.wire.kalium.logic.data.message.reaction.ReactionsMapperImpl
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
+import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
+import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ReactionsMapperTest {
+class ReceiptsMapperTest {
 
     @Test
-    fun givenMessageDetailsReactions_whenMappingToEntity_thenReturnMessageReactionEntity() = runTest {
+    fun givenREADReceiptType_whenMappingToEntity_thenReturnREADReceiptTypeEntity() = runTest {
         // given
-        val messageDetailsReactions = MessageDetailsReactions(
-            emoji = "🤯",
-            messageId = "messageId",
-            conversationId = CONVERSATION_ID,
-            userId = USER_ID,
-            name = "User Name",
-            handle = "userhandle",
-            previewAssetId = null,
-            userType = UserTypeEntity.STANDARD,
-            deleted = false,
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            userAvailabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
-
-        val expectedMessageReactionEntity = MessageReactionEntity(
-            emoji = "🤯",
-            userId = USER_ID,
-            name = "User Name",
-            handle = "userhandle",
-            previewAssetIdEntity = null,
-            userTypeEntity = UserTypeEntity.STANDARD,
-            deleted = false,
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
-
-        val (_, reactionsMapper) = Arrangement()
+        val (_, receiptsMapper) = Arrangement()
             .arrange()
 
         // when
-        val result = reactionsMapper.fromDAOToEntity(messageReaction = messageDetailsReactions)
+        val result = receiptsMapper.toTypeEntity(type = ReceiptType.READ)
 
         // then
         assertEquals(
-            expectedMessageReactionEntity,
+            ReceiptTypeEntity.READ,
             result
         )
     }
 
     @Test
-    fun givenMessageReactionEntity_whenMappingToModel_thenReturnMessageReaction() = runTest {
+    fun givenDELIVERYReceiptType_whenMappingToEntity_thenReturnDELIVERYReceiptTypeEntity() = runTest {
         // given
-        val messageReactionEntity = MessageReactionEntity(
-            emoji = "🤯",
+        val (_, receiptsMapper) = Arrangement()
+            .arrange()
+
+        // when
+        val result = receiptsMapper.toTypeEntity(type = ReceiptType.DELIVERY)
+
+        // then
+        assertEquals(
+            ReceiptTypeEntity.DELIVERY,
+            result
+        )
+    }
+
+    @Test
+    fun givenREADReceiptTypeEntity_whenMappingFromEntity_thenReturnREADReceiptType() = runTest {
+        // given
+        val (_, receiptsMapper) = Arrangement()
+            .arrange()
+
+        // when
+        val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.READ)
+
+        // then
+        assertEquals(
+            ReceiptType.READ,
+            result
+        )
+    }
+
+    @Test
+    fun givenDELIVERYReceiptTypeEntity_whenMappingFromEntity_thenReturnDELIVERYReceiptType() = runTest {
+        // given
+        val (_, receiptsMapper) = Arrangement()
+            .arrange()
+
+        // when
+        val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.DELIVERY)
+
+        // then
+        assertEquals(
+            ReceiptType.DELIVERY,
+            result
+        )
+    }
+
+    @Test
+    fun givenDetailedReceiptEntity_whenMappingToModel_thenReturnDetailedReceipt() = runTest {
+        // given
+        val date = Clock.System.now()
+        val detailedReceiptEntity = DetailedReceiptEntity(
+            type = ReceiptTypeEntity.READ,
             userId = SELF_USER_ID_ENTITY,
-            name = "Self User Name",
-            handle = "selfuserhandle",
-            previewAssetIdEntity = null,
-            userTypeEntity = UserTypeEntity.STANDARD,
-            deleted = false,
+            userName = "Self User Name",
+            userHandle = "selfuserhandle",
+            userPreviewAssetId = null,
+            userType = UserTypeEntity.STANDARD,
+            isUserDeleted = false,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            date = date
         )
 
-        val expectedMessageReaction = MessageReaction(
-            emoji = "🤯",
-            isSelfUser = true,
+        val expectedDetailedReceipt = DetailedReceipt(
+            type = ReceiptType.READ,
+            date = date,
             userSummary = UserSummary(
                 userId = SELF_USER_ID,
                 userName = "Self User Name",
@@ -98,7 +122,7 @@ class ReactionsMapperTest {
             )
         )
 
-        val (_, reactionsMapper) = Arrangement()
+        val (_, receiptsMapper) = Arrangement()
             .withDomainUserTypeStandard()
             .withConnectionStateAccepted()
             .withAvailabilityStatusNone()
@@ -106,14 +130,11 @@ class ReactionsMapperTest {
             .arrange()
 
         // when
-        val result = reactionsMapper.fromEntityToModel(
-            selfUserId = SELF_USER_ID,
-            messageReactionEntity
-        )
+        val result = receiptsMapper.fromEntityToModel(detailedReceiptEntity)
 
         // then
         assertEquals(
-            expectedMessageReaction,
+            expectedDetailedReceipt,
             result
         )
     }
@@ -160,16 +181,12 @@ class ReactionsMapperTest {
                 .then { QualifiedID(id.value, id.domain) }
         }
 
-        fun arrange() = this to ReactionsMapperImpl(
+        fun arrange() = this to ReceiptsMapperImpl(
             idMapper, availabilityStatusMapper, connectionStateMapper, domainUserTypeMapper
         )
     }
 
     private companion object {
-        val CONVERSATION_ID = QualifiedIDEntity(
-            value = "convValue",
-            domain = "convDomain"
-        )
         val SELF_USER_ID = QualifiedID(
             value = "selfUserValue",
             domain = "selfUserDomain"
@@ -177,10 +194,6 @@ class ReactionsMapperTest {
         val SELF_USER_ID_ENTITY = QualifiedIDEntity(
             value = "selfUserValue",
             domain = "selfUserDomain"
-        )
-        val USER_ID = QualifiedIDEntity(
-            value = "userValue",
-            domain = "userDomain"
         )
     }
 }
