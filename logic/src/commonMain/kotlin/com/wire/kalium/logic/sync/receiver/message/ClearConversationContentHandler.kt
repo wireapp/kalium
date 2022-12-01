@@ -7,13 +7,20 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.feature.conversation.ClearConversationContent
 
-internal class ClearConversationContentHandler(
+interface ClearConversationContentHandler {
+    suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.Cleared
+    )
+}
+
+internal class ClearConversationContentHandlerImpl(
     private val clearConversationContent: ClearConversationContent,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-) {
+): ClearConversationContentHandler {
 
-    suspend fun handle(
+    override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.Cleared
     ) {

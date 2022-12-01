@@ -193,12 +193,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpack
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -659,14 +659,14 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userId, isMessageSentInSelfConversation),
-            ClearConversationContentHandler(
+            MessageTextEditHandlerImpl(messageRepository),
+            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            ClearConversationContentHandlerImpl(
                 ClearConversationContentImpl(conversationRepository, assetRepository),
                 userId,
                 isMessageSentInSelfConversation,
             ),
-            DeleteForMeHandler(messageRepository, userId, isMessageSentInSelfConversation),
+            DeleteForMeHandlerImpl(messageRepository, userId, isMessageSentInSelfConversation),
             messageEncoder,
             receiptMessageHandler
         )

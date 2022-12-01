@@ -7,14 +7,21 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 
+interface LastReadContentHandler {
+    suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.LastRead
+    )
+}
+
 // This class handles the messages that arrive when some client has read the conversation.
-internal class LastReadContentHandler internal constructor(
+internal class LastReadContentHandlerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-) {
+): LastReadContentHandler {
 
-    suspend fun handle(
+    override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.LastRead
     ) {

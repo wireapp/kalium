@@ -9,13 +9,20 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.kaliumLogger
 
-internal class DeleteForMeHandler internal constructor(
+interface DeleteForMeHandler {
+    suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.DeleteForMe
+    )
+}
+
+internal class DeleteForMeHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-) {
+): DeleteForMeHandler {
 
-    suspend fun handle(
+    override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.DeleteForMe
     ) {
