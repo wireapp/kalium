@@ -71,7 +71,7 @@ UPDATE Conversation
 SET last_notified_message_date = ?
 WHERE muted_status != 'ALL_MUTED'
 AND (last_notified_message_date ISNULL
-OR DateTime(last_modified_date) > DateTime(last_notified_message_date));
+OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date));
 
 updateConversationModifiedDate:
 UPDATE Conversation
