@@ -32,6 +32,7 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
+@Suppress("TooManyFunctions")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
@@ -53,66 +54,22 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> {
-                val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
-                val quote = readableContent.quotedMessageReference?.let {
-                    Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-                }
-                GenericMessage.Content.Text(
-                    Text(
-                        content = readableContent.value,
-                        mentions = mentions,
-                        quote = quote
-                    )
-                )
-            }
+            is MessageContent.Text -> packText(readableContent)
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
-            is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
-                MessageHide(
-                    messageId = readableContent.messageId,
-                    qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                    conversationId = readableContent.unqualifiedConversationId
-                )
-            )
+            is MessageContent.DeleteForMe -> packHidden(readableContent)
 
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
 
-            is MessageContent.LastRead -> {
-                GenericMessage.Content.LastRead(
-                    LastRead(
-                        conversationId = readableContent.unqualifiedConversationId,
-                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                        lastReadTimestamp = readableContent.time.toEpochMilliseconds()
-                    )
-                )
-            }
+            is MessageContent.LastRead -> packLastRead(readableContent)
 
-            is MessageContent.Cleared -> {
-                GenericMessage.Content.Cleared(
-                    Cleared(
-                        conversationId = readableContent.unqualifiedConversationId,
-                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                        clearedTimestamp = readableContent.time.toEpochMilliseconds()
-                    )
-                )
-            }
+            is MessageContent.Cleared -> packCleared(readableContent)
 
-            is MessageContent.Reaction -> {
-                GenericMessage.Content.Reaction(
-                    Reaction(
-                        emoji = readableContent.emojiSet
-                            .map { it.trim() }
-                            .filter { it.isNotBlank() }
-                            .joinToString(separator = ",") { it },
-                        messageId = readableContent.messageId
-                    )
-                )
-            }
+            is MessageContent.Reaction -> packReaction(readableContent)
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
@@ -150,20 +107,11 @@ class ProtoContentMapperImpl(
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
-            is GenericMessage.Content.Text -> MessageContent.Text(
-                protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
-                protoContent.value.quote?.let {
-                    MessageContent.QuoteReference(
-                        it.quotedMessageId,
-                        it.quotedMessageSha256?.array,
-                        true // TODO: Check hash to figure out if it's valid
-                    )
-                }, null
-            )
+            is GenericMessage.Content.Text -> unpackText(protoContent)
 
             is GenericMessage.Content.Asset -> {
-                // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
+                // Backend sends some preview asset messages just with img metadata and no
+                // keys or asset id,so we need to overwrite one with the other one
                 MessageContent.Asset(assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value))
             }
 
@@ -173,77 +121,22 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
-            is GenericMessage.Content.Cleared -> {
-                MessageContent.Cleared(
-                    unqualifiedConversationId = protoContent.value.conversationId,
-                    conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
-                    time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
-                )
-            }
-
+            is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> MessageContent.Ignored
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> {
-                val replacingMessageId = protoContent.value.replacingMessageId
-                when (val editContent = protoContent.value.content) {
-                    is MessageEdit.Content.Text -> {
-                        val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
-                        MessageContent.TextEdited(
-                            replacingMessageId,
-                            editContent.value.content,
-                            mentions
-                        )
-                    }
-                    // TODO: for now we do not implement it
-                    is MessageEdit.Content.Composite -> {
-                        MessageContent.Unknown(typeName, encodedContent.data)
-                    }
-
-                    null -> {
-                        kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
-                        MessageContent.Ignored
-                    }
-                }
-            }
+            is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
 
             is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
-            is GenericMessage.Content.Hidden -> {
-                val hiddenMessage = genericMessage.hidden
-                if (hiddenMessage != null) {
-                    MessageContent.DeleteForMe(
-                        messageId = hiddenMessage.messageId,
-                        unqualifiedConversationId = hiddenMessage.conversationId,
-                        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
-                    )
-                } else {
-                    kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
-                    MessageContent.Ignored
-                }
-            }
-
+            is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
-            is GenericMessage.Content.LastRead -> {
-                MessageContent.LastRead(
-                    messageId = genericMessage.messageId,
-                    unqualifiedConversationId = protoContent.value.conversationId,
-                    conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
-                    time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
-                )
-            }
+            is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
 
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Reaction -> {
-                val emoji = protoContent.value.emoji
-                val emojiSet = emoji?.split(',')
-                    ?.map { it.trim() }
-                    ?.filter { it.isNotBlank() }
-                    ?.toSet() ?: emptySet()
-                MessageContent.Reaction(protoContent.value.messageId, emojiSet)
-            }
+            is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
 
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
@@ -252,6 +145,137 @@ class ProtoContentMapperImpl(
         }
         return readableContent
     }
+
+    private fun packReaction(readableContent: MessageContent.Reaction) = GenericMessage.Content.Reaction(
+        Reaction(
+            emoji = readableContent.emojiSet
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .joinToString(separator = ",") { it },
+            messageId = readableContent.messageId
+        )
+    )
+
+    private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
+        val emoji = protoContent.value.emoji
+        val emojiSet = emoji?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            ?.toSet() ?: emptySet()
+        return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
+    }
+
+    private fun packLastRead(readableContent: MessageContent.LastRead) = GenericMessage.Content.LastRead(
+        LastRead(
+            conversationId = readableContent.unqualifiedConversationId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            lastReadTimestamp = readableContent.time.toEpochMilliseconds()
+        )
+    )
+
+    private fun unpackLastRead(
+        genericMessage: GenericMessage,
+        protoContent: GenericMessage.Content.LastRead
+    ) = MessageContent.LastRead(
+        messageId = genericMessage.messageId,
+        unqualifiedConversationId = protoContent.value.conversationId,
+        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+        time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
+    )
+
+    private fun packHidden(readableContent: MessageContent.DeleteForMe) = GenericMessage.Content.Hidden(
+        MessageHide(
+            messageId = readableContent.messageId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            conversationId = readableContent.unqualifiedConversationId
+        )
+    )
+
+    private fun unpackHidden(
+        genericMessage: GenericMessage,
+        protoContent: GenericMessage.Content.Hidden
+    ): MessageContent.Signaling {
+        val hiddenMessage = genericMessage.hidden
+        return if (hiddenMessage != null) {
+            MessageContent.DeleteForMe(
+                messageId = hiddenMessage.messageId,
+                unqualifiedConversationId = hiddenMessage.conversationId,
+                conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+            )
+        } else {
+            kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
+            MessageContent.Ignored
+        }
+    }
+
+    private fun unpackEdited(
+        protoContent: GenericMessage.Content.Edited,
+        typeName: String?,
+        encodedContent: PlainMessageBlob,
+        genericMessage: GenericMessage
+    ): MessageContent.FromProto {
+        val replacingMessageId = protoContent.value.replacingMessageId
+        return when (val editContent = protoContent.value.content) {
+            is MessageEdit.Content.Text -> {
+                val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                MessageContent.TextEdited(
+                    editMessageId = replacingMessageId,
+                    newContent = editContent.value.content,
+                    newMentions = mentions
+                )
+            }
+            // TODO: for now we do not implement it
+            is MessageEdit.Content.Composite -> {
+                MessageContent.Unknown(typeName = typeName, encodedData = encodedContent.data)
+            }
+
+            null -> {
+                kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
+                MessageContent.Ignored
+            }
+        }
+    }
+
+    private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
+        Cleared(
+            conversationId = readableContent.unqualifiedConversationId,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            clearedTimestamp = readableContent.time.toEpochMilliseconds()
+        )
+    )
+
+    private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
+        unqualifiedConversationId = protoContent.value.conversationId,
+        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
+    )
+
+    private fun packText(readableContent: MessageContent.Text): GenericMessage.Content.Text {
+        val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+        val quote = readableContent.quotedMessageReference?.let {
+            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+        }
+        return GenericMessage.Content.Text(
+            Text(
+                content = readableContent.value,
+                mentions = mentions,
+                quote = quote
+            )
+        )
+    }
+
+    private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
+        protoContent.value.content,
+        protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+        protoContent.value.quote?.let {
+            MessageContent.QuoteReference(
+                quotedMessageId = it.quotedMessageId,
+                quotedMessageSha256 = it.quotedMessageSha256?.array,
+                isVerified = false
+            )
+        },
+        null
+    )
 
     private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
         return if (qualifiedConversationID != null)
