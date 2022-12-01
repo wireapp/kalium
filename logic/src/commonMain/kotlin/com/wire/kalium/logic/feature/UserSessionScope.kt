@@ -191,6 +191,7 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -617,6 +618,11 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
+    private val receiptMessageHandler = ReceiptMessageHandler(
+        selfUserId = this.userId,
+        receiptRepository = receiptRepository
+    )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -634,7 +640,8 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
-            messageEncoder
+            messageEncoder,
+            receiptMessageHandler
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
