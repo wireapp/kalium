@@ -70,8 +70,7 @@ internal class GetMessageAssetUseCaseImpl(
                 }
                 // This should never happen
                 else -> return@fold CompletableDeferred(MessageAssetResult.Failure(
-                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
-                ))
+                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))))
             }
 
             // Start progress bar for generic assets
@@ -82,7 +81,8 @@ internal class GetMessageAssetUseCaseImpl(
                     assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                     assetName = assetMetadata.assetName,
                     assetToken = assetMetadata.assetToken,
-                    encryptionKey = assetMetadata.encryptionKey
+                    encryptionKey = assetMetadata.encryptionKey,
+                    assetSHA256Key = assetMetadata.assetSHA256Key
                 ).fold({
                     kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                     // This should be called if there is an issue while downloading the asset

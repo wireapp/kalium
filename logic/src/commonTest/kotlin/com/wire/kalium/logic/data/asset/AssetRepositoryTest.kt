@@ -1,6 +1,9 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AssetId
@@ -224,14 +227,18 @@ class AssetRepositoryTest {
         val assetName = "Eiffel Tower.jpg"
         val assetToken = "some-token"
         val assetEncryptionKey = AES256Key("some-encryption-key".toByteArray())
+        val assetData = assetName.toByteArray()
+        val assetDataPath = fakeKaliumFileSystem.tempFilePath("temp_${assetKey.value}")
+        val assetSha256 = calcSHA256(assetData)
 
         val (arrangement, assetRepository) = Arrangement()
+            .withStoredData(assetData, assetDataPath)
             .withSuccessfulDownload(listOf(assetKey))
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
 
         // When
-        val result = assetRepository.fetchPrivateDecodedAsset(assetKey, assetName, assetToken, assetEncryptionKey)
+        val result = assetRepository.fetchPrivateDecodedAsset(assetKey, assetName, assetToken, assetEncryptionKey, SHA256Key(assetSha256))
 
         // Then
         with(arrangement) {
@@ -291,6 +298,7 @@ class AssetRepositoryTest {
         val assetKey = UserAssetId("value1", "domain1")
         val assetName = "La Gioconda.jpg"
         val encryptionKey = AES256Key("some-encryption-key".toByteArray())
+        val assetSha256 = SHA256Key(byteArrayOf(1, 2, 3))
 
         val (arrangement, assetRepository) = Arrangement()
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
@@ -298,7 +306,7 @@ class AssetRepositoryTest {
             .arrange()
 
         // When
-        val actual = assetRepository.fetchPrivateDecodedAsset(assetKey, assetName, null, encryptionKey)
+        val actual = assetRepository.fetchPrivateDecodedAsset(assetKey, assetName, null, encryptionKey, assetSha256)
 
         // Then
         actual.shouldFail {
