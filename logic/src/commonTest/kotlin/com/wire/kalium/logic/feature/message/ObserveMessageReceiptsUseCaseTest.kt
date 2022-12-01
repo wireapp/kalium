@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -30,6 +32,14 @@ class ObserveMessageReceiptsUseCaseTest {
         var usedReceiptType: ReceiptType? = null
 
         val receiptRepository = object : ReceiptRepositoryStub() {
+            override suspend fun persistReceipts(
+                userId: UserId,
+                conversationId: ConversationId,
+                date: Instant,
+                type: ReceiptType,
+                messageIds: List<String>
+            ) = Unit
+
             override suspend fun observeMessageReceipts(
                 conversationId: ConversationId,
                 messageId: String,

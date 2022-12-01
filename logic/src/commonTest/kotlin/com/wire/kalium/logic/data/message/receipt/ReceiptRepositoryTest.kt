@@ -42,7 +42,7 @@ class ReceiptRepositoryTest {
             conversationId = TEST_CONVERSATION_ID,
             date = date,
             type = ReceiptType.READ,
-            messageIds = arrayOf(TEST_MESSAGE_ID)
+            messageIds = listOf(TEST_MESSAGE_ID)
         )
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -70,7 +70,7 @@ class ReceiptRepositoryTest {
                 conversationId = TEST_CONVERSATION_ID,
                 date = date,
                 type = ReceiptType.READ,
-                messageIds = arrayOf(TEST_MESSAGE_ID)
+                messageIds = listOf(TEST_MESSAGE_ID)
             )
 
             receiptRepository.persistReceipts(
@@ -78,7 +78,7 @@ class ReceiptRepositoryTest {
                 conversationId = TEST_CONVERSATION_ID,
                 date = date,
                 type = ReceiptType.READ,
-                messageIds = arrayOf(TEST_MESSAGE_ID)
+                messageIds = listOf(TEST_MESSAGE_ID)
             )
 
             launch(UnconfinedTestDispatcher(testScheduler)) {
