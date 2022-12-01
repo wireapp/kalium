@@ -135,7 +135,7 @@ class ReceiptMessageHandlerTest {
         val OTHER_USER_ID = TestUser.OTHER_USER_ID
         val OTHER_USER_ID_ENTITY = UserIDEntity(OTHER_USER_ID.value, OTHER_USER_ID.domain)
 
-        val MESSAGE_ID = "messageId"
+        const val MESSAGE_ID = "messageId"
         val MESSAGE_ENTITY = TestMessage.ENTITY.copy(
             id = MESSAGE_ID,
             conversationId = CONVERSATION_ENTITY_ID,
