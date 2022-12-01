@@ -16,7 +16,7 @@ open class ReceiptRepositoryStub : ReceiptRepository {
         conversationId: ConversationId,
         date: Instant,
         type: ReceiptType,
-        vararg messageIds: String
+        messageIds: List<String>
     ): Unit = Unit
 
     override suspend fun observeMessageReceipts(

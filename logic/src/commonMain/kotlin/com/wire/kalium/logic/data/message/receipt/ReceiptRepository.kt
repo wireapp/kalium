@@ -15,7 +15,7 @@ interface ReceiptRepository {
         conversationId: ConversationId,
         date: Instant,
         type: ReceiptType,
-        vararg messageIds: String
+        messageIds: List<String>
     )
 
     suspend fun observeMessageReceipts(
@@ -36,7 +36,7 @@ class ReceiptRepositoryImpl(
         conversationId: ConversationId,
         date: Instant,
         type: ReceiptType,
-        vararg messageIds: String
+        messageIds: List<String>
     ) {
         receiptDAO.insertReceipts(
             userId = idMapper.toDaoModel(userId),

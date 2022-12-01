@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -13,6 +14,7 @@ import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.Cleared
+import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
@@ -71,7 +73,14 @@ class ProtoContentMapperImpl(
 
             is MessageContent.Reaction -> packReaction(readableContent)
 
-            else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
+            is MessageContent.Receipt -> packReceipt(readableContent)
+
+            is MessageContent.TextEdited -> TODO("Message type not yet supported")
+
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown,
+            MessageContent.Ignored -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
@@ -124,17 +133,15 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Confirmation -> MessageContent.Ignored
+            is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
-
             is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
-
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
 
@@ -145,6 +152,39 @@ class ProtoContentMapperImpl(
         }
         return readableContent
     }
+
+    private fun packReceipt(
+        receiptContent: MessageContent.Receipt
+    ): GenericMessage.Content.Confirmation {
+        val firstMessage = receiptContent.messageIds.first()
+        val restOfMessageIds = receiptContent.messageIds.drop(1)
+        return GenericMessage.Content.Confirmation(
+            Confirmation(
+                type = when (receiptContent.type) {
+                    ReceiptType.DELIVERY -> Confirmation.Type.DELIVERED
+                    ReceiptType.READ -> Confirmation.Type.READ
+                },
+                firstMessageId = firstMessage,
+                moreMessageIds = restOfMessageIds
+            )
+        )
+    }
+
+    private fun unpackReceipt(
+        protoContent: GenericMessage.Content.Confirmation
+    ): MessageContent.FromProto = when (val protoType = protoContent.value.type) {
+        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERY
+        Confirmation.Type.READ -> ReceiptType.READ
+        is Confirmation.Type.UNRECOGNIZED -> {
+            kaliumLogger.w("Unrecognised receipt type received = ${protoType.value}:${protoType.name}")
+            null
+        }
+    }?.let { type ->
+        MessageContent.Receipt(
+            type = type,
+            messageIds = listOf(protoContent.value.firstMessageId) + protoContent.value.moreMessageIds
+        )
+    } ?: MessageContent.Ignored
 
     private fun packReaction(readableContent: MessageContent.Reaction) = GenericMessage.Content.Reaction(
         Reaction(

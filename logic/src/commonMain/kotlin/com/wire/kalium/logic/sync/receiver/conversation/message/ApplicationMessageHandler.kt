@@ -25,6 +25,7 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 
@@ -62,7 +63,8 @@ internal class ApplicationMessageHandlerImpl(
     private val lastReadContentHandler: LastReadContentHandler,
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
-    private val messageEncoder: MessageContentEncoder
+    private val messageEncoder: MessageContentEncoder,
+    private val receiptMessageHandler: ReceiptMessageHandler
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
@@ -173,7 +175,7 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
-            is MessageContent.Receipt -> TODO("Receiving of read receipts not yet implemented")
+            is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
         }
     }
 
