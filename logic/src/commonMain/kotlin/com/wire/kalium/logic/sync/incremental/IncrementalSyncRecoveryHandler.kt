@@ -14,14 +14,14 @@ internal class IncrementalSyncRecoveryHandler(
 
     suspend fun recover(failure: CoreFailure, onRetry: suspend () -> Unit) {
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
-        if (shouldReStartSlowSyncProcess(failure)) {
+        if (shouldRestartSlowSyncProcess(failure)) {
             slowSyncRepository.clearLastSlowSyncCompletionInstant()
         } else {
             onRetry()
         }
     }
 
-    private fun shouldReStartSlowSyncProcess(failure: CoreFailure): Boolean {
+    private fun shouldRestartSlowSyncProcess(failure: CoreFailure): Boolean {
         return isClientOrEventNotFound(failure)
     }
 
