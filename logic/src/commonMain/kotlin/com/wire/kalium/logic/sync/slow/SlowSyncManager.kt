@@ -39,6 +39,7 @@ internal class SlowSyncManager(
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val slowSyncWorker: SlowSyncWorker,
+    private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -47,11 +48,13 @@ internal class SlowSyncManager(
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
         slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
-    }, {
-        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(it))
+    }, { failure ->
+        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
         scope.launch {
-            delay(RETRY_DELAY)
-            startMonitoring()
+            slowSyncRecoveryHandler.recover(failure, onRetry = {
+                delay(RETRY_DELAY)
+                startMonitoring()
+            })
         }
     })
 

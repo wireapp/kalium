@@ -51,6 +51,7 @@ internal class IncrementalSyncManager(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncWorker: IncrementalSyncWorker,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -66,14 +67,15 @@ internal class IncrementalSyncManager(
         syncScope.launch {
             incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         }
-    }, {
-        kaliumLogger.i("$TAG ExceptionHandler error $it")
+    }, { failure ->
+        kaliumLogger.i("$TAG ExceptionHandler error $failure")
         syncScope.launch {
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
-            kaliumLogger.i("$TAG Triggering delay")
-            delay(RETRY_DELAY)
-            kaliumLogger.i("$TAG Delay finished")
-            startMonitoringForSync()
+            incrementalSyncRecoveryHandler.recover(failure = failure, onRetry = {
+                kaliumLogger.i("$TAG Triggering delay")
+                delay(RETRY_DELAY)
+                kaliumLogger.i("$TAG Delay finished")
+                startMonitoringForSync()
+            })
         }
     })
 
