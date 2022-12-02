@@ -67,7 +67,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                             MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(dtoCredentials)
                                         }
                                     if (credentials == null) {
-                                        println("$TAG proxy credentials required, but it's null")
+                                        kaliumLogger.e("$TAG proxy credentials required, but it's null")
                                     }
                                     credentials
                                 } else {
