@@ -16,7 +16,7 @@ interface ReceiptMessageHandler {
 internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
     private val receiptRepository: ReceiptRepository
-): ReceiptMessageHandler {
+) : ReceiptMessageHandler {
 
     override suspend fun handle(
         message: Message.Signaling,

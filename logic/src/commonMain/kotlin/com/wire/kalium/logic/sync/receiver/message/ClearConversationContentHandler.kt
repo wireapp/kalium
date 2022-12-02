@@ -18,7 +18,7 @@ internal class ClearConversationContentHandlerImpl(
     private val clearConversationContent: ClearConversationContent,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-): ClearConversationContentHandler {
+) : ClearConversationContentHandler {
 
     override suspend fun handle(
         message: Message.Signaling,

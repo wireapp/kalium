@@ -14,7 +14,9 @@ interface MessageTextEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
-class MessageTextEditHandlerImpl(private val messageRepository: MessageRepository): MessageTextEditHandler {
+class MessageTextEditHandlerImpl(
+    private val messageRepository: MessageRepository
+) : MessageTextEditHandler {
 
     override suspend fun handle(
         message: Message.Signaling,

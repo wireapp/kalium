@@ -20,7 +20,7 @@ internal class DeleteForMeHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-): DeleteForMeHandler {
+) : DeleteForMeHandler {
 
     override suspend fun handle(
         message: Message.Signaling,

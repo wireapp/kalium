@@ -11,7 +11,7 @@ interface IsMessageSentInSelfConversationUseCase {
 internal class IsMessageSentInSelfConversationUseCaseImpl(
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider,
     private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
-): IsMessageSentInSelfConversationUseCase {
+) : IsMessageSentInSelfConversationUseCase {
 
     override suspend fun invoke(message: Message): Boolean {
         val selfConversationIds = listOf(

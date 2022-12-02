@@ -19,7 +19,7 @@ internal class LastReadContentHandlerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-): LastReadContentHandler {
+) : LastReadContentHandler {
 
     override suspend fun handle(
         message: Message.Signaling,

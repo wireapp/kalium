@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.cache
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.functional.Either
@@ -10,7 +9,6 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
