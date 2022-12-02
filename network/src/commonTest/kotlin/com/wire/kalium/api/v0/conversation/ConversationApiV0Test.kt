@@ -49,6 +49,24 @@ class ConversationApiV0Test : ApiTest {
     }
 
     @Test
+    fun givenDeprecatedAccessRoleField_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            CREATE_CONVERSATION_RESPONSE_WITH_DEPRECATED_ACCESS_ROLE,
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertPathEqual(PATH_CONVERSATIONS)
+                assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
+            }
+        )
+        val conversationApi: ConversationApi = ConversationApiV0(networkClient)
+        val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
+
+        assertTrue(result.isSuccessful())
+    }
+
+    @Test
     fun givenARequestToUpdateMuteStatus_whenCallingUpdateConversationState_thenTheRequestShouldBeConfiguredOK() = runTest {
         val conversationId = "conv-id"
         val domain = "domain"
@@ -268,6 +286,7 @@ class ConversationApiV0Test : ApiTest {
         const val PATH_MEMBERS = "members"
         const val PATH_V2 = "v2"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.validGroup.rawJson
+        val CREATE_CONVERSATION_RESPONSE_WITH_DEPRECATED_ACCESS_ROLE = ConversationResponseJson.validGroupWithDeprecatedAccessRole.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.valid
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
         val CONVERSATION_IDS_RESPONSE = ConversationListIdsResponseJson.validGetIds
