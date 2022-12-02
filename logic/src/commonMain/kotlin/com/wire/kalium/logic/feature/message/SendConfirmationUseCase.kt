@@ -42,7 +42,7 @@ class SendConfirmationUseCase internal constructor(
 
         // fixme is this correct visibility?
         val messageIds = conversationRepository.detailsById(conversationId).fold({
-            kaliumLogger.e("There was an unknown error trying to get latest messages $it")
+            kaliumLogger.e("[SendConfirmationUseCase] There was an unknown error trying to get latest messages $it")
             emptyList()
         }, { conversation ->
             messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate)
@@ -54,7 +54,7 @@ class SendConfirmationUseCase internal constructor(
 
         // Skip in case no new messages to send confirmations receipts
         if (messageIds.isEmpty()) {
-            kaliumLogger.d("No messages to send confirmation signal")
+            kaliumLogger.d("[SendConfirmationUseCase] No messages to send confirmation signal")
             return Either.Right(Unit)
         }
 
@@ -72,16 +72,18 @@ class SendConfirmationUseCase internal constructor(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
             )
+
+            kaliumLogger.d("[SendConfirmationUseCase] Sending message")
             messageSender.sendMessage(message)
         }.onFailure {
             if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("There was an unknown error trying to send the message $it", it.rootCause)
+                kaliumLogger.e("[SendConfirmationUseCase] There was an unknown error trying to send the message $it", it.rootCause)
                 it.rootCause?.printStackTrace()
             } else {
-                kaliumLogger.e("There was an error trying to send the message $it")
+                kaliumLogger.e("T[SendConfirmationUseCase] here was an error trying to send the message $it")
             }
         }.onSuccess {
-            kaliumLogger.d("Confirmation signal sent successful")
+            kaliumLogger.d("[SendConfirmationUseCase] Confirmation signal sent successful")
         }
     }
 }
