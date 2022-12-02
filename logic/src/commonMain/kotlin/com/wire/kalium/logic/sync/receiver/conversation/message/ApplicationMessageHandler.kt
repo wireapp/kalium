@@ -89,6 +89,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
+                    is MessageContent.Confirmation -> Message.Visibility.HIDDEN
                     is MessageContent.Knock -> Message.Visibility.VISIBLE
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE

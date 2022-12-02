@@ -44,6 +44,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.message.confirmation.ConfirmationTypeMapper
+import com.wire.kalium.logic.data.message.confirmation.ConfirmationTypeMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
@@ -150,5 +152,7 @@ internal object MapperProvider {
     fun mlsCommitBundleMapper(): MLSCommitBundleMapper = MLSCommitBundleMapperImpl()
 
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
+
+    fun confirmationTypeMapper(): ConfirmationTypeMapper = ConfirmationTypeMapperImpl()
 
 }

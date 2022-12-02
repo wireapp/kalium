@@ -174,6 +174,11 @@ sealed interface Message {
                     typeKey to "ignored",
                     "content" to "$content",
                 )
+
+                is MessageContent.Confirmation -> mutableMapOf(
+                    typeKey to "confirmation",
+                    "content" to "$content",
+                )
             }
 
             val standardProperties = mapOf(
@@ -189,6 +194,10 @@ sealed interface Message {
             return Json.encodeToString(properties.toMap())
         }
 
+    }
+
+    enum class ConfirmationType {
+        DELIVERED, READ
     }
 
     data class System(

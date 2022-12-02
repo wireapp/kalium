@@ -4,6 +4,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.confirmation.ConfirmationTypeMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -34,7 +35,7 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
@@ -42,6 +43,7 @@ class ProtoContentMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val confirmationTypeMapper: ConfirmationTypeMapper = MapperProvider.confirmationTypeMapper(),
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -54,6 +56,7 @@ class ProtoContentMapperImpl(
         return PlainMessageBlob(message.encodeToByteArray())
     }
 
+    @Suppress("ComplexMethod")
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent)
@@ -74,6 +77,14 @@ class ProtoContentMapperImpl(
             is MessageContent.Reaction -> packReaction(readableContent)
 
             is MessageContent.Receipt -> packReceipt(readableContent)
+
+            is MessageContent.Confirmation -> GenericMessage.Content.Confirmation(
+                Confirmation(
+                    type = confirmationTypeMapper.fromModelConfirmationTypeToProto(readableContent.type),
+                    firstMessageId = readableContent.firstMessageId,
+                    moreMessageIds = readableContent.moreMessageIds
+                )
+            )
 
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
 
@@ -133,7 +144,6 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
@@ -144,6 +154,12 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
+            // TODO(figure it out): is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
+            is GenericMessage.Content.Confirmation -> MessageContent.Confirmation(
+                confirmationTypeMapper.fromProtoConfirmationTypeToModel(protoContent.value.type),
+                protoContent.value.firstMessageId,
+                protoContent.value.moreMessageIds
+            )
 
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")

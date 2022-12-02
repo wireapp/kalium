@@ -114,6 +114,10 @@ sealed class MessageEntity(
         FAILED
     }
 
+    enum class ConfirmationType {
+        READ, DELIVERED, UNRECOGNIZED
+    }
+
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
