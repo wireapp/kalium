@@ -1,6 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
@@ -12,6 +11,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -27,13 +27,13 @@ import io.ktor.serialization.kotlinx.json.json
  */
 internal class AuthenticatedNetworkClient(
     engine: HttpClientEngine,
-    sessionManager: SessionManager,
-    accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
+    serverConfigDTO: ServerConfigDTO,
+    bearerAuthProvider: BearerAuthProvider,
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.serverConfig())
-        installAuth(sessionManager, accessTokenApi)
+        installWireDefaultRequest(serverConfigDTO)
+        installAuth(bearerAuthProvider)
         install(ContentNegotiation) {
             mls()
             xprotobuf()
@@ -72,8 +72,8 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  */
 internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine,
-    private val sessionManager: SessionManager,
-    private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi
+    private val bearerAuthProvider: BearerAuthProvider,
+    private val serverConfigDTO: ServerConfigDTO,
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -83,8 +83,8 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.serverConfig())
-            installAuth(sessionManager, accessTokenApi)
+            installWireDefaultRequest(serverConfigDTO)
+            installAuth(bearerAuthProvider)
             install(ContentNegotiation) {
                 mls()
                 xprotobuf()

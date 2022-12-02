@@ -76,15 +76,21 @@ class ClientScope(
     val clearClientData: ClearClientDataUseCase
         get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
 
-    val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase
-        get() = PersistRegisteredClientIdUseCaseImpl(clientRepository)
+    private val verifyExistingClientUseCase: VerifyExistingClientUseCase
+        get() = VerifyExistingClientUseCaseImpl(clientRepository)
+
+    val importClient: ImportClientUseCase
+        get() = ImportClientUseCaseImpl(
+            clientRepository,
+            getOrRegister
+        )
 
     val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             register,
             clearClientData,
-            persistRegisteredClientIdUseCase,
+            verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase
         )
 }

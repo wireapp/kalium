@@ -155,7 +155,9 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-    override suspend fun getSelfConversationId() = conversationQueries.selfConversationId().executeAsOneOrNull()
+    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) =
+        conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
+
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
     }
@@ -222,11 +224,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: String) {
-        conversationQueries.transaction {
-            conversationQueries.selectConversationsWithUnnotifiedMessages()
-                .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualifiedId) }
-        }
+        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {

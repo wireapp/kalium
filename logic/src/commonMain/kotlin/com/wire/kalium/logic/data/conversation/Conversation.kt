@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -49,7 +50,8 @@ data class Conversation(
         SELF,
         ONE_ON_ONE,
         GROUP,
-        CONNECTION_PENDING;
+        CONNECTION_PENDING,
+        GLOBAL_TEAM;
     }
 
     enum class AccessRole {
@@ -63,6 +65,7 @@ data class Conversation(
     enum class Access {
         PRIVATE,
         INVITE,
+        SELF_INVITE,
         LINK,
         CODE;
     }
@@ -134,6 +137,8 @@ data class Conversation(
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 
+    data class Team(override val conversation: Conversation) : ConversationDetails(conversation)
+
     data class Self(override val conversation: Conversation) : ConversationDetails(conversation)
 
     data class OneOne(
@@ -143,8 +148,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
-        val unreadContentCount: UnreadContentCount,
-        val lastUnreadMessage: Message?
+        val unreadEventCount: UnreadEventCount,
+        val lastMessage: Message.Standalone?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -153,8 +158,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val hasOngoingCall: Boolean = false,
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
-        val unreadContentCount: UnreadContentCount,
-        val lastUnreadMessage: Message?,
+        val unreadEventCount: UnreadEventCount,
+        val lastMessage: Message.Standalone?,
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean
     ) : ConversationDetails(conversation)
@@ -194,8 +199,5 @@ data class MemberDetails(val user: User, val role: Conversation.Member.Role)
 typealias ClientId = PlainId
 
 data class Recipient(val id: UserId, val clients: List<ClientId>)
-enum class UnreadContentType {
-    TEXT_OR_ASSET, KNOCK, MISSED_CALL, UNKNOWN, SYSTEM
-}
 
-typealias UnreadContentCount = Map<UnreadContentType, Int>
+typealias UnreadEventCount = Map<UnreadEventType, Int>

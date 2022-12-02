@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
@@ -7,13 +8,17 @@ import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.mapper.CallMapper
+import com.wire.kalium.logic.data.call.CallClient
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -21,7 +26,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -52,12 +56,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logic.data.call.CallClient
-import com.wire.kalium.logic.data.call.CallClientList
-
-import com.sun.jna.Pointer
+import com.wire.kalium.logic.data.message.Message
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -152,7 +151,10 @@ class CallManagerImpl internal constructor(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(
+        message: Message.Signaling,
+        content: MessageContent.Calling,
+    ) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()
@@ -179,7 +181,10 @@ class CallManagerImpl internal constructor(
         conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
-        callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+        callingLogger.d(
+            "$TAG -> starting call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+        )
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
@@ -201,23 +206,35 @@ class CallManagerImpl internal constructor(
                 isAudioCbr.toInt()
             )
 
-            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
+            callingLogger.d(
+                "$TAG - wcall_start() called -> Call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} started"
+            )
         }
     }
 
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
+        callingLogger.d(
+            "$TAG -> answering call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+        )
         wcall_answer(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
-        callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
+        callingLogger.d(
+            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} answered"
+        )
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("[$TAG][endCall] -> ConversationId: [$conversationId]")
+        callingLogger.d(
+            "[$TAG][endCall] -> ConversationId: " +
+                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+        )
         callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
         wcall_end(
             inst = deferredHandle.await(),
@@ -226,7 +243,10 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("[$TAG][rejectCall] -> ConversationId: [$conversationId]")
+        callingLogger.d(
+            "[$TAG][rejectCall] -> ConversationId: " +
+                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+        )
         callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
         wcall_reject(
             inst = deferredHandle.await(),

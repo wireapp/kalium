@@ -7,6 +7,7 @@ import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
@@ -25,6 +26,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
@@ -39,6 +41,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anyInstanceOf
 import io.mockative.anything
 import io.mockative.classOf
@@ -126,7 +129,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForSelfUserAndMembers() = runTest {
+    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -141,7 +144,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.keyPackageRepository)
             .suspendFunction(arrangement.keyPackageRepository::claimKeyPackages)
-            .with(matching { it.containsAll(listOf(TestConversation.USER_1, TestUser.SELF.id)) })
+            .with(matching { it.containsAll(listOf(TestConversation.USER_1)) })
             .wasInvoked(once)
     }
 
@@ -371,6 +374,45 @@ class MLSConversationRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
             .with(eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE), eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateIsUpdated() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::joinByExternalCommit)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::mergePendingGroupFromExternalCommit)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNonRecoverableError_whenCallingJoinByExternalCommit_ThenClearCommit() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .arrange()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingGroupExternalCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -684,6 +726,9 @@ class MLSConversationRepositoryTest {
         val mlsMessageApi = mock(classOf<MLSMessageApi>())
 
         @Mock
+        val conversationApi = mock(classOf<ConversationApi>())
+
+        @Mock
         val mlsClient = mock(classOf<MLSClient>())
 
         @Mock
@@ -743,6 +788,13 @@ class MLSConversationRepositoryTest {
                 .function(mlsClient::joinConversation)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(COMMIT)
+        }
+
+        fun withJoinByExternalCommitSuccessful() = apply {
+            given(mlsClient)
+                .function(mlsClient::joinByExternalCommit)
+                .whenInvokedWith(anything())
+                .thenReturn(COMMIT_BUNDLE)
         }
 
         fun withProcessWelcomeMessageSuccessful() = apply {
@@ -827,7 +879,6 @@ class MLSConversationRepositoryTest {
         }
 
         fun arrange() = this to MLSConversationDataSource(
-            TestUser.SELF.id,
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
@@ -843,6 +894,7 @@ class MLSConversationRepositoryTest {
             const val RAW_GROUP_ID = "groupId"
             val TIME = Clock.System.now().toString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
+            val CONVERSATION_ID = ConversationId("ConvId", "Domain")
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
@@ -860,12 +912,13 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
-            val PUBLIC_GROUP_STATE = PublicGroupStateBundle(
+            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val PUBLIC_GROUP_STATE_BUNDLE = PublicGroupStateBundle(
                 PublicGroupStateEncryptionType.PLAINTEXT,
                 RatchetTreeType.FULL,
-                "public_group_state".encodeToByteArray()
+                PUBLIC_GROUP_STATE
             )
-            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
+            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.flow.first
 
 interface ConversationGroupRepository {
-    suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -40,7 +39,6 @@ interface ConversationGroupRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
@@ -53,17 +51,6 @@ internal class ConversationGroupRepositoryImpl(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
-
-    override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.requestToJoinGroup(
-                conversation.protocol.groupId,
-                conversation.protocol.epoch
-            )
-        } else {
-            Either.Right(Unit)
-        }
-    }
 
     override suspend fun createGroupConversation(
         name: String?,
@@ -93,7 +80,7 @@ internal class ConversationGroupRepositoryImpl(
 
                         is Conversation.ProtocolInfo.MLS ->
                             persistMembersFromConversationResponse(conversationResponse)
-                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList) }
+                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList + selfUserId) }
                     }
                 }.flatMap {
                     wrapStorageRequest {

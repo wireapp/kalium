@@ -30,6 +30,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class UserRepositoryTest {
 
@@ -138,6 +139,45 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAnEmptyUserIdList_whenFetchingUsers_thenShouldNotFetchFromApiAndSucceed() = runTest {
+        // given
+        val requestedUserIds = emptySet<UserId>()
+        val (arrangement, userRepository) = Arrangement()
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnEmptyUserIdListFromSameDomainAsSelf_whenFetchingUsers_thenShouldNotFetchMultipleUsersAndSucceed() = runTest {
+        // given
+        val requestedUserIds = setOf(
+            UserId(value = "id1", domain = "domain1"),
+            UserId(value = "id2", domain = "domain2")
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+        assertTrue { requestedUserIds.none { it.domain == arrangement.selfUserId.domain } }
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     // TODO other UserRepository tests
 
     private class Arrangement {
@@ -162,8 +202,10 @@ class UserRepositoryTest {
         @Mock
         val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
+        val selfUserId = TestUser.SELF.id
+
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id, qualifiedIdMapper)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper)
         }
 
         init {

@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -21,6 +22,8 @@ interface ConversationApi {
     suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO>
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
+
+    suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
@@ -53,4 +56,6 @@ interface ConversationApi {
     ): NetworkResponse<Unit>
 
     suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit>
+
+    suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
 }

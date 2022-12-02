@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -14,6 +15,7 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
@@ -59,7 +61,32 @@ class EventMapper(
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
+            is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
         }
+
+    private fun updateUserProperties(
+        id: String,
+        eventContentDTO: EventContentDTO.FieldKeyValue,
+        transient: Boolean
+    ): Event {
+        return when (eventContentDTO) {
+            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, eventContentDTO.value == 1)
+            is EventContentDTO.FieldUnknownValue -> Event.Unknown(id, transient)
+        }
+    }
+
+    private fun deleteUserProperties(
+        id: String,
+        eventContentDTO: EventContentDTO.UserProperty.PropertiesDeleteDTO,
+        transient: Boolean
+    ): Event {
+        return if (PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
+            ReadReceiptModeSet(id, transient, false)
+        } else {
+            Event.Unknown(id, transient)
+        }
+    }
 
     private fun welcomeMessage(
         id: String,

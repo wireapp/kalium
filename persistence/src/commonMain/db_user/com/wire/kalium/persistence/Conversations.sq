@@ -66,6 +66,13 @@ UPDATE Conversation
 SET last_notified_message_date = ?
 WHERE qualified_id = ?;
 
+updateAllUnNotifiedConversationsNotificationsDate:
+UPDATE Conversation
+SET last_notified_message_date = ?
+WHERE muted_status != 'ALL_MUTED'
+AND (last_notified_message_date ISNULL
+OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date));
+
 updateConversationModifiedDate:
 UPDATE Conversation
 SET last_modified_date = ?
@@ -133,17 +140,18 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
     (SELECT GROUP_CONCAT( singleUnreadContentTypeCount ) singleUnreadContentTypeCount FROM
         (SELECT ('"' || message.content_type || '":' || Count(message.content_type)) singleUnreadContentTypeCount FROM Message AS message
             WHERE message.conversation_id = Conversation.qualified_id
-            AND (DateTime(message.date) > DateTime(Conversation.last_read_date))
+            AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > strftime('%Y-%m-%d %H:%M:%f', Conversation.last_read_date))
             AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
             AND message.visibility IS 'VISIBLE' GROUP BY message.content_type ) ),
      '')
 || '}' AS unreadContentTypeJson,
 (SELECT COUNT() FROM MessageMention
     WHERE message_id IN (SELECT Message.id FROM Message WHERE Message.conversation_id = Conversation.qualified_id
-                 AND (DateTime(Message.date) >  DateTime(Conversation.last_read_date))
-                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE')
+                 AND (strftime('%Y-%m-%d %H:%M:%f', Message.date) > strftime('%Y-%m-%d %H:%M:%f', Conversation.last_read_date))
+                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE'
          AND conversation_id = Conversation.qualified_id
          AND user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1))
+         )
     AS unreadMentionsCount,
 (SELECT COUNT() FROM Member
     WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
@@ -200,7 +208,7 @@ getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR DateTime(last_modified_date) > DateTime(lastNotifiedMessageDate));
+SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR strftime('%Y-%m-%d %H:%M:%f', last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', lastNotifiedMessageDate));
 
 updateConversationMutingStatus:
 UPDATE Conversation
@@ -209,7 +217,7 @@ WHERE qualified_id = ?;
 
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation
- WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date)
+ WHERE strftime('%Y-%m-%d %H:%M:%f', conversation.last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', conversation.last_read_date)
 AND conversation.type IS NOT "SELF";
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
@@ -233,7 +241,7 @@ isUserMember:
 SELECT user FROM Member WHERE conversation = ? AND user = ?;
 
 whoDeletedMeInConversation:
-SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY DateTime(date) DESC LIMIT 1;
+SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT 1;
 
 updateConversationName:
 UPDATE Conversation
@@ -246,4 +254,4 @@ SET type = ?
 WHERE qualified_id = ?;
 
 selfConversationId:
-SELECT qualified_id FROM Conversation WHERE type = 'SELF' LIMIT 1;
+SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
