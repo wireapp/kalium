@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao.receipt
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.ReceiptsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -25,7 +26,8 @@ interface ReceiptDAO {
 }
 
 class ReceiptDAOImpl(
-    private val receiptsQueries: ReceiptsQueries
+    private val receiptsQueries: ReceiptsQueries,
+    private val receiptAdapter: Receipt.Adapter
 ) : ReceiptDAO {
 
     override suspend fun insertReceipts(
@@ -38,7 +40,11 @@ class ReceiptDAOImpl(
         receiptsQueries.transaction {
             messageIds.forEach { messageId ->
                 receiptsQueries.insertReceipt(
-                    messageId, conversationId, userId, type, date.toString()
+                    messageId,
+                    receiptAdapter.conversation_idAdapter.encode(conversationId),
+                    receiptAdapter.user_idAdapter.encode(userId),
+                    receiptAdapter.typeAdapter.encode(type),
+                    date.toString()
                 )
             }
         }
