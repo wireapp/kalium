@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -64,7 +65,8 @@ internal class GetMessageAssetUseCaseImpl(
                             assetId,
                             assetDomain,
                             assetToken,
-                            AES256Key(otrKey)
+                            AES256Key(otrKey),
+                            SHA256Key(sha256)
                         )
                     }
                 }

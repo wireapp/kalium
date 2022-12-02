@@ -27,7 +27,7 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
-import okio.Source
+import okio.buffer
 import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
@@ -214,7 +214,6 @@ internal class AssetDataSource(
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
-                    val encryptedDataSource = kaliumFileSystem.source(tempFile)
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
@@ -223,16 +222,15 @@ internal class AssetDataSource(
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                     // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                    val (hashError, assetDataSize) = decodeAssetIfNeeded(encryptedDataSource, encryptionKey, assetSHA256, decodedAssetSink)
+                    val (hashError, assetDataSize) = decodeAssetIfNeeded(tempFile, encryptionKey, assetSHA256, decodedAssetSink)
 
                     // Delete temp path now that the decoded asset has been persisted correctly
-                    encryptedDataSource.close()
                     kaliumFileSystem.delete(tempFile)
 
                     when {
                         // Either a decryption error or a hash error occurred
-                        assetDataSize <= 0L -> Either.Left(EncryptionFailure.GenericDecryptionError)
                         hashError != null -> Either.Left(hashError)
+                        assetDataSize <= 0L -> Either.Left(EncryptionFailure.GenericDecryptionError)
 
                         // Everything went fine, we persist the asset to the DB
                         else -> {
@@ -251,26 +249,39 @@ internal class AssetDataSource(
     }
 
     private suspend fun decodeAssetIfNeeded(
-        encryptedAssetDataSource: Source,
+        assetDataPath: Path,
         encryptionKey: AES256Key?,
         assetSha256Key: SHA256Key?,
         decodedAssetSink: Sink
-    ): Pair<EncryptionFailure?, Long> {
-        // Public assets are stored already decrypted on the backend, hence no decryption is needed
-        return if (encryptionKey != null) {
-            validateAssetHashes(encryptedAssetDataSource, assetSha256Key!!).fold({ it to 0L }, {
-                null to decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
+    ): Pair<EncryptionFailure?, Long> = with(kaliumFileSystem) {
+        if (encryptionKey != null) {
+            validateAssetHashes(assetDataPath, assetSha256Key!!).fold({ it to 0L }, {
+                val assetDataSource = source(assetDataPath)
+                val decryptedDataSize = decryptFileWithAES256(assetDataSource, decodedAssetSink, encryptionKey).also {
+                    assetDataSource.close()
+                }
+                null to decryptedDataSize
             })
         } else {
-            null to kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
+            // Public assets are stored already decrypted on the backend, hence no decryption nor hash validation is needed
+            val assetDataSource = source(assetDataPath)
+            null to writeData(decodedAssetSink, assetDataSource).also { assetDataSource.close() }
         }
     }
 
-    private fun validateAssetHashes(encryptedAssetDataSource: Source, storedAssetSha256Key: SHA256Key): Either<EncryptionFailure, Unit> {
-        return calcFileSHA256(encryptedAssetDataSource)?.let { downloadedAssetSha256Key ->
+    private fun validateAssetHashes(
+        encryptedAssetDataPath: Path,
+        storedAssetSha256Key: SHA256Key
+    ): Either<EncryptionFailure, Unit> {
+        // We open and close the source here to avoid keeping the file open for too long
+        val encryptedAssetDataSource = kaliumFileSystem.source(encryptedAssetDataPath)
+        val result = calcFileSHA256(encryptedAssetDataSource)?.let { downloadedAssetSha256Key ->
             if (downloadedAssetSha256Key.contentEquals(storedAssetSha256Key.data)) Either.Right(Unit)
             else Either.Left(EncryptionFailure.WrongAssetHash)
         } ?: Either.Left(EncryptionFailure.WrongAssetHash)
+
+        encryptedAssetDataSource.close()
+        return result
     }
 
     private suspend fun saveAssetInDB(
