@@ -478,19 +478,19 @@ SET id = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
-SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
@@ -507,7 +507,7 @@ WHERE conversation_id IS :conversation_id;
 getLastUnreadMessage:
 SELECT * FROM MessageDetailsView AS message
 WHERE message.conversationId
-IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+IS :conversation_id AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 ORDER BY message.date ASC
 LIMIT  1;
 
@@ -524,7 +524,7 @@ SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? A
 getUnreadMentionsCount:
 SELECT COUNT(DISTINCT message.id) FROM Message AS message
 WHERE message.conversation_id IS :conversation_id
-AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 AND message.content_type IN ('TEXT')
 AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
 
