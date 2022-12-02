@@ -299,16 +299,8 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         combine(
-            conversationDAO.getAllConversationDetails()
-                .onEach {
-                    // TODO KBX
-                    kaliumLogger.d("KBX getAllConversationDetails")
-                },
+            conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages()
-                .onEach {
-                    // TODO KBX
-                    kaliumLogger.d("KBX observeLastMessages ")
-                }
         ) { conversationList, lastMessageList ->
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,

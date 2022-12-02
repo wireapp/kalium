@@ -24,18 +24,25 @@ object MessageMapper {
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
+        selfUserId: QualifiedIDEntity?,
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
         conversationName: String?,
+        mentionedUserId: QualifiedIDEntity?,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
-        isUnread: Boolean
+        isUnread: Boolean,
     ): MessagePreviewEntity {
         val content: MessagePreviewEntityContent = when(contentType){
             MessageEntity.ContentType.TEXT -> when {
+                isSelfMessage -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
+                (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
              else -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
                     messageBody = text.requireField("text")
