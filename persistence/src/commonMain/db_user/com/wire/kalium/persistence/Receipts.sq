@@ -12,9 +12,25 @@ CREATE TABLE Receipt (
     PRIMARY KEY (message_id, conversation_id, user_id, type)
 );
 
+-- TODO: Cast to proper types when/if SQLDelight supports it:
 insertReceipt:
+WITH insertion(message_id, conversation_id, user_id, type, date) AS(
+    VALUES (CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT))
+)
 INSERT OR IGNORE INTO Receipt(message_id, conversation_id, user_id, type, date)
-VALUES(?, ?, ?, ?, ?);
+SELECT
+    insertion.message_id,
+    insertion.conversation_id,
+    insertion.user_id,
+    insertion.type,
+    insertion.date
+FROM insertion
+WHERE EXISTS (
+    SELECT 1 FROM Message
+    WHERE
+        Message.conversation_id = insertion.conversation_id AND
+        Message.id = insertion.message_id
+);
 
 CREATE VIEW IF NOT EXISTS ReceiptDetails
 AS SELECT
