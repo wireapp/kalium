@@ -1,24 +1,35 @@
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 interface ObservePersistentWebSocketConnectionStatusUseCase {
-    operator fun invoke(): Flow<Boolean>
+    suspend operator fun invoke(): Result
+
+    sealed class Result {
+        class Success(val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
+        sealed class Failure : Result() {
+            object StorageFailure : Failure()
+            class Generic(val genericFailure: CoreFailure) : Failure()
+        }
+    }
 }
 
 internal class ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
+    private val sessionRepository: SessionRepository
 ) : ObservePersistentWebSocketConnectionStatusUseCase {
+    override suspend operator fun invoke(): ObservePersistentWebSocketConnectionStatusUseCase.Result =
+        sessionRepository.getAllValidAccountPersistentWebSocketStatus().fold({
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC)
+                .i("Error while fetching valid accounts persistent web socket status ")
+            ObservePersistentWebSocketConnectionStatusUseCase.Result.Failure.StorageFailure
 
-    override operator fun invoke(): Flow<Boolean> =
-        globalConfigRepository.isPersistentWebSocketConnectionEnabledFlow().map { isPersistetWebSocketEnabledFlow ->
-            isPersistetWebSocketEnabledFlow.fold({
-                false
-            }, {
-                it
-            })
-        }
+        }, {
+            ObservePersistentWebSocketConnectionStatusUseCase.Result.Success(it)
+        })
 }

@@ -26,24 +26,21 @@ class MessageTextEditHandlerTest {
     private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandler(messageRepository)
 
     @Test
-    fun givenACorrectMessageAndMessageContent_whenHandeling_ThenDataGetsUpdatedCorrectly() = runTest {
+    fun givenACorrectMessageAndMessageContent_whenHandling_ThenDataGetsUpdatedCorrectly() = runTest {
         // given
-        val mockMessage = Message.Regular(
+        val mockMessageContent = MessageContent.TextEdited(
+            editMessageId = "someId",
+            newContent = "some new content",
+            newMentions = listOf()
+        )
+        val mockMessage = Message.Signaling(
             id = "someId",
-            content = MessageContent.Text("some new content"),
+            content = mockMessageContent,
             conversationId = ConversationId("someValue", "someDomain"),
             date = "someDate",
             senderUserId = UserId("someValue", "someDomain"),
             senderClientId = ClientId("someValue"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited,
-            visibility = Message.Visibility.VISIBLE
-        )
-
-        val mockMessageContent = MessageContent.TextEdited(
-            editMessageId = "someId",
-            newContent = "some new content",
-            newMentions = listOf()
         )
 
         given(messageRepository)

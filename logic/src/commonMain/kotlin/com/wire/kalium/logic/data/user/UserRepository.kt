@@ -124,8 +124,9 @@ internal class UserDataSource internal constructor(
             .map {
                 val usersOnSameDomain = it.key == selfUserDomain
                 if (usersOnSameDomain) {
-                    wrapApiRequest {
-                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
+                    if (it.value.isEmpty()) Either.Right(Unit)
+                    else wrapApiRequest {
+                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.value.map(idMapper::toApiModel)))
                     }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
                 } else {
                     it.value.forEach { userId ->

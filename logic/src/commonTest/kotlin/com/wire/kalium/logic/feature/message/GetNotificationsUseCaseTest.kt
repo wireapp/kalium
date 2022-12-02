@@ -345,7 +345,14 @@ class GetNotificationsUseCaseTest {
             .withEphemeralNotification()
             .withConnectionList(listOf())
             .withSelfUser(selfUserWithStatus())
-            .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
+            .withConversationsForNotifications(
+                listOf(
+                    entityConversation(
+                        mutedStatus =
+                        MutedConversationStatus.OnlyMentionsAndRepliesAllowed
+                    )
+                )
+            )
             .withMessagesByConversationAfterDate { conversationId ->
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),

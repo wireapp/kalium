@@ -11,7 +11,7 @@ import kotlinx.datetime.Clock
 interface UpdateConversationMutedStatusUseCase {
     /**
      * Use case that allows a conversation to change its muted status to:
-     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAllowed]
+     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAndRepliesAllowed]
      *
      * @param conversationId the id of the conversation where status wants to be changed
      * @param mutedConversationStatus new status to set the given conversation

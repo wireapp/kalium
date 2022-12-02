@@ -9,15 +9,38 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
-sealed class Message(
-    open val id: String,
-    open val content: MessageContent,
-    open val conversationId: ConversationId,
-    open val date: String,
-    open val senderUserId: UserId,
-    open val status: Status,
-    open val visibility: Visibility
-) {
+sealed interface Message {
+    val id: String
+    val content: MessageContent
+    val conversationId: ConversationId
+    val date: String
+    val senderUserId: UserId
+    val status: Status
+
+    /**
+     * Messages that can be sent from one client to another.
+     */
+    sealed interface Sendable : Message {
+        override val content: MessageContent.FromProto
+        val senderUserName: String? // TODO we can get it from entity but this will need a lot of changes in use cases,
+        val isSelfMessage: Boolean
+        val senderClientId: ClientId
+    }
+
+    /**
+     * Messages with a content that stands by itself in
+     * the list of messages within a conversation.
+     * For example, a text message or system message.
+     *
+     * A counter example would be a message edit or a reaction.
+     * These are just "attached" to another message.
+     *
+     * @see MessageContent.Regular
+     * @see MessageContent.System
+     */
+    sealed interface Standalone : Message {
+        val visibility: Visibility
+    }
 
     data class Regular(
         override val id: String,
@@ -27,99 +50,50 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
-        val senderClientId: ClientId,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
+        override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+    ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
-            val properties: MutableMap<String, String>
             val typeKey = "type"
-            when (content) {
-                is MessageContent.Text -> {
-                    properties = mutableMapOf(
-                        typeKey to "text"
-                    )
-                }
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.Text -> mutableMapOf(
+                    typeKey to "text"
+                )
 
-                is MessageContent.TextEdited -> {
-                    properties = mutableMapOf(
-                        typeKey to "textEdit"
-                    )
-                }
+                is MessageContent.Asset -> mutableMapOf(
+                    typeKey to "asset",
+                    "sizeInBytes" to "${content.value.sizeInBytes}",
+                    "mimeType" to content.value.mimeType,
+                    "metaData" to "${content.value.metadata}",
+                    "downloadStatus" to "${content.value.downloadStatus}",
+                    "uploadStatus" to "${content.value.uploadStatus}",
+                    "otrKeySize" to "${content.value.remoteData.otrKey.size}",
+                )
 
-                is MessageContent.Calling -> {
-                    properties = mutableMapOf(
-                        typeKey to "calling"
-                    )
-                }
-
-                is MessageContent.DeleteMessage -> {
-                    properties = mutableMapOf(
-                        typeKey to "delete"
-                    )
-                }
-
-                is MessageContent.Asset -> {
-                    properties = mutableMapOf(
-                        typeKey to "asset",
-                        "sizeInBytes" to "${content.value.sizeInBytes}",
-                        "mimeType" to content.value.mimeType,
-                        "metaData" to "${content.value.metadata}",
-                        "downloadStatus" to "${content.value.downloadStatus}",
-                        "uploadStatus" to "${content.value.uploadStatus}",
-                        "otrKeySize" to "${content.value.remoteData.otrKey.size}",
-                    )
-                }
-
-                is MessageContent.RestrictedAsset -> {
-                     properties = mutableMapOf(
-                         typeKey to "restrictedAsset",
-                        "sizeInBytes" to "${content.sizeInBytes}",
-                        "mimeType" to content.mimeType,
-                    )
-                }
-
-                is MessageContent.DeleteForMe -> {
-                    properties = mutableMapOf(
-                        typeKey to "deleteForMe",
-                        "messageId" to content.messageId.obfuscateId(),
-                    )
-                }
-
-                is MessageContent.LastRead -> {
-                    properties = mutableMapOf(
-                        typeKey to "lastRead",
-                        "time" to "${content.time}",
-                    )
-                }
+                is MessageContent.RestrictedAsset -> mutableMapOf(
+                    typeKey to "restrictedAsset",
+                    "sizeInBytes" to "${content.sizeInBytes}",
+                    "mimeType" to content.mimeType,
+                )
 
                 is MessageContent.FailedDecryption -> {
-                    properties = mutableMapOf(
+                    mutableMapOf(
                         typeKey to "failedDecryption",
                         "size" to "${content.encodedData?.size}",
                     )
                 }
 
-                is MessageContent.Reaction -> {
-                    val empty = if (content.emojiSet.isEmpty()) {
-                        "empty"
-                    } else {
-                        "not_empty"
-                    }
+                is MessageContent.Knock -> mutableMapOf(
+                    typeKey to "knock"
+                )
 
-                    properties = mutableMapOf(
-                        typeKey to "reactions",
-                        "emojiSet" to empty
-                    )
-                }
-
-                else -> {
-                    properties = mutableMapOf(
-                        typeKey to "unknown",
-                        "content" to "$content",
-                    )
-                }
+                is MessageContent.Unknown -> mutableMapOf(
+                    typeKey to "unknown"
+                )
             }
 
             val standardProperties = mapOf(
@@ -139,6 +113,84 @@ sealed class Message(
         }
     }
 
+    data class Signaling(
+        override val id: String,
+        override val content: MessageContent.Signaling,
+        override val conversationId: ConversationId,
+        override val date: String,
+        override val senderUserId: UserId,
+        override val senderClientId: ClientId,
+        override val status: Status,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
+    ) : Sendable {
+        override fun toString(): String {
+            val typeKey = "type"
+
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.TextEdited -> mutableMapOf(
+                    typeKey to "textEdit"
+                )
+
+                is MessageContent.Calling -> mutableMapOf(
+                    typeKey to "calling"
+                )
+
+                is MessageContent.DeleteMessage -> mutableMapOf(
+                    typeKey to "delete"
+                )
+
+                is MessageContent.DeleteForMe -> mutableMapOf(
+                    typeKey to "deleteForMe",
+                    "messageId" to content.messageId.obfuscateId(),
+                )
+
+                is MessageContent.LastRead -> mutableMapOf(
+                    typeKey to "lastRead",
+                    "time" to "${content.time}",
+                )
+
+                is MessageContent.Availability -> mutableMapOf(
+                    typeKey to "availability",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Cleared -> mutableMapOf(
+                    typeKey to "cleared",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Reaction -> mutableMapOf(
+                    typeKey to "reaction",
+                    "content" to "$content",
+                )
+
+                is MessageContent.Receipt -> mutableMapOf(
+                    typeKey to "receipt",
+                    "content" to "$content",
+                )
+
+                MessageContent.Ignored -> mutableMapOf(
+                    typeKey to "ignored",
+                    "content" to "$content",
+                )
+            }
+
+            val standardProperties = mapOf(
+                "id" to id.obfuscateId(),
+                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "date" to date,
+                "senderUserId" to senderUserId.value.obfuscateId(),
+                "senderClientId" to senderClientId.value.obfuscateId(),
+            )
+
+            properties.putAll(standardProperties)
+
+            return Json.encodeToString(properties.toMap())
+        }
+
+    }
+
     data class System(
         override val id: String,
         override val content: MessageContent.System,
@@ -146,28 +198,33 @@ sealed class Message(
         override val date: String,
         override val senderUserId: UserId,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override val visibility: Visibility = Visibility.VISIBLE,
+        // TODO(refactor): move senderName to inside the specific `content`
+        //                 instead of having it nullable in all system messages
+        val senderUserName: String? = null,
+    ) : Message, Standalone {
         override fun toString(): String {
 
-            var properties: MutableMap<String, String>
             val typeKey = "type"
-            when (content) {
-                is MessageContent.MemberChange -> {
-                    properties = mutableMapOf(
-                        typeKey to "memberChange",
-                        "members" to content.members.fold("") { acc, member ->
-                            return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
-                        }
-                    )
-                }
+            val properties: MutableMap<String, String> = when (content) {
+                is MessageContent.MemberChange -> mutableMapOf(
+                    typeKey to "memberChange",
+                    "members" to content.members.fold("") { acc, member ->
+                        return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
+                )
 
-                else -> {
-                    properties = mutableMapOf(
-                        typeKey to "system",
-                        "content" to content.toString()
-                    )
-                }
+                is MessageContent.ConversationRenamed -> mutableMapOf(
+                    typeKey to "conversationRenamed"
+                )
+
+                MessageContent.MissedCall -> mutableMapOf(
+                    typeKey to "missedCall"
+                )
+
+                is MessageContent.TeamMemberRemoved -> mutableMapOf(
+                    typeKey to "teamMemberRemoved"
+                )
             }
 
             val standardProperties = mapOf(
@@ -261,5 +318,36 @@ sealed class Message(
         }
     }
 }
+
+@Suppress("MagicNumber")
+enum class UnreadEventType(val priority: Int) {
+    KNOCK(1),
+    MISSED_CALL(2),
+    MENTION(3),
+    MESSAGE(4), // text or asset
+
+    //     REPLY(5), TODO in development
+    IGNORED(10),
+}
+
+data class MessagePreview(
+    val id: String,
+    val conversationId: ConversationId,
+    val content: MessagePreviewContent,
+    val date: String,
+    val visibility: Message.Visibility,
+    val isSelfMessage: Boolean
+
+    // TODO KBX toString
+)
+
+enum class AssetType {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    ASSET,
+    FILE
+}
+
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>

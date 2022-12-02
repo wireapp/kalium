@@ -38,4 +38,9 @@ class PrekeyDAOTest : BaseDatabaseTest() {
         prekeyDAO.forceInsertOTRLastPrekeyId(50)
         assertEquals(50, prekeyDAO.lastOTRPrekeyId())
     }
+
+    @Test
+    fun whenNotLastPreKeyIdIsStored_thenReturnNull() = runTest {
+        assertEquals(null, prekeyDAO.lastOTRPrekeyId())
+    }
 }
