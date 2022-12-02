@@ -207,8 +207,8 @@ class ProtoContentMapperImpl(
 
     private fun packLastRead(readableContent: MessageContent.LastRead) = GenericMessage.Content.LastRead(
         LastRead(
-            conversationId = readableContent.unqualifiedConversationId,
-            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            conversationId = readableContent.conversationId.value,
+            qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
             lastReadTimestamp = readableContent.time.toEpochMilliseconds()
         )
     )
@@ -218,16 +218,15 @@ class ProtoContentMapperImpl(
         protoContent: GenericMessage.Content.LastRead
     ) = MessageContent.LastRead(
         messageId = genericMessage.messageId,
-        unqualifiedConversationId = protoContent.value.conversationId,
-        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+        conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
         time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
     )
 
     private fun packHidden(readableContent: MessageContent.DeleteForMe) = GenericMessage.Content.Hidden(
         MessageHide(
             messageId = readableContent.messageId,
-            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-            conversationId = readableContent.unqualifiedConversationId
+            qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
+            conversationId = readableContent.conversationId.value
         )
     )
 
@@ -239,8 +238,7 @@ class ProtoContentMapperImpl(
         return if (hiddenMessage != null) {
             MessageContent.DeleteForMe(
                 messageId = hiddenMessage.messageId,
-                unqualifiedConversationId = hiddenMessage.conversationId,
-                conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+                conversationId = extractConversationId(protoContent.value.qualifiedConversationId, hiddenMessage.conversationId),
             )
         } else {
             kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
@@ -278,15 +276,14 @@ class ProtoContentMapperImpl(
 
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
         Cleared(
-            conversationId = readableContent.unqualifiedConversationId,
-            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+            conversationId = readableContent.conversationId.value,
+            qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
             clearedTimestamp = readableContent.time.toEpochMilliseconds()
         )
     )
 
     private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
-        unqualifiedConversationId = protoContent.value.conversationId,
-        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+        conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
 
@@ -317,9 +314,12 @@ class ProtoContentMapperImpl(
         null
     )
 
-    private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
+    private fun extractConversationId(
+        qualifiedConversationID: QualifiedConversationId?,
+        unqualifiedConversationID: String
+    ): ConversationId {
         return if (qualifiedConversationID != null)
             idMapper.fromProtoModel(qualifiedConversationID)
-        else null
+        else ConversationId(unqualifiedConversationID, selfUserId.domain)
     }
 }
