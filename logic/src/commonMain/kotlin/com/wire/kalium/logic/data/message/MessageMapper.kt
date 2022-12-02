@@ -325,4 +325,3 @@ fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.ASSET -> AssetType.ASSET
     AssetTypeEntity.FILE -> AssetType.FILE
 }
-
