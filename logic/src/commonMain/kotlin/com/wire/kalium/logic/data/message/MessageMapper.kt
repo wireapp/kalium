@@ -296,17 +296,17 @@ fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (th
     Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
 }
 
-fun MessageEntity.Visibility.toModel(): Message.Visibility  = when (this) {
+fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
     MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
 }
 
-private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this)  {
+private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
     is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
-    is MessagePreviewEntityContent.MemberChange -> when(type) {
+    is MessagePreviewEntityContent.MemberChange -> when (type) {
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
     }
