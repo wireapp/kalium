@@ -386,7 +386,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
             teamDAO.insertTeam(team)
 
-            launch(UnconfinedTestDispatcher(testScheduler)) {
+            launch {
                 // when
                 conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
                     // then
@@ -528,7 +528,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //
 //         messageDAO.insertMessages(message)
 //
-//         launch(UnconfinedTestDispatcher(testScheduler)) {
+//         launch) {
 //             // when
 //             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
 //                 val conversation = awaitItem()
@@ -581,7 +581,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -617,7 +617,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -668,7 +668,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -705,7 +705,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //             )
 //         )
 //
-//         launch(UnconfinedTestDispatcher(testScheduler)) {
+//         launch {
 //             // when
 //             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
 //                 val conversation = awaitItem()
@@ -745,7 +745,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
