@@ -1211,7 +1211,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsProposalTimer = null,
             mutedTime = mutedTime,
             creatorId = creatorId,
-            unreadContentCountEntity = emptyMap()
+            unreadContentCountEntity = emptyMap(),
+            unreadRepliesCount = 0L // TODO remove
         )
     }
 
