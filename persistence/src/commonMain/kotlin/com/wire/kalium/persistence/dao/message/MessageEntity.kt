@@ -278,5 +278,4 @@ enum class AssetTypeEntity {
     FILE
 }
 
-
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>

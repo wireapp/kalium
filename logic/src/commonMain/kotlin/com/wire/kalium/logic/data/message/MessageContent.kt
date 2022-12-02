@@ -196,7 +196,7 @@ sealed class MessageContent {
 
 sealed class MessagePreviewContent {
 
-    sealed class WithUser(open val username: String?): MessagePreviewContent()  {
+    sealed class WithUser(open val username: String?) : MessagePreviewContent() {
 
         data class Text(override val username: String?, val messageBody: String) : WithUser(username)
 

@@ -15,6 +15,7 @@ object MessageMapper {
 
     private val serializer = JsonSerializer()
 
+    @Suppress("ComplexMethod")
     fun toPreviewEntity(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -35,7 +36,7 @@ object MessageMapper {
         assetMimeType: String?,
         isUnread: Boolean,
     ): MessagePreviewEntity {
-        val content: MessagePreviewEntityContent = when(contentType){
+        val content: MessagePreviewEntityContent = when (contentType) {
             MessageEntity.ContentType.TEXT -> when {
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
@@ -43,26 +44,28 @@ object MessageMapper {
                 )
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
                 (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
-             else -> MessagePreviewEntityContent.Text(
+                else -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
                     messageBody = text.requireField("text")
                 )
             }
-                        MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
-                    senderName = senderName,
-                    type = assetMimeType?.let{ when {
+            MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
+                senderName = senderName,
+                type = assetMimeType?.let {
+                    when {
                         it.contains("image/") -> AssetTypeEntity.IMAGE
                         it.contains("video/") -> AssetTypeEntity.VIDEO
                         it.contains("audio/") -> AssetTypeEntity.AUDIO
                         else -> AssetTypeEntity.FILE
-                    }} ?: AssetTypeEntity.FILE
-                )
-            MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName= senderName)
+                    }
+                } ?: AssetTypeEntity.FILE
+            )
+            MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
             MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
                 adminName = senderName,
                 count = memberChangeList.requireField("memberChangeList").size,
                 type = memberChangeType.requireField("memberChangeType")
-                )
+            )
             MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
                 senderName = senderName,
