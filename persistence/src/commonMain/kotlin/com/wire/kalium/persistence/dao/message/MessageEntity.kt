@@ -126,6 +126,7 @@ sealed class MessageEntity(
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
+
         val isVisible get() = this == VISIBLE
     }
 
@@ -231,5 +232,51 @@ sealed class MessageEntityContent {
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
 }
+
+data class MessagePreviewEntity(
+    val id: String,
+    val conversationId: QualifiedIDEntity,
+    val content: MessagePreviewEntityContent,
+    val date: String,
+    val visibility: MessageEntity.Visibility,
+    val isSelfMessage: Boolean
+)
+
+sealed class MessagePreviewEntityContent {
+
+    data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
+
+    data class MentionedSelf(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class QuotedSelf(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberChange(
+        val adminName: String?,
+        val count: Int, // TODO add usernames
+        val type: MessageEntity.MemberChangeType
+    ) : MessagePreviewEntityContent()
+
+    data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
+
+    data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
+
+    object Unknown : MessagePreviewEntityContent()
+
+}
+
+enum class AssetTypeEntity {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    ASSET,
+    FILE
+}
+
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>

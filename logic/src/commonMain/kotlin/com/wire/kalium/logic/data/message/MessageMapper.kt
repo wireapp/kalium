@@ -13,13 +13,17 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message
+    fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
@@ -78,11 +82,8 @@ class MessageMapperImpl(
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
         }
-        val visibility = when (message.visibility) {
-            MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
-            MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
-            MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
-        }
+        val visibility = message.visibility.toModel()
+
         return when (message) {
             is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
@@ -114,6 +115,17 @@ class MessageMapperImpl(
                 isSelfMessage = message.isSelfMessage
             )
         }
+    }
+
+    override fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview {
+        return MessagePreview(
+            id = message.id,
+            conversationId = idMapper.fromDaoModel(message.conversationId),
+            content = message.content.toMessageContent(),
+            date = message.date,
+            visibility = message.visibility.toModel(),
+            isSelfMessage = message.isSelfMessage
+        )
     }
 
     override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage =
@@ -293,3 +305,34 @@ fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (th
     Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
     Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
 }
+
+fun MessageEntity.Visibility.toModel(): Message.Visibility  = when (this) {
+    MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
+    MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
+    MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
+}
+
+private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this)  {
+    is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
+    is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
+    is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
+    is MessagePreviewEntityContent.MemberChange -> when(type) {
+        MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
+        MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
+    }
+    is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
+    is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
+    is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
+    is MessagePreviewEntityContent.TeamMemberRemoved -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
+    is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
+    MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
+}
+
+fun AssetTypeEntity.toModel(): AssetType = when (this) {
+    AssetTypeEntity.IMAGE -> AssetType.IMAGE
+    AssetTypeEntity.VIDEO -> AssetType.VIDEO
+    AssetTypeEntity.AUDIO -> AssetType.AUDIO
+    AssetTypeEntity.ASSET -> AssetType.ASSET
+    AssetTypeEntity.FILE -> AssetType.FILE
+}
+

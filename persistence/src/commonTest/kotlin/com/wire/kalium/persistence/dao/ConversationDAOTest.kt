@@ -220,13 +220,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity2.id,
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             mutedStatusTimestamp = 1649702788L
         )
 
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
 
-        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
+        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED, result?.mutedStatus)
     }
 
     @Test
@@ -1277,7 +1277,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
@@ -1300,7 +1300,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )

@@ -281,5 +281,24 @@ enum class UnreadEventType(val priority: Int) {
     IGNORED(10),
 }
 
+data class MessagePreview(
+    val id: String,
+    val conversationId: ConversationId,
+    val content: MessagePreviewContent,
+    val date: String,
+    val visibility: Message.Visibility,
+    val isSelfMessage: Boolean
+
+    // TODO KBX toString
+)
+
+enum class AssetType {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    ASSET,
+    FILE
+}
+
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>
