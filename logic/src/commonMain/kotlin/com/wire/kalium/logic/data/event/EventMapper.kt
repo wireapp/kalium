@@ -233,7 +233,7 @@ class EventMapper(
     @Suppress("MagicNumber")
     private fun mapConversationMutedStatus(status: Int?) = when (status) {
         0 -> MutedConversationStatus.AllAllowed
-        1 -> MutedConversationStatus.OnlyMentionsAllowed
+        1 -> MutedConversationStatus.OnlyMentionsAndRepliesAllowed
         3 -> MutedConversationStatus.AllMuted
         else -> MutedConversationStatus.AllAllowed
     }
