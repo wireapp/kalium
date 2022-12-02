@@ -236,7 +236,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                 selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
 
     private fun onlyMentionsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
+        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed ||
                 selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
     @Suppress("ComplexMethod")

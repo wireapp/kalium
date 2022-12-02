@@ -59,7 +59,7 @@ class ObserveConversationDetailsUseCaseTest {
                 ConversationDetails.Group(
                     conversation,
                     LegalHoldStatus.DISABLED,
-                    unreadMessagesCount = 0,
+                    unreadRepliesCount = 0,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,
@@ -70,7 +70,7 @@ class ObserveConversationDetailsUseCaseTest {
                 ConversationDetails.Group(
                     conversation.copy(name = "New Name"),
                     LegalHoldStatus.DISABLED,
-                    unreadMessagesCount = 0,
+                    unreadRepliesCount = 0,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,

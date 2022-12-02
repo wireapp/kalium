@@ -24,7 +24,7 @@ class ConversationStatusMapperTest {
 
     @Test
     fun givenAConversationModel_whenMappingToApiModel_thenTheMappingStatusesShouldBeOk() {
-        val result = conversationStatusMapper.toMutedStatusApiModel(MutedConversationStatus.OnlyMentionsAllowed, 1649708697237L)
+        val result = conversationStatusMapper.toMutedStatusApiModel(MutedConversationStatus.OnlyMentionsAndRepliesAllowed, 1649708697237L)
 
         assertEquals(MutedStatus.ONLY_MENTIONS_ALLOWED, result.otrMutedStatus)
         assertEquals("2022-04-11T20:24:57.237Z", result.otrMutedRef)
@@ -32,9 +32,9 @@ class ConversationStatusMapperTest {
 
     @Test
     fun givenAConversationModel_whenMappingToDaoModel_thenTheMappingStatusesShouldBeOk() {
-        val result = conversationStatusMapper.toMutedStatusDaoModel(MutedConversationStatus.OnlyMentionsAllowed)
+        val result = conversationStatusMapper.toMutedStatusDaoModel(MutedConversationStatus.OnlyMentionsAndRepliesAllowed)
 
-        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result)
+        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED, result)
     }
 
 }

@@ -51,7 +51,7 @@ data class ConversationEntity(
         }
     }
 
-    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
+    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
@@ -86,6 +86,7 @@ data class ConversationViewEntity(
     val lastNotificationDate: String?,
     val unreadContentCountEntity: UnreadContentCountEntity,
     val unreadMentionsCount: Long,
+    val unreadRepliesCount: Long,
     val isMember: Long,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,

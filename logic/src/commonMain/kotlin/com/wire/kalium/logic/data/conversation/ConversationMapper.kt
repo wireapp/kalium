@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
@@ -35,7 +35,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message.Standalone?): ConversationDetails
+    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -105,7 +105,7 @@ internal class ConversationMapperImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: Message.Standalone?): ConversationDetails =
+    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails =
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
@@ -134,7 +134,7 @@ internal class ConversationMapperImpl(
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        unreadMessagesCount = unreadContentCountEntity.values.sum(),
+                        unreadRepliesCount = unreadRepliesCount,
                         unreadMentionsCount = unreadMentionsCount,
                         unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
                         lastMessage = lastMessage,
@@ -146,7 +146,7 @@ internal class ConversationMapperImpl(
                         conversation = fromDaoModel(daoModel),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         hasOngoingCall = callStatus != null, // todo: we can do better!
-                        unreadMessagesCount = unreadContentCountEntity.values.sum(),
+                        unreadRepliesCount = unreadRepliesCount,
                         unreadMentionsCount = unreadMentionsCount,
                         unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
                         lastMessage = lastMessage,
