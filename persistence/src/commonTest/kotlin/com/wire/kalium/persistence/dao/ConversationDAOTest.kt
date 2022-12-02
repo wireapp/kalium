@@ -592,60 +592,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
-    @Test
-    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        val systemMessagesCount = 3
-        val regularMessagesCount = 2
-
-        val message = buildList {
-            // add 5 Message past the lastReadDate
-            repeat(systemMessagesCount) {
-                add(
-                    newSystemMessageEntity(
-                        id = "system$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-            // add 9 Message past the lastReadDate
-            repeat(regularMessagesCount) {
-                add(
-                    newRegularMessageEntity(
-                        id = "regular$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-        }
-
-        messageDAO.insertMessages(message)
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertEquals(regularMessagesCount, conversation.unreadContentCountEntity.values.sum())
-            }
-        }
-    }
-
     // TODO kubaz enable after unread counter performance fix
 //     @Test
 //     fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
