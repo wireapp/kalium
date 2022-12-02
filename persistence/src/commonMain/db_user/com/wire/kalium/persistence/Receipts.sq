@@ -33,7 +33,7 @@ AS SELECT
 FROM
 	Receipt
 INNER JOIN User ON User.qualified_id = Receipt.user_id
-ORDER BY Receipt.type;
+ORDER BY User.name;
 
 selectReceiptsByConversationIdAndMessageId:
 SELECT *

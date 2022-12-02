@@ -228,11 +228,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: String) {
-        conversationQueries.transaction {
-            conversationQueries.selectConversationsWithUnnotifiedMessages()
-                .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualifiedId) }
-        }
+        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {

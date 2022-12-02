@@ -485,7 +485,7 @@ countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;

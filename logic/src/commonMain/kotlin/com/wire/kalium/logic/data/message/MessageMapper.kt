@@ -21,8 +21,8 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
-    fun fromMessageToEntity(message: Message): MessageEntity
-    fun fromEntityToMessage(message: MessageEntity): Message
+    fun fromMessageToEntity(message: Message.Standalone): MessageEntity
+    fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
@@ -35,7 +35,7 @@ class MessageMapperImpl(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
-    override fun fromMessageToEntity(message: Message): MessageEntity {
+    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
             Message.Status.SENT -> MessageEntity.Status.SENT
@@ -70,12 +70,11 @@ class MessageMapperImpl(
                 status = status,
                 visibility = visibility,
                 senderName = message.senderUserName,
-                isSelfMessage = message.isSelfMessage
             )
         }
     }
 
-    override fun fromEntityToMessage(message: MessageEntity): Message {
+    override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
@@ -112,7 +111,6 @@ class MessageMapperImpl(
                 status = status,
                 visibility = visibility,
                 senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage
             )
         }
     }
@@ -199,15 +197,7 @@ class MessageMapperImpl(
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Calling -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
-        is MessageContent.Reaction -> MessageEntityContent.Unknown()
-        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
-        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
-        is MessageContent.Empty -> MessageEntityContent.Unknown()
-        is MessageContent.LastRead -> MessageEntityContent.Unknown()
-        is MessageContent.Cleared -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
