@@ -18,7 +18,6 @@ import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -126,7 +125,7 @@ class CallManagerImpl internal constructor(
             ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
             incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+            missedCallHandler = OnMissedCall,
             answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
@@ -236,14 +235,6 @@ class CallManagerImpl internal constructor(
             "[$TAG][endCall] -> ConversationId: " +
                     "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
         )
-        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
-
-        callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
-        callRepository.updateCallStatusById(
-            conversationIdString = conversationId.toString(),
-            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-        )
-
         callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
         wcall_end(
             inst = deferredHandle.await(),
@@ -256,14 +247,6 @@ class CallManagerImpl internal constructor(
             "[$TAG][rejectCall] -> ConversationId: " +
                     "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
         )
-        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
-
-        callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
-        callRepository.updateCallStatusById(
-            conversationIdString = conversationId.toString(),
-            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-        )
-
         callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
         wcall_reject(
             inst = deferredHandle.await(),

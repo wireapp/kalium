@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
@@ -185,9 +186,7 @@ sealed class MessageContent {
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
-    data class Receipt(val type: Type, val messageIds: List<String>) : Signaling() {
-        enum class Type { READ, DELIVERY }
-    }
+    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way

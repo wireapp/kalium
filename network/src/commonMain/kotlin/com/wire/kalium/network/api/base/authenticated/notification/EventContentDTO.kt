@@ -1,8 +1,5 @@
 package com.wire.kalium.network.api.base.authenticated.notification
 
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.TeamId
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
@@ -19,11 +16,22 @@ import com.wire.kalium.network.api.base.authenticated.notification.team.TeamUpda
 import com.wire.kalium.network.api.base.authenticated.notification.user.NewClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.UserUpdateEventData
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.TeamId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.utils.toJsonElement
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
@@ -34,6 +42,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonTransformingSerializer
 import kotlinx.serialization.json.jsonObject
+import kotlin.jvm.JvmInline
 
 @Serializable
 data class EventResponse(
@@ -257,10 +266,6 @@ sealed class EventContentDTO {
             @SerialName("client") val client: RemoveClientEventData,
         ) : User()
 
-        // TODO user.properties-set
-
-        // TODO user.properties-delete
-
         @Serializable
         @SerialName("user.update")
         data class UpdateDTO(
@@ -295,6 +300,58 @@ sealed class EventContentDTO {
     }
 
     @Serializable
+    sealed class UserProperty : EventContentDTO() {
+        @Serializable
+        @SerialName("user.properties-set")
+        data class PropertiesSetDTO(
+            @SerialName("key") val key: String,
+            @SerialName("value") val value: FieldKeyValue,
+        ) : UserProperty()
+
+        @Serializable
+        @SerialName("user.properties-delete")
+        data class PropertiesDeleteDTO(
+            @SerialName("key") val key: String,
+        ) : UserProperty()
+
+    }
+
+    @Serializable(with = FieldKeyValueDeserializer::class)
+    sealed interface FieldKeyValue
+
+    @Serializable
+    @JvmInline
+    value class FieldKeyNumberValue(val value: Int) : FieldKeyValue
+
+    @Serializable
+    @JvmInline
+    value class FieldUnknownValue(val value: String) : FieldKeyValue
+
+    @Serializable
     @SerialName("unknown")
     object Unknown : EventContentDTO()
+}
+
+@OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+@Serializer(EventContentDTO.FieldKeyValue::class)
+object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {
+    override val descriptor = buildSerialDescriptor("value", PolymorphicKind.SEALED)
+    override fun serialize(encoder: Encoder, value: EventContentDTO.FieldKeyValue) {
+        when (value) {
+            is EventContentDTO.FieldKeyNumberValue -> encoder.encodeInt(value.value)
+            is EventContentDTO.FieldUnknownValue -> throw SerializationException("Not handled yet")
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun deserialize(decoder: Decoder): EventContentDTO.FieldKeyValue {
+        return try {
+            EventContentDTO.FieldKeyNumberValue(decoder.decodeInt())
+        } catch (exception: Exception) {
+            val jsonElement = decoder.toJsonElement().toString()
+            kaliumLogger.d("Error deserializing 'user.properties-set', prop: $jsonElement")
+            kaliumLogger.w("Error deserializing 'user.properties-set', error: $exception")
+            EventContentDTO.FieldUnknownValue(jsonElement)
+        }
+    }
 }

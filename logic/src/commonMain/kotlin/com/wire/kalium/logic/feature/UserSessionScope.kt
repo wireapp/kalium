@@ -56,12 +56,15 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.UserPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
@@ -167,6 +170,8 @@ import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -192,6 +197,7 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -275,6 +281,12 @@ class UserSessionScope internal constructor(
 
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
+
+    private val userPropertyRepository: UserPropertyRepository
+        get() = UserPropertyDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.propertiesApi,
+            userConfigRepository
+        )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -455,7 +467,12 @@ class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
-            eventRepository, conversationEventReceiver, userEventReceiver, teamEventReceiver, featureConfigEventReceiver
+            eventRepository,
+            conversationEventReceiver,
+            userEventReceiver,
+            teamEventReceiver,
+            featureConfigEventReceiver,
+            userPropertiesEventReceiver
         )
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
@@ -597,6 +614,7 @@ class UserSessionScope internal constructor(
     }
 
     private val reactionRepository = ReactionRepositoryImpl(userId, userStorage.database.reactionDAO)
+    private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
             reactionRepository
@@ -617,6 +635,11 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
+    private val receiptMessageHandler get() = ReceiptMessageHandler(
+        selfUserId = this.userId,
+        receiptRepository = receiptRepository
+    )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -634,7 +657,8 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
-            messageEncoder
+            messageEncoder,
+            receiptMessageHandler
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
@@ -687,6 +711,9 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
+
+    private val userPropertiesEventReceiver: UserPropertiesEventReceiver
+        get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
@@ -782,6 +809,7 @@ class UserSessionScope internal constructor(
             userRepository,
             assetRepository,
             reactionRepository,
+            receiptRepository,
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
@@ -803,6 +831,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
+            userPropertyRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase

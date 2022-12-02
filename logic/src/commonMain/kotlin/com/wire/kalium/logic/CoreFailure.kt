@@ -23,6 +23,12 @@ sealed class CoreFailure {
      */
     data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure()
 
+    /**
+     * It's not allowed to run the application with development API enabled when
+     * connecting to the production environment.
+     */
+    object DevelopmentAPINotAllowedOnProduction : CoreFailure()
+
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
