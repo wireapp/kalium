@@ -2,6 +2,7 @@ package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.model.conversation.AccessRoleUpdateRequestJson
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
@@ -34,24 +35,6 @@ class ConversationApiV0Test : ApiTest {
     fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             CREATE_CONVERSATION_RESPONSE,
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                assertJson()
-                assertPost()
-                assertPathEqual(PATH_CONVERSATIONS)
-                assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
-            }
-        )
-        val conversationApi: ConversationApi = ConversationApiV0(networkClient)
-        val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
-
-        assertTrue(result.isSuccessful())
-    }
-
-    @Test
-    fun givenDeprecatedAccessRoleField_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            CREATE_CONVERSATION_RESPONSE_WITH_DEPRECATED_ACCESS_ROLE,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertJson()
@@ -130,13 +113,14 @@ class ConversationApiV0Test : ApiTest {
     @Test
     fun whenUpdatingAccessRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val accessRoles = ConversationAccessInfoDTO(
-            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
+            setOf(ConversationAccessDTO.PRIVATE), setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
         )
         val networkClient = mockAuthenticatedNetworkClient(
             "", statusCode = HttpStatusCode.NoContent,
             assertion = {
                 assertPut()
                 assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/access")
+                assertJsonBodyContent(UPDATE_ACCESS_ROLE_REQUEST.rawJson)
             }
         )
 
@@ -285,10 +269,10 @@ class ConversationApiV0Test : ApiTest {
         const val PATH_SELF = "/self"
         const val PATH_MEMBERS = "members"
         const val PATH_V2 = "v2"
-        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.validGroup.rawJson
-        val CREATE_CONVERSATION_RESPONSE_WITH_DEPRECATED_ACCESS_ROLE = ConversationResponseJson.validGroupWithDeprecatedAccessRole.rawJson
-        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.valid
+        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
+        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
+        val UPDATE_ACCESS_ROLE_REQUEST = AccessRoleUpdateRequestJson.v0
         val CONVERSATION_IDS_RESPONSE = ConversationListIdsResponseJson.validGetIds
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
         val MEMBER_UPDATE_REQUEST = MemberUpdateRequestJson.valid

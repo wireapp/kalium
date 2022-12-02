@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateC
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.RequestMapper
+import com.wire.kalium.network.api.base.model.RequestMapperImpl
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
@@ -33,7 +34,7 @@ import okio.IOException
 
 internal open class ConversationApiV3 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val requestMapper: RequestMapper
+    private val requestMapper: RequestMapper = RequestMapperImpl()
 ) : ConversationApiV2(authenticatedNetworkClient) {
 
     /**

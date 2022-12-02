@@ -59,11 +59,11 @@ object ConversationResponseJson {
         mlsCipherSuiteTag = null
     )
 
-    val validGroup = ValidJsonProvider(
+    val v3 = ValidJsonProvider(
         conversationResponse, conversationResponseSerializer
     )
 
-    val validGroupWithDeprecatedAccessRole = ValidJsonProvider(
+    val v0 = ValidJsonProvider(
         conversationResponse, conversationResponseSerializerWithDeprecatedAccessRole
     )
 }
