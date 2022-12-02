@@ -19,6 +19,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
@@ -40,7 +41,8 @@ class ConversationScope internal constructor(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
+    private val sendConfirmation: SendConfirmationUseCase
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -109,6 +111,7 @@ class ConversationScope internal constructor(
             clientRepository,
             selfUserId,
             selfConversationIdProvider,
+            sendConfirmation
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase

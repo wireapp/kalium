@@ -633,10 +633,11 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val receiptMessageHandler get() = ReceiptMessageHandler(
-        selfUserId = this.userId,
-        receiptRepository = receiptRepository
-    )
+    private val receiptMessageHandler
+        get() = ReceiptMessageHandler(
+            selfUserId = this.userId,
+            receiptRepository = receiptRepository
+        )
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
@@ -770,7 +771,8 @@ class UserSessionScope internal constructor(
             userId,
             selfConversationIdProvider,
             persistMessage,
-            updateKeyingMaterialThresholdProvider
+            updateKeyingMaterialThresholdProvider,
+            messages.sendConfirmation
         )
     val debug: DebugScope
         get() = DebugScope(
