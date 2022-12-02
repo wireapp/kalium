@@ -3,7 +3,7 @@
 MISSING_FILES=""
 for dbDir in db_global db_user
 do
-    RESULT=$(git ls-files -m -o --exclude-standard | grep ".*$dbDir.*.db$")
+    RESULT=$(git ls-files --other --exclude-standard | grep ".*$dbDir.*.db$")
     if [ -n "${RESULT}" ]; then
         RESULT="\n${RESULT}"
     fi
