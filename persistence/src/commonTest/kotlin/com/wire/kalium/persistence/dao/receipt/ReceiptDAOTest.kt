@@ -139,6 +139,15 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         assertEquals(ReceiptTypeEntity.DELIVERY, result.first().type)
     }
 
+    @Test
+    fun givenReceiptsOfAnUnknownMessage_whenGettingDetails_shouldNotThrow() = runTest {
+        insertTestData()
+
+        receiptDAO.insertReceipts(
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf("SomeUnknownMessage")
+        )
+    }
+
     private suspend fun insertTestData() {
         userDAO.insertUser(SELF_USER)
         userDAO.insertUser(OTHER_USER)
