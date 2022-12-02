@@ -26,7 +26,7 @@ class UpdateConversationReadDateUseCase internal constructor(
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
         selfConversationIdProvider().onSuccess {
-
+            sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time.toString())
             sendLastReadMessageToOtherClients(conversationId, it, time)
         }

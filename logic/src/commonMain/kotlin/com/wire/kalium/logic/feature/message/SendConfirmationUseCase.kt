@@ -7,8 +7,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -17,7 +15,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
+import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
@@ -27,7 +25,7 @@ import kotlinx.datetime.Clock
  */
 class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val slowSyncRepository: SlowSyncRepository,
+    private val syncManager: SyncManager,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
@@ -35,12 +33,9 @@ class SendConfirmationUseCase internal constructor(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        // fixme is this correct way of wait for sync?
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
+        syncManager.waitUntilLive()
 
-        // fixme is this correct visibility?
+        // todo: handle toggles for 1:1 and convo config
         val messageIds = conversationRepository.detailsById(conversationId).fold({
             kaliumLogger.e("[SendConfirmationUseCase] There was an unknown error trying to get latest messages $it")
             emptyList()

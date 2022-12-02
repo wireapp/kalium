@@ -220,7 +220,7 @@ class MessageScope internal constructor(
     val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
             currentClientIdProvider,
-            slowSyncRepository,
+            syncManager,
             messageSender,
             userId,
             conversationRepository,
