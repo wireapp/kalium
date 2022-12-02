@@ -4,6 +4,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -23,6 +24,10 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
+import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
+import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
+import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 
@@ -38,7 +43,8 @@ class UserScope internal constructor(
     private val sessionRepository: SessionRepository,
     private val serverConfigRepository: ServerConfigRepository,
     private val selfUserId: UserId,
-    private val metadataDAO: MetadataDAO
+    private val metadataDAO: MetadataDAO,
+    private val userPropertyRepository: UserPropertyRepository,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -72,6 +78,14 @@ class UserScope internal constructor(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
         )
+
+    val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
+        get() = ObserveReadReceiptsEnabledUseCaseImpl(
+            userPropertyRepository = userPropertyRepository
+        )
+    val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
+        get() = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
+
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)

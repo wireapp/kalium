@@ -14,7 +14,7 @@ interface ReceiptDAO {
         conversationId: ConversationIDEntity,
         date: Instant,
         type: ReceiptTypeEntity,
-        vararg messageIds: String
+        messageIds: List<String>
     )
 
     suspend fun observeDetailedReceiptsForMessage(
@@ -33,7 +33,7 @@ class ReceiptDAOImpl(
         conversationId: ConversationIDEntity,
         date: Instant,
         type: ReceiptTypeEntity,
-        vararg messageIds: String
+        messageIds: List<String>
     ) {
         receiptsQueries.transaction {
             messageIds.forEach { messageId ->
