@@ -18,7 +18,8 @@ data class CallEntity(
         ANSWERED,
         ESTABLISHED,
         STILL_ONGOING,
-        CLOSED
+        CLOSED,
+        REJECTED
     }
 }
 
