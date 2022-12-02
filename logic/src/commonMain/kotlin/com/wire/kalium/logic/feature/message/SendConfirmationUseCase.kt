@@ -15,6 +15,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -40,7 +41,10 @@ class SendConfirmationUseCase internal constructor(
         }
 
         // fixme is this correct visibility?
-        val messageIds = conversationRepository.detailsById(conversationId).fold({ emptyList() }, { conversation ->
+        val messageIds = conversationRepository.detailsById(conversationId).fold({
+            kaliumLogger.e("There was an unknown error trying to get latest messages $it")
+            emptyList()
+        }, { conversation ->
             messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate)
                 .firstOrNull()
                 ?.map {
@@ -49,7 +53,10 @@ class SendConfirmationUseCase internal constructor(
         })
 
         // Skip in case no new messages to send confirmations receipts
-        if (messageIds.isEmpty()) return Either.Right(Unit)
+        if (messageIds.isEmpty()) {
+            kaliumLogger.d("No messages to send confirmation signal")
+            return Either.Right(Unit)
+        }
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
@@ -73,6 +80,8 @@ class SendConfirmationUseCase internal constructor(
             } else {
                 kaliumLogger.e("There was an error trying to send the message $it")
             }
+        }.onSuccess {
+            kaliumLogger.d("Confirmation signal sent successful")
         }
     }
 }
