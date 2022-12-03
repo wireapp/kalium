@@ -161,7 +161,7 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.Confirmation(
             Confirmation(
                 type = when (receiptContent.type) {
-                    ReceiptType.DELIVERY -> Confirmation.Type.DELIVERED
+                    ReceiptType.DELIVERED -> Confirmation.Type.DELIVERED
                     ReceiptType.READ -> Confirmation.Type.READ
                 },
                 firstMessageId = firstMessage,
@@ -173,7 +173,7 @@ class ProtoContentMapperImpl(
     private fun unpackReceipt(
         protoContent: GenericMessage.Content.Confirmation
     ): MessageContent.FromProto = when (val protoType = protoContent.value.type) {
-        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERY
+        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERED
         Confirmation.Type.READ -> ReceiptType.READ
         is Confirmation.Type.UNRECOGNIZED -> {
             kaliumLogger.w("Unrecognised receipt type received = ${protoType.value}:${protoType.name}")

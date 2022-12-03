@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -21,10 +22,13 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 /**
- * This use case can be used by QA to send read and delivery receipts. This debug function can be used to test correct
- * client behaviour. It should not be used by clients itself.
+ * This use case allows to send a confirmation type [ReceiptType.READ] or [ReceiptType.DELIVERED] accordingly to
+ * configurations criteria.
+ *
+ * - For 1:1 we take into consideration [ObserveReadReceiptsEnabled]
+ * - For group conversations we have to look for each group conversation configuration.
  */
-class SendConfirmationUseCase internal constructor(
+internal class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val syncManager: SyncManager,
     private val messageSender: MessageSender,
@@ -32,35 +36,34 @@ class SendConfirmationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
 ) {
+    private companion object {
+        const val TAG = "[SendConfirmationUseCase]"
+    }
+
+    private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
 
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
 
         // todo: handle toggles for 1:1 and convo config
         val messageIds = conversationRepository.detailsById(conversationId).fold({
-            kaliumLogger.e("[SendConfirmationUseCase] There was an unknown error trying to get latest messages $it")
+            logger.e("$TAG There was an unknown error trying to get latest messages $it")
             emptyList()
         }, { conversation ->
-            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate)
-                .firstOrNull()
-                ?.map {
-                    it.id
-                } ?: emptyList()
+            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate).firstOrNull()
+                ?.map { it.id }
+                ?: emptyList()
         })
 
-        // Skip in case no new messages to send confirmations receipts
         if (messageIds.isEmpty()) {
-            kaliumLogger.d("[SendConfirmationUseCase] No messages to send confirmation signal")
+            logger.d("$TAG Skipping, NO messages to send confirmation signal")
             return Either.Right(Unit)
         }
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.Receipt(
-                    ReceiptType.READ,
-                    messageIds,
-                ), // todo: handle first and type read toggle config
+                content = MessageContent.Receipt(ReceiptType.READ, messageIds),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
@@ -68,17 +71,11 @@ class SendConfirmationUseCase internal constructor(
                 status = Message.Status.PENDING,
             )
 
-            kaliumLogger.d("[SendConfirmationUseCase] Sending message")
             messageSender.sendMessage(message)
         }.onFailure {
-            if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("[SendConfirmationUseCase] There was an unknown error trying to send the message $it", it.rootCause)
-                it.rootCause?.printStackTrace()
-            } else {
-                kaliumLogger.e("T[SendConfirmationUseCase] here was an error trying to send the message $it")
-            }
+            logger.e("$TAG there was an error trying to send the confirmation signal $it")
         }.onSuccess {
-            kaliumLogger.d("[SendConfirmationUseCase] Confirmation signal sent successful")
+            logger.d("$TAG confirmation signal sent successful")
         }
     }
 }

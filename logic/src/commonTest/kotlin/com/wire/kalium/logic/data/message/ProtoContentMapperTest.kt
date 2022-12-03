@@ -203,7 +203,7 @@ class ProtoContentMapperTest {
     fun givenDeliveryReceipt_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
         val messageUid = "uid"
         val content = MessageContent.Receipt(
-            ReceiptType.DELIVERY,
+            ReceiptType.DELIVERED,
             listOf("messageI", "messageII", "messageIII")
         )
 
