@@ -2,7 +2,6 @@ package com.wire.kalium.plugins
 
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 
 fun Project.configureDefaultMultiplatform(
     enableiOS: Boolean,
@@ -19,9 +18,11 @@ fun Project.configureDefaultMultiplatform(
 
         android { commmonKotlinAndroidTargetConfig() }
 
-        if(enableJs){ js{ commonJsConfig(enableJsTests) } }
+        if (enableJs) {
+            js { commonJsConfig(enableJsTests) }
+        }
 
-        if(enableiOS) {
+        if (enableiOS) {
             // TODO: check arch of current system (X64 or ARM64) and enable accordingly?
             //       devs on Apple Silicon should be able to run ARM tests
             //       devs on Intel Macbooks should be able to run X64 tests

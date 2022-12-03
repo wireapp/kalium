@@ -25,8 +25,8 @@ class LibraryPlugin : Plugin<Project> {
         @get:Nested
         abstract val multiplatformConfiguration: MultiplatformConfiguration
 
-        private val defaultConfiguration = object: Action<MultiplatformConfiguration> {
-            override fun execute(t: MultiplatformConfiguration) {}
+        private val defaultConfiguration = object : Action<MultiplatformConfiguration> {
+            override fun execute(t: MultiplatformConfiguration) = Unit
         }
 
         fun multiplatform(action: Action<MultiplatformConfiguration> = defaultConfiguration) {

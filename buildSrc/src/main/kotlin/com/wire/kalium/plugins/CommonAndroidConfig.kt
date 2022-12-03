@@ -27,7 +27,7 @@ fun LibraryExtension.commonAndroidLibConfig(includeNativeInterop: Boolean) {
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
 
-    if(includeNativeInterop){
+    if (includeNativeInterop) {
         externalNativeBuild {
             cmake {
                 version = Android.Ndk.cMakeVersion
