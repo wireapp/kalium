@@ -2,8 +2,10 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
@@ -14,7 +16,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,8 +33,8 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Success::class, result::class)
-        verify(arrangement.getSelfTeamUseCase)
-            .suspendFunction(arrangement.getSelfTeamUseCase::invoke)
+        verify(arrangement.selfTeamIdProvider)
+            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
             .wasInvoked(once)
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::deleteConversation)
@@ -55,8 +56,8 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Failure.GenericFailure::class, result::class)
-        verify(arrangement.getSelfTeamUseCase)
-            .suspendFunction(arrangement.getSelfTeamUseCase::invoke)
+        verify(arrangement.selfTeamIdProvider)
+            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
             .wasInvoked(once)
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::deleteConversation)
@@ -78,8 +79,8 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Failure.NoTeamFailure::class, result::class)
-        verify(arrangement.getSelfTeamUseCase)
-            .suspendFunction(arrangement.getSelfTeamUseCase::invoke)
+        verify(arrangement.selfTeamIdProvider)
+            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
             .wasInvoked(once)
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::deleteConversation)
@@ -96,7 +97,7 @@ class DeleteTeamConversationUseCaseTest {
         var deleteTeamConversation: DeleteTeamConversationUseCase
 
         @Mock
-        val getSelfTeamUseCase: GetSelfTeamUseCase = mock(GetSelfTeamUseCase::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
@@ -105,14 +106,17 @@ class DeleteTeamConversationUseCaseTest {
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         init {
-            deleteTeamConversation = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository, conversationRepository)
+            deleteTeamConversation = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
         }
 
         fun withGetSelfTeam(team: Team? = TestTeam.TEAM) = apply {
-            given(getSelfTeamUseCase)
-                .suspendFunction(getSelfTeamUseCase::invoke)
+            val result = team?.id?.let {
+                TeamId(it)
+            }
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
                 .whenInvoked()
-                .thenReturn(flowOf(team))
+                .thenReturn(Either.Right(result))
         }
 
         fun withApiErrorDeletingConversation() = apply {
