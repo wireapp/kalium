@@ -13,7 +13,6 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -386,7 +385,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
             teamDAO.insertTeam(team)
 
-            launch(UnconfinedTestDispatcher(testScheduler)) {
+            launch {
                 // when
                 conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
                     // then
@@ -409,7 +408,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
                     cancelAndIgnoreRemainingEvents()
                 }
-            }
+            }.join()
         }
 
     @Test
@@ -528,7 +527,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //
 //         messageDAO.insertMessages(message)
 //
-//         launch(UnconfinedTestDispatcher(testScheduler)) {
+//         launch {
 //             // when
 //             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
 //                 val conversation = awaitItem()
@@ -536,7 +535,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //                 // then
 //                 assertEquals(unreadMessagesCount, conversation.unreadContentCountEntity.values.sum())
 //             }
-//         }
+//         }.join()
 //     }
 
     @Test
@@ -581,7 +580,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -589,7 +588,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 // then
                 assertEquals(unreadMessagesCount, conversation.unreadContentCountEntity.values.sum())
             }
-        }
+        }.join()
     }
 
     // TODO kubaz enable after unread counter performance fix
@@ -618,7 +617,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //             )
 //         )
 //
-//         launch(UnconfinedTestDispatcher(testScheduler)) {
+//         launch {
 //             // when
 //             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
 //                 val conversation = awaitItem()
@@ -626,7 +625,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //                 // then
 //                 assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.TEXT)
 //             }
-//         }
+//         }.join
 //     }
 
     @Test
@@ -669,7 +668,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -677,7 +676,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 // then
                 assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.ASSET)
             }
-        }
+        }.join()
     }
 
     // TODO kubaz fix after implementing unread indicator
@@ -706,7 +705,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //             )
 //         )
 //
-//         launch(UnconfinedTestDispatcher(testScheduler)) {
+//         launch {
 //             // when
 //             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
 //                 val conversation = awaitItem()
@@ -714,7 +713,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 //                 // then
 //                 assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.MISSED_CALL)
 //             }
-//         }
+//         }.join()
 //     }
 
     @Test
@@ -746,7 +745,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
+        launch {
             // when
             conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
                 val conversation = awaitItem()
@@ -754,7 +753,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 // then
                 assertEquals(0, conversation.unreadContentCountEntity.values.sum())
             }
-        }
+        }.join()
     }
 
     @Test
