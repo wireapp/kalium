@@ -46,17 +46,9 @@ internal class SendConfirmationUseCase internal constructor(
         syncManager.waitUntilLive()
 
         // todo: handle toggles for 1:1 and convo config
-        val messageIds = conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages $it")
-            emptyList()
-        }, { conversation ->
-            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate).firstOrNull()
-                ?.map { it.id }
-                ?: emptyList()
-        })
-
+        val messageIds = getPendingUnreadMessagesIds(conversationId)
         if (messageIds.isEmpty()) {
-            logger.d("$TAG Skipping, NO messages to send confirmation signal")
+            logger.d("$TAG skipping, NO messages to send confirmation signal")
             return Either.Right(Unit)
         }
 
@@ -78,4 +70,14 @@ internal class SendConfirmationUseCase internal constructor(
             logger.d("$TAG confirmation signal sent successful")
         }
     }
+
+    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId) =
+        conversationRepository.detailsById(conversationId).fold({
+            logger.e("$TAG There was an unknown error trying to get latest messages $it")
+            emptyList()
+        }, { conversation ->
+            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate).firstOrNull()
+                ?.map { it.id }
+                ?: emptyList()
+        })
 }
