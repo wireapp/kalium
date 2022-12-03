@@ -45,7 +45,7 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadMessagesCount = 0,
+                unreadRepliesCount = 0,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -81,7 +81,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -119,7 +119,7 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadMessagesCount = 0,
+                unreadRepliesCount = 0,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -132,7 +132,7 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             unreadEventCount = emptyMap()
         )
@@ -141,7 +141,7 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER.copy(name = "New User Name"),
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             unreadEventCount = emptyMap()
         )
@@ -178,7 +178,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -216,7 +216,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -248,7 +248,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
+            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,

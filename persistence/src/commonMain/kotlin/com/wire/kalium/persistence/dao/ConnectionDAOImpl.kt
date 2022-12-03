@@ -2,12 +2,12 @@ package com.wire.kalium.persistence.dao
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.wire.kalium.persistence.Connection as SQLDelightConnection
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {
     fun toModel(state: SQLDelightConnection): ConnectionEntity = ConnectionEntity(
@@ -147,5 +147,9 @@ class ConnectionDAOImpl(
                 .executeAsList()
                 .forEach { connectionsQueries.updateNotificationFlag(flag, it.qualified_to) }
         }
+    }
+
+    override suspend fun setAllConnectionsAsNotified() {
+        connectionsQueries.setAllConnectionsAsNotified()
     }
 }

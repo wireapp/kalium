@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
@@ -185,12 +186,46 @@ sealed class MessageContent {
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
-    data class Receipt(val type: Type, val messageIds: List<String>) : Signaling() {
-        enum class Type { READ, DELIVERY }
-    }
+    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
     data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
+}
+
+sealed class MessagePreviewContent {
+
+    sealed class WithUser(open val username: String?) : MessagePreviewContent() {
+
+        data class Text(override val username: String?, val messageBody: String) : WithUser(username)
+
+        data class Asset(override val username: String?, val type: AssetType) : WithUser(username)
+
+        data class MentionedSelf(override val username: String?) : WithUser(username)
+
+        data class QuotedSelf(override val username: String?) : WithUser(username)
+
+        data class Knock(override val username: String?) : WithUser(username)
+
+        data class MembersAdded(
+            val adminName: String?,
+            val count: Int, // TODO add usernames
+        ) : WithUser(adminName)
+
+        data class MembersRemoved(
+            val adminName: String?,
+            val count: Int, // TODO add usernames
+        ) : WithUser(adminName)
+
+        data class ConversationNameChange(val adminName: String?) : WithUser(adminName)
+
+        data class TeamMemberRemoved(val userName: String?) : WithUser(userName)
+
+        data class MissedCall(override val username: String?) : WithUser(username)
+
+    }
+
+    object Unknown : MessagePreviewContent()
+
 }

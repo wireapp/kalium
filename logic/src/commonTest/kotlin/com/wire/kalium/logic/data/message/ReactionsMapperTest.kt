@@ -85,15 +85,17 @@ class ReactionsMapperTest {
 
         val expectedMessageReaction = MessageReaction(
             emoji = "🤯",
-            userId = SELF_USER_ID,
-            name = "Self User Name",
-            handle = "selfuserhandle",
             isSelfUser = true,
-            previewAssetId = null,
-            userType = UserType.INTERNAL,
-            deleted = false,
-            connectionStatus = ConnectionState.ACCEPTED,
-            userAvailabilityStatus = UserAvailabilityStatus.NONE
+            userSummary = UserSummary(
+                userId = SELF_USER_ID,
+                userName = "Self User Name",
+                userHandle = "selfuserhandle",
+                userPreviewAssetId = null,
+                userType = UserType.INTERNAL,
+                isUserDeleted = false,
+                connectionStatus = ConnectionState.ACCEPTED,
+                availabilityStatus = UserAvailabilityStatus.NONE
+            )
         )
 
         val (_, reactionsMapper) = Arrangement()

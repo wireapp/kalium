@@ -50,7 +50,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
 
         val insertedInstant = Clock.System.now()
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, insertedInstant, ReceiptTypeEntity.DELIVERY, TEST_MESSAGE.id
+            OTHER_USER.id, TEST_CONVERSATION.id, insertedInstant, ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
 
         val result = receiptDAO
@@ -78,10 +78,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         insertTestData()
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, TEST_MESSAGE.id
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, TEST_MESSAGE.id
+            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
 
         val result = receiptDAO
@@ -98,10 +98,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         insertTestData()
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, TEST_MESSAGE.id
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.READ, TEST_MESSAGE.id
+            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.READ, listOf(TEST_MESSAGE.id)
         )
 
         val result = receiptDAO
@@ -125,10 +125,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         )
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, TEST_MESSAGE.id
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, otherMessageId
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(otherMessageId)
         )
 
         val result = receiptDAO
@@ -137,6 +137,15 @@ class ReceiptDAOTest : BaseDatabaseTest() {
 
         assertEquals(1, result.size)
         assertEquals(ReceiptTypeEntity.DELIVERY, result.first().type)
+    }
+
+    @Test
+    fun givenReceiptsOfAnUnknownMessage_whenGettingDetails_shouldNotThrow() = runTest {
+        insertTestData()
+
+        receiptDAO.insertReceipts(
+            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf("SomeUnknownMessage")
+        )
     }
 
     private suspend fun insertTestData() {

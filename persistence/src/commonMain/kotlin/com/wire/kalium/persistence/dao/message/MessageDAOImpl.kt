@@ -309,8 +309,12 @@ class MessageDAOImpl(
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeLastMessages(): Flow<List<MessageEntity>> =
-        queries.getLastMessages(mapper::toEntityMessageFromView).asFlow().mapToList()
+    override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
+        queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
+
+    override suspend fun observeLastMessagesPreview(): Flow<List<MessagePreviewEntity>> {
+        return queries.getMessagePreviews(mapper::toPreviewEntity).asFlow().mapToList()
+    }
 
     override suspend fun observeUnreadMentionsCount(
         conversationId: QualifiedIDEntity
