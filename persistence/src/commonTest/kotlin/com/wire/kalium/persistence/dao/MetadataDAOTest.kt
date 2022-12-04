@@ -63,7 +63,7 @@ class MetadataDAOTest : BaseDatabaseTest() {
                 metadataDAO.insertValue(value2, key1)
                 assertEquals(value2, this.awaitItem())
             }
-        }
+        }.join()
     }
 
     @Test
@@ -75,6 +75,6 @@ class MetadataDAOTest : BaseDatabaseTest() {
                 metadataDAO.insertValue(value2, key2)
                 this.expectNoEvents()
             }
-        }
+        }.join()
     }
 }

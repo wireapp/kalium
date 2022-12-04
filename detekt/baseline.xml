@@ -5,11 +5,6 @@
     <ID>ClassNaming:Cryptobox.module_@wireapp_cryptobox.kt$T$0</ID>
     <ID>ClassNaming:Size_t.kt$Size_t : IntegerType</ID>
     <ID>ClassNaming:Uint32_t.kt$Uint32_t : IntegerType</ID>
-    <ID>ClassNaming:messages.kt$ClientAction$RESET_SESSION : ClientAction</ID>
-    <ID>ClassNaming:messages.kt$EncryptionAlgorithm$AES_CBC : EncryptionAlgorithm</ID>
-    <ID>ClassNaming:messages.kt$EncryptionAlgorithm$AES_GCM : EncryptionAlgorithm</ID>
-    <ID>ClassNaming:otr.kt$Priority$HIGH_PRIORITY : Priority</ID>
-    <ID>ClassNaming:otr.kt$Priority$LOW_PRIORITY : Priority</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.data.call.CallClient.kt:17</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.data.location.Location.kt:4</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:27</ID>
@@ -18,13 +13,6 @@
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:28</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:29</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.util.TimeParser.kt:10</ID>
-    <ID>ComplexMethod:ProtoContentMapper.kt$ProtoContentMapperImpl$private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable)</ID>
-    <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun GenericMessage.Companion.decodeWithImpl(u: pbandk.MessageDecoder): GenericMessage</ID>
-    <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun ImageAsset.Companion.decodeWithImpl(u: pbandk.MessageDecoder): ImageAsset</ID>
-    <ID>ComplexMethod:messages.kt$private fun Ephemeral.protoMergeImpl(plus: pbandk.Message?): Ephemeral</ID>
-    <ID>ComplexMethod:messages.kt$private fun GenericMessage.protoMergeImpl(plus: pbandk.Message?): GenericMessage</ID>
-    <ID>ComplexMethod:messages.kt$private fun LinkPreview.protoMergeImpl(plus: pbandk.Message?): LinkPreview</ID>
-    <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>DocumentedPublicUseCases:AddAuthenticatedUserUseCase.kt$AddAuthenticatedUserUseCase</ID>
     <ID>DocumentedPublicUseCases:AddMemberToConversationUseCase.kt$AddMemberToConversationUseCase</ID>
@@ -48,8 +36,6 @@
     <ID>DocumentedPublicUseCases:GetIncomingCallsUseCase.kt$GetIncomingCallsUseCase</ID>
     <ID>DocumentedPublicUseCases:GetKnownUserUseCase.kt$GetKnownUserUseCase</ID>
     <ID>DocumentedPublicUseCases:GetNotificationsUseCase.kt$GetNotificationsUseCase</ID>
-    <ID>DocumentedPublicUseCases:GetOneToOneConversationUseCase.kt$GetOneToOneConversationUseCase</ID>
-    <ID>DocumentedPublicUseCases:GetOrCreateOneToOneConversationUseCase.kt$GetOrCreateOneToOneConversationUseCase</ID>
     <ID>DocumentedPublicUseCases:GetOrRegisterClientUseCase.kt$GetOrRegisterClientUseCase</ID>
     <ID>DocumentedPublicUseCases:GetPaginatedFlowOfMessagesByConversationUseCase.kt$GetPaginatedFlowOfMessagesByConversationUseCase</ID>
     <ID>DocumentedPublicUseCases:GetRecentMessagesUseCase.kt$GetRecentMessagesUseCase</ID>
@@ -178,12 +164,7 @@
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:ToggleReactionUseCase.kt$ToggleReactionUseCase$( clientId: ClientId, conversationId: ConversationId, date: String, messageId: String, currentReactions: UserReactions, newReaction: String )</ID>
     <ID>LongParameterList:ToggleReactionUseCase.kt$ToggleReactionUseCase$( clientId: ClientId, conversationId: ConversationId, date: String, messageId: String, removedReaction: String, currentReactions: UserReactions )</ID>
-    <ID>MagicNumber:CLIUtils.kt$CLIUtils$1024</ID>
-    <ID>MagicNumber:CLIUtils.kt$CLIUtils$16</ID>
-    <ID>MagicNumber:CLIUtils.kt$CLIUtils$4</ID>
     <ID>MagicNumber:CallManagerImpl.kt$CallManagerImpl$1000</ID>
-    <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.INCOMING_CONNECTION$4</ID>
-    <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.WAIT_FOR_CONNECTION$3</ID>
     <ID>MagicNumber:ConversationStatus.kt$MutedConversationStatus.AllMuted$3</ID>
     <ID>MagicNumber:CustomErrors.kt$CustomErrors$500</ID>
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
@@ -205,62 +186,6 @@
     <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$7</ID>
     <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$8</ID>
     <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$9</ID>
-    <ID>MagicNumber:messages.kt$10</ID>
-    <ID>MagicNumber:messages.kt$11</ID>
-    <ID>MagicNumber:messages.kt$12</ID>
-    <ID>MagicNumber:messages.kt$13</ID>
-    <ID>MagicNumber:messages.kt$14</ID>
-    <ID>MagicNumber:messages.kt$15</ID>
-    <ID>MagicNumber:messages.kt$16</ID>
-    <ID>MagicNumber:messages.kt$17</ID>
-    <ID>MagicNumber:messages.kt$18</ID>
-    <ID>MagicNumber:messages.kt$19</ID>
-    <ID>MagicNumber:messages.kt$20</ID>
-    <ID>MagicNumber:messages.kt$21</ID>
-    <ID>MagicNumber:messages.kt$22</ID>
-    <ID>MagicNumber:messages.kt$23</ID>
-    <ID>MagicNumber:messages.kt$3</ID>
-    <ID>MagicNumber:messages.kt$4</ID>
-    <ID>MagicNumber:messages.kt$5</ID>
-    <ID>MagicNumber:messages.kt$6</ID>
-    <ID>MagicNumber:messages.kt$7</ID>
-    <ID>MagicNumber:messages.kt$8</ID>
-    <ID>MagicNumber:messages.kt$9</ID>
-    <ID>MagicNumber:messages.kt$Article.Companion$4</ID>
-    <ID>MagicNumber:messages.kt$Asset.Companion$6</ID>
-    <ID>MagicNumber:messages.kt$Asset.ImageMetaData.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Asset.Original.Companion$8</ID>
-    <ID>MagicNumber:messages.kt$Asset.Preview.Companion$4</ID>
-    <ID>MagicNumber:messages.kt$Asset.RemoteData.Companion$6</ID>
-    <ID>MagicNumber:messages.kt$Asset.VideoMetaData.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Availability.Type.BUSY$3</ID>
-    <ID>MagicNumber:messages.kt$Cleared.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Composite.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Confirmation.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Ephemeral.Companion$6</ID>
-    <ID>MagicNumber:messages.kt$External.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$GenericMessage.Companion$22</ID>
-    <ID>MagicNumber:messages.kt$ImageAsset.Companion$11</ID>
-    <ID>MagicNumber:messages.kt$Knock.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$LastRead.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$LinkPreview.Companion$8</ID>
-    <ID>MagicNumber:messages.kt$Location.Companion$6</ID>
-    <ID>MagicNumber:messages.kt$Mention.Companion$4</ID>
-    <ID>MagicNumber:messages.kt$MessageEdit.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$MessageHide.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Reaction.Companion$3</ID>
-    <ID>MagicNumber:messages.kt$Text.Companion$6</ID>
-    <ID>MagicNumber:otr.kt$10</ID>
-    <ID>MagicNumber:otr.kt$3</ID>
-    <ID>MagicNumber:otr.kt$4</ID>
-    <ID>MagicNumber:otr.kt$5</ID>
-    <ID>MagicNumber:otr.kt$6</ID>
-    <ID>MagicNumber:otr.kt$7</ID>
-    <ID>MagicNumber:otr.kt$8</ID>
-    <ID>MagicNumber:otr.kt$9</ID>
-    <ID>MagicNumber:otr.kt$NewOtrMessage.Companion$7</ID>
-    <ID>MagicNumber:otr.kt$OtrAssetMeta.Companion$4</ID>
-    <ID>MagicNumber:otr.kt$QualifiedNewOtrMessage.Companion$10</ID>
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
@@ -277,198 +202,6 @@
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
     <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
-    <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
-    <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
-    <ID>MaxLineLength:messages.kt$22 -> content = GenericMessage.Content.ButtonActionConfirmation(_fieldValue as com.wire.kalium.protobuf.messages.ButtonActionConfirmation)</ID>
-    <ID>MaxLineLength:messages.kt$3 -> linkPreview = (linkPreview ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.LinkPreview> }</ID>
-    <ID>MaxLineLength:messages.kt$4 -> mentions = (mentions ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Mention> }</ID>
-    <ID>MaxLineLength:messages.kt$Article.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Article</ID>
-    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.AudioMetaData> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.AudioMetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.AudioMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.AudioMetaData() }</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Asset.NotUploaded.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.Original.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.Preview.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.ImageMetaData> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.ImageMetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.NotUploaded.Companion$override fun fromName(name: String): Asset.NotUploaded</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Original</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.AudioMetaData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.VideoMetaData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Audio : MetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Image : MetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Video : MetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Preview</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Preview.MetaData$Image : MetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.RemoteData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Status$NotUploaded : Status</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Status$Uploaded : Status</ID>
-    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.VideoMetaData> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.VideoMetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.VideoMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.VideoMetaData() }</ID>
-    <ID>MaxLineLength:messages.kt$Availability.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Availability</ID>
-    <ID>MaxLineLength:messages.kt$Availability.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Availability.Type.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Availability.Type.Companion$override fun fromName(name: String): Availability.Type</ID>
-    <ID>MaxLineLength:messages.kt$Button.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Button</ID>
-    <ID>MaxLineLength:messages.kt$ButtonAction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonAction</ID>
-    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.ButtonActionConfirmation> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonActionConfirmation</ID>
-    <ID>MaxLineLength:messages.kt$Calling.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Calling</ID>
-    <ID>MaxLineLength:messages.kt$Cleared.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Cleared</ID>
-    <ID>MaxLineLength:messages.kt$Cleared.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$ClientAction.Companion$override fun fromName(name: String): ClientAction</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Composite</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.Composite.Item>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Item.Companion))</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Composite.Item</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Composite.Item by lazy { com.wire.kalium.protobuf.messages.Composite.Item() }</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Button.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Composite.Item.Content$Button : Content</ID>
-    <ID>MaxLineLength:messages.kt$Confirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Confirmation</ID>
-    <ID>MaxLineLength:messages.kt$Confirmation.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Confirmation.Type.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Confirmation.Type.Companion$override fun fromName(name: String): Confirmation.Type</ID>
-    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.DataTransfer</ID>
-    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.DataTransfer by lazy { com.wire.kalium.protobuf.messages.DataTransfer() }</ID>
-    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.TrackingIdentifier.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$EncryptionAlgorithm.Companion$override fun fromName(name: String): EncryptionAlgorithm</ID>
-    <ID>MaxLineLength:messages.kt$Ephemeral.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Ephemeral</ID>
-    <ID>MaxLineLength:messages.kt$Ephemeral.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ImageAsset.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$Ephemeral.Content$Image : Content</ID>
-    <ID>MaxLineLength:messages.kt$Ephemeral.Content$Location : Content</ID>
-    <ID>MaxLineLength:messages.kt$External.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.External</ID>
-    <ID>MaxLineLength:messages.kt$External.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.GenericMessage</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.ClientAction.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Availability.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ButtonAction.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ButtonActionConfirmation.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Confirmation.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.DataTransfer.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Ephemeral.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ImageAsset.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageDelete.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageEdit.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageHide.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Availability : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ButtonAction : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ButtonActionConfirmation : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Calling : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Cleared : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ClientAction : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Composite : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Confirmation : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$DataTransfer : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Deleted : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Edited : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Ephemeral : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$External : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Hidden : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Image : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$LastRead : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Location : Content</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Reaction : Content</ID>
-    <ID>MaxLineLength:messages.kt$ImageAsset.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ImageAsset</ID>
-    <ID>MaxLineLength:messages.kt$Knock.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Knock</ID>
-    <ID>MaxLineLength:messages.kt$Knock.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$LastRead.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.LastRead</ID>
-    <ID>MaxLineLength:messages.kt$LastRead.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$LegalHoldStatus.Companion$override fun fromName(name: String): LegalHoldStatus</ID>
-    <ID>MaxLineLength:messages.kt$LinkPreview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.LinkPreview</ID>
-    <ID>MaxLineLength:messages.kt$LinkPreview.Preview$Article : Preview</ID>
-    <ID>MaxLineLength:messages.kt$Location.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Location</ID>
-    <ID>MaxLineLength:messages.kt$Location.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Mention.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Mention</ID>
-    <ID>MaxLineLength:messages.kt$Mention.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedUserId.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$MessageDelete.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageDelete</ID>
-    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageEdit</ID>
-    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$MessageEdit.Content$Composite : Content</ID>
-    <ID>MaxLineLength:messages.kt$MessageHide.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageHide</ID>
-    <ID>MaxLineLength:messages.kt$MessageHide.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
-    <ID>MaxLineLength:messages.kt$QualifiedConversationId$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.QualifiedConversationId> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:messages.kt$QualifiedConversationId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedConversationId</ID>
-    <ID>MaxLineLength:messages.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedUserId</ID>
-    <ID>MaxLineLength:messages.kt$Quote.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Quote</ID>
-    <ID>MaxLineLength:messages.kt$Reaction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Reaction</ID>
-    <ID>MaxLineLength:messages.kt$Reaction.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Text.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Text</ID>
-    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.LinkPreview>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.LinkPreview.Companion))</ID>
-    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.Mention>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Mention.Companion))</ID>
-    <ID>MaxLineLength:messages.kt$TrackingIdentifier.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.TrackingIdentifier</ID>
-    <ID>MaxLineLength:messages.kt$Tweet.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Tweet</ID>
-    <ID>MaxLineLength:messages.kt$private</ID>
-    <ID>MaxLineLength:messages.kt$public</ID>
-    <ID>MaxLineLength:otr.kt$1 -> userIds = (userIds ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.QualifiedUserId> }</ID>
-    <ID>MaxLineLength:otr.kt$10 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly)</ID>
-    <ID>MaxLineLength:otr.kt$2 -> clients = (clients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.ClientEntry> }</ID>
-    <ID>MaxLineLength:otr.kt$2 -> entries = (entries ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserEntry> }</ID>
-    <ID>MaxLineLength:otr.kt$2 -> recipients = (recipients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.QualifiedUserEntry> }</ID>
-    <ID>MaxLineLength:otr.kt$2 -> recipients = (recipients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserEntry> }</ID>
-    <ID>MaxLineLength:otr.kt$7 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll)</ID>
-    <ID>MaxLineLength:otr.kt$7 -> reportMissing = (reportMissing ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserId> }</ID>
-    <ID>MaxLineLength:otr.kt$8 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll)</ID>
-    <ID>MaxLineLength:otr.kt$9 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly)</ID>
-    <ID>MaxLineLength:otr.kt$ClientEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientEntry</ID>
-    <ID>MaxLineLength:otr.kt$ClientId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientId</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy() }</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll() }</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly() }</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserId.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll() }</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly> get() = Companion.descriptor</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly() }</ID>
-    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserId.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.NewOtrMessage</ID>
-    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.otr.Priority.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserId.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$OtrAssetMeta.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.OtrAssetMeta</ID>
-    <ID>MaxLineLength:otr.kt$OtrAssetMeta.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$Priority.Companion$override fun fromName(name: String): Priority</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$IgnoreAll : ClientMismatchStrategy</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$IgnoreOnly : ClientMismatchStrategy</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportAll : ClientMismatchStrategy</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportOnly : ClientMismatchStrategy</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.otr.Priority.Companion, hasPresence = true)</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll.Companion)</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly.Companion)</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll.Companion)</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly.Companion)</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserEntry.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserEntry</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserId</ID>
-    <ID>MaxLineLength:otr.kt$UserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.UserEntry</ID>
-    <ID>MaxLineLength:otr.kt$UserEntry.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.ClientEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientEntry.Companion))</ID>
-    <ID>MaxLineLength:otr.kt$UserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.UserId</ID>
-    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll</ID>
-    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly</ID>
-    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll</ID>
-    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly</ID>
-    <ID>MaxLineLength:otr.kt$private</ID>
-    <ID>MaxLineLength:otr.kt$public</ID>
     <ID>ModifierOrder:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$override open</ID>
@@ -485,16 +218,11 @@
     <ID>ModifierOrder:PublicKey.module_@wireapp_proteus.kt$PublicKey$external open</ID>
     <ID>ModifierOrder:SecretKey.module_@wireapp_proteus.kt$SecretKey$external open</ID>
     <ID>NestedBlockDepth:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$override fun invoke(ssoCode: String): ValidateSSOCodeResult</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.cryptography.BaseProteusClientTest.kt:13</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.cryptography.utils.CryptoUtils.kt:77</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.cryptography.utils.CryptoUtils.kt:81</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.auth.login.LoginRepositoryTest.kt:22</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:17</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:43</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:68</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MemberMapperTest.kt:127</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.message.PersistReactionUseCase.kt:25</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.message.reaction.ReactionRepository.kt:104</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.failure.ServerConfigFailure.kt:10</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:7</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:11</ID>
@@ -504,21 +232,12 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase.kt:22</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase.kt:49</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase.kt:25</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.DeregisterTokenUseCase.kt:29</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.GetUserInfoUseCaseTest.kt:234</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCase.kt:14</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:39</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:53</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:61</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:73</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.FlowTest.kt:13</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.model.PushTokenBody.kt:3</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse.kt:3</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse.kt:7</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:153</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:70</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:84</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:98</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmmSettings.KaliumPreferencesTest.kt:34</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmmSettings.KaliumPreferencesTest.kt:55</ID>
     <ID>NoMultipleSpaces:com.wire.kalium.logic.configuration.server.ServerConfigTest.kt:19</ID>
@@ -540,9 +259,7 @@
     <ID>NoMultipleSpaces:com.wire.kalium.persistence.GlobalDBBaseTest.kt:7</ID>
     <ID>NoSemicolons:com.wire.kalium.logic.data.user.type.UserType.kt:1</ID>
     <ID>NoTrailingSpaces:com.wire.kalium.persistence.dao.ContentTypeAdapter.kt:13</ID>
-    <ID>NoUnusedImports:com.wire.kalium.cryptography.utils.CryptoUtils.kt:10</ID>
     <ID>NoUnusedImports:com.wire.kalium.cryptography.utils.CryptoUtils.kt:5</ID>
-    <ID>NoUnusedImports:com.wire.kalium.cryptography.utils.CryptoUtils.kt:8</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.data.user.ConnectionStateMapper.kt:4</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseTest.kt:4</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:6</ID>
@@ -550,7 +267,6 @@
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:5</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.user.UploadUserAvatarUseCaseTest.kt:5</ID>
     <ID>NoWildcardImports:com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseTest.kt:8</ID>
-    <ID>NoWildcardImports:com.wire.kalium.network.defaultHttpEngine.kt:3</ID>
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestNetworkException.kt:1</ID>
@@ -559,7 +275,6 @@
     <ID>ParameterListWrapping:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
     <ID>SpacingAroundColon:com.wire.kalium.cryptography.exceptions.ProteusException.kt:3</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.MessageContent.kt:46</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ResourceFailure.kt:5</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ServerConfigFailure.kt:5</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ServerConfigFailure.kt:6</ID>
@@ -573,18 +288,13 @@
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.QualifiedIDAdapter.kt:5</ID>
     <ID>SpacingAroundCurly:build.gradle.kts:11</ID>
     <ID>SpacingAroundCurly:build.gradle.kts:7</ID>
-    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.AnswerCallUseCaseTest.kt:26</ID>
     <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:27</ID>
-    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.message.ToggleReactionUseCase.kt:43</ID>
-    <ID>SpacingAroundCurly:com.wire.kalium.persistence.dao.reaction.ReactionsEntity.kt:6</ID>
     <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:16</ID>
     <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:19</ID>
     <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase.kt:19</ID>
     <ID>SpacingAroundKeyword:com.wire.kalium.persistence.dao.MemberRoleAdapter.kt:12</ID>
     <ID>StringTemplate:com.wire.kalium.cryptography.IDs.kt:26</ID>
-    <ID>StringTemplate:com.wire.kalium.cryptography.ProteusClientImpl.kt:7</ID>
     <ID>StringTemplate:com.wire.kalium.logic.data.sso.SSOUtil.kt:5</ID>
-    <ID>ThrowsCount:messages.kt$@Suppress("UNCHECKED_CAST") private fun ImageAsset.Companion.decodeWithImpl(u: pbandk.MessageDecoder): ImageAsset</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
@@ -596,8 +306,6 @@
     <ID>TooManyFunctions:Decoder.module_@wireapp_cbor.kt$Decoder</ID>
     <ID>TooManyFunctions:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>TooManyFunctions:MapperProvider.kt$MapperProvider$MapperProvider</ID>
-    <ID>TooManyFunctions:messages.kt$com.wire.kalium.protobuf.messages.messages.kt</ID>
-    <ID>TooManyFunctions:otr.kt$com.wire.kalium.protobuf.otr.otr.kt</ID>
     <ID>TopLevelPropertyNaming:Uint32_t.kt$private const val integerSize = 4</ID>
     <ID>UnnecessaryAbstractClass:GlobalDBBaseTest.kt$GlobalDBBaseTest</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_last_resort_prekey: Any</ID>
@@ -860,6 +568,5 @@
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
-    <ID>WildcardImport:defaultHttpEngine.kt$import io.ktor.client.engine.*</ID>
   </CurrentIssues>
 </SmellBaseline>
