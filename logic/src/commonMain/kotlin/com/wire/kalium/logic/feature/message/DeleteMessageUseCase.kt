@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -48,21 +49,24 @@ class DeleteMessageUseCase internal constructor(
                     val generatedMessageUuid = uuid4().toString()
 
                     return currentClientIdProvider().flatMap { currentClientId ->
-                        selfConversationIdProvider().flatMap { selfConversationId ->
-                            val regularMessage = Message.Signaling(
-                                id = generatedMessageUuid,
-                                content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
-                                    messageId,
-                                    unqualifiedConversationId = conversationId.value,
-                                    conversationId = conversationId
-                                ),
-                                conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                date = Clock.System.now().toString(),
-                                senderUserId = selfUser.id,
-                                senderClientId = currentClientId,
-                                status = Message.Status.PENDING,
-                            )
-                            messageSender.sendMessage(regularMessage)
+                        selfConversationIdProvider().flatMap { selfConversationIds ->
+                            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                                val regularMessage = Message.Signaling(
+                                    id = generatedMessageUuid,
+                                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else
+                                        MessageContent.DeleteForMe(
+                                            messageId,
+                                            unqualifiedConversationId = conversationId.value,
+                                            conversationId = conversationId
+                                        ),
+                                    conversationId = if (deleteForEveryone) conversationId else selfConversationId,
+                                    date = Clock.System.now().toString(),
+                                    senderUserId = selfUser.id,
+                                    senderClientId = currentClientId,
+                                    status = Message.Status.PENDING,
+                                )
+                                messageSender.sendMessage(regularMessage)
+                            }
                         }
                     }
                         .onSuccess { deleteMessageAsset(message) }

@@ -1,15 +1,18 @@
 package com.wire.kalium.logic.cache
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
 
 internal interface SelfConversationIdProvider {
-    suspend operator fun invoke(): Either<StorageFailure, ConversationId>
+    suspend operator fun invoke(): Either<StorageFailure, List<ConversationId>>
 }
 
 internal interface ProteusSelfConversationIdProvider {
@@ -21,16 +24,22 @@ internal interface MLSSelfConversationIdProvider {
 }
 
 internal class SelfConversationIdProviderImpl(
-    private val isMLSEnabled: IsMLSEnabledUseCase,
+    private val clientRepository: ClientRepository,
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider,
     private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
 ) : SelfConversationIdProvider {
 
-    override suspend fun invoke(): Either<StorageFailure, ConversationId> {
-        return if (isMLSEnabled()) {
-            mlsSelfConversationIdProvider()
-        } else {
-            proteusSelfConversationIdProvider()
+    override suspend fun invoke(): Either<StorageFailure, List<ConversationId>> {
+        val selfConversationIDs = mutableListOf(proteusSelfConversationIdProvider())
+
+        if (clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
+            selfConversationIDs.add(mlsSelfConversationIdProvider())
+        }
+
+        return selfConversationIDs.foldToEitherWhileRight(emptyList()) { result, acc ->
+            result.map {
+                acc + it
+            }
         }
     }
 }

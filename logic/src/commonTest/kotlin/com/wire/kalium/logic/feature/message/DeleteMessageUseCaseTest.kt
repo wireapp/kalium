@@ -47,7 +47,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
-            .withSelfConversationId(SELF_CONVERSATION_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
@@ -80,7 +80,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
-            .withSelfConversationId(SELF_CONVERSATION_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
@@ -113,7 +113,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
-            .withSelfConversationId(SELF_CONVERSATION_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
@@ -152,7 +152,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
-            .withSelfConversationId(SELF_CONVERSATION_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
@@ -288,8 +288,8 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
-            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
+        suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationIds) }
         }
 
     }

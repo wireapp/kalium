@@ -1,24 +1,18 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
-import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.functional.getOrElse
 
 interface IsMessageSentInSelfConversationUseCase {
     suspend operator fun invoke(message: Message): Boolean
 }
 
 internal class IsMessageSentInSelfConversationUseCaseImpl(
-    private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider,
-    private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider
 ) : IsMessageSentInSelfConversationUseCase {
 
     override suspend fun invoke(message: Message): Boolean {
-        val selfConversationIds = listOf(
-            proteusSelfConversationIdProvider().getOrNull(),
-            mlsSelfConversationIdProvider().getOrNull()
-        ).mapNotNull { it }
-
+        val selfConversationIds = selfConversationIdProvider().getOrElse(emptyList())
         return selfConversationIds.contains(message.conversationId)
     }
 

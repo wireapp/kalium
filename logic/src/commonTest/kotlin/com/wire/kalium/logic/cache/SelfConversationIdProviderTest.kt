@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.cache
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
@@ -20,17 +21,21 @@ import kotlin.test.assertIs
 class SelfConversationIdProviderTest {
 
     @Test
-    fun givenMLSIsEnabled_thenMLSSelfConversationIsReturned() = runTest {
-        val expected = Either.Right(Arrangement.MLS_SELF_CONVERSATION_ID)
+    fun givenMLSClientHasBeenRegistered_thenMLSAndProteusSelfConversationAreReturned() = runTest {
         val (arrangement, selfConversationIdProvider) = Arrangement()
-            .withMLSEnabled(true)
-            .withMLSSelfConversationId(expected)
+            .withHasRegisteredMLSClient((Either.Right(true)))
+            .withMLSSelfConversationId(Either.Right(Arrangement.MLS_SELF_CONVERSATION_ID))
+            .withProteusSelfConversationId(Either.Right(Arrangement.PROTEUS_SELF_CONVERSATION_ID))
             .arrange()
 
         selfConversationIdProvider().also {
-            assertIs<Either.Right<ConversationId>>(it)
-            assertEquals(expected.value, it.value)
+            assertIs<Either.Right<List<ConversationId>>>(it)
+            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID ,Arrangement.MLS_SELF_CONVERSATION_ID), it.value)
         }
+
+        verify(arrangement.proteusSelfConversationIdProvider)
+            .suspendFunction(arrangement.proteusSelfConversationIdProvider::invoke)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.mlsSelfConversationIdProvider)
             .suspendFunction(arrangement.mlsSelfConversationIdProvider::invoke)
@@ -38,16 +43,15 @@ class SelfConversationIdProviderTest {
     }
 
     @Test
-    fun givenMLSIsDisabled_thenProteusSelfConversationIsReturned() = runTest {
-        val expected = Either.Right(Arrangement.PROTEUS_SELF_CONVERSATION_ID)
+    fun givenMLSClientHasNotBeenRegistered_thenProteusSelfConversationIsReturned() = runTest {
         val (arrangement, selfConversationIdProvider) = Arrangement()
-            .withMLSEnabled(false)
-            .withProteusSelfConversationId(expected)
+            .withHasRegisteredMLSClient((Either.Right(false)))
+            .withProteusSelfConversationId(Either.Right(Arrangement.PROTEUS_SELF_CONVERSATION_ID))
             .arrange()
 
         selfConversationIdProvider().also {
-            assertIs<Either.Right<ConversationId>>(it)
-            assertEquals(expected.value, it.value)
+            assertIs<Either.Right<List<ConversationId>>>(it)
+            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID), it.value)
         }
 
         verify(arrangement.proteusSelfConversationIdProvider)
@@ -59,7 +63,7 @@ class SelfConversationIdProviderTest {
     fun givenFailure_thenErrorIsPropagated() = runTest {
         val expected = Either.Left(StorageFailure.DataNotFound)
         val (arrangement, selfConversationIdProvider) = Arrangement()
-            .withMLSEnabled(false)
+            .withHasRegisteredMLSClient((Either.Right(false)))
             .withProteusSelfConversationId(expected)
             .arrange()
 
@@ -76,7 +80,7 @@ class SelfConversationIdProviderTest {
     private class Arrangement {
 
         @Mock
-        val isMLSEnabled = mock(classOf<IsMLSEnabledUseCase>())
+        val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
         val proteusSelfConversationIdProvider = mock(classOf<ProteusSelfConversationIdProvider>())
@@ -85,14 +89,14 @@ class SelfConversationIdProviderTest {
         val mlsSelfConversationIdProvider = mock(classOf<MLSSelfConversationIdProvider>())
 
         val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(
-            isMLSEnabled,
+            clientRepository,
             mlsSelfConversationIdProvider,
             proteusSelfConversationIdProvider
         )
 
-        suspend fun withMLSEnabled(result: Boolean): Arrangement = apply {
-            given(isMLSEnabled)
-                .function(isMLSEnabled::invoke)
+        suspend fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>): Arrangement = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
                 .whenInvoked()
                 .thenReturn(result)
         }

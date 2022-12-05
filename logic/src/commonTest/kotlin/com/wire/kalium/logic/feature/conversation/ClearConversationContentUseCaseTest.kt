@@ -28,7 +28,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(false)
             .withMessageSending(true)
             .withCurrentClientId((true))
-            .withSelfConversationId(selfConversationId)
+            .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
         // when
@@ -57,7 +57,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(false)
             .withMessageSending(true)
-            .withSelfConversationId(selfConversationId)
+            .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
         // when
@@ -86,7 +86,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(false)
-            .withSelfConversationId(selfConversationId)
+            .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
         // when
@@ -115,7 +115,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(true)
-            .withSelfConversationId(selfConversationId)
+            .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
         // when
@@ -185,8 +185,8 @@ class ClearConversationContentUseCaseTest {
             return this
         }
 
-        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
-            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
+        suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationIds) }
         }
 
         fun arrange() = this to ClearConversationContentUseCaseImpl(

@@ -282,7 +282,7 @@ class UserSessionScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider by
     lazy {
         SelfConversationIdProviderImpl(
-            isMLSEnabled,
+            clientRepository,
             mlsSelfConversationIdProvider,
             proteusSelfConversationIdProvider
         )
@@ -663,7 +663,7 @@ class UserSessionScope internal constructor(
     )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-        get() = IsMessageSentInSelfConversationUseCaseImpl(mlsSelfConversationIdProvider, proteusSelfConversationIdProvider)
+        get() = IsMessageSentInSelfConversationUseCaseImpl(selfConversationIdProvider)
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
