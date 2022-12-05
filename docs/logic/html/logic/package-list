@@ -2317,7 +2317,7 @@ $dokka.location:com.wire.kalium.logic.data.team/TeamPermission.SET_TEAM_DATA/ord
 $dokka.location:com.wire.kalium.logic.data.team/TeamPermission///PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-permission/index.html
 $dokka.location:com.wire.kalium.logic.data.team/TeamPermission/code/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-permission/code.html
 $dokka.location:com.wire.kalium.logic.data.team/TeamRepository///PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/index.html
-$dokka.location:com.wire.kalium.logic.data.team/TeamRepository/deleteConversation/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/delete-conversation.html
+$dokka.location:com.wire.kalium.logic.data.team/TeamRepository/deleteConversation/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.id.PlainId/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/delete-conversation.html
 $dokka.location:com.wire.kalium.logic.data.team/TeamRepository/fetchMembersByTeamId/#com.wire.kalium.logic.data.id.PlainId#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/fetch-members-by-team-id.html
 $dokka.location:com.wire.kalium.logic.data.team/TeamRepository/fetchTeamById/#com.wire.kalium.logic.data.id.PlainId/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/fetch-team-by-id.html
 $dokka.location:com.wire.kalium.logic.data.team/TeamRepository/fetchTeamMember/#kotlin.String#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.data.team/-team-repository/fetch-team-member.html
