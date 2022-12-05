@@ -269,7 +269,8 @@ class AssetRepositoryTest {
                 .wasInvoked(exactly = once)
         }
     }
-
+    
+    // @SF.Messages @TSFI.UserInterface @S0.1 @S1
     @Test
     fun givenAnAssetId_whenDownloadingPrivateAssetWithWrongAssetHash_thenShouldReturnAWrongAssetHashError() = runTest {
         // Given

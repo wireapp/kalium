@@ -27,7 +27,6 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
-import okio.buffer
 import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
