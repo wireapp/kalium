@@ -35,7 +35,12 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails
+    fun fromDaoModelToDetails(
+        daoModel: ConversationViewEntity,
+        lastMessage: MessagePreview?,
+        unreadEventCount: UnreadEventCount?
+    ): ConversationDetails
+
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -105,7 +110,11 @@ internal class ConversationMapperImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails =
+    override fun fromDaoModelToDetails(
+        daoModel: ConversationViewEntity,
+        lastMessage: MessagePreview?,
+        unreadEventCount: UnreadEventCount?
+    ): ConversationDetails =
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
@@ -136,7 +145,7 @@ internal class ConversationMapperImpl(
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                         unreadRepliesCount = unreadRepliesCount,
                         unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
+                        unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                     )
                 }
@@ -148,7 +157,7 @@ internal class ConversationMapperImpl(
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         unreadRepliesCount = unreadRepliesCount,
                         unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
+                        unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                         isSelfUserMember = isMember == 1L,
                         isSelfUserCreator = isCreator == 1L,
@@ -386,26 +395,4 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
-}
-
-fun MessageEntity.ContentType.toUnreadEventTypeModel(): UnreadEventType = when (this) {
-    MessageEntity.ContentType.TEXT -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.KNOCK -> UnreadEventType.KNOCK
-    MessageEntity.ContentType.MEMBER_CHANGE -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.MISSED_CALL -> UnreadEventType.MISSED_CALL
-    MessageEntity.ContentType.RESTRICTED_ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.CONVERSATION_RENAMED -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.UNKNOWN -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.FAILED_DECRYPTION -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadEventType.IGNORED
-}
-
-fun Map<MessageEntity.ContentType, Int>.toUnreadEventCountModel(): UnreadEventCount {
-    val unreadContent = mutableMapOf<UnreadEventType, Int>()
-    forEach { contentEntity ->
-        val contentType = contentEntity.key.toUnreadEventTypeModel()
-        unreadContent[contentType] = unreadContent[contentType]?.let { it + contentEntity.value } ?: contentEntity.value
-    }
-    return unreadContent
 }
