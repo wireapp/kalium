@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallClosedReason
-import com.wire.kalium.calling.CallClosedReason.STILL_ONGOING
 import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
@@ -27,11 +26,13 @@ class OnCloseCall(
         clientId: String?,
         arg: Pointer?
     ) {
-        callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} |" +
-                " UserId: ${userId.obfuscateId()} | Reason: $reason")
+        callingLogger.i(
+            "[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} |" +
+                    " UserId: ${userId.obfuscateId()} | Reason: $reason"
+        )
 
         val avsReason = CallClosedReason.fromInt(value = reason)
-        val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
+        val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         scope.launch {
             callRepository.updateCallStatusById(
@@ -40,5 +41,16 @@ class OnCloseCall(
             )
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
+
     }
+
+    private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
+        CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
+        CallClosedReason.CANCELLED -> CallStatus.MISSED
+        CallClosedReason.REJECTED -> CallStatus.REJECTED
+        else -> {
+            CallStatus.CLOSED
+        }
+    }
+
 }

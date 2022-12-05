@@ -8,6 +8,7 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
@@ -82,7 +83,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun givenNonTransintEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
+    fun givenNonTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
         // Given
         val event = TestEvent.newConnection().copy(transient = false)
 
@@ -101,7 +102,7 @@ class EventProcessorTest {
     }
 
     @Test
-    fun givenTransintEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
+    fun givenTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
         // Given
         val event = TestEvent.newConnection().copy(transient = true)
 
@@ -116,6 +117,23 @@ class EventProcessorTest {
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
             .with(any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserPropertyEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
+        // Given
+        val event = TestEvent.userPropertyReadReceiptMode()
+
+        val (arrangement, eventProcessor) = Arrangement()
+            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+            .arrange()
+
+        eventProcessor.processEvent(event)
+
+        verify(arrangement.userPropertiesEventReceiver)
+            .suspendFunction(arrangement.userPropertiesEventReceiver::onEvent)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -136,13 +154,17 @@ class EventProcessorTest {
         @Mock
         val teamEventReceiver = configure(mock(TeamEventReceiver::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val userPropertiesEventReceiver = configure(mock(UserPropertiesEventReceiver::class)) { stubsUnitByDefault = true }
+
         val eventProcessor: EventProcessor =
             EventProcessorImpl(
                 eventRepository,
                 conversationEventReceiver,
                 userEventReceiver,
                 teamEventReceiver,
-                featureConfigEventReceiver
+                featureConfigEventReceiver,
+                userPropertiesEventReceiver
             )
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {

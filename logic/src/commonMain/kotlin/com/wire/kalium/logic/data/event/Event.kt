@@ -479,6 +479,19 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         }
     }
 
+    sealed class UserProperty(
+        id: String,
+        transient: Boolean
+    ) : Event(id, transient) {
+
+        data class ReadReceiptModeSet(
+            override val id: String,
+            override val transient: Boolean,
+            val value: Boolean,
+        ) : UserProperty(id, transient)
+
+    }
+
     data class Unknown(
         override val id: String,
         override val transient: Boolean,

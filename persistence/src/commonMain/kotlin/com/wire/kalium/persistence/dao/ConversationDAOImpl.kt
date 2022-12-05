@@ -19,7 +19,8 @@ import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
-        val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
+        // TODO KBX
+//         val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
         ConversationViewEntity(
             id = qualifiedId,
             name = name,
@@ -57,15 +58,17 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            unreadMentionsCount = unreadMentionsCount,
+            unreadMentionsCount = 0,
             isMember = isMember,
-            unreadContentCountEntity = unreadContentType
+            unreadContentCountEntity = mapOf(),
+            unreadRepliesCount = 0L
         )
     }
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
-            val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
+            // TODO KBX
+//             val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
             ConversationViewEntity(
                 id = qualifiedId,
                 name = name,
@@ -103,9 +106,10 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                unreadMentionsCount = unreadMentionsCount,
+                unreadMentionsCount = 0,
                 isMember = isMember,
-                unreadContentCountEntity = unreadContentType
+                unreadContentCountEntity = mapOf(),
+                unreadRepliesCount = 0L
             )
         }
     }
@@ -224,11 +228,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: String) {
-        conversationQueries.transaction {
-            conversationQueries.selectConversationsWithUnnotifiedMessages()
-                .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualifiedId) }
-        }
+        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {

@@ -10,6 +10,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class UserConfigStorageTest {
     private val settings: Settings = MockSettings()
@@ -53,4 +54,11 @@ class UserConfigStorageTest {
             userConfigStorage.isConferenceCallingEnabled()
         )
     }
+
+    @Test
+    fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
+        userConfigStorage.persistReadReceipts(true)
+        assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
+    }
+
 }
