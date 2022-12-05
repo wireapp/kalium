@@ -4,8 +4,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import kotlinx.coroutines.flow.firstOrNull
+import com.wire.kalium.logic.functional.map
 
 fun interface DeleteTeamConversationUseCase {
 
@@ -20,22 +22,24 @@ fun interface DeleteTeamConversationUseCase {
 }
 
 internal class DeleteTeamConversationUseCaseImpl(
-    val getSelfTeam: GetSelfTeamUseCase,
-    val teamRepository: TeamRepository,
-    val conversationRepository: ConversationRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val teamRepository: TeamRepository,
+    private val conversationRepository: ConversationRepository,
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
-        val teamId = getSelfTeam().firstOrNull()?.id
-        return teamId?.let {
-            teamRepository.deleteConversation(conversationId, teamId)
-                .fold({
-                    Result.Failure.GenericFailure(it)
-                }, {
-                    conversationRepository.deleteConversation(conversationId)
-                    Result.Success
-                })
-        } ?: Result.Failure.NoTeamFailure
+        return selfTeamIdProvider()
+            .map {
+                it ?: return Result.Failure.NoTeamFailure
+            }
+            .flatMap { teamId ->
+                teamRepository.deleteConversation(conversationId, teamId)
+            }.fold({
+                Result.Failure.GenericFailure(it)
+            }, {
+                conversationRepository.deleteConversation(conversationId)
+                Result.Success
+            })
     }
 }
 

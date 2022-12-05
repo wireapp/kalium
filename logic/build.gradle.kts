@@ -4,46 +4,22 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    id(libs.plugins.kalium.library.get().pluginId)
 }
 
-group = "com.wire.kalium"
-version = "0.0.1-SNAPSHOT"
-
+kaliumLibrary {
+    multiplatform {
+        enableiOS.set(false)
+        enableJs.set(false)
+    }
+}
 android {
-    compileSdk = Android.Sdk.compile
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
-        consumerProguardFiles("consumer-proguard-rules.pro")
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    packagingOptions {
-        resources.pickFirsts.add("google/protobuf/*.proto")
-    }
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
-    // Run only Instrumented tests. No need to run Unit AND Instrumented
-    // We have JVM tests if we want to run quickly on our machines
-    sourceSets.remove(sourceSets["test"])
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-        }
-    }
-    android()
-
     sourceSets {
         val commonMain by getting {
             dependencies {
