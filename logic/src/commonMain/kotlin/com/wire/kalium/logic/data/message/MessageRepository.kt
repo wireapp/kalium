@@ -41,7 +41,7 @@ interface MessageRepository {
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
     suspend fun persistMessage(
-        message: Message,
+        message: Message.Standalone,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
         updateConversationNotificationsDate: Boolean = false
@@ -147,7 +147,7 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun persistMessage(
-        message: Message,
+        message: Message.Standalone,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
         updateConversationNotificationsDate: Boolean

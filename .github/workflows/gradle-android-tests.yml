@@ -53,12 +53,6 @@ jobs:
             disable-animations: false
             script: echo "Generated AVD snapshot for caching."
 
-      - name: Android Unit Test
-        run: ./gradlew testDebugUnitTest
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -81,7 +75,6 @@ jobs:
         if: always()
         with:
           files: |
-            **/build/test-results/testDebugUnitTest/**/*.xml
             **/build/test-results/**/*.xml
             **/build/outputs/androidTest-results/**/*.xml
 

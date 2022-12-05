@@ -64,7 +64,7 @@ abstract class CoreLogicCommon internal constructor(
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
-        AutoVersionAuthScopeUseCase(serverLinks, this)
+        AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 }
 
 expect val clientPlatform: String

@@ -18,7 +18,7 @@ class GetPaginatedFlowOfMessagesByConversationUseCase internal constructor(
         conversationId: ConversationId,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
         pagingConfig: PagingConfig
-    ): Flow<PagingData<Message>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
+    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
         conversationId, visibility, pagingConfig
     ).flowOn(dispatcher.io)
 }

@@ -9,7 +9,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
 
 interface MessageSendingInterceptor {
-    suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular>
+    suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable>
 }
 
 class MessageSendingInterceptorImpl(
@@ -17,10 +17,11 @@ class MessageSendingInterceptorImpl(
     private val messageRepository: MessageRepository
 ) : MessageSendingInterceptor {
 
-    override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
+    override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
         val replyMessageContent = message.content
 
         if (replyMessageContent !is MessageContent.Text
+            || message !is Message.Regular
             || replyMessageContent.quotedMessageReference == null
         ) {
             return Either.Right(message)

@@ -41,6 +41,9 @@ protobufCodegen = "0.8.18"
 libsodiumBindings = "0.8.5"
 
 [plugins]
+# Home-made convention plugins
+kalium-library = { id = "kalium.library" }
+
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -57,6 +60,9 @@ detekt-test = ["detekt-cli", "detekt-test"]
 detekt-core = ["detekt-api"]
 
 [libraries]
+# Kotlin Gradle Plugin
+kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 

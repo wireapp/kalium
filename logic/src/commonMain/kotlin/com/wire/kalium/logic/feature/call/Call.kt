@@ -11,7 +11,8 @@ enum class CallStatus {
     ANSWERED,
     ESTABLISHED,
     STILL_ONGOING,
-    CLOSED
+    CLOSED,
+    REJECTED
 }
 
 data class Call(

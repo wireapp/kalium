@@ -4,77 +4,29 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.carthage.get().pluginId)
+    id(libs.plugins.kalium.library.get().pluginId)
 }
 
-group = "com.wire.kalium"
-version = "0.0.1-SNAPSHOT"
+kaliumLibrary {
+    multiplatform {
+        includeNativeInterop.set(true)
+    }
+}
 
 android {
-    compileSdk = Android.Sdk.compile
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-proguard-rules.pro")
-    }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
         isCoreLibraryDesugaringEnabled = true
-    }
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
-    sourceSets.remove(sourceSets["test"])
-    externalNativeBuild {
-        cmake {
-            version = Android.Ndk.cMakeVersion
-        }
-        ndkBuild {
-            ndkVersion = Android.Ndk.version
-            // path(File("src/androidMain/jni/Android.mk"))
-        }
-    }
-    packagingOptions {
-        jniLibs.pickFirsts.add("**/libsodium.so")
     }
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-            kotlinOptions.freeCompilerArgs += "-Xjvm-default=enable"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-            val runArgs = project.gradle.startParameter.systemPropertiesArgs.entries.map { "-D${it.key}=${it.value}" }
-            jvmArgs(runArgs)
-            if (System.getProperty("os.name").contains("Mac", true)) {
-                jvmArgs("-Djava.library.path=/usr/local/lib/:../native/libs")
-            }
-        }
-    }
-    android() {
+    android {
         dependencies {
             coreLibraryDesugaring(libs.desugarJdkLibs)
         }
     }
 
-    js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport.enabled = true
-            }
-            testTask {
-                useMocha {
-                    timeout = "5s"
-                }
-            }
-        }
-    }
-
-    iosX64() {
+    iosX64 {
         carthage {
             baseName = "Cryptography"
             dependency("WireCryptobox")

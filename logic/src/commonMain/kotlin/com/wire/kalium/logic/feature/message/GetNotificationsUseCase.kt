@@ -236,7 +236,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                 selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
 
     private fun onlyMentionsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
+        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed ||
                 selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
     @Suppress("ComplexMethod")
@@ -255,16 +255,16 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         is MessageContent.Availability -> false
         is MessageContent.FailedDecryption -> false
         is MessageContent.MissedCall -> true
-        is MessageContent.Empty -> false
         is MessageContent.Ignored -> false
         is MessageContent.LastRead -> false
         is MessageContent.Cleared -> false
         is MessageContent.ConversationRenamed -> false
         is MessageContent.TeamMemberRemoved -> false
+        is MessageContent.Receipt -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
-        message.visibility == Message.Visibility.VISIBLE
+        message is Message.Standalone && message.visibility == Message.Visibility.VISIBLE
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
 

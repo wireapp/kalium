@@ -69,7 +69,7 @@ internal class ClearConversationContentUseCaseImpl(
         clearConversationContent(conversationId).flatMap {
             clientRepository.currentClientId().flatMap { currentClientId ->
                 selfConversationIdProvider().flatMap { selfConversationId ->
-                    val regularMessage = Message.Regular(
+                    val regularMessage = Message.Signaling(
                         id = uuid4().toString(),
                         content = MessageContent.Cleared(
                             unqualifiedConversationId = conversationId.value,
@@ -82,8 +82,7 @@ internal class ClearConversationContentUseCaseImpl(
                         date = Clock.System.now().toString(),
                         senderUserId = selfUserId,
                         senderClientId = currentClientId,
-                        status = Message.Status.PENDING,
-                        editStatus = Message.EditStatus.NotEdited,
+                        status = Message.Status.PENDING
                     )
                     messageSender.sendMessage(regularMessage)
                 }

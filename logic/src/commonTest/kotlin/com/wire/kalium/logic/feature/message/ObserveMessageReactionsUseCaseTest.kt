@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.message.reaction.MessageReaction
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -64,15 +65,17 @@ class ObserveMessageReactionsUseCaseTest {
         )
         val MESSAGE_REACTION = MessageReaction(
             emoji = "🤯",
-            userId = USER_ID,
-            name = "User Name",
-            handle = "userhandle",
             isSelfUser = true,
-            previewAssetId = null,
-            userType = UserType.INTERNAL,
-            deleted = false,
-            connectionStatus = ConnectionState.ACCEPTED,
-            userAvailabilityStatus = UserAvailabilityStatus.NONE
+            userSummary = UserSummary(
+                userId = USER_ID,
+                userName = "User Name",
+                userHandle = "userhandle",
+                userPreviewAssetId = null,
+                userType = UserType.INTERNAL,
+                isUserDeleted = false,
+                connectionStatus = ConnectionState.ACCEPTED,
+                availabilityStatus = UserAvailabilityStatus.NONE
+            )
         )
     }
 }

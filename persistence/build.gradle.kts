@@ -4,13 +4,17 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.sqldelight.get().pluginId)
+    id(libs.plugins.kalium.library.get().pluginId)
 }
 
-group = "com.wire.kalium"
-version = "0.0.1-SNAPSHOT"
+kaliumLibrary {
+    multiplatform {
+        enableJsTests.set(false)
+    }
+}
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.10")
 }
 
 sqldelight {
@@ -31,51 +35,7 @@ sqldelight {
     }
 }
 
-android {
-    compileSdk = Android.Sdk.compile
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-proguard-rules.pro")
-    }
-    // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
-    sourceSets.remove(sourceSets["test"])
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-}
-
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-
-            testLogging {
-                showStandardStreams = true
-            }
-        }
-    }
-    android()
-    iosX64()
-    js(IR) {
-        browser {
-            testTask {
-                // TODO: Re-enable when JS persistence is supported
-                // Removed as it's currently not implemented
-                this.enabled = false
-                useMocha {
-                    timeout = "5s"
-                }
-            }
-        }
-    }
 
     sourceSets {
         val commonMain by getting {

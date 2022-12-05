@@ -57,6 +57,17 @@ interface UserConfigStorage {
      * get the saved flag to know if Conference Calling is enabled or not
      */
     fun isConferenceCallingEnabled(): Boolean
+
+    /**
+     * get the saved flag to know if user's Read Receipts are enabled or not
+     */
+    fun isReadReceiptsEnabled(): Flow<Boolean>
+
+    /**
+     * save the flag to know if user's Read Receipts are enabled or not
+     */
+    fun persistReadReceipts(enabled: Boolean)
+
 }
 
 @Serializable
@@ -75,6 +86,9 @@ data class ClassifiedDomainsEntity(
 internal class UserConfigStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
+
+    private val isReadReceiptsEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isFileSharingEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -140,11 +154,23 @@ internal class UserConfigStorageImpl internal constructor(
     override fun isConferenceCallingEnabled(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
 
+    override fun isReadReceiptsEnabled(): Flow<Boolean> = isReadReceiptsEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
+        .distinctUntilChanged()
+
+    override fun persistReadReceipts(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled).also {
+            isReadReceiptsEnabledFlow.tryEmit(Unit)
+        }
+    }
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
+        const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
     }
 }

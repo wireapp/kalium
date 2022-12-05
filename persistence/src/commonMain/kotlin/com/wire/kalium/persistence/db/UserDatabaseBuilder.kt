@@ -123,7 +123,7 @@ class UserDatabaseBuilder internal constructor(
         get() = ReactionDAOImpl(database.reactionsQueries)
 
     val receiptDAO: ReceiptDAO
-        get() = ReceiptDAOImpl(database.receiptsQueries)
+        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter)
 
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries)

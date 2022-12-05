@@ -55,7 +55,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     fun givenFewConnections_WhenUpdateNotifyFlagForAll_ThenItIsUpdated() = runTest {
         db.connectionDAO.insertConnection(connection1)
         db.connectionDAO.insertConnection(connection2)
-        db.connectionDAO.updateAllNotificationFlags(false)
+        db.connectionDAO.setAllConnectionsAsNotified()
         val result = db.connectionDAO.getConnectionRequests().first()
         assertEquals(false, result[0].shouldNotify)
         assertEquals(false, result[1].shouldNotify)
@@ -68,7 +68,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
             lastUpdate = "2022-03-30T15:36:00.000Z",
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = QualifiedIDEntity("me", "wire.com"),
-            status = ConnectionEntity.State.SENT,
+            status = ConnectionEntity.State.PENDING,
             toId = "me@wire.com",
             shouldNotify = true
         )
