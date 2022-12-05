@@ -30,7 +30,16 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
         // Sanity checks
         val expectedHashedUserId = hashUserId(userId, decodedHeader.salt, decodedHeader.opslimit, decodedHeader.memlimit)
         val storedHashedUserId = decodedHeader.hashedUserId
-        val decodingError = when {
+        val decodingError = handleHeaderDecodingErrors(decodedHeader, expectedHashedUserId, storedHashedUserId)
+        return decodingError to decodedHeader
+    }
+
+    private fun handleHeaderDecodingErrors(
+        decodedHeader: Header,
+        expectedHashedUserId: UByteArray,
+        storedHashedUserId: UByteArray
+    ): HeaderDecodingErrors? =
+        when {
             !expectedHashedUserId.contentEquals(storedHashedUserId.toUByteArray()) -> {
                 kaliumLogger.e("The hashed user id in the backup file header does not match the expected one")
                 INVALID_USER_ID
@@ -45,8 +54,6 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
             }
             else -> null
         }
-        return decodingError to decodedHeader
-    }
 
     data class Passphrase(val password: String)
 

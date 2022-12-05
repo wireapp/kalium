@@ -104,7 +104,7 @@ class ChaCha20Utils {
             decodingError?.let { return it to 0L }
 
             // We need to read the ChaCha20 generated header prior to the encrypted backup file data to run some sanity checks
-            val chaChaHeaderKey = backupCoder.generateChaCha20Key(header).toUByteArray()
+            val chaChaHeaderKey = backupCoder.generateChaCha20Key(header)
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
             val chaChaHeaderBuffer = Buffer()
@@ -128,8 +128,8 @@ class ChaCha20Utils {
                 decryptionBufferedSink.write(decryptedData)
                 decryptedDataSize += decryptedData.size
 
-                // Stop reading the file if we reach the end of the stream
-                if (tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL) {
+                val isEndOfTheStream = tag == crypto_secretstream_xchacha20poly1305_TAG_FINAL
+                if (isEndOfTheStream) {
                     break
                 }
             }

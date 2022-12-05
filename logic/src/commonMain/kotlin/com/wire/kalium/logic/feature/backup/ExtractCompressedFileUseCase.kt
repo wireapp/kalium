@@ -9,26 +9,26 @@ import okio.Path
 interface ExtractCompressedFileUseCase {
     /**
      * Extracts all the files from the provided compressed file path.
-     * @param compressedFilePath The absolute file system path to the compressed file.
-     * @return A [ExtractCompressedFileResult] indicating the Failure or Success with the root [Path] of the extracted files and a boolean
+     * @param compressedBackupFilePath The absolute file system path to the compressed file.
+     * @return A [ExtractCompressedBackupFileResult] indicating the Failure or Success with the root [Path] of the extracted files and a boolean
      * indicating whether the returned paths belong to an encrypted or non-encrypted file.
      */
-    suspend operator fun invoke(compressedFilePath: Path): ExtractCompressedFileResult
+    suspend operator fun invoke(compressedBackupFilePath: Path): ExtractCompressedBackupFileResult
 }
 
 internal class ExtractCompressedFileUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem
 ) : ExtractCompressedFileUseCase {
 
-    override suspend operator fun invoke(compressedFilePath: Path): ExtractCompressedFileResult {
-        val tempCompressedFileSource = kaliumFileSystem.source(compressedFilePath)
+    override suspend operator fun invoke(compressedBackupFilePath: Path): ExtractCompressedBackupFileResult {
+        val tempCompressedFileSource = kaliumFileSystem.source(compressedBackupFilePath)
         val extractedFilesRootPath = createExtractedFilesRootPath()
 
         return extractCompressedFile(tempCompressedFileSource, extractedFilesRootPath, kaliumFileSystem).fold({
             onRestoreError(it)
         }, {
             val encryptedRootPath = getEncryptedFilePath(extractedFilesRootPath)
-            ExtractCompressedFileResult.Success(encryptedRootPath ?: extractedFilesRootPath, encryptedRootPath != null)
+            ExtractCompressedBackupFileResult.Success(encryptedRootPath ?: extractedFilesRootPath, encryptedRootPath != null)
         })
     }
 
@@ -44,15 +44,16 @@ internal class ExtractCompressedFileUseCaseImpl(
         return extractedFilesRootPath
     }
 
-    private fun onRestoreError(coreFailure: CoreFailure): ExtractCompressedFileResult = ExtractCompressedFileResult.Failure(coreFailure)
+    private fun onRestoreError(coreFailure: CoreFailure): ExtractCompressedBackupFileResult =
+        ExtractCompressedBackupFileResult.Failure(coreFailure)
 
     private suspend fun getEncryptedFilePath(extractedFilesRootPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedFilesRootPath).firstOrNull { it.name.contains(".cc20") }
 }
 
-sealed class ExtractCompressedFileResult {
-    data class Success(val extractedFilesRootPath: Path, val isEncrypted: Boolean) : ExtractCompressedFileResult()
-    data class Failure(val error: CoreFailure) : ExtractCompressedFileResult()
+sealed class ExtractCompressedBackupFileResult {
+    data class Success(val extractedFilesRootPath: Path, val isEncrypted: Boolean) : ExtractCompressedBackupFileResult()
+    data class Failure(val error: CoreFailure) : ExtractCompressedBackupFileResult()
 }
 
 private const val EXTRACTED_FILES_PATH = "extractedFiles"
