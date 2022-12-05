@@ -171,7 +171,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
 
-        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+        val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
 
         result.shouldSucceed()
         verify(arrangement.teamsApi)
@@ -190,7 +190,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Some error happened"))))
 
-        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+        val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
 
         result.shouldFail()
         verify(arrangement.teamsApi)
