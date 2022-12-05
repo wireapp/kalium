@@ -798,7 +798,8 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider,
-            clientIdProvider
+            clientIdProvider,
+            selfTeamId
         )
     val debug: DebugScope
         get() = DebugScope(
@@ -893,7 +894,7 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, kaliumConfigs, userId
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val calls: CallsScope
         get() = CallsScope(
