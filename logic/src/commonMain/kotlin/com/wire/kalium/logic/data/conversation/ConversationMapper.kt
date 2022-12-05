@@ -48,7 +48,7 @@ interface ConversationMapper {
     fun toDaoModel(conversation: Conversation): ConversationEntity
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
