@@ -121,7 +121,10 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Asset -> {
                 // Backend sends some preview asset messages just with img metadata and no
                 // keys or asset id,so we need to overwrite one with the other one
-                MessageContent.Asset(assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value))
+                MessageContent.Asset(
+                    value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value),
+                    expectsReadConfirmation = protoContent.value.expectsReadConfirmation
+                )
             }
 
             is GenericMessage.Content.Availability ->
@@ -305,16 +308,17 @@ class ProtoContentMapperImpl(
     }
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
-        protoContent.value.content,
-        protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
-        protoContent.value.quote?.let {
+        value = protoContent.value.content,
+        mentions = protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+        quotedMessageReference = protoContent.value.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId,
                 quotedMessageSha256 = it.quotedMessageSha256?.array,
                 isVerified = false
             )
         },
-        null
+        quotedMessageDetails = null,
+        expectsReadConfirmation = protoContent.value.expectsReadConfirmation
     )
 
     private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
