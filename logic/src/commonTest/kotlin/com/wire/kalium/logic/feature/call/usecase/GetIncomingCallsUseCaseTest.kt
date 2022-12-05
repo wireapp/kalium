@@ -121,7 +121,7 @@ class GetIncomingCallsUseCaseTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
-                Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.OnlyMentionsAllowed))
+                Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.OnlyMentionsAndRepliesAllowed))
             }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))

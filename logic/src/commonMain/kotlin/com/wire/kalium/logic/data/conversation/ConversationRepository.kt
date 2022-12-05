@@ -297,15 +297,16 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails()
-            .combine(
-                messageDAO.observeLastMessages()
-            ) { conversationList, lastMessageList ->
-                conversationList.map { conversation ->
-                    conversationMapper.fromDaoModelToDetails(conversation,
-                        lastMessageList.firstOrNull { it.conversationId == conversation.id }?.let { messageMapper.fromEntityToMessage(it) })
-                }
+        combine(
+            conversationDAO.getAllConversationDetails(),
+            messageDAO.observeLastMessages()
+        ) { conversationList, lastMessageList ->
+            conversationList.map { conversation ->
+                conversationMapper.fromDaoModelToDetails(conversation,
+                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
+                        ?.let { messageMapper.fromEntityToMessagePreview(it) })
             }
+        }
 
     /**
      * Gets a flow that allows observing of
