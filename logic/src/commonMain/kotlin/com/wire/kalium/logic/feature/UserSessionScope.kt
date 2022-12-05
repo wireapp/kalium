@@ -87,6 +87,8 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.ExtractInitialBackupFileUseCase
+import com.wire.kalium.logic.feature.backup.ExtractInitialBackupFileUseCaseImpl
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
@@ -405,6 +407,9 @@ class UserSessionScope internal constructor(
 
     val createBackup: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(userId, client.observeCurrentClientId, kaliumFileSystem)
+
+    val extractInitialBackupFileUseCase: ExtractInitialBackupFileUseCase
+        get() = ExtractInitialBackupFileUseCaseImpl(kaliumFileSystem)
 
     val restoreBackup: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
