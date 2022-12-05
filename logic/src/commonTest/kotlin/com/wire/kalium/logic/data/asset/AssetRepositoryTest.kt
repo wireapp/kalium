@@ -1,10 +1,8 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.EncryptionFailure
@@ -269,7 +267,7 @@ class AssetRepositoryTest {
                 .wasInvoked(exactly = once)
         }
     }
-    
+
     // @SF.Messages @TSFI.UserInterface @S0.1 @S1
     @Test
     fun givenAnAssetId_whenDownloadingPrivateAssetWithWrongAssetHash_thenShouldReturnAWrongAssetHashError() = runTest {
