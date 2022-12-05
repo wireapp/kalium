@@ -194,7 +194,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility>
-    ): Flow<List<Message>> = messageDAO.getMessagesByConversationAndVisibilityAfterDate(
+    ): Flow<List<Message>> = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(
         idMapper.toDaoModel(conversationId),
         date,
         visibility.map { it.toEntityVisibility() }

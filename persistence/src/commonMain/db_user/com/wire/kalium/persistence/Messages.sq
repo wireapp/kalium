@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),

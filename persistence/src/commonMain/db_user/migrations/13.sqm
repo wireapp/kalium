@@ -1,0 +1,3 @@
+import kotlin.Boolean;
+
+ALTER TABLE Message ADD COLUMN expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0);

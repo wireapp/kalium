@@ -252,7 +252,7 @@ class MessageDAOImpl(
             mapper::toEntityMessageFromView
         ).asFlow().mapToList()
 
-    override suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
@@ -338,6 +338,16 @@ class MessageDAOImpl(
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
+
+    override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility>
+    ): List<MessageEntity> {
+        return queries
+            .selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
+            .executeAsList()
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }

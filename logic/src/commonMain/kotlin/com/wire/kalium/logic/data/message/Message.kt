@@ -55,7 +55,7 @@ sealed interface Message {
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
-        val expectsReadConfirmation: Boolean? = null
+        val expectsReadConfirmation: Boolean? = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {

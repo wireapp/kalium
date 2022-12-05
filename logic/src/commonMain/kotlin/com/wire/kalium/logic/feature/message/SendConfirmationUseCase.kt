@@ -52,10 +52,16 @@ internal class SendConfirmationUseCase internal constructor(
             return Either.Right(Unit)
         }
 
+        // group
+        // check group convo config. only send
+
+        // 1:1
+        // if message is marked as expectConfirmation and toggle true send, otherwise nothing
+
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.Receipt(ReceiptType.READ, messageIds),
+                content = MessageContent.Receipt(ReceiptType.READ, messageIds), //todo change
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,

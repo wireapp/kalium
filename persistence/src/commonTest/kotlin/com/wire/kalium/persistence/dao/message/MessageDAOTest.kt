@@ -289,7 +289,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         messageDAO.insertMessages(allMessages)
-        val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        val result = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
     }
 
