@@ -816,6 +816,7 @@ class UserSessionScope internal constructor(
             timeParser,
             applicationMessageHandler,
             userStorage,
+            userPropertyRepository,
             this
         )
     val users: UserScope
