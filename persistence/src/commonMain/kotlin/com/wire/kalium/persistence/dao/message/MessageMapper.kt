@@ -238,7 +238,7 @@ object MessageMapper {
                         assetName = quotedAssetName,
                     )
                 },
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation ?: false
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(

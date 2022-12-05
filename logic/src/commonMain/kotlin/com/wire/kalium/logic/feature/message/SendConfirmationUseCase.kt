@@ -3,12 +3,14 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -27,6 +29,7 @@ import kotlinx.datetime.Clock
  * - For 1:1 we take into consideration [ObserveReadReceiptsEnabled]
  * - For group conversations we have to look for each group conversation configuration.
  */
+@Suppress("LongParameterList")
 internal class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val syncManager: SyncManager,
@@ -34,6 +37,7 @@ internal class SendConfirmationUseCase internal constructor(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
+    private val userPropertyRepository: UserPropertyRepository,
 ) {
     private companion object {
         const val TAG = "[SendConfirmationUseCase]"
@@ -44,22 +48,16 @@ internal class SendConfirmationUseCase internal constructor(
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
 
-        // todo: handle toggles for 1:1 and convo config
         val messageIds = getPendingUnreadMessagesIds(conversationId)
         if (messageIds.isEmpty()) {
             logger.d("$TAG skipping, NO messages to send confirmation signal")
             return Either.Right(Unit)
         }
 
-        // group
-        // check group convo config. only send
-
-        // 1:1
-        // if message is marked as expectConfirmation and toggle true send, otherwise nothing
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.Receipt(ReceiptType.READ, messageIds), // todo change
+                content = MessageContent.Receipt(ReceiptType.READ, messageIds),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
@@ -80,6 +78,15 @@ internal class SendConfirmationUseCase internal constructor(
             logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
             emptyList()
         }, { conversation ->
+
+            val readReceiptsEnabled = if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+                userPropertyRepository.getReadReceiptsStatus()
+            } else {
+                false
+            }
+
+            if (!readReceiptsEnabled) emptyList<String>()
+
             messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
                 .fold({
                     logger.e("$TAG There was an unknown error trying to get latest messages $it")
