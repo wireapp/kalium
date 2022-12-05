@@ -38,7 +38,7 @@ class UpdateConversationReadDateUseCase internal constructor(
         conversationId: QualifiedID,
         selfConversationId: QualifiedID,
         time: Instant
-    ) : Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> {
         val generatedMessageUuid = uuid4().toString()
 
         return clientRepository.currentClientId().flatMap { currentClientId ->

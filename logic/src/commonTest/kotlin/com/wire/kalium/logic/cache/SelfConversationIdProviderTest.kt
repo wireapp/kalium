@@ -30,7 +30,7 @@ class SelfConversationIdProviderTest {
 
         selfConversationIdProvider().also {
             assertIs<Either.Right<List<ConversationId>>>(it)
-            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID ,Arrangement.MLS_SELF_CONVERSATION_ID), it.value)
+            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID, Arrangement.MLS_SELF_CONVERSATION_ID), it.value)
         }
 
         verify(arrangement.proteusSelfConversationIdProvider)
@@ -94,21 +94,21 @@ class SelfConversationIdProviderTest {
             proteusSelfConversationIdProvider
         )
 
-        suspend fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>): Arrangement = apply {
+        fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>): Arrangement = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::hasRegisteredMLSClient)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        suspend fun withProteusSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
+        fun withProteusSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
             given(proteusSelfConversationIdProvider)
                 .suspendFunction(proteusSelfConversationIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        suspend fun withMLSSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
+        fun withMLSSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
             given(mlsSelfConversationIdProvider)
                 .suspendFunction(mlsSelfConversationIdProvider::invoke)
                 .whenInvoked()
