@@ -55,7 +55,8 @@ internal class ConversationMapperImpl(
     private val protocolInfoMapper: ProtocolInfoMapper,
     private val userAvailabilityStatusMapper: AvailabilityStatusMapper,
     private val domainUserTypeMapper: DomainUserTypeMapper,
-    private val connectionStatusMapper: ConnectionStatusMapper
+    private val connectionStatusMapper: ConnectionStatusMapper,
+    private val conversationRoleMapper: ConversationRoleMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -115,6 +116,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.Type.GLOBAL_TEAM -> {
                     ConversationDetails.Team(fromDaoModel(daoModel))
                 }
+
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
@@ -150,8 +152,9 @@ internal class ConversationMapperImpl(
                         unreadMentionsCount = unreadMentionsCount,
                         unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
                         lastMessage = lastMessage,
-                        isSelfUserMember = isMember == 1L,
+                        isSelfUserMember = isMember,
                         isSelfUserCreator = isCreator == 1L,
+                        selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) }
                     )
                 }
 
