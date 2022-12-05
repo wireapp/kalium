@@ -46,6 +46,7 @@ object TestConversation {
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null
     )
+
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
@@ -141,7 +142,8 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        unreadContentCountEntity = mapOf(),
+        unreadRepliesCount = 0L
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -265,7 +267,8 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        unreadContentCountEntity = mapOf(),
+        unreadRepliesCount = 0L
     )
 
     val CONVERSATION = Conversation(

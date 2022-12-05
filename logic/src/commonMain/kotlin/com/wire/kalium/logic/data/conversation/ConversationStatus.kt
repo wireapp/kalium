@@ -10,15 +10,9 @@ sealed class MutedConversationStatus(open val status: Int = 0) {
     object AllAllowed : MutedConversationStatus(0)
 
     /**
-     * 1 -> Only mentions are displayed (normal messages muted)
+     * 1 -> Only mentions and replies are displayed (normal messages muted)
      */
-    object OnlyMentionsAllowed : MutedConversationStatus(1)
-
-    /**
-     * 2 -> Only normal notifications are displayed (mentions are muted) -- legacy, not used
-     */
-    @Deprecated("For legacy mapping purpose only, not used")
-    private object MentionsMuted : MutedConversationStatus(2)
+    object OnlyMentionsAndRepliesAllowed : MutedConversationStatus(1)
 
     /**
      * 3 -> No notifications are displayed
