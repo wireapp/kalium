@@ -11,7 +11,7 @@ internal interface RequestMapper {
     fun toApiV3(request: ConversationAccessInfoDTO): ConversationAccessInfoDTOV3
 }
 
-internal class RequestMapperImpl: RequestMapper {
+internal class RequestMapperImpl : RequestMapper {
 
     override fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3 =
         CreateConversationRequestV3(

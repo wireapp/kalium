@@ -11,10 +11,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequestV3
 import com.wire.kalium.network.api.base.authenticated.conversation.GlobalTeamConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTOV3
 import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
