@@ -149,7 +149,8 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
+            expectsReadConfirmation = this.expectsReadConfirmation ?: false
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -310,6 +311,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
     }
+
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

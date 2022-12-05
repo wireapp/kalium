@@ -42,6 +42,7 @@ object MessageMapper {
                     senderName = senderName,
                     messageBody = text.requireField("text")
                 )
+
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
                 (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
                 else -> MessagePreviewEntityContent.Text(
@@ -49,6 +50,7 @@ object MessageMapper {
                     messageBody = text.requireField("text")
                 )
             }
+
             MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
                 senderName = senderName,
                 type = assetMimeType?.let {
@@ -60,20 +62,24 @@ object MessageMapper {
                     }
                 } ?: AssetTypeEntity.FILE
             )
+
             MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
             MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
                 adminName = senderName,
                 count = memberChangeList.requireField("memberChangeList").size,
                 type = memberChangeType.requireField("memberChangeType")
             )
+
             MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
                 senderName = senderName,
                 type = AssetTypeEntity.ASSET
             )
+
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
                 adminName = senderName
             )
+
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
@@ -166,6 +172,7 @@ object MessageMapper {
         senderIsDeleted: Boolean?,
         isSelfMessage: Boolean,
         text: String?,
+        expectsReadConfirmation: Boolean?,
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
@@ -230,7 +237,8 @@ object MessageMapper {
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
                     )
-                }
+                },
+                expectsReadConfirmation = expectsReadConfirmation
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(

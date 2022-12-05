@@ -162,7 +162,8 @@ sealed class MessageEntityContent {
          * Details of the message being quoted.
          * Unused when inserting into the DB.
          */
-        val quotedMessage: QuotedMessage? = null
+        val quotedMessage: QuotedMessage? = null,
+        val expectsReadConfirmation: Boolean = false
     ) : Regular() {
         data class QuotedMessage(
             val id: String,

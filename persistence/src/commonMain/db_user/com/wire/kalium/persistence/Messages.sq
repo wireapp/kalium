@@ -16,7 +16,6 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
-      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -45,6 +44,7 @@ CREATE TABLE MessageTextContent (
       text_body TEXT,
       quoted_message_id TEXT,
       is_quote_verified INTEGER AS Boolean,
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -191,6 +191,7 @@ User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
+TextContent.expects_read_confirmation AS expectsReadConfirmation,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
 AssetContent.asset_mime_type AS assetMimeType,
@@ -374,11 +375,12 @@ length = excluded.length,
 user_id = excluded.user_id;
 
 insertMessageTextContent:
-INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
-VALUES(?, ?, ?, ?, ?)
+INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
-text_body = excluded.text_body;
+text_body = excluded.text_body,
+expects_read_confirmation = excluded.expects_read_confirmation;
 
 insertMessageRestrictedAssetContent:
 INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
@@ -538,3 +540,11 @@ resetAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
+
+selectPendingMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = ?
+AND visibility IN ?
+AND expectsReadConfirmation = 1
+AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;

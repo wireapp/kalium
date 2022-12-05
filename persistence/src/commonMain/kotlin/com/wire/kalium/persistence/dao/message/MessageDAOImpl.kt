@@ -91,7 +91,8 @@ class MessageDAOImpl(
                         conversation_id = message.conversationId,
                         text_body = content.messageBody,
                         quoted_message_id = content.quotedMessageId,
-                        is_quote_verified = content.isQuoteVerified
+                        is_quote_verified = content.isQuoteVerified,
+                        expects_read_confirmation = content.expectsReadConfirmation
                     )
                     content.mentions.forEach {
                         queries.insertMessageMention(
@@ -345,7 +346,7 @@ class MessageDAOImpl(
         visibility: List<MessageEntity.Visibility>
     ): List<MessageEntity> {
         return queries
-            .selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
+            .selectPendingMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
             .executeAsList()
     }
 

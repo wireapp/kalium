@@ -18,7 +18,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 /**
@@ -57,11 +56,10 @@ internal class SendConfirmationUseCase internal constructor(
 
         // 1:1
         // if message is marked as expectConfirmation and toggle true send, otherwise nothing
-
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.Receipt(ReceiptType.READ, messageIds), //todo change
+                content = MessageContent.Receipt(ReceiptType.READ, messageIds), // todo change
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
@@ -77,13 +75,17 @@ internal class SendConfirmationUseCase internal constructor(
         }
     }
 
-    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId) =
+    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
         conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages $it")
+            logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
             emptyList()
         }, { conversation ->
-            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate).firstOrNull()
-                ?.map { it.id }
-                ?: emptyList()
+            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
+                .fold({
+                    logger.e("$TAG There was an unknown error trying to get latest messages $it")
+                    emptyList()
+                }, { messages ->
+                    messages.map { it.id }
+                })
         })
 }
