@@ -80,15 +80,17 @@ internal class SendConfirmationUseCase internal constructor(
         }, { conversation ->
 
             val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
-            if (!readReceiptsEnabled) emptyList<String>()
-
-            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
-                .fold({
-                    logger.e("$TAG There was an unknown error trying to get latest messages $it")
-                    emptyList()
-                }, { messages ->
-                    messages.map { it.id }
-                })
+            if (!readReceiptsEnabled) {
+                emptyList()
+            } else {
+                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
+                    .fold({
+                        logger.e("$TAG There was an unknown error trying to get latest messages $it")
+                        emptyList()
+                    }, { messages ->
+                        messages.map { it.id }
+                    })
+            }
         })
 
     private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
