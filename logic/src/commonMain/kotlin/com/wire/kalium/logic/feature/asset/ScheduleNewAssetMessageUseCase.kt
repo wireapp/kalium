@@ -105,20 +105,20 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
         )
         lateinit var message: Message.Regular
-        val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         return currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
+            val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
             message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
-                        Message.UploadStatus.UPLOAD_IN_PROGRESS,
-                        expectsReadConfirmation // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                    )
+                        Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                    ),
+                    expectsReadConfirmation = expectsReadConfirmation
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -163,9 +163,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
-                        Message.UploadStatus.UPLOADED,
-                        expectsReadConfirmation
-                    )
+                        Message.UploadStatus.UPLOADED
+                    ),
+                    expectsReadConfirmation = expectsReadConfirmation
                 )
             )
             persistMessage(updatedMessage).onFailure {
@@ -191,8 +191,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(
         assetMessageMetadata: AssetMessageMetadata,
-        uploadStatus: Message.UploadStatus,
-        expectsReadConfirmation: Boolean
+        uploadStatus: Message.UploadStatus
     ): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
@@ -216,9 +215,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
                 // will only be treated as "SAVED_INTERNALLY"
                 downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-                uploadStatus = uploadStatus,
-
-                expectsReadConfirmation = expectsReadConfirmation
+                uploadStatus = uploadStatus
             )
         }
     }

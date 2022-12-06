@@ -59,8 +59,7 @@ class ProtoContentMapperImpl(
             is MessageContent.Text -> packText(readableContent)
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
-            is MessageContent.Asset -> GenericMessage.Content.Asset(
-                assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
+            is MessageContent.Asset -> packAsset(readableContent)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
@@ -119,14 +118,7 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent)
 
-            is GenericMessage.Content.Asset -> {
-                // Backend sends some preview asset messages just with img metadata and no
-                // keys or asset id,so we need to overwrite one with the other one
-                MessageContent.Asset(
-                    value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value),
-                    expectsReadConfirmation = protoContent.value.expectsReadConfirmation
-                )
-            }
+            is GenericMessage.Content.Asset -> unpackAsset(protoContent)
 
             is GenericMessage.Content.Availability ->
                 MessageContent.Availability(availabilityMapper.fromProtoAvailabilityToModel(protoContent.value))
@@ -322,6 +314,23 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null,
         expectsReadConfirmation = protoContent.value.expectsReadConfirmation
     )
+
+    private fun packAsset(readableContent: MessageContent.Asset): GenericMessage.Content.Asset {
+        return GenericMessage.Content.Asset(
+            asset = assetMapper.fromAssetContentToProtoAssetMessage(
+                readableContent
+            )
+        )
+    }
+
+    private fun unpackAsset(protoContent: GenericMessage.Content.Asset): MessageContent.Asset {
+        // Backend sends some preview asset messages just with img metadata and no
+        // keys or asset id,so we need to overwrite one with the other one
+        return MessageContent.Asset(
+            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value),
+            expectsReadConfirmation = protoContent.value.expectsReadConfirmation
+        )
+    }
 
     private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
         return if (qualifiedConversationID != null)

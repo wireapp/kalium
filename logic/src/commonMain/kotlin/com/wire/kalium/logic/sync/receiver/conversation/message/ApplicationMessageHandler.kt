@@ -191,7 +191,7 @@ internal class ApplicationMessageHandlerImpl(
                 persistMessage(message)
             }
 
-            is MessageContent.Knock -> handleKnock(message, content)
+            is MessageContent.Knock -> handleKnock(message)
             is MessageContent.Asset -> handleAssetMessage(message, content)
 
             is MessageContent.Unknown -> {
@@ -203,9 +203,8 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    private suspend fun handleKnock(message: Message.Regular, messageContent: MessageContent.Knock) {
-        val newMessage = message.copy(expectsReadConfirmation = messageContent.expectsReadConfirmation)
-        persistMessage(newMessage)
+    private suspend fun handleKnock(message: Message.Regular) {
+        persistMessage(message)
     }
 
     private suspend fun handleTextMessage(
@@ -219,8 +218,7 @@ internal class ApplicationMessageHandlerImpl(
             messageContent.quotedMessageReference
         }
         val adjustedMessage = message.copy(
-            content = messageContent.copy(quotedMessageReference = adjustedQuoteReference),
-            expectsReadConfirmation = messageContent.expectsReadConfirmation
+            content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
         persistMessage(adjustedMessage)
     }
@@ -257,8 +255,7 @@ internal class ApplicationMessageHandlerImpl(
                 val newMessage = message.copy(
                     content = MessageContent.RestrictedAsset(
                         messageContent.value.mimeType, messageContent.value.sizeInBytes, messageContent.value.name ?: ""
-                    ),
-                    expectsReadConfirmation = messageContent.expectsReadConfirmation
+                    )
                 )
                 persistMessage(newMessage)
             }

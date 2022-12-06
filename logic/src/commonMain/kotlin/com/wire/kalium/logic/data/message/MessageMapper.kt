@@ -185,7 +185,7 @@ class MessageMapperImpl(
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-                expectsReadConfirmation = this.expectsReadConfirmation ?: false
+                expectsReadConfirmation = this@toMessageEntityContent.expectsReadConfirmation ?: false
             )
         }
 

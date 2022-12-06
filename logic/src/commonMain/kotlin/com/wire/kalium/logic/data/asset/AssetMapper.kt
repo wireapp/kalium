@@ -7,12 +7,13 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -29,7 +30,7 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
-    fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
+    fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
     fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
@@ -108,15 +109,18 @@ class AssetMapperImpl(
                     width = assetWidth ?: 0,
                     height = assetHeight ?: 0
                 )
+
                 assetMimeType.contains("video/") -> Video(
                     width = assetWidth,
                     height = assetHeight,
                     durationMs = assetDurationMs
                 )
+
                 assetMimeType.contains("audio/") -> Audio(
                     durationMs = assetDurationMs,
                     normalizedLoudness = assetNormalizedLoudness
                 )
+
                 else -> null
             }
         }
@@ -155,6 +159,7 @@ class AssetMapperImpl(
                                 )
                             }
                         }
+
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
                 } ?: defaultRemoteData,
@@ -164,7 +169,7 @@ class AssetMapperImpl(
         }
     }
 
-    override fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset = with(assetContent) {
+    override fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset): Asset = with(messageContent.value) {
         Asset(
             original = Asset.Original(
                 mimeType = mimeType,
@@ -177,6 +182,7 @@ class AssetMapperImpl(
                             height = metadata.height,
                         )
                     )
+
                     else -> null
                 }
             ),
@@ -190,7 +196,7 @@ class AssetMapperImpl(
                     encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                 )
             ),
-            expectsReadConfirmation = expectsReadConfirmation
+            expectsReadConfirmation = messageContent.expectsReadConfirmation
         )
     }
 
