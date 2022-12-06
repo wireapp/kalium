@@ -213,6 +213,7 @@ internal class AssetDataSource(
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
+                    val encryptionKeys = encryptionKey?.let { Pair(it, assetSHA256!!) }
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
@@ -221,7 +222,7 @@ internal class AssetDataSource(
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                     // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                    val (hashError, assetDataSize) = decodeAssetIfNeeded(tempFile, encryptionKey, assetSHA256, decodedAssetSink)
+                    val (hashError, assetDataSize) = decodeAssetIfNeeded(tempFile, encryptionKeys, decodedAssetSink)
 
                     // Delete temp path now that the decoded asset has been persisted correctly
                     kaliumFileSystem.delete(tempFile)
@@ -249,12 +250,12 @@ internal class AssetDataSource(
 
     private suspend fun decodeAssetIfNeeded(
         assetDataPath: Path,
-        encryptionKey: AES256Key?,
-        assetSha256Key: SHA256Key?,
+        encryptionKeys: Pair<AES256Key, SHA256Key>?,
         decodedAssetSink: Sink
     ): Pair<EncryptionFailure?, Long> = with(kaliumFileSystem) {
-        if (encryptionKey != null) {
-            validateAssetHashes(assetDataPath, assetSha256Key!!).fold({ it to 0L }, {
+        if (encryptionKeys != null) {
+            val (encryptionKey, assetSHA256Key) = encryptionKeys
+            validateAssetHashes(assetDataPath, assetSHA256Key).fold({ it to 0L }, {
                 val assetDataSource = source(assetDataPath)
                 val decryptedDataSize = decryptFileWithAES256(assetDataSource, decodedAssetSink, encryptionKey).also {
                     assetDataSource.close()
