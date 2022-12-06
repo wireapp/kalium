@@ -80,9 +80,10 @@ class ProtoContentMapperImpl(
 
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
 
-            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored -> throw IllegalArgumentException(
-                "Unexpected message content type: $readableContent"
-            )
+            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+                throw IllegalArgumentException(
+                    "Unexpected message content type: $readableContent"
+                )
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
@@ -203,7 +204,8 @@ class ProtoContentMapperImpl(
     )
 
     private fun unpackLastRead(
-        genericMessage: GenericMessage, protoContent: GenericMessage.Content.LastRead
+        genericMessage: GenericMessage,
+        protoContent: GenericMessage.Content.LastRead
     ) = MessageContent.LastRead(
         messageId = genericMessage.messageId,
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
@@ -219,7 +221,8 @@ class ProtoContentMapperImpl(
     )
 
     private fun unpackHidden(
-        genericMessage: GenericMessage, protoContent: GenericMessage.Content.Hidden
+        genericMessage: GenericMessage,
+        protoContent: GenericMessage.Content.Hidden
     ): MessageContent.Signaling {
         val hiddenMessage = genericMessage.hidden
         return if (hiddenMessage != null) {
@@ -234,7 +237,10 @@ class ProtoContentMapperImpl(
     }
 
     private fun unpackEdited(
-        protoContent: GenericMessage.Content.Edited, typeName: String?, encodedContent: PlainMessageBlob, genericMessage: GenericMessage
+        protoContent: GenericMessage.Content.Edited,
+        typeName: String?,
+        encodedContent: PlainMessageBlob,
+        genericMessage: GenericMessage
     ): MessageContent.FromProto {
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
@@ -314,7 +320,8 @@ class ProtoContentMapperImpl(
     }
 
     private fun extractConversationId(
-        qualifiedConversationID: QualifiedConversationId?, unqualifiedConversationID: String
+        qualifiedConversationID: QualifiedConversationId?,
+        unqualifiedConversationID: String
     ): ConversationId {
         return if (qualifiedConversationID != null) idMapper.fromProtoModel(qualifiedConversationID)
         else ConversationId(unqualifiedConversationID, selfUserId.domain)

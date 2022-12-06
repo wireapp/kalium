@@ -310,7 +310,6 @@ class MessageDataSource(
             .map(messageMapper::fromEntityToMessage)
     }
 
-
     override suspend fun updateMessageId(
         conversationId: ConversationId,
         oldMessageId: String,
