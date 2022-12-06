@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.properties
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -14,8 +15,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserPropertyRepositoryTest {
@@ -62,6 +65,20 @@ class UserPropertyRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun whenUserReadReceiptsNotPresent_thenShouldReturnsReceiptsAsDefaultFalse() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withNullReadReceiptsStatus()
+            .arrange()
+
+        val result = repository.getReadReceiptsStatus()
+
+        assertFalse(result)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::isReadReceiptsEnabled)
+            .wasInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -91,6 +108,13 @@ class UserPropertyRepositoryTest {
                 .function(userConfigRepository::setReadReceiptsStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withNullReadReceiptsStatus() = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::isReadReceiptsEnabled)
+                .whenInvokedWith()
+                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun arrange() = this to userPropertyRepository
