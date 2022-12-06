@@ -199,6 +199,7 @@ import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
+import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -516,7 +517,7 @@ class UserSessionScope internal constructor(
     }
 
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler
-        get() = SlowSyncRecoveryHandler(logout)
+        get() = SlowSyncRecoveryHandlerImpl(logout)
 
     private val slowSyncManager: SlowSyncManager by lazy {
         SlowSyncManager(
@@ -651,10 +652,11 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val receiptMessageHandler get() = ReceiptMessageHandler(
-        selfUserId = this.userId,
-        receiptRepository = receiptRepository
-    )
+    private val receiptMessageHandler
+        get() = ReceiptMessageHandler(
+            selfUserId = this.userId,
+            receiptRepository = receiptRepository
+        )
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(

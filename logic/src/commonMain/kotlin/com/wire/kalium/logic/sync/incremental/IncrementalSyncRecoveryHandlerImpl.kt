@@ -7,10 +7,10 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 
 internal interface IncrementalSyncRecoveryHandler {
-    suspend fun recover(failure: CoreFailure, onRetryCallback: OnRetryCallback)
+    suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
 }
 
-internal interface OnRetryCallback {
+internal interface OnIncrementalSyncRetryCallback {
     suspend fun retry()
 }
 
@@ -18,13 +18,13 @@ internal class IncrementalSyncRecoveryHandlerImpl(
     private val slowSyncRepository: SlowSyncRepository
 ) : IncrementalSyncRecoveryHandler {
 
-    override suspend fun recover(failure: CoreFailure, onRetryCallback: OnRetryCallback) {
+    override suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback) {
         kaliumLogger.i("$TAG Checking if we can recover from the failure: $failure")
         if (shouldRestartSlowSyncProcess(failure)) {
             slowSyncRepository.clearLastSlowSyncCompletionInstant()
         } else {
             kaliumLogger.i("$TAG Retrying to recover form the failure $failure, perform the incremental sync again")
-            onRetryCallback.retry()
+            onIncrementalSyncRetryCallback.retry()
         }
     }
 

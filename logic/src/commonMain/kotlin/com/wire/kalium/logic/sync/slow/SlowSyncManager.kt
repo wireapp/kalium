@@ -46,17 +46,22 @@ internal class SlowSyncManager(
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    private val coroutineExceptionHandler = SyncExceptionHandler({
-        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
-    }, { failure ->
-        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
-        scope.launch {
-            slowSyncRecoveryHandler.recover(failure, onRetry = {
-                delay(RETRY_DELAY)
-                startMonitoring()
-            })
+    private val coroutineExceptionHandler = SyncExceptionHandler(
+        onCancellation = {
+            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+        },
+        onFailure = { failure ->
+            scope.launch {
+                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
+                slowSyncRecoveryHandler.recover(failure, onSlowSyncRetryCallback = object : OnSlowSyncRetryCallback {
+                    override suspend fun retry() {
+                        delay(RETRY_DELAY)
+                        startMonitoring()
+                    }
+                })
+            }
         }
-    })
+    )
 
     init {
         startMonitoring()

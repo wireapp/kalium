@@ -24,8 +24,8 @@ class IncrementalSyncRecoveryHandlerTest {
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
                 .wasNotInvoked()
 
-            verify(onRetryCallback)
-                .function(onRetryCallback::retry)
+            verify(onIncrementalSyncRetryCallback)
+                .function(onIncrementalSyncRetryCallback::retry)
                 .with()
                 .wasInvoked()
         }
@@ -46,8 +46,8 @@ class IncrementalSyncRecoveryHandlerTest {
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
                 .wasNotInvoked()
 
-            verify(onRetryCallback)
-                .function(onRetryCallback::retry)
+            verify(onIncrementalSyncRetryCallback)
+                .function(onIncrementalSyncRetryCallback::retry)
                 .with()
                 .wasInvoked()
         }
@@ -56,7 +56,7 @@ class IncrementalSyncRecoveryHandlerTest {
     private class Arrangement {
 
         @Mock
-        val onRetryCallback: OnRetryCallback = mock(classOf<OnRetryCallback>())
+        val onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback = mock(classOf<OnIncrementalSyncRetryCallback>())
 
         @Mock
         val slowSyncRepository: SlowSyncRepository = mock(classOf<SlowSyncRepository>())
@@ -66,7 +66,7 @@ class IncrementalSyncRecoveryHandlerTest {
         }
 
         suspend fun recoverWithFailure(failure: CoreFailure) {
-            incrementalSyncRecoveryHandler.recover(failure, onRetryCallback)
+            incrementalSyncRecoveryHandler.recover(failure, onIncrementalSyncRetryCallback)
         }
 
         fun arrange() = this
