@@ -112,8 +112,8 @@ class UserPropertyRepositoryTest {
 
         fun withNullReadReceiptsStatus() = apply {
             given(userConfigRepository)
-                .suspendFunction(userConfigRepository::isReadReceiptsEnabled)
-                .whenInvokedWith()
+                .function(userConfigRepository::isReadReceiptsEnabled)
+                .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
