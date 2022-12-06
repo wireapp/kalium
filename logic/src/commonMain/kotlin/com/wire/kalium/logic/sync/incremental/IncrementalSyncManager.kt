@@ -70,6 +70,7 @@ internal class IncrementalSyncManager(
     }, { failure ->
         kaliumLogger.i("$TAG ExceptionHandler error $failure")
         syncScope.launch {
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
             incrementalSyncRecoveryHandler.recover(failure = failure, onRetry = {
                 kaliumLogger.i("$TAG Triggering delay")
                 delay(RETRY_DELAY)

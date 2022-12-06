@@ -11,6 +11,7 @@ import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
@@ -43,8 +44,8 @@ class IncrementalSyncManagerTest {
             .withWorkerReturning(sharedFlow)
             .withKeepAliveConnectionPolicy()
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
 
         verify(arrangement.incrementalSyncWorker)
@@ -61,7 +62,6 @@ class IncrementalSyncManagerTest {
             .withWorkerReturning(sharedFlow)
             .arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
-
         advanceUntilIdle()
 
         verify(arrangement.incrementalSyncWorker)
@@ -82,12 +82,15 @@ class IncrementalSyncManagerTest {
 
         sourceFlow.send(EventSource.PENDING)
         advanceUntilIdle()
+
         verify(arrangement.incrementalSyncRepository)
             .function(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(eq(IncrementalSyncStatus.FetchingPendingEvents))
             .wasInvoked(exactly = once)
+
         sourceFlow.send(EventSource.LIVE)
         advanceUntilIdle()
+
         verify(arrangement.incrementalSyncRepository)
             .function(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(eq(IncrementalSyncStatus.Live))
@@ -100,9 +103,10 @@ class IncrementalSyncManagerTest {
             .withWorkerReturning(flowThatFailsOnFirstTime())
             .withKeepAliveConnectionPolicy()
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
+
         verify(arrangement.incrementalSyncRepository)
             .suspendFunction(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(matching { it is IncrementalSyncStatus.Failed })
@@ -116,10 +120,16 @@ class IncrementalSyncManagerTest {
             // EventProcessing will be called twice if it ends and policy is KEEP_ALIVE
             // So, DISCONNECT is used for a realistic test scenario
             .withDisconnectConnectionPolicy()
+            .withRecoveringFromFailure()
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
+
+        verify(arrangement.incrementalSyncRecoveryHandler)
+            .suspendFunction(arrangement.incrementalSyncRecoveryHandler::recover)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
 
         verify(arrangement.incrementalSyncWorker)
             .suspendFunction(arrangement.incrementalSyncWorker::processEventsWhilePolicyAllowsFlow)
@@ -131,10 +141,16 @@ class IncrementalSyncManagerTest {
         val (arrangement, _) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
             .withKeepAliveConnectionPolicy()
+            .withRecoveringFromFailure()
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
+
+        verify(arrangement.incrementalSyncRecoveryHandler)
+            .suspendFunction(arrangement.incrementalSyncRecoveryHandler::recover)
+            .with(any(), any())
+            .wasNotInvoked()
 
         verify(arrangement.incrementalSyncWorker)
             .suspendFunction(arrangement.incrementalSyncWorker::processEventsWhilePolicyAllowsFlow)
@@ -148,9 +164,10 @@ class IncrementalSyncManagerTest {
         val (arrangement, _) = Arrangement()
             .withWorkerReturning(emptyFlow())
             .withConnectionPolicyReturning(connectionPolicyState)
+            .withRecoveringFromFailure()
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
 
         // Starts processing once until it ends
@@ -187,8 +204,8 @@ class IncrementalSyncManagerTest {
             .withWorkerReturning(emptyFlow())
             .withConnectionPolicyReturning(connectionPolicyState)
             .arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
 
         verify(arrangement.incrementalSyncRepository)
@@ -206,8 +223,8 @@ class IncrementalSyncManagerTest {
                 .withWorkerReturning(emptyFlow())
                 .withConnectionPolicyReturning(connectionPolicyState)
                 .arrange()
-            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
+            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
             advanceUntilIdle()
 
             // Upgrade
@@ -246,6 +263,7 @@ class IncrementalSyncManagerTest {
                 incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
                 kaliumDispatcher = TestKaliumDispatcher
             )
+
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
@@ -274,6 +292,13 @@ class IncrementalSyncManagerTest {
                 .getter(incrementalSyncRepository::connectionPolicyState)
                 .whenInvoked()
                 .thenReturn(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
+        }
+
+        fun withRecoveringFromFailure() = apply {
+            given(incrementalSyncRecoveryHandler)
+                .suspendFunction(incrementalSyncRecoveryHandler::recover)
+                .whenInvokedWith(any(), any())
+                .then { _, onRetry -> onRetry() }
         }
 
         fun arrange() = this to incrementalSyncManager

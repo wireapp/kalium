@@ -156,7 +156,7 @@ import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.incremental.EventProcessorImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
-import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandler
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -533,11 +533,10 @@ class UserSessionScope internal constructor(
             eventProcessor
         )
     }
-    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler
+    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
         get() =
-            IncrementalSyncRecoveryHandler(
-                slowSyncRepository,
-                incrementalSyncRepository
+            IncrementalSyncRecoveryHandlerImpl(
+                slowSyncRepository
             )
 
     private val incrementalSyncManager by lazy {
