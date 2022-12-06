@@ -102,6 +102,7 @@ internal class RestoreBackupUseCaseImpl(
             // Backup is not encrypted so we don't need to return the path to the encrypted file
             checkIsValidAuthor(extractedBackupPath).fold({ Either.Left(it) }, { Either.Right(null to false) })
         } else {
+            // If the backup is encrypted, the sanity checks are done when decoding the file
             checkIsValidEncryption(extractedBackupPath, password)
         }
 

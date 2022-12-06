@@ -138,6 +138,28 @@ class RestoreBackupUseCaseTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun `given a correctly encrypted backup, when restoring with a DB import error, then the right error is thrown`() = runTest {
+        // given
+        val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
+        val password = "KittenWars"
+        val (arrangement, useCase) = Arrangement()
+            .withEncryptedBackup(extractedBackupPath, currentTestUserId, password)
+            .withIncorrectDbImportAction()
+            .arrange()
+
+        // when
+        val result = useCase(extractedBackupPath, password)
+
+        // then
+        assertTrue(result is RestoreBackupResult.Failure)
+        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
+        verify(arrangement.databaseImporter)
+            .suspendFunction(arrangement.databaseImporter::importFromFile)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -160,29 +182,30 @@ class RestoreBackupUseCaseTest {
             return metadataFilePath
         }
 
-        private suspend fun encryptData(dbData: ByteArray, userId: UserId, password: String): Path = with(fakeFileSystem) {
-            val cryptoUserId = idMapper.toCryptoModel(userId)
-            val coder = BackupCoder(cryptoUserId, BackupCoder.Passphrase(password))
-            val dbPath = fakeFileSystem.rootDBPath
-            sink(dbPath).buffer().use {
-                it.write(dbData)
-            }
-            val backupPath = fakeFileSystem.tempFilePath("backup.zip")
-            val encryptedBackupPath = fakeFileSystem.tempFilePath("encryptedBackup.zip")
-            val backupSink = sink(backupPath)
-            val backupMetadataPath = createMetadataFile(userId)
-            createCompressedFile(
-                listOf(
-                    source(backupMetadataPath) to BackupConstants.BACKUP_METADATA_FILE_NAME,
-                    source(dbPath) to BackupConstants.BACKUP_USER_DB_NAME
-                ), backupSink
-            )
-            val inputSource = source(backupPath)
-            val outputSink = sink(encryptedBackupPath)
-            ChaCha20Utils().encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
+        private suspend fun encryptData(extractedBackupRootPath: Path, dbData: ByteArray, userId: UserId, password: String): Path =
+            with(fakeFileSystem) {
+                val cryptoUserId = idMapper.toCryptoModel(userId)
+                val coder = BackupCoder(cryptoUserId, BackupCoder.Passphrase(password))
+                val dbPath = fakeFileSystem.rootDBPath
+                sink(dbPath).buffer().use {
+                    it.write(dbData)
+                }
+                val backupPath = extractedBackupRootPath/ "backup.zip"
+                val backupMetadataPath = createMetadataFile(userId)
+                val encryptedBackupPath = extractedBackupRootPath / "encryptedBackup.zip"
+                val backupSink = sink(backupPath)
+                createCompressedFile(
+                    listOf(
+                        source(backupMetadataPath) to BackupConstants.BACKUP_METADATA_FILE_NAME,
+                        source(dbPath) to BackupConstants.BACKUP_USER_DB_NAME
+                    ), backupSink
+                )
+                val inputSource = source(backupPath)
+                val outputSink = sink(encryptedBackupPath)
+                ChaCha20Utils().encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
 
-            return encryptedBackupPath
-        }
+                return encryptedBackupPath
+            }
 
         fun withUnencryptedBackup(unencryptedDBPath: Path, userId: UserId) = apply {
             val metadataJson =
@@ -199,8 +222,8 @@ class RestoreBackupUseCaseTest {
 
         suspend fun withEncryptedBackup(extractedBackupRootPath: Path, userId: UserId, password: String) = apply {
             with(fakeFileSystem) {
-                val encryptedBackupDataPath = encryptData(fakeDBData, userId, password)
                 createDirectory(extractedBackupRootPath)
+                val encryptedBackupDataPath = encryptData(extractedBackupRootPath, fakeDBData, userId, password)
                 sink(extractedBackupRootPath / encryptedBackupName).buffer().use {
                     it.writeAll(source(encryptedBackupDataPath))
                 }
@@ -212,6 +235,13 @@ class RestoreBackupUseCaseTest {
                 .suspendFunction(databaseImporter::importFromFile)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
+        }
+
+        fun withIncorrectDbImportAction() = apply {
+            given(databaseImporter)
+                .suspendFunction(databaseImporter::importFromFile)
+                .whenInvokedWith(any())
+                .thenThrow(RuntimeException("DB import failed"))
         }
 
         fun arrange() = this to RestoreBackupUseCaseImpl(
