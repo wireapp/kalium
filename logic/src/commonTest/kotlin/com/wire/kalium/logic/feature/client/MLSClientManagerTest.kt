@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -31,7 +31,7 @@ class MLSClientManagerTest {
     fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSSupported(false)
+                .withIsMLSEnabled(false)
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -47,7 +47,7 @@ class MLSClientManagerTest {
     fun givenMLSClientIsNotRegistered_whenObservingSyncFinishes_thenMLSClientIsRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSSupported(true)
+                .withIsMLSEnabled(true)
                 .withHasRegisteredMLSClient(Either.Right(false))
                 .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
                 .withRegisterMLSClientSuccessful()
@@ -70,7 +70,7 @@ class MLSClientManagerTest {
     fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSSupported(true)
+                .withIsMLSEnabled(true)
                 .withHasRegisteredMLSClient(Either.Right(true))
                 .arrange()
 
@@ -84,8 +84,6 @@ class MLSClientManagerTest {
         }
 
     private class Arrangement {
-        @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
@@ -99,7 +97,7 @@ class MLSClientManagerTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val isMLSEnabled = mock(classOf<IsMLSEnabledUseCase>())
 
         @Mock
         val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
@@ -125,15 +123,16 @@ class MLSClientManagerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+        fun withIsMLSEnabled(enabled: Boolean) = apply {
+            given(isMLSEnabled)
+                .function(isMLSEnabled::invoke)
+                .whenInvoked()
+                .thenReturn(enabled)
         }
 
         fun arrange() = this to MLSClientManagerImpl(
             clientIdProvider,
-            featureSupport,
+            isMLSEnabled,
             incrementalSyncRepository,
             lazy { slowSyncRepository },
             lazy { clientRepository },
