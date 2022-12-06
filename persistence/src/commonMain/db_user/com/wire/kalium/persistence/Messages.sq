@@ -549,6 +549,6 @@ selectPendingMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.conversationId = ?
 AND visibility IN ?
-AND expectsReadConfirmation = 1
+AND (expectsReadConfirmation = 1 OR assetExpectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
