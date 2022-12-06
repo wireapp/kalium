@@ -654,7 +654,7 @@ class UserSessionScope internal constructor(
                 userId,
                 selfConversationIdProvider,
             ),
-            DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            DeleteForMeHandler(messageRepository, selfConversationIdProvider),
             messageEncoder,
             receiptMessageHandler
         )
@@ -770,7 +770,8 @@ class UserSessionScope internal constructor(
             userId,
             selfConversationIdProvider,
             persistMessage,
-            updateKeyingMaterialThresholdProvider
+            updateKeyingMaterialThresholdProvider,
+            selfTeamId
         )
     val debug: DebugScope
         get() = DebugScope(
@@ -864,7 +865,7 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, kaliumConfigs, userId
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val calls: CallsScope
         get() = CallsScope(
