@@ -208,6 +208,8 @@ sealed class MessageEntityContent {
         val assetHeight: Int? = null,
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
+
+        val expectsReadConfirmation: Boolean = false
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()

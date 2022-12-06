@@ -7,7 +7,8 @@ data class AssetContent(
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
     val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
-    val downloadStatus: Message.DownloadStatus
+    val downloadStatus: Message.DownloadStatus,
+    val expectsReadConfirmation: Boolean? = null
 ) {
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()

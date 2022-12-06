@@ -130,7 +130,8 @@ class MessageDAOImpl(
                     asset_width = content.assetWidth,
                     asset_height = content.assetHeight,
                     asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness
+                    asset_normalized_loudness = content.assetNormalizedLoudness,
+                    expects_read_confirmation = content.expectsReadConfirmation
                 )
 
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(

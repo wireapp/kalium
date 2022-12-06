@@ -184,7 +184,8 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
+                expectsReadConfirmation = this.expectsReadConfirmation ?: false
             )
         }
 
@@ -248,7 +249,8 @@ class MessageMapperImpl(
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this),
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)

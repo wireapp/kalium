@@ -188,6 +188,7 @@ object MessageMapper {
         assetHeight: Int?,
         assetDuration: Long?,
         assetNormalizedLoudness: ByteArray?,
+        assetExpectsReadConfirmation: Boolean?,
         callerId: QualifiedIDEntity?,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -257,6 +258,7 @@ object MessageMapper {
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
                 assetNormalizedLoudness = assetNormalizedLoudness,
+                expectsReadConfirmation = assetExpectsReadConfirmation ?: false
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)

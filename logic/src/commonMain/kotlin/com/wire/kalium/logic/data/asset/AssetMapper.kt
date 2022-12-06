@@ -190,6 +190,7 @@ class AssetMapperImpl(
                     encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                 )
             ),
+            expectsReadConfirmation = expectsReadConfirmation
         )
     }
 
