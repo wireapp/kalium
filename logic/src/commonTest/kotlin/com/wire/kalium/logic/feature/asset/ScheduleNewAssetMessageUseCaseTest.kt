@@ -253,6 +253,17 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         private val testScope = TestScope(testDispatcher.default)
 
+        init {
+            withToggleReadReceiptsStatus()
+        }
+
+        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
+            given(userPropertyRepository)
+                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
+                .whenInvoked()
+                .thenReturn(enabled)
+        }
+
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
                 it.write(data)
