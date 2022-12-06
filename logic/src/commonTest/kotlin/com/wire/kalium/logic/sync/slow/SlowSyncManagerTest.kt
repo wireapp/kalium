@@ -295,6 +295,9 @@ class SlowSyncManagerTest {
         @Mock
         val slowSyncWorker: SlowSyncWorker = mock(classOf<SlowSyncWorker>())
 
+        @Mock
+        val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(classOf<SlowSyncRecoveryHandler>())
+
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
         }
@@ -326,6 +329,7 @@ class SlowSyncManagerTest {
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
+            slowSyncRecoveryHandler,
             TestKaliumDispatcher
         )
 

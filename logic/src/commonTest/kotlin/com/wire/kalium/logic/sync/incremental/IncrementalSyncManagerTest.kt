@@ -235,9 +235,16 @@ class IncrementalSyncManagerTest {
         @Mock
         val incrementalSyncRepository = configure(mock(classOf<IncrementalSyncRepository>())) { stubsUnitByDefault = true }
 
+        @Mock
+        val incrementalSyncRecoveryHandler = mock(classOf<IncrementalSyncRecoveryHandler>())
+
         private val incrementalSyncManager by lazy {
             IncrementalSyncManager(
-                slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository, TestKaliumDispatcher
+                slowSyncRepository = slowSyncRepository,
+                incrementalSyncWorker = incrementalSyncWorker,
+                incrementalSyncRepository = incrementalSyncRepository,
+                incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
+                kaliumDispatcher = TestKaliumDispatcher
             )
         }
 
