@@ -129,9 +129,7 @@ sealed class MessageContent {
 
     data class DeleteForMe(
         val messageId: String,
-        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
-        val unqualifiedConversationId: String,
-        val conversationId: ConversationId?,
+        val conversationId: ConversationId,
     ) : Signaling()
 
     data class Calling(val value: String) : Signaling()
@@ -153,9 +151,7 @@ sealed class MessageContent {
     ) : Regular()
 
     data class Cleared(
-        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
-        val unqualifiedConversationId: String,
-        val conversationId: ConversationId?,
+        val conversationId: ConversationId,
         val time: Instant
     ) : Signaling()
 
@@ -168,9 +164,7 @@ sealed class MessageContent {
 
     data class LastRead(
         val messageId: String,
-        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
-        val unqualifiedConversationId: String,
-        val conversationId: ConversationId?,
+        val conversationId: ConversationId,
         val time: Instant
     ) : Signaling()
 

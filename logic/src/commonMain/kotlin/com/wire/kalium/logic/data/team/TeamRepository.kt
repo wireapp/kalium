@@ -25,7 +25,7 @@ interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
-    suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
+    suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
     suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
@@ -92,9 +92,9 @@ internal class TeamDataSource(
                 }
             }
 
-    override suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit> {
+    override suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
-            teamsApi.deleteConversation(conversationId.value, teamId)
+            teamsApi.deleteConversation(conversationId.value, teamId.value)
         }
     }
 
