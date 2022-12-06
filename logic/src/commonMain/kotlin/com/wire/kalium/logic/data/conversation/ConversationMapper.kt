@@ -238,7 +238,7 @@ internal class ConversationMapperImpl(
         } else emptyList(),
         name = name,
         access = options.access?.toList()?.map { toApiModel(it) },
-        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.map { toApiModel(it) },
         convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
         messageTimer = null,
         receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
