@@ -135,9 +135,7 @@ class ApplicationMessageHandlerTest {
                 selfConversationIdProvider = selfConversationIdProvider
             ),
             DeleteForMeHandler(
-                conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
-                selfUserId = TestUser.USER_ID,
                 selfConversationIdProvider = selfConversationIdProvider
             ),
             MessageContentEncoder(),
