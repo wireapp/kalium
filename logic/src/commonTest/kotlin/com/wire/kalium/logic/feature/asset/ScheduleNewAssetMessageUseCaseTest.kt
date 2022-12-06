@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -243,6 +244,9 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
 
+        @Mock
+        private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
@@ -334,6 +338,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             QualifiedID("some-id", "some-domain"),
             slowSyncRepository,
             messageSender,
+            userPropertyRepository,
             testScope,
             testDispatcher
         )
