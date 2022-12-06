@@ -298,7 +298,7 @@ class IncrementalSyncManagerTest {
             given(incrementalSyncRecoveryHandler)
                 .suspendFunction(incrementalSyncRecoveryHandler::recover)
                 .whenInvokedWith(any(), any())
-                .then { _, onRetry -> onRetry() }
+                .then { _, onRetryCallback -> onRetryCallback.retry() }
         }
 
         fun arrange() = this to incrementalSyncManager

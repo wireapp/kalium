@@ -62,23 +62,29 @@ internal class IncrementalSyncManager(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val coroutineExceptionHandler = SyncExceptionHandler({
-        kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-        syncScope.launch {
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+    private val coroutineExceptionHandler = SyncExceptionHandler(
+        onCancellation = {
+            kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
+            syncScope.launch {
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+            }
+        },
+        onFailure = { failure ->
+            kaliumLogger.i("$TAG ExceptionHandler error $failure")
+            syncScope.launch {
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
+
+                incrementalSyncRecoveryHandler.recover(failure = failure, onRetryCallback = object : OnRetryCallback {
+                    override suspend fun retry() {
+                        kaliumLogger.i("$TAG Triggering delay")
+                        delay(RETRY_DELAY)
+                        kaliumLogger.i("$TAG Delay finished")
+                        startMonitoringForSync()
+                    }
+                })
+            }
         }
-    }, { failure ->
-        kaliumLogger.i("$TAG ExceptionHandler error $failure")
-        syncScope.launch {
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
-            incrementalSyncRecoveryHandler.recover(failure = failure, onRetry = {
-                kaliumLogger.i("$TAG Triggering delay")
-                delay(RETRY_DELAY)
-                kaliumLogger.i("$TAG Delay finished")
-                startMonitoringForSync()
-            })
-        }
-    })
+    )
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
