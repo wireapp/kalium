@@ -50,7 +50,6 @@ class DeleteMessageUseCase internal constructor(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
-                                unqualifiedConversationId = conversationId.value,
                                 conversationId = conversationId
                             ),
                             conversationId = if (deleteForEveryone) conversationId else selfUser.id,

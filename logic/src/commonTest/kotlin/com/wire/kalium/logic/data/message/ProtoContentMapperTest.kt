@@ -131,20 +131,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenHideMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_UUID, TEST_CONVERSATION_ID
-        )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
-
-        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
-        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
-
-        assertEquals(decoded, protoContent)
-    }
-
-    @Test
-    fun givenHideMessageContentWithNullQualifiedId_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
-        val messageContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_UUID, null
+            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID
         )
         val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
 
@@ -248,7 +235,6 @@ class ProtoContentMapperTest {
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
-        const val TEST_CONVERSATION_UUID = "testConversationUuid"
         val TEST_CONVERSATION_ID = TestConversation.ID
         const val TEST_CALLING_UUID = "callingUuid"
     }

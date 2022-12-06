@@ -37,7 +37,6 @@ class UpdateConversationReadDateUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
-                    unqualifiedConversationId = conversationId.value,
                     conversationId = conversationId,
                     time = time
                 ),
