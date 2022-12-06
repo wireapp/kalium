@@ -26,7 +26,7 @@ import kotlinx.datetime.Clock
  * This use case allows to send a confirmation type [ReceiptType.READ] or [ReceiptType.DELIVERED] accordingly to
  * configurations criteria.
  *
- * - For 1:1 we take into consideration [ObserveReadReceiptsEnabled]
+ * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
  */
 @Suppress("LongParameterList")
@@ -79,12 +79,7 @@ internal class SendConfirmationUseCase internal constructor(
             emptyList()
         }, { conversation ->
 
-            val readReceiptsEnabled = if (conversation.type == Conversation.Type.ONE_ON_ONE) {
-                userPropertyRepository.getReadReceiptsStatus()
-            } else {
-                false
-            }
-
+            val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
             if (!readReceiptsEnabled) emptyList<String>()
 
             messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
@@ -95,4 +90,12 @@ internal class SendConfirmationUseCase internal constructor(
                     messages.map { it.id }
                 })
         })
+
+    private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
+        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+            userPropertyRepository.getReadReceiptsStatus()
+        } else {
+            false
+        }
+
 }
