@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -24,13 +23,10 @@ internal class LastReadContentHandler internal constructor(
 
         if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
             // If the message is coming from other client, it means that the user has read
-            // the conversation on the other device and we can update the read date locally
+            // the conversation on the other device, and we can update the read date locally
             // to synchronize the state across the clients.
-            val conversationId = messageContent.conversationId
-                ?: ConversationId(messageContent.unqualifiedConversationId, selfUserId.domain)
-
             conversationRepository.updateConversationReadDate(
-                qualifiedID = conversationId,
+                qualifiedID = messageContent.conversationId,
                 date = messageContent.time.toString()
             )
         }

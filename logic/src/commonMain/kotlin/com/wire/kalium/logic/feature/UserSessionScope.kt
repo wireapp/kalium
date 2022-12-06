@@ -673,7 +673,7 @@ class UserSessionScope internal constructor(
                 userId,
                 selfConversationIdProvider,
             ),
-            DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            DeleteForMeHandler(messageRepository, selfConversationIdProvider),
             messageEncoder,
             receiptMessageHandler
         )
