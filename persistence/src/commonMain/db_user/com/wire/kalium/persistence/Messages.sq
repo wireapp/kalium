@@ -86,6 +86,8 @@ CREATE TABLE MessageAssetContent (
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
 
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
+
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
@@ -207,6 +209,7 @@ AssetContent.asset_width AS assetWidth,
 AssetContent.asset_height AS assetHeight,
 AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+AssetContent.expects_read_confirmation AS assetExpectsReadConfirmation,
 MissedCallContent.caller_id AS callerId,
 MemberChangeContent.member_change_list AS memberChangeList,
 MemberChangeContent.member_change_type AS memberChangeType,
