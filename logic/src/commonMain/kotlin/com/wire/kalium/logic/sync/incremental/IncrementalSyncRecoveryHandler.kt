@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.HttpErrorCodes
 
 internal interface IncrementalSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
@@ -32,12 +33,12 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         return isClientOrEventNotFound(failure)
     }
 
-    private fun isClientOrEventNotFound(failure: CoreFailure): Boolean =
-        (failure is NetworkFailure.ServerMiscommunication) &&
-                (failure.kaliumException is KaliumException.InvalidRequestError) &&
-                (failure.kaliumException.errorResponse.code == 404)
+    private fun isClientOrEventNotFound(failure: CoreFailure): Boolean = (failure is NetworkFailure.ServerMiscommunication)
+            && (failure.kaliumException is KaliumException.InvalidRequestError)
+            && (failure.kaliumException.errorResponse.code == HttpErrorCodes.NOT_FOUND.code)
 
     private companion object {
+
         private const val TAG = "IncrementalSyncRecoveryHandler"
     }
 
