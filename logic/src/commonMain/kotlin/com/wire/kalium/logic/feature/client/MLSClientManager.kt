@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -27,7 +28,7 @@ interface MLSClientManager
 @Suppress("LongParameterList")
 internal class MLSClientManagerImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val featureSupport: FeatureSupport,
+    private val isMLSEnabled: IsMLSEnabledUseCase,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val slowSyncRepository: Lazy<SlowSyncRepository>,
     private val clientRepository: Lazy<ClientRepository>,
@@ -49,7 +50,9 @@ internal class MLSClientManagerImpl(
         job = scope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live && featureSupport.isMLSSupported) {
+                if (syncState is IncrementalSyncStatus.Live &&
+                    isMLSEnabled()
+                ) {
                     registerMLSClientIfNeeded()
                 }
             }
