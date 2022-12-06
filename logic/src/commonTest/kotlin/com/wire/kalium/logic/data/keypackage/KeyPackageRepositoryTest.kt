@@ -128,7 +128,10 @@ class KeyPackageRepositoryTest {
         }
 
         fun withCurrentClientId() = apply {
-            given(currentClientIdProvider).suspendFunction(currentClientIdProvider::invoke).whenInvoked().then { Either.Right(SELF_CLIENT_ID) }
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(SELF_CLIENT_ID) }
         }
 
         fun withGeneratingKeyPackagesSuccessful() = apply {
