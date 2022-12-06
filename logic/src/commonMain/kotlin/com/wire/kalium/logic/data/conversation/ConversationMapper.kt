@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
@@ -25,7 +24,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -143,8 +141,6 @@ internal class ConversationMapperImpl(
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        unreadRepliesCount = unreadRepliesCount,
-                        unreadMentionsCount = unreadMentionsCount,
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                     )
@@ -155,8 +151,6 @@ internal class ConversationMapperImpl(
                         conversation = fromDaoModel(daoModel),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         hasOngoingCall = callStatus != null, // todo: we can do better!
-                        unreadRepliesCount = unreadRepliesCount,
-                        unreadMentionsCount = unreadMentionsCount,
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                         isSelfUserMember = isMember == 1L,

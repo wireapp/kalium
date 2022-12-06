@@ -24,14 +24,12 @@ object TestConversationDetails {
         TestUser.OTHER,
         LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,
-        unreadRepliesCount = 0,
         lastMessage = null,
         unreadEventCount = emptyMap()
     )
 
     val CONVERSATION_GROUP = ConversationDetails.Group(
         conversation = TestConversation.GROUP(),
-        unreadRepliesCount = 0,
         legalHoldStatus = LegalHoldStatus.ENABLED,
         lastMessage = null,
         isSelfUserCreator = true,

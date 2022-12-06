@@ -42,10 +42,8 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -309,9 +307,9 @@ internal class ConversationDataSource internal constructor(
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageList.firstOrNull { it.conversationId == conversation.id }
                         ?.let { messageMapper.fromEntityToMessagePreview(it) },
-                        groupedMessages[conversation.id]?.let {
-                            messageMapper.fromPreviewEntityToUnreadEventCount(it)
-                        }
+                    groupedMessages[conversation.id]?.mapNotNull { message ->
+                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
+                    }?.groupingBy { it }?.eachCount()
                 )
             }
         }

@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
-import com.wire.kalium.logic.data.conversation.UnreadEventCount
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -25,7 +24,7 @@ interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
-    fun fromPreviewEntityToUnreadEventCount(messageList: List<MessagePreviewEntity>): UnreadEventCount
+    fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
@@ -128,21 +127,19 @@ class MessageMapperImpl(
         )
     }
 
-    override fun fromPreviewEntityToUnreadEventCount(messageList: List<MessagePreviewEntity>): UnreadEventCount {
-        return messageList.mapNotNull { message ->
-            when (message.content) {
-                is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
-                is MessagePreviewEntityContent.ConversationNameChange -> null
-                is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
-                is MessagePreviewEntityContent.MemberChange -> null
-                is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
-                is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
-                is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
-                is MessagePreviewEntityContent.TeamMemberRemoved -> null
-                is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
-                MessagePreviewEntityContent.Unknown -> null
-            }
-        }.groupingBy { it }.eachCount()
+    override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
+        return when (message.content) {
+            is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
+            is MessagePreviewEntityContent.ConversationNameChange -> null
+            is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
+            is MessagePreviewEntityContent.MemberChange -> null
+            is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
+            is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
+            is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
+            is MessagePreviewEntityContent.TeamMemberRemoved -> null
+            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
+            MessagePreviewEntityContent.Unknown -> null
+        }
     }
 
     override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage =
