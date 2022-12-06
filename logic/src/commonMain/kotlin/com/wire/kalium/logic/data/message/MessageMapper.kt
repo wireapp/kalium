@@ -242,7 +242,8 @@ class MessageMapperImpl(
                         isVerified = it.isVerified
                     )
                 },
-                quotedMessageDetails = quotedMessageDetails
+                quotedMessageDetails = quotedMessageDetails,
+                expectsReadConfirmation = expectsReadConfirmation
             )
         }
 

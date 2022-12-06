@@ -302,7 +302,8 @@ class ProtoContentMapperImpl(
             Text(
                 content = readableContent.value,
                 mentions = mentions,
-                quote = quote
+                quote = quote,
+                expectsReadConfirmation = readableContent.expectsReadConfirmation
             )
         )
     }

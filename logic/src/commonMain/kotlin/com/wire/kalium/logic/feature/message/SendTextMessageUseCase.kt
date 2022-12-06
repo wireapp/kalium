@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -27,6 +28,7 @@ class SendTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val userPropertyRepository: UserPropertyRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -54,7 +56,8 @@ class SendTextMessageUseCase internal constructor(
                             quotedMessageSha256 = null,
                             isVerified = true
                         )
-                    }
+                    },
+                    expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),

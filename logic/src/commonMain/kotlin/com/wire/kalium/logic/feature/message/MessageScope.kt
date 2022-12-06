@@ -121,7 +121,8 @@ class MessageScope internal constructor(
             userId,
             currentClientIdProvider,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            userPropertyRepository
         )
 
     val getMessageById: GetMessageByIdUseCase
