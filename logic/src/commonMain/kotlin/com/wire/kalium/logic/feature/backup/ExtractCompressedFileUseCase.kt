@@ -10,8 +10,8 @@ interface ExtractCompressedFileUseCase {
     /**
      * Extracts all the files from the provided compressed file path.
      * @param compressedBackupFilePath The absolute file system path to the compressed file.
-     * @return A [ExtractCompressedBackupFileResult] indicating the Failure or Success with the root [Path] of the extracted files and a boolean
-     * indicating whether the returned paths belong to an encrypted or non-encrypted file.
+     * @return A [ExtractCompressedBackupFileResult] indicating the Failure or Success with the root [Path] of the extracted files and a
+     * boolean indicating whether the returned paths belong to an encrypted or non-encrypted file.
      */
     suspend operator fun invoke(compressedBackupFilePath: Path): ExtractCompressedBackupFileResult
 }
