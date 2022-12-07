@@ -2,10 +2,10 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.CLIENT_FETCH_ERROR
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
@@ -87,13 +87,13 @@ class MLSKeyPackageCountUseCaseTest {
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
         @Mock
-        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
         fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
-            given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked()
+            given(currentClientIdProvider).suspendFunction(currentClientIdProvider::invoke).whenInvoked()
                 .then { result }
         }
 
@@ -112,7 +112,7 @@ class MLSKeyPackageCountUseCaseTest {
         }
 
         fun arrange() = this to MLSKeyPackageCountUseCaseImpl(
-            keyPackageRepository, clientRepository, keyPackageLimitsProvider
+            keyPackageRepository, currentClientIdProvider, keyPackageLimitsProvider
         )
 
         companion object {
