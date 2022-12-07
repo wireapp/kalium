@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.dao.message
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -19,7 +18,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRIC
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
@@ -297,24 +295,11 @@ class MessageDAOImpl(
         queries.deleteAllConversationMessages(conversationId)
     }
 
-    override suspend fun observeConversationLastMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getConversationLastMessage(
-        conversationID,
-        mapper::toEntityMessageFromView
-    ).asFlow().mapToOneOrNull()
-
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
-
-    override suspend fun observeUnreadMentionsCount(
-        conversationId: QualifiedIDEntity
-    ): Flow<Long> =
-        queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
-            .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT

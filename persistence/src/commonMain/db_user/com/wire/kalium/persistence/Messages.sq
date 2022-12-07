@@ -2,8 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
-import kotlin.Int;
 import kotlin.Boolean;
+import kotlin.Int;
 import kotlin.collections.List;
 
 CREATE TABLE Message (
@@ -305,9 +305,6 @@ LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.messa
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 LEFT JOIN SelfUser;
 
-getMessagePreviews:
-SELECT * FROM MessagePreview;
-
 getLastMessages:
 SELECT * FROM MessagePreview AS message
 GROUP BY conversationId
@@ -502,30 +499,8 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
--- TODO remove
-getLastUnreadMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-ORDER BY message.date ASC
-LIMIT  1;
-
-getConversationLastMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id
-ORDER BY message.date ASC
-LIMIT  1;
-
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
-
-getUnreadMentionsCount:
-SELECT COUNT(DISTINCT message.id) FROM Message AS message
-WHERE message.conversation_id IS :conversation_id
-AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent

@@ -299,32 +299,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversations_whenGettingUnreadConversationCount_ThenReturnCorrectCount() = runTest {
-        // given
-        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
-
-        conversationDAO.insertConversation(
-            conversationEntity1.copy(
-                lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastReadDate = "2000-01-01T12:00:00.000Z"
-            )
-        )
-
-        conversationDAO.insertConversation(
-            conversationEntity2.copy(
-                lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastReadDate = "2000-01-01T13:00:00.000Z"
-            )
-        )
-
-        // when
-        val result = conversationDAO.getUnreadConversationCount()
-
-        // then
-        assertEquals(1L, result)
-    }
-
-    @Test
     fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
