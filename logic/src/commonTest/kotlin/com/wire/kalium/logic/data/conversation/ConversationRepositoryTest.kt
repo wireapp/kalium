@@ -1063,7 +1063,7 @@ class ConversationRepositoryTest {
         val TEST_MESSAGE_ENTITY =
             MessageEntity.Regular(
                 id = "uid",
-                content = MessageEntityContent.Text("content", expectsReadConfirmation = false),
+                content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,

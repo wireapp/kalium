@@ -88,7 +88,7 @@ class MessageMapperImpl(
         return when (message) {
             is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
-                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
+                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN, message.expectsReadConfirmation),
                 conversationId = idMapper.fromDaoModel(message.conversationId),
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
@@ -168,7 +168,6 @@ class MessageMapperImpl(
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
             isQuoteVerified = this.quotedMessageReference?.isVerified,
-            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -203,7 +202,6 @@ class MessageMapperImpl(
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-                expectsReadConfirmation = expectsReadConfirmation
             )
         }
 
@@ -237,7 +235,7 @@ class MessageMapperImpl(
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
     }
 
-    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
+    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, expectsReadConfirmation: Boolean): MessageContent.Regular = when (this) {
         is MessageEntityContent.Text -> {
             val quotedMessageDetails = this.quotedMessage?.let {
                 MessageContent.QuotedMessageDetails(

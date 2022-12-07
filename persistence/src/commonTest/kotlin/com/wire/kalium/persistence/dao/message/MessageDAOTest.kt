@@ -596,10 +596,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // date after
                 date = "2022-03-30T15:37:00.000Z",
                 senderName = userEntity1.name!!,
-                content = MessageEntityContent.Text(
-                    "Text Message [1]",
-                    expectsReadConfirmation = true
-                )
+                expectsReadConfirmation = true
             )
         )
 
@@ -612,10 +609,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // date before
                 date = "2022-03-30T15:38:00.000Z",
                 senderName = userEntity1.name!!,
-                content = MessageEntityContent.Text(
-                    "Text Message [2]",
-                    expectsReadConfirmation = false
-                )
+                expectsReadConfirmation = false
             ),
 
             newRegularMessageEntity(
@@ -626,10 +620,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // date before
                 date = "2022-03-30T15:39:00.000Z",
                 senderName = userEntity1.name!!,
-                content = MessageEntityContent.Text(
-                    "Text Message [3]",
-                    expectsReadConfirmation = true
-                )
+                expectsReadConfirmation = true
             )
         )
 
