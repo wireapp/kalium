@@ -216,18 +216,9 @@ class MessageRepositoryTest {
     fun givenABaseMessageEntityAndMapper_whenGettingPendingConfirmationMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
         // Given
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        val entity = TEST_MESSAGE_ENTITY.copy(
-            content = MessageEntityContent.Text(
-                messageBody = "Test Message [1]",
-                expectsReadConfirmation = true
-            )
-        )
-        val mappedMessage = TEST_MESSAGE.copy(
-            content = MessageContent.Text(
-                value = "Test Message [1]",
-                expectsReadConfirmation = true
-            )
-        )
+        val entity = TEST_MESSAGE_ENTITY.copy(expectsReadConfirmation = true)
+        val mappedMessage = TEST_MESSAGE.copy(expectsReadConfirmation = true)
+
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf(entity))
             .withMappedId(mappedId)
