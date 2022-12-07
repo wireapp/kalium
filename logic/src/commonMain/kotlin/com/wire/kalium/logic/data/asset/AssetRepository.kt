@@ -213,7 +213,11 @@ internal class AssetDataSource(
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
-                    val encryptionKeys = encryptionKey?.let { Pair(it, assetSHA256!!) }
+                    val encryptionKeys = encryptionKey?.let { aes256Key ->
+                        assetSHA256?.let { assetSHA256 ->
+                            aes256Key to assetSHA256
+                        } ?: return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
+                    }
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
