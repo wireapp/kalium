@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -39,8 +39,8 @@ class NeedsToRegisterClientUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::currentClientId)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasNotInvoked()
     }
 
@@ -60,8 +60,8 @@ class NeedsToRegisterClientUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::currentClientId)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasInvoked(exactly = once)
     }
 
@@ -81,8 +81,8 @@ class NeedsToRegisterClientUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::currentClientId)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasInvoked(exactly = once)
     }
 
@@ -92,7 +92,7 @@ class NeedsToRegisterClientUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val clientRepository = configure(mock(classOf<ClientRepository>())) {
+        val currentClientIdProvider = configure(mock(classOf<CurrentClientIdProvider>())) {
             stubsUnitByDefault = true
         }
 
@@ -100,11 +100,11 @@ class NeedsToRegisterClientUseCaseTest {
         val sessionRepository = mock(SessionRepository::class)
 
         private var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
-            NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
+            NeedsToRegisterClientUseCaseImpl(currentClientIdProvider, sessionRepository, selfUserId)
 
         fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .then { result }
         }
