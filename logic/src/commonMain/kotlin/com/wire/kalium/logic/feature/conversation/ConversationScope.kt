@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -12,6 +11,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -33,14 +34,15 @@ class ConversationScope internal constructor(
     private val userRepository: UserRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
+    private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -82,10 +84,10 @@ class ConversationScope internal constructor(
         get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository)
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
-        get() = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository, conversationRepository)
+        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(conversationRepository, conversationGroupRepository, syncManager, clientRepository)
+        get() = CreateGroupConversationUseCase(conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
@@ -106,7 +108,7 @@ class ConversationScope internal constructor(
         get() = UpdateConversationReadDateUseCase(
             conversationRepository,
             messageSender,
-            clientRepository,
+            currentClientIdProvider,
             selfUserId,
             selfConversationIdProvider,
         )
@@ -132,7 +134,7 @@ class ConversationScope internal constructor(
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-            clientRepository,
+            currentClientIdProvider,
             messageSender,
             selfUserId,
             selfConversationIdProvider
