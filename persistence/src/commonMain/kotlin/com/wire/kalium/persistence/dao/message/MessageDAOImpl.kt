@@ -316,9 +316,8 @@ class MessageDAOImpl(
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
 
-    override suspend fun observeLastMessagesPreview(): Flow<List<MessagePreviewEntity>> {
-        return queries.getMessagePreviews(mapper::toPreviewEntity).asFlow().mapToList()
-    }
+    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
+        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
 
     override suspend fun observeUnreadMentionsCount(
         conversationId: QualifiedIDEntity
