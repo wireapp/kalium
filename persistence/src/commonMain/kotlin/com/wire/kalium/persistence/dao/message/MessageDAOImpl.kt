@@ -181,13 +181,9 @@ class MessageDAOImpl(
          */
         (message.content as? MessageEntityContent.MemberChange)
             ?.let {
-                if (it.memberChangeType in listOf(
-                        MessageEntity.MemberChangeType.REMOVED,
-                        MessageEntity.MemberChangeType.ADDED
-                    ) && message.senderUserId == selfUserId
-                ) it
-                else null
-            }?.let { memberRemovedContent ->
+                if (message.senderUserId == selfUserId) it else null
+            }
+            ?.let { memberChangeContent ->
                 // Check if the message with given time and type already exists in the local DB.
                 queries.selectByConversationIdAndSenderIdAndTimeAndType(
                     message.conversationId,
@@ -197,10 +193,9 @@ class MessageDAOImpl(
                 )
                     .executeAsList()
                     .firstOrNull {
-                        it.memberChangeType in listOf(
-                            MessageEntity.MemberChangeType.REMOVED,
-                            MessageEntity.MemberChangeType.ADDED
-                        ) && it.memberChangeList?.toSet() == memberRemovedContent.memberUserIdList.toSet()
+                        LocalId.check(it.id) &&
+                                memberChangeContent.memberChangeType == it.memberChangeType &&
+                                it.memberChangeList?.toSet() == memberChangeContent.memberUserIdList.toSet()
                     }?.let {
                         // The message already exists in the local DB, if its id is different then just update id.
                         if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
