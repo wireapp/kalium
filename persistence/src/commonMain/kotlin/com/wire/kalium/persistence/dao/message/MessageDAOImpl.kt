@@ -82,7 +82,8 @@ class MessageDAOImpl(
                 sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
                 visibility = message.visibility,
                 status = message.status,
-                content_type = contentTypeOf(message.content)
+                content_type = contentTypeOf(message.content),
+                expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
             )
             when (val content = message.content) {
                 is MessageEntityContent.Text -> {
@@ -91,8 +92,7 @@ class MessageDAOImpl(
                         conversation_id = message.conversationId,
                         text_body = content.messageBody,
                         quoted_message_id = content.quotedMessageId,
-                        is_quote_verified = content.isQuoteVerified,
-                        expects_read_confirmation = content.expectsReadConfirmation
+                        is_quote_verified = content.isQuoteVerified
                     )
                     content.mentions.forEach {
                         queries.insertMessageMention(
@@ -130,8 +130,7 @@ class MessageDAOImpl(
                     asset_width = content.assetWidth,
                     asset_height = content.assetHeight,
                     asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness,
-                    expects_read_confirmation = content.expectsReadConfirmation
+                    asset_normalized_loudness = content.assetNormalizedLoudness
                 )
 
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(

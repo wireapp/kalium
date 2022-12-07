@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -44,7 +45,6 @@ CREATE TABLE MessageTextContent (
       text_body TEXT,
       quoted_message_id TEXT,
       is_quote_verified INTEGER AS Boolean,
-      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -85,8 +85,6 @@ CREATE TABLE MessageAssetContent (
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
-
-      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -178,6 +176,7 @@ Message.sender_client_id AS senderClientId,
 Message.status AS status,
 Message.last_edit_timestamp AS lastEditTimestamp,
 Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -193,7 +192,6 @@ User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
-TextContent.expects_read_confirmation AS expectsReadConfirmation,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
 AssetContent.asset_mime_type AS assetMimeType,
@@ -209,7 +207,6 @@ AssetContent.asset_width AS assetWidth,
 AssetContent.asset_height AS assetHeight,
 AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
-AssetContent.expects_read_confirmation AS assetExpectsReadConfirmation,
 MissedCallContent.caller_id AS callerId,
 MemberChangeContent.member_change_list AS memberChangeList,
 MemberChangeContent.member_change_type AS memberChangeType,
@@ -357,8 +354,8 @@ SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 content_type = excluded.content_type,
@@ -366,7 +363,8 @@ date = excluded.date,
 sender_user_id = excluded.sender_user_id,
 sender_client_id = excluded.sender_client_id,
 status = excluded.status,
-visibility = excluded.visibility;
+visibility = excluded.visibility,
+expects_read_confirmation = excluded.expects_read_confirmation;
 
 insertMessageMention:
 INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
@@ -378,12 +376,11 @@ length = excluded.length,
 user_id = excluded.user_id;
 
 insertMessageTextContent:
-INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, expects_read_confirmation)
-VALUES(?, ?, ?, ?, ?, ?)
+INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
+VALUES(?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
-text_body = excluded.text_body,
-expects_read_confirmation = excluded.expects_read_confirmation;
+text_body = excluded.text_body;
 
 insertMessageRestrictedAssetContent:
 INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
@@ -393,8 +390,8 @@ message_id = excluded.message_id,
 asset_mime_type = excluded.asset_mime_type;
 
 insertMessageAssetContent:
-INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness, expects_read_confirmation)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 asset_size = excluded.asset_size,
@@ -411,8 +408,7 @@ asset_encryption_algorithm = excluded.asset_encryption_algorithm,
 asset_width = excluded.asset_width,
 asset_height = excluded.asset_height,
 asset_duration_ms = excluded.asset_duration_ms,
-asset_normalized_loudness = excluded.asset_normalized_loudness,
-expects_read_confirmation = excluded.expects_read_confirmation;
+asset_normalized_loudness = excluded.asset_normalized_loudness;
 
 insertMemberChangeMessage:
 INSERT INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
@@ -549,6 +545,6 @@ selectPendingMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.conversationId = ?
 AND visibility IN ?
-AND (expectsReadConfirmation = 1 OR assetExpectsReadConfirmation = 1)
+AND (expectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;

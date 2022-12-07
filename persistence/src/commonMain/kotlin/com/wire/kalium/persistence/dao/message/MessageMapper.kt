@@ -109,7 +109,8 @@ object MessageMapper {
         allReactionsJson: String?,
         selfReactionsJson: String?,
         senderName: String?,
-        isSelfMessage: Boolean
+        isSelfMessage: Boolean,
+        expectsReadConfirmation: Boolean
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -126,7 +127,8 @@ object MessageMapper {
                 selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
             ),
             senderName = senderName,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -157,6 +159,7 @@ object MessageMapper {
         status: MessageEntity.Status,
         lastEditTimestamp: String?,
         visibility: MessageEntity.Visibility,
+        expectsReadConfirmation: Boolean?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -172,7 +175,6 @@ object MessageMapper {
         senderIsDeleted: Boolean?,
         isSelfMessage: Boolean,
         text: String?,
-        expectsReadConfirmation: Boolean?,
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
@@ -188,7 +190,6 @@ object MessageMapper {
         assetHeight: Int?,
         assetDuration: Long?,
         assetNormalizedLoudness: ByteArray?,
-        assetExpectsReadConfirmation: Boolean?,
         callerId: QualifiedIDEntity?,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -238,8 +239,7 @@ object MessageMapper {
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
                     )
-                },
-                expectsReadConfirmation = expectsReadConfirmation ?: false
+                }
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -257,8 +257,7 @@ object MessageMapper {
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness,
-                expectsReadConfirmation = assetExpectsReadConfirmation ?: false
+                assetNormalizedLoudness = assetNormalizedLoudness
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
@@ -300,7 +299,8 @@ object MessageMapper {
             allReactionsJson,
             selfReactionsJson,
             senderName,
-            isSelfMessage
+            isSelfMessage,
+            expectsReadConfirmation ?: false
         )
     }
 
