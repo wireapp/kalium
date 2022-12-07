@@ -87,7 +87,7 @@ data class ConversationViewEntity(
     val unreadContentCountEntity: UnreadContentCountEntity,
     val unreadMentionsCount: Long,
     val unreadRepliesCount: Long,
-    val isMember: Long,
+    val selfRole: Member.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
     val accessRoleList: List<ConversationEntity.AccessRole>,
@@ -101,7 +101,9 @@ data class ConversationViewEntity(
     val mutedTime: Long,
     val creatorId: String,
     val removedBy: UserIDEntity? = null, // TODO how to calculate?
-)
+) {
+    val isMember: Boolean get() = selfRole != null
+}
 
 // TODO: rename to MemberEntity
 data class Member(
