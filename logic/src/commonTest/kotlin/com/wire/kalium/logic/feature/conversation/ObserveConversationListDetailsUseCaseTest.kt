@@ -49,7 +49,8 @@ class ObserveConversationListDetailsUseCaseTest {
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -85,7 +86,8 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -123,7 +125,8 @@ class ObserveConversationListDetailsUseCaseTest {
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
         )
 
@@ -182,7 +185,8 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val selfConversation = TestConversation.SELF()
@@ -220,7 +224,8 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -252,7 +257,8 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)
