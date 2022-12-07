@@ -4,11 +4,11 @@ import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
 import com.wire.kalium.cryptography.kaliumLogger
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_FORMAT
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
 import okio.Buffer
 import okio.IOException
 import okio.Source
@@ -18,13 +18,13 @@ import kotlin.random.nextUBytes
 @OptIn(ExperimentalUnsignedTypes::class)
 class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
 
-    fun encodeHeader(): Header {
+    fun encodeHeader(): BackupHeader {
         val salt = Random.nextUBytes(crypto_pwhash_SALTBYTES)
         val hashedUserId = hashUserId(userId, salt, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
-        return Header(format, version, salt, hashedUserId, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
+        return BackupHeader(format, version, salt, hashedUserId, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
     }
 
-    fun decodeHeader(encryptedDataSource: Source): Pair<HeaderDecodingErrors?, Header> {
+    fun decodeHeader(encryptedDataSource: Source): Pair<HeaderDecodingErrors?, BackupHeader> {
         val decodedHeader = encryptedDataSource.readBackupHeader()
 
         // Sanity checks
@@ -35,7 +35,7 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
     }
 
     private fun handleHeaderDecodingErrors(
-        decodedHeader: Header,
+        decodedHeader: BackupHeader,
         expectedHashedUserId: UByteArray,
         storedHashedUserId: UByteArray
     ): HeaderDecodingErrors? =
@@ -55,38 +55,9 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
             else -> null
         }
 
-    data class Passphrase(val password: String)
-
-    data class Header(
-        val format: String,
-        val version: String,
-        val salt: UByteArray,
-        val hashedUserId: UByteArray,
-        val opslimit: Int,
-        val memlimit: Int
-    ) {
-
-        fun toByteArray(): ByteArray {
-            val buffer = Buffer()
-            buffer.write(format.encodeToByteArray())
-            buffer.write(extraGap)
-            buffer.write(version.encodeToByteArray())
-            buffer.write(salt.toByteArray())
-            buffer.write(hashedUserId.toByteArray())
-            buffer.writeInt(opslimit)
-            buffer.writeInt(memlimit)
-
-            return buffer.readByteArray()
-        }
-
-        enum class HeaderDecodingErrors {
-            INVALID_USER_ID, INVALID_VERSION, INVALID_FORMAT
-        }
-    }
-
     @Suppress("ComplexMethod")
     @Throws(IOException::class)
-    private fun Source.readBackupHeader(): Header {
+    private fun Source.readBackupHeader(): BackupHeader {
         val readBuffer = Buffer()
 
         // We read the backup header and execute some sanity checks
@@ -121,7 +92,7 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
             readBuffer.readInt().also { readBuffer.clear() }
         }
 
-        return Header(
+        return BackupHeader(
             format = format,
             version = version,
             salt = salt,
@@ -132,7 +103,7 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
     }
 
     // ChaCha20 SecretKey used to encrypt derived from the passphrase (salt + provided password)
-    internal fun generateChaCha20Key(header: Header): UByteArray {
+    internal fun generateChaCha20Key(header: BackupHeader): UByteArray {
         return PasswordHash.pwhash(
             PWD_HASH_OUTPUT_BYTES,
             passphrase.password,
@@ -163,8 +134,6 @@ class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
         private const val BACKUP_HEADER_EXTRA_GAP_LENGTH = 1L
         private const val BACKUP_HEADER_FORMAT_LENGTH = 4L
         private const val BACKUP_HEADER_VERSION_LENGTH = 2L
-
-        private val extraGap = byteArrayOf(0x00)
 
         // Wire Backup Generic format identifier
         private const val format = "WBUX"

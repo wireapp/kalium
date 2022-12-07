@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.utils.ChaCha20Utils
+import com.wire.kalium.cryptography.backup.Passphrase
+import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.clientPlatform
@@ -66,7 +67,7 @@ internal class CreateBackupUseCaseImpl(
         val backupDataSize = encryptBackup(
             kaliumFileSystem.source(backupFilePath),
             kaliumFileSystem.sink(encryptedBackupFilePath),
-            BackupCoder.Passphrase(password)
+            Passphrase(password)
         )
         val finalBackupFilePath = "$encryptedBackupFilePath.zip".toPath()
 
@@ -94,8 +95,8 @@ internal class CreateBackupUseCaseImpl(
         kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME))
     }
 
-    private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: BackupCoder.Passphrase) =
-        ChaCha20Utils().encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
+    private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: Passphrase) =
+        encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
 
     private suspend fun createMetadataFile(userId: UserId): Path {
         val clientId = getCurrentClientId().first()

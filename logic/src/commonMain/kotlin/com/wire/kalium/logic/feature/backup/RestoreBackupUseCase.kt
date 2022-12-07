@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_FORMAT
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
-import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
-import com.wire.kalium.cryptography.utils.ChaCha20Utils
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_FORMAT
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_USER_ID
+import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
+import com.wire.kalium.cryptography.backup.Passphrase
+import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -73,10 +73,10 @@ internal class RestoreBackupUseCaseImpl(
         val extractedBackupPath = extractedBackupRootPath / BACKUP_UNENCRYPTED_FILE_NAME
         val backupSink = kaliumFileSystem.sink(extractedBackupPath)
         val userIdEntity = idMapper.toCryptoModel(userId)
-        val (decodingError, backupSize) = ChaCha20Utils().decryptBackupFile(
+        val (decodingError, backupSize) = decryptBackupFile(
             backupSource,
             backupSink,
-            BackupCoder.Passphrase(password),
+            Passphrase(password),
             userIdEntity
         )
 

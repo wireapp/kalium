@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.cryptography.utils.ChaCha20Utils
+import com.wire.kalium.cryptography.backup.Passphrase
+import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
@@ -185,7 +186,7 @@ class RestoreBackupUseCaseTest {
         private suspend fun encryptData(extractedBackupRootPath: Path, dbData: ByteArray, userId: UserId, password: String): Path =
             with(fakeFileSystem) {
                 val cryptoUserId = idMapper.toCryptoModel(userId)
-                val coder = BackupCoder(cryptoUserId, BackupCoder.Passphrase(password))
+                val coder = BackupCoder(cryptoUserId, Passphrase(password))
                 val dbPath = fakeFileSystem.rootDBPath
                 sink(dbPath).buffer().use {
                     it.write(dbData)
@@ -202,7 +203,7 @@ class RestoreBackupUseCaseTest {
                 )
                 val inputSource = source(backupPath)
                 val outputSink = sink(encryptedBackupPath)
-                ChaCha20Utils().encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
+                encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
 
                 return encryptedBackupPath
             }
