@@ -89,6 +89,8 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -210,6 +212,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -504,6 +507,7 @@ class UserSessionScope internal constructor(
         get() = JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            clientRepository,
             conversationRepository,
             mlsConversationRepository
         )
@@ -570,7 +574,7 @@ class UserSessionScope internal constructor(
         lazy { users.timestampKeyRepository })
 
     internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
-        featureSupport,
+        isMLSEnabled,
         incrementalSyncRepository,
         lazy { slowSyncRepository },
         lazy { clientRepository },
@@ -754,7 +758,7 @@ class UserSessionScope internal constructor(
             globalScope.sessionRepository,
             upgradeCurrentSessionUseCase,
             userId,
-            featureSupport,
+            isAllowedToRegisterMLSClient,
             clientIdProvider
         )
     val conversations: ConversationScope
@@ -860,7 +864,11 @@ class UserSessionScope internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
-    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(kaliumConfigs, userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
+
+    @OptIn(DelicateKaliumApi::class)
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
