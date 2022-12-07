@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.tools.KtxSerializer
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,6 +13,7 @@ class AccessUpdateTest {
 
     private val json get() = KtxSerializer.json
 
+    @Ignore
     @Test
     fun givenPayload_whenDecoding_thenSuccess() {
         val result = json.decodeFromString(
