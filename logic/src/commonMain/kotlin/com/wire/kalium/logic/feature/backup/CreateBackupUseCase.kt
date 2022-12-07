@@ -55,36 +55,37 @@ internal class CreateBackupUseCaseImpl(
             { error -> CreateBackupResult.Failure(error) },
             { (backupFilePath, backupSize) ->
                 val isBackupEncrypted = password.isNotEmpty()
-                var backupDataSize = backupSize
-                var finalBackupFilePath = backupFilePath
-
                 if (isBackupEncrypted) {
-                    val encryptedBackupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ENCRYPTED_FILE_NAME)
-                    backupDataSize = encryptBackup(
-                        kaliumFileSystem.source(backupFilePath),
-                        kaliumFileSystem.sink(encryptedBackupFilePath),
-                        BackupCoder.Passphrase(password)
-                    )
-                    finalBackupFilePath = "$encryptedBackupFilePath.zip".toPath()
-
-                    createCompressedFile(
-                        listOf(kaliumFileSystem.source(encryptedBackupFilePath) to encryptedBackupFilePath.name),
-                        kaliumFileSystem.sink(finalBackupFilePath)
-                    ).onFailure {
-                        return@withContext CreateBackupResult.Failure(
-                            StorageFailure.Generic(RuntimeException("Failed to compress encrypted backup file"))
-                        )
-                    }
-
-                    deleteTempFiles(backupFilePath, encryptedBackupFilePath)
-
-                    if (backupDataSize > 0) {
-                        CreateBackupResult.Success(finalBackupFilePath, backupDataSize, finalBackupFilePath.name)
-                    } else {
-                        CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
-                    }
-                } else CreateBackupResult.Success(finalBackupFilePath, backupDataSize, finalBackupFilePath.name)
+                    encryptAndCompressFile(backupFilePath, password)
+                } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
             })
+    }
+
+    private suspend fun encryptAndCompressFile(backupFilePath: Path, password: String): CreateBackupResult {
+        val encryptedBackupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ENCRYPTED_FILE_NAME)
+        val backupDataSize = encryptBackup(
+            kaliumFileSystem.source(backupFilePath),
+            kaliumFileSystem.sink(encryptedBackupFilePath),
+            BackupCoder.Passphrase(password)
+        )
+        val finalBackupFilePath = "$encryptedBackupFilePath.zip".toPath()
+
+        createCompressedFile(
+            listOf(kaliumFileSystem.source(encryptedBackupFilePath) to encryptedBackupFilePath.name),
+            kaliumFileSystem.sink(finalBackupFilePath)
+        ).onFailure {
+            return CreateBackupResult.Failure(
+                StorageFailure.Generic(RuntimeException("Failed to compress encrypted backup file"))
+            )
+        }
+
+        deleteTempFiles(backupFilePath, encryptedBackupFilePath)
+
+        return if (backupDataSize > 0) {
+            CreateBackupResult.Success(finalBackupFilePath, backupDataSize, finalBackupFilePath.name)
+        } else {
+            CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
+        }
     }
 
     private fun deleteTempFiles(backupFilePath: Path, encryptedBackupFilePath: Path) {

@@ -57,38 +57,46 @@ internal class RestoreBackupUseCaseImpl(
                 return@withContext error
             }, { (encryptedFilePath, isPasswordProtected) ->
                 if (isPasswordProtected) {
-                    val backupSource = kaliumFileSystem.source(encryptedFilePath!!)
-                    val extractedBackupPath = extractedBackupRootPath / BACKUP_UNENCRYPTED_FILE_NAME
-                    val backupSink = kaliumFileSystem.sink(extractedBackupPath)
-                    val userIdEntity = idMapper.toCryptoModel(userId)
-                    val (decodingError, backupSize) = ChaCha20Utils().decryptBackupFile(
-                        backupSource,
-                        backupSink,
-                        BackupCoder.Passphrase(password!!),
-                        userIdEntity
-                    )
-
-                    if (decodingError != null) {
-                        return@withContext mappedDecodingError(decodingError)
-                    }
-
-                    if (backupSize > 0) {
-                        // On successful decryption, we still need to extract the zip file to do sanity checks and get the database file
-                        extractFiles(kaliumFileSystem.source(extractedBackupPath), extractedBackupRootPath).fold({
-                            kaliumLogger.e("Failed to extract encrypted backup files")
-                            Failure(BackupIOFailure("Failed to extract encrypted backup files"))
-                        }, {
-                            kaliumFileSystem.delete(extractedBackupPath)
-                            getDbPathAndImport(extractedBackupRootPath)
-                        })
-                    } else {
-                        Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
-                    }
+                    decryptExtractAndImportBackup(encryptedFilePath, extractedBackupRootPath, password!!)
                 } else {
                     getDbPathAndImport(extractedBackupRootPath)
                 }
             })
         }
+
+    private suspend fun decryptExtractAndImportBackup(
+        encryptedFilePath: Path?,
+        extractedBackupRootPath: Path,
+        password: String
+    ): RestoreBackupResult {
+        val backupSource = kaliumFileSystem.source(encryptedFilePath!!)
+        val extractedBackupPath = extractedBackupRootPath / BACKUP_UNENCRYPTED_FILE_NAME
+        val backupSink = kaliumFileSystem.sink(extractedBackupPath)
+        val userIdEntity = idMapper.toCryptoModel(userId)
+        val (decodingError, backupSize) = ChaCha20Utils().decryptBackupFile(
+            backupSource,
+            backupSink,
+            BackupCoder.Passphrase(password),
+            userIdEntity
+        )
+
+        if (decodingError != null) {
+            return mappedDecodingError(decodingError)
+        }
+
+        return if (backupSize > 0) {
+            // On successful decryption, we still need to extract the zip file to do sanity checks and get the database file
+            extractFiles(kaliumFileSystem.source(extractedBackupPath), extractedBackupRootPath).fold({
+                kaliumLogger.e("Failed to extract encrypted backup files")
+                Failure(BackupIOFailure("Failed to extract encrypted backup files"))
+            }, {
+                kaliumFileSystem.delete(extractedBackupPath)
+                getDbPathAndImport(extractedBackupRootPath)
+            })
+        } else {
+            Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
+        }
+    }
 
     private fun mappedDecodingError(decodingError: HeaderDecodingErrors): RestoreBackupResult = when (decodingError) {
         INVALID_USER_ID -> Failure(InvalidUserId)
@@ -102,23 +110,14 @@ internal class RestoreBackupUseCaseImpl(
             checkIsValidAuthor(extractedBackupPath).fold({ Either.Left(it) }, { Either.Right(null to false) })
         } else {
             // If the backup is encrypted, the sanity checks are done when decoding the file
-            checkIsValidEncryption(extractedBackupPath, password)
+            checkIsValidEncryption(extractedBackupPath)
         }
 
-    private suspend fun checkIsValidEncryption(extractedBackupPath: Path, password: String?): Either<Failure, Pair<Path?, Boolean>> {
-        val encryptedFilePath = kaliumFileSystem.listDirectories(extractedBackupPath).firstOrNull { it.name.contains(".cc20") }
-        val isPasswordProtected = !password.isNullOrEmpty()
-
-        // Check if the backup file is encrypted and if the password is provided
-        return when {
-            encryptedFilePath != null && !isPasswordProtected -> Either.Left(
-                Failure(DecryptionFailure("A non blank password is required to restore a password protected backup"))
-            )
-            encryptedFilePath == null && isPasswordProtected -> Either.Left(
-                Failure(DecryptionFailure("A password was provided but no encrypted backup file was found"))
-            )
-            else -> Either.Right(encryptedFilePath to isPasswordProtected)
-        }
+    private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<Failure, Pair<Path?, Boolean>> = with(kaliumFileSystem) {
+        val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull { it.name.contains(".cc20") } ?: return Either.Left(
+            Failure(DecryptionFailure("No encrypted backup file found"))
+        )
+        return Either.Right(encryptedFilePath to true)
     }
 
     private suspend fun checkIsValidAuthor(extractedBackupRootPath: Path): Either<Failure, Unit> {
@@ -143,14 +142,15 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
 
-    private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean =
-        kaliumFileSystem.listDirectories(extractedBackupPath).firstOrNull {
+    private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean = with(kaliumFileSystem) {
+        listDirectories(extractedBackupPath).firstOrNull {
             it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
         }?.let { metadataFile ->
-            kaliumFileSystem.source(metadataFile).buffer().use {
+            source(metadataFile).buffer().use {
                 Json.decodeFromString<BackupMetadata>(it.readUtf8()).userId == userId.toString()
             }
         } ?: false
+    }
 }
 
 sealed class RestoreBackupResult {

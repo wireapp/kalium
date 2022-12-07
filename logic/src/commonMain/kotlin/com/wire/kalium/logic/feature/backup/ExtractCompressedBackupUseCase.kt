@@ -6,7 +6,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.extractCompressedFile
 import okio.Path
 
-interface ExtractCompressedFileUseCase {
+interface ExtractCompressedBackupUseCase {
     /**
      * Extracts all the files from the provided compressed file path.
      * @param compressedBackupFilePath The absolute file system path to the compressed file.
@@ -16,9 +16,9 @@ interface ExtractCompressedFileUseCase {
     suspend operator fun invoke(compressedBackupFilePath: Path): ExtractCompressedBackupFileResult
 }
 
-internal class ExtractCompressedFileUseCaseImpl(
+internal class ExtractCompressedBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem
-) : ExtractCompressedFileUseCase {
+) : ExtractCompressedBackupUseCase {
 
     override suspend operator fun invoke(compressedBackupFilePath: Path): ExtractCompressedBackupFileResult {
         val tempCompressedFileSource = kaliumFileSystem.source(compressedBackupFilePath)
@@ -27,7 +27,7 @@ internal class ExtractCompressedFileUseCaseImpl(
         return extractCompressedFile(tempCompressedFileSource, extractedFilesRootPath, kaliumFileSystem).fold({
             onRestoreError(it)
         }, {
-            val encryptedRootPath = getEncryptedFilePath(extractedFilesRootPath)
+            val encryptedRootPath = getEncryptedBackupPath(extractedFilesRootPath)
             ExtractCompressedBackupFileResult.Success(encryptedRootPath ?: extractedFilesRootPath, encryptedRootPath != null)
         })
     }
@@ -47,7 +47,7 @@ internal class ExtractCompressedFileUseCaseImpl(
     private fun onRestoreError(coreFailure: CoreFailure): ExtractCompressedBackupFileResult =
         ExtractCompressedBackupFileResult.Failure(coreFailure)
 
-    private suspend fun getEncryptedFilePath(extractedFilesRootPath: Path): Path? =
+    private suspend fun getEncryptedBackupPath(extractedFilesRootPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedFilesRootPath).firstOrNull { it.name.contains(".cc20") }
 }
 

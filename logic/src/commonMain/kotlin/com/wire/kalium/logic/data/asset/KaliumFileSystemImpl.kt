@@ -75,7 +75,7 @@ interface KaliumFileSystem {
     fun copy(sourcePath: Path, targetPath: Path)
 
     /**
-     * Provides the db root path of the current file system.
+     * Creates a temporary path if it didn't exist before and returns it if successful.
      * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
      */
     fun tempFilePath(pathString: String? = null): Path
