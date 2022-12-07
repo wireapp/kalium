@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.functional
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
@@ -28,3 +29,12 @@ fun <T> Flow<T>.distinct(): Flow<T> {
     val past = mutableSetOf<T>()
     return filter { past.add(it) }
 }
+
+fun intervalFlow(periodMs: Long, initialDelayMs: Long = 0L, stopWhen: () -> Boolean = { false }) =
+    flow {
+        delay(initialDelayMs)
+        while (!stopWhen()) {
+            emit(Unit)
+            delay(periodMs)
+        }
+    }

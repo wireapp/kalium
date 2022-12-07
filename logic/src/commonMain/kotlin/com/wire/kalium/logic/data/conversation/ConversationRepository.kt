@@ -299,12 +299,18 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         combine(
             conversationDAO.getAllConversationDetails(),
-            messageDAO.observeLastMessages()
-        ) { conversationList, lastMessageList ->
+            messageDAO.observeLastMessages(),
+            messageDAO.observeUnreadMessages(),
+        ) { conversationList, lastMessageList, unreadMessageList ->
+            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) })
+                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    groupedMessages[conversation.id]?.mapNotNull { message ->
+                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
+                    }?.groupingBy { it }?.eachCount()
+                )
             }
         }
 
@@ -314,13 +320,8 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-            // we don't need last message here
-            .mapRight { conversationMapper.fromDaoModelToDetails(it, null) }
-            .distinctUntilChanged()
-
-    private suspend fun observeLastMessage(conversationId: ConversationId): Flow<Message?> =
-        messageDAO.observeConversationLastMessage(idMapper.toDaoModel(conversationId))
-            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
+            // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
+            .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
