@@ -26,7 +26,7 @@ actual fun calcSHA256(bytes: ByteArray): ByteArray {
 @Suppress("TooGenericExceptionCaught")
 actual fun calcFileMd5(dataSource: Source): String? =
     try {
-        dataSource.buffer().use { source ->
+        dataSource.buffer().peek().use { source ->
             HashingSink.md5(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray().encodeBase64()
@@ -40,7 +40,7 @@ actual fun calcFileMd5(dataSource: Source): String? =
 @Suppress("TooGenericExceptionCaught")
 actual fun calcFileSHA256(dataSource: Source): ByteArray? =
     try {
-        dataSource.buffer().use { source ->
+        dataSource.buffer().peek().use { source ->
             HashingSink.sha256(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray()
