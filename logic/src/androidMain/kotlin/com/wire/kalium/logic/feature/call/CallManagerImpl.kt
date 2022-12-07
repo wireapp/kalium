@@ -16,7 +16,6 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -57,13 +56,14 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
@@ -84,7 +84,7 @@ class CallManagerImpl internal constructor(
     }
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
-        clientRepository.currentClientId().fold({
+        currentClientIdProvider().fold({
             TODO("adjust correct variable calling")
         }, {
             callingLogger.d("$TAG - clientId $it")
