@@ -59,7 +59,8 @@ class UserDatabaseDataGenerator(
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE_STRING),
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    senderName = "$messagePrefix SenderName"
                 )
             )
 
@@ -95,7 +96,8 @@ class UserDatabaseDataGenerator(
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE_STRING),
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    senderName = "$messagePrefix SenderName"
                 )
             )
 
@@ -175,7 +177,8 @@ class UserDatabaseDataGenerator(
                     date = DEFAULT_DATE_STRING,
                     senderUserId = senderUser.id,
                     status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    senderName = "$messagePrefix SenderName"
                 )
             )
 
