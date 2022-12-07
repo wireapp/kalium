@@ -53,12 +53,10 @@ internal class SlowSyncManager(
         onFailure = { failure ->
             scope.launch {
                 slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
-                slowSyncRecoveryHandler.recover(failure, onSlowSyncRetryCallback = object : OnSlowSyncRetryCallback {
-                    override suspend fun retry() {
-                        delay(RETRY_DELAY)
-                        startMonitoring()
-                    }
-                })
+                slowSyncRecoveryHandler.recover(failure) {
+                    delay(RETRY_DELAY)
+                    startMonitoring()
+                }
             }
         }
     )

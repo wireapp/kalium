@@ -74,14 +74,12 @@ internal class IncrementalSyncManager(
             syncScope.launch {
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
 
-                incrementalSyncRecoveryHandler.recover(failure = failure, onIncrementalSyncRetryCallback = object : OnIncrementalSyncRetryCallback {
-                    override suspend fun retry() {
-                        kaliumLogger.i("$TAG Triggering delay")
-                        delay(RETRY_DELAY)
-                        kaliumLogger.i("$TAG Delay finished")
-                        startMonitoringForSync()
-                    }
-                })
+                incrementalSyncRecoveryHandler.recover(failure = failure) {
+                    kaliumLogger.i("$TAG Triggering delay")
+                    delay(RETRY_DELAY)
+                    kaliumLogger.i("$TAG Delay finished")
+                    startMonitoringForSync()
+                }
             }
         }
     )

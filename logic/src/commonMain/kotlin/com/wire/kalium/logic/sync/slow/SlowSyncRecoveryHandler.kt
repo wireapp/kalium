@@ -5,18 +5,17 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.incremental.OnIncrementalSyncRetryCallback
 
 
-interface SlowSyncRecoveryHandler {
+internal interface SlowSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onSlowSyncRetryCallback: OnSlowSyncRetryCallback)
 }
 
-interface OnSlowSyncRetryCallback {
+internal fun interface OnSlowSyncRetryCallback {
     suspend fun retry()
 }
 
-class SlowSyncRecoveryHandlerImpl(private val logoutUseCase: LogoutUseCase) : SlowSyncRecoveryHandler {
+internal class SlowSyncRecoveryHandlerImpl(private val logoutUseCase: LogoutUseCase) : SlowSyncRecoveryHandler {
 
     override suspend fun recover(failure: CoreFailure, onSlowSyncRetryCallback: OnSlowSyncRetryCallback) {
         kaliumLogger.i("$TAG Checking if we can recover from the failure: $failure")
