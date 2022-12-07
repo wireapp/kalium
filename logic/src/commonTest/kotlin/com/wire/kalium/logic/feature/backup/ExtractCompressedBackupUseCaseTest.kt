@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.util.createCompressedFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -123,6 +122,7 @@ class ExtractCompressedBackupUseCaseTest {
         var fakeFileSystem = FakeKaliumFileSystem()
     }
 
+    @Suppress("NestedBlockDepth")
     private suspend fun getTotalExtractedFilesSize(extractedDataRootPath: Path, isEncrypted: Boolean): Long = with(fakeFileSystem) {
         var totalSize = 0L
         val rootPath = if (isEncrypted) extractedDataRootPath.parent else extractedDataRootPath
