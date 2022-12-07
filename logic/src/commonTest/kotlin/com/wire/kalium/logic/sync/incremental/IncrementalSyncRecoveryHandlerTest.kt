@@ -19,6 +19,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // when
         arrangement.recoverWithFailure(CoreFailure.Unknown(IllegalStateException()))
 
+        // then
         with(arrangement) {
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
@@ -41,6 +42,7 @@ class IncrementalSyncRecoveryHandlerTest {
             CoreFailure.Unknown(IllegalStateException("Some illegal state exception"))
         )
 
+        // then
         with(arrangement) {
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)

@@ -29,16 +29,14 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         }
     }
 
-    private fun shouldRestartSlowSyncProcess(failure: CoreFailure): Boolean {
-        return isClientOrEventNotFound(failure)
-    }
+    private fun shouldRestartSlowSyncProcess(failure: CoreFailure): Boolean =
+        isClientOrEventNotFound(failure)
 
-    private fun isClientOrEventNotFound(failure: CoreFailure): Boolean = (failure is NetworkFailure.ServerMiscommunication)
-            && (failure.kaliumException is KaliumException.InvalidRequestError)
-            && (failure.kaliumException.errorResponse.code == HttpErrorCodes.NOT_FOUND.code)
+    private fun isClientOrEventNotFound(failure: CoreFailure): Boolean = failure is NetworkFailure.ServerMiscommunication
+            && failure.kaliumException is KaliumException.InvalidRequestError
+            && failure.kaliumException.errorResponse.code == HttpErrorCodes.NOT_FOUND.code
 
     private companion object {
-
         private const val TAG = "IncrementalSyncRecoveryHandler"
     }
 
