@@ -210,6 +210,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -863,7 +864,9 @@ class UserSessionScope internal constructor(
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
-    val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
+    @OptIn(DelicateKaliumApi::class)
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(

@@ -8,6 +8,9 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.DelicateKaliumApi
 
+/**
+ * Answers the question if the backend has MLS support enabled, is the self user allowed to register an MLS client?
+ */
 @DelicateKaliumApi("This use case performs network calls, consider using IsMLSEnabledUseCase.")
 interface IsAllowedToRegisterMLSClientUseCase {
     suspend operator fun invoke(): Boolean
