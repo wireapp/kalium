@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.first
 
 interface ConversationGroupRepository {
@@ -132,7 +133,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event, true))
+                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
             }
         }.map {
             Either.Right(Unit)
@@ -168,7 +169,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event, false))
+                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))
             }
         }.map { }
 }
