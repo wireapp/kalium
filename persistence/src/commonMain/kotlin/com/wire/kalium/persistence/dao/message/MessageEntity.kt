@@ -30,7 +30,6 @@ sealed class MessageEntity(
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false,
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(

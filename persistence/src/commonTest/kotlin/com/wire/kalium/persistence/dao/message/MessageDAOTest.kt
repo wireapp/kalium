@@ -319,6 +319,64 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(1L, result)
     }
 
+    @Test
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val dateInQuestion = "2022-03-30T15:36:00.000Z"
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                // date after
+                date = "2022-03-30T15:37:00.000Z",
+                senderName = userEntity1.name!!,
+                content = MessageEntityContent.Text(
+                    "Text Message [1]",
+                    expectsReadConfirmation = true
+                )
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:38:00.000Z",
+                senderName = userEntity1.name!!,
+                content = MessageEntityContent.Text(
+                    "Text Message [2]",
+                    expectsReadConfirmation = false
+                )
+            ),
+
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:39:00.000Z",
+                senderName = userEntity1.name!!,
+                content = MessageEntityContent.Text(
+                    "Text Message [3]",
+                    expectsReadConfirmation = true
+                )
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        assertEquals(2, result.size)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)
