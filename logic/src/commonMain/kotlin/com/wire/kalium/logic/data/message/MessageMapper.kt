@@ -88,7 +88,7 @@ class MessageMapperImpl(
         return when (message) {
             is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
-                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN, message.expectsReadConfirmation),
+                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
                 conversationId = idMapper.fromDaoModel(message.conversationId),
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
@@ -235,7 +235,7 @@ class MessageMapperImpl(
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
     }
 
-    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, expectsReadConfirmation: Boolean): MessageContent.Regular = when (this) {
+    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
         is MessageEntityContent.Text -> {
             val quotedMessageDetails = this.quotedMessage?.let {
                 MessageContent.QuotedMessageDetails(
@@ -259,14 +259,12 @@ class MessageMapperImpl(
                         isVerified = it.isVerified
                     )
                 },
-                quotedMessageDetails = quotedMessageDetails,
-                expectsReadConfirmation = expectsReadConfirmation
+                quotedMessageDetails = quotedMessageDetails
             )
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this),
-            expectsReadConfirmation = expectsReadConfirmation
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)

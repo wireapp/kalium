@@ -104,8 +104,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS,
                         brokenState
-                    ),
-                    expectsReadConfirmation = false
+                    )
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -138,8 +137,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
                 content = MessageContent.Asset(
-                    provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState),
-                    expectsReadConfirmation = false
+                    provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState)
                 )
             )
             prepareAndSendAssetMessage(updatedMessage)

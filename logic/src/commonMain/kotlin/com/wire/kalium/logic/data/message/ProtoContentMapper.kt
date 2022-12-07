@@ -56,10 +56,10 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> packText(readableContent)
+            is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
-            is MessageContent.Asset -> packAsset(readableContent)
+            is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
@@ -107,12 +107,24 @@ class ProtoContentMapperImpl(
             val algorithm = encryptionAlgorithmMapper.fromProtobufModel(external.encryption)
             ProtoContent.ExternalMessageInstructions(genericMessage.messageId, external.otrKey.array, external.sha256?.array, algorithm)
         } else {
-            ProtoContent.Readable(genericMessage.messageId, getReadableContent(genericMessage, encodedContent))
+            val expectsReadConfirmation = when (val content = genericMessage.content) {
+                is GenericMessage.Content.Text -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
+                else -> false
+            }
+            ProtoContent.Readable(
+                genericMessage.messageId,
+                getReadableContent(genericMessage, encodedContent),
+                expectsReadConfirmation
+            )
         }
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    private fun getReadableContent(genericMessage: GenericMessage, encodedContent: PlainMessageBlob): MessageContent.FromProto {
+    private fun getReadableContent(
+        genericMessage: GenericMessage,
+        encodedContent: PlainMessageBlob
+    ): MessageContent.FromProto {
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
@@ -275,7 +287,7 @@ class ProtoContentMapperImpl(
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
 
-    private fun packText(readableContent: MessageContent.Text): GenericMessage.Content.Text {
+    private fun packText(readableContent: MessageContent.Text, expectsReadConfirmation: Boolean): GenericMessage.Content.Text {
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
@@ -285,7 +297,7 @@ class ProtoContentMapperImpl(
                 content = readableContent.value,
                 mentions = mentions,
                 quote = quote,
-                expectsReadConfirmation = readableContent.expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation
             )
         )
     }
@@ -298,14 +310,14 @@ class ProtoContentMapperImpl(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
             )
         },
-        quotedMessageDetails = null,
-        expectsReadConfirmation = protoContent.value.expectsReadConfirmation ?: false
+        quotedMessageDetails = null
     )
 
-    private fun packAsset(readableContent: MessageContent.Asset): GenericMessage.Content.Asset {
+    private fun packAsset(readableContent: MessageContent.Asset, expectsReadConfirmation: Boolean): GenericMessage.Content.Asset {
         return GenericMessage.Content.Asset(
             asset = assetMapper.fromAssetContentToProtoAssetMessage(
-                readableContent
+                readableContent,
+                expectsReadConfirmation
             )
         )
     }
@@ -314,8 +326,7 @@ class ProtoContentMapperImpl(
         // Backend sends some preview asset messages just with img metadata and no
         // keys or asset id,so we need to overwrite one with the other one
         return MessageContent.Asset(
-            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value),
-            expectsReadConfirmation = protoContent.value.expectsReadConfirmation ?: false
+            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
         )
     }
 

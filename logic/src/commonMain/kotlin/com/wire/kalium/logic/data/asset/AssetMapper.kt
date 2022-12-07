@@ -30,7 +30,7 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
-    fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset): Asset
+    fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
     fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
@@ -169,36 +169,37 @@ class AssetMapperImpl(
         }
     }
 
-    override fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset): Asset = with(messageContent.value) {
-        Asset(
-            original = Asset.Original(
-                mimeType = mimeType,
-                size = sizeInBytes,
-                name = name,
-                metaData = when (metadata) {
-                    is Image -> Asset.Original.MetaData.Image(
-                        Asset.ImageMetaData(
-                            width = metadata.width,
-                            height = metadata.height,
+    override fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset =
+        with(messageContent.value) {
+            Asset(
+                original = Asset.Original(
+                    mimeType = mimeType,
+                    size = sizeInBytes,
+                    name = name,
+                    metaData = when (metadata) {
+                        is Image -> Asset.Original.MetaData.Image(
+                            Asset.ImageMetaData(
+                                width = metadata.width,
+                                height = metadata.height,
+                            )
                         )
-                    )
 
-                    else -> null
-                }
-            ),
-            status = Asset.Status.Uploaded(
-                uploaded = Asset.RemoteData(
-                    otrKey = ByteArr(remoteData.otrKey),
-                    sha256 = ByteArr(remoteData.sha256),
-                    assetId = remoteData.assetId,
-                    assetToken = remoteData.assetToken,
-                    assetDomain = remoteData.assetDomain,
-                    encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
-                )
-            ),
-            expectsReadConfirmation = messageContent.expectsReadConfirmation
-        )
-    }
+                        else -> null
+                    }
+                ),
+                status = Asset.Status.Uploaded(
+                    uploaded = Asset.RemoteData(
+                        otrKey = ByteArr(remoteData.otrKey),
+                        sha256 = ByteArr(remoteData.sha256),
+                        assetId = remoteData.assetId,
+                        assetToken = remoteData.assetToken,
+                        assetDomain = remoteData.assetDomain,
+                        encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
+                    )
+                ),
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+        }
 
     override fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus {
         return when (uploadStatus) {

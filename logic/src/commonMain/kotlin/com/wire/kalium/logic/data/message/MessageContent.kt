@@ -55,8 +55,7 @@ sealed class MessageContent {
         val value: String,
         val mentions: List<MessageMention> = listOf(),
         val quotedMessageReference: QuoteReference? = null,
-        val quotedMessageDetails: QuotedMessageDetails? = null,
-        val expectsReadConfirmation: Boolean = false
+        val quotedMessageDetails: QuotedMessageDetails? = null
     ) : Regular()
 
     data class QuoteReference(
@@ -119,7 +118,7 @@ sealed class MessageContent {
         object Invalid : Content
     }
 
-    data class Asset(val value: AssetContent, val expectsReadConfirmation: Boolean = false) : Regular()
+    data class Asset(val value: AssetContent) : Regular()
 
     data class RestrictedAsset(
         val mimeType: String,

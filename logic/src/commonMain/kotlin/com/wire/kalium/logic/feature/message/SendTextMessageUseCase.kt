@@ -58,8 +58,7 @@ class SendTextMessageUseCase internal constructor(
                             quotedMessageSha256 = null,
                             isVerified = true
                         )
-                    },
-                    expectsReadConfirmation = expectsReadConfirmation
+                    }
                 ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,

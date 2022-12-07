@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.ClientPayload
 import com.wire.kalium.logic.data.message.EncryptedMessageBlob
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.protobuf.messages.GenericMessage
 
 interface MessageEnvelopeCreator {
 
@@ -54,7 +56,12 @@ class MessageEnvelopeCreatorImpl(
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
 
-        val actualMessageContent = ProtoContent.Readable(message.id, message.content)
+        val expectsReadConfirmation = when (message) {
+            is Message.Regular -> message.expectsReadConfirmation
+            else -> false
+        }
+
+        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
         val (encodedContent, externalDataBlob) = getContentAndExternalData(actualMessageContent, recipients)
 
         return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->

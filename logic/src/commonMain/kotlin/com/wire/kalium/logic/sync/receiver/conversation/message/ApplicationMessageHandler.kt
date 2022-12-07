@@ -105,11 +105,7 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = when (protoContent) {
-                        is MessageContent.Text -> protoContent.expectsReadConfirmation
-                        is MessageContent.Asset -> protoContent.expectsReadConfirmation
-                        else -> false
-                    }
+                    expectsReadConfirmation = content.expectsReadConfirmation
                 )
                 processMessage(message)
             }

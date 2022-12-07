@@ -117,8 +117,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                    ),
-                    expectsReadConfirmation = expectsReadConfirmation
+                    )
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -165,8 +164,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     value = provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOADED
-                    ),
-                    expectsReadConfirmation = expectsReadConfirmation
+                    )
                 ),
                 expectsReadConfirmation = expectsReadConfirmation
             )
