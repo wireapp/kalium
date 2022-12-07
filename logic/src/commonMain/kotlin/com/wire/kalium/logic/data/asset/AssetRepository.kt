@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.Sink
 import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
@@ -76,7 +77,8 @@ interface AssetRepository {
         assetId: AssetId,
         assetName: String,
         assetToken: String?,
-        encryptionKey: AES256Key
+        encryptionKey: AES256Key,
+        assetSHA256Key: SHA256Key
     ): Either<CoreFailure, Path>
 
     /**
@@ -141,7 +143,7 @@ internal class AssetDataSource(
             uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
         } else {
             kaliumLogger.e("Something went wrong when encrypting the Asset Message")
-            Either.Left(EncryptionFailure())
+            Either.Left(EncryptionFailure.GenericEncryptionError)
         }
     }
 
@@ -184,20 +186,23 @@ internal class AssetDataSource(
         assetId: AssetId,
         assetName: String,
         assetToken: String?,
-        encryptionKey: AES256Key
+        encryptionKey: AES256Key,
+        assetSHA256Key: SHA256Key
     ): Either<CoreFailure, Path> =
         fetchOrDownloadDecodedAsset(
             assetId = idMapper.toApiModel(assetId),
             assetName = assetName,
             assetToken = assetToken,
-            encryptionKey = encryptionKey
+            encryptionKey = encryptionKey,
+            assetSHA256 = assetSHA256Key
         )
 
     private suspend fun fetchOrDownloadDecodedAsset(
         assetId: NetworkAssetId,
         assetName: String,
         assetToken: String?,
-        encryptionKey: AES256Key? = null
+        encryptionKey: AES256Key? = null,
+        assetSHA256: SHA256Key? = null
     ): Either<CoreFailure, Path> {
         return wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
             val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId.value}")
@@ -207,7 +212,12 @@ internal class AssetDataSource(
                 assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
             }.flatMap {
                 try {
-                    val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
+                    if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
+                    val encryptionKeys = encryptionKey?.let { aes256Key ->
+                        assetSHA256?.let { assetSHA256 ->
+                            aes256Key to assetSHA256
+                        } ?: return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
+                    }
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
@@ -216,28 +226,22 @@ internal class AssetDataSource(
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                     // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                    val assetDataSize = if (encryptionKey != null) {
-                        decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
-                    } else
-                        kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
+                    val (hashError, assetDataSize) = decodeAssetIfNeeded(tempFile, encryptionKeys, decodedAssetSink)
 
                     // Delete temp path now that the decoded asset has been persisted correctly
-                    encryptedAssetDataSource.close()
                     kaliumFileSystem.delete(tempFile)
 
-                    if (assetDataSize == -1L)
-                        Either.Left(EncryptionFailure())
+                    when {
+                        // Either a decryption error or a hash error occurred
+                        hashError != null -> Either.Left(hashError)
+                        assetDataSize <= 0L -> Either.Left(EncryptionFailure.GenericDecryptionError)
 
-                    wrapStorageRequest {
-                        assetDao.insertAsset(
-                            assetMapper.fromUserAssetToDaoModel(
-                                assetId,
-                                decodedAssetPath,
-                                assetDataSize
-                            )
-                        )
+                        // Everything went fine, we persist the asset to the DB
+                        else -> {
+                            saveAssetInDB(assetId, decodedAssetPath, assetDataSize)
+                            Either.Right(decodedAssetPath)
+                        }
                     }
-                    Either.Right(decodedAssetPath)
                 } catch (e: IOException) {
                     kaliumLogger.e("Something went wrong when handling the Asset paths on the file system", e)
                     Either.Left(StorageFailure.DataNotFound)
@@ -246,6 +250,56 @@ internal class AssetDataSource(
         }, {
             Either.Right(it.dataPath.toPath())
         })
+    }
+
+    private suspend fun decodeAssetIfNeeded(
+        assetDataPath: Path,
+        encryptionKeys: Pair<AES256Key, SHA256Key>?,
+        decodedAssetSink: Sink
+    ): Pair<EncryptionFailure?, Long> = with(kaliumFileSystem) {
+        if (encryptionKeys != null) {
+            val (encryptionKey, assetSHA256Key) = encryptionKeys
+            validateAssetHashes(assetDataPath, assetSHA256Key).fold({ it to 0L }, {
+                val assetDataSource = source(assetDataPath)
+                val decryptedDataSize = decryptFileWithAES256(assetDataSource, decodedAssetSink, encryptionKey).also {
+                    assetDataSource.close()
+                }
+                null to decryptedDataSize
+            })
+        } else {
+            // Public assets are stored already decrypted on the backend, hence no decryption nor hash validation is needed
+            val assetDataSource = source(assetDataPath)
+            null to writeData(decodedAssetSink, assetDataSource).also { assetDataSource.close() }
+        }
+    }
+
+    private fun validateAssetHashes(
+        encryptedAssetDataPath: Path,
+        storedAssetSha256Key: SHA256Key
+    ): Either<EncryptionFailure, Unit> {
+        // We open and close the source here to avoid keeping the file open for too long
+        val encryptedAssetDataSource = kaliumFileSystem.source(encryptedAssetDataPath)
+        val result = calcFileSHA256(encryptedAssetDataSource)?.let { downloadedAssetSha256Key ->
+            if (downloadedAssetSha256Key.contentEquals(storedAssetSha256Key.data)) Either.Right(Unit)
+            else Either.Left(EncryptionFailure.WrongAssetHash)
+        } ?: Either.Left(EncryptionFailure.WrongAssetHash)
+
+        encryptedAssetDataSource.close()
+        return result
+    }
+
+    private suspend fun saveAssetInDB(
+        assetId: com.wire.kalium.network.api.base.model.AssetId,
+        decodedAssetPath: Path,
+        assetDataSize: Long
+    ) = wrapStorageRequest {
+        assetDao.insertAsset(
+            assetMapper.fromUserAssetToDaoModel(
+                assetId,
+                decodedAssetPath,
+                assetDataSize
+            )
+        )
     }
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
