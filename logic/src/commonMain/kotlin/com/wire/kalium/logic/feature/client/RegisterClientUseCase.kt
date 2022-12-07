@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -22,6 +21,7 @@ import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
+import com.wire.kalium.util.DelicateKaliumApi
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -61,7 +61,7 @@ interface RegisterClientUseCase {
 }
 
 class RegisterClientUseCaseImpl(
-    private val featureSupport: FeatureSupport,
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
@@ -69,6 +69,7 @@ class RegisterClientUseCaseImpl(
     private val mlsClientProvider: MLSClientProvider
 ) : RegisterClientUseCase {
 
+    @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
         with(registerClientParam) {
             generateProteusPreKeys(preKeysToSend, password, capabilities, clientType).fold({
@@ -76,7 +77,7 @@ class RegisterClientUseCaseImpl(
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
                     .flatMap { client ->
-                        val client = if (featureSupport.isMLSSupported) {
+                        val client = if (isAllowedToRegisterMLSClient()) {
                             createMLSClient(client)
                         } else {
                             Either.Right(client)

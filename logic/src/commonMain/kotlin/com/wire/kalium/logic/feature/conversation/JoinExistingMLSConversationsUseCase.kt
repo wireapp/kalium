@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -13,6 +14,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -32,9 +34,11 @@ interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val conversationApi: ConversationApi,
+    private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -44,7 +48,8 @@ class JoinExistingMLSConversationsUseCaseImpl(
     private val scope = CoroutineScope(dispatcher)
 
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        if (!featureSupport.isMLSSupported) {
+        if (!featureSupport.isMLSSupported ||
+            !clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
