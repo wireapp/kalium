@@ -58,7 +58,7 @@ interface MessageDAO {
 
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
-    suspend fun observeLastMessagesPreview(): Flow<List<MessagePreviewEntity>>
+    suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
 

@@ -12,6 +12,7 @@ import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -35,14 +36,15 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
+    private val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider(clientLabel)
 
     fun getGlobalScope(): GlobalKaliumScope =
-        GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
+        GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider, authenticationScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials? = null): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

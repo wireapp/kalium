@@ -7,12 +7,14 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -102,7 +104,7 @@ class NotificationApiV0Test : ApiTest {
     }
 
     @Test
-    fun given404Response_whenGettingAllNotifications_thenTheErrorIsBeingForwarded() = runTest {
+    fun given404Response_whenGettingAllNotifications_thenTheHardcodedV0ErrorIsBeingForwarded() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.NotFound
@@ -112,6 +114,10 @@ class NotificationApiV0Test : ApiTest {
         val result = notificationsApi.getAllNotifications(1, "")
 
         assertFalse(result.isSuccessful())
+
+        val exception = result.kException
+        assertIs<KaliumException.InvalidRequestError>(exception)
+        assertEquals(NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR, exception.errorResponse)
     }
 
     @Test

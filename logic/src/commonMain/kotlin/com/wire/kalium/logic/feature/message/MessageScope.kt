@@ -157,7 +157,7 @@ class MessageScope internal constructor(
         get() = DeleteMessageUseCase(
             messageRepository,
             userRepository,
-            clientRepository,
+            currentClientIdProvider,
             assetRepository,
             slowSyncRepository,
             messageSender
@@ -186,7 +186,7 @@ class MessageScope internal constructor(
         get() = SendKnockUseCase(
             persistMessage,
             userRepository,
-            clientRepository,
+            currentClientIdProvider,
             slowSyncRepository,
             messageSender
         )

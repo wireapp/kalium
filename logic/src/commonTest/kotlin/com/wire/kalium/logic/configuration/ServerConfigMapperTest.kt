@@ -6,6 +6,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
@@ -30,7 +31,7 @@ class ServerConfigMapperTest {
 
     @BeforeTest
     fun setup() {
-        serverConfigMapper = ServerConfigMapperImpl(versionMapper)
+        serverConfigMapper = ServerConfigMapperImpl(versionMapper, MapperProvider.idMapper())
         given(versionMapper).invocation { toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.then { ApiVersionDTO.Valid(1) }
     }
 
