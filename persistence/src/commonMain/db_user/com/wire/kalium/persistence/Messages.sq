@@ -295,7 +295,7 @@ Mention.user_id AS mentionedUserId,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(DateTime(Message.date) > DateTime(Conversation.last_read_date)) AS isUnread
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
@@ -319,8 +319,7 @@ ORDER BY message.date ASC;
 getUnreadMessages:
 SELECT * FROM MessagePreview AS message
 WHERE isUnread
-GROUP BY conversationId
-HAVING visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
+AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 deleteAllMessages:
 DELETE FROM Message;

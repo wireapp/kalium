@@ -24,6 +24,7 @@ interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
+    fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
@@ -126,6 +127,21 @@ class MessageMapperImpl(
             visibility = message.visibility.toModel(),
             isSelfMessage = message.isSelfMessage
         )
+    }
+
+    override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
+        return when (message.content) {
+            is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
+            is MessagePreviewEntityContent.ConversationNameChange -> null
+            is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
+            is MessagePreviewEntityContent.MemberChange -> null
+            is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
+            is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
+            is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
+            is MessagePreviewEntityContent.TeamMemberRemoved -> null
+            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
+            MessagePreviewEntityContent.Unknown -> null
+        }
     }
 
     override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage =

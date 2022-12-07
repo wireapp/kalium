@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -64,14 +65,14 @@ internal class GetMessageAssetUseCaseImpl(
                             assetId,
                             assetDomain,
                             assetToken,
-                            AES256Key(otrKey)
+                            AES256Key(otrKey),
+                            SHA256Key(sha256)
                         )
                     }
                 }
                 // This should never happen
                 else -> return@fold CompletableDeferred(MessageAssetResult.Failure(
-                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
-                ))
+                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))))
             }
 
             // Start progress bar for generic assets
@@ -82,7 +83,8 @@ internal class GetMessageAssetUseCaseImpl(
                     assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                     assetName = assetMetadata.assetName,
                     assetToken = assetMetadata.assetToken,
-                    encryptionKey = assetMetadata.encryptionKey
+                    encryptionKey = assetMetadata.encryptionKey,
+                    assetSHA256Key = assetMetadata.assetSHA256Key
                 ).fold({
                     kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                     // This should be called if there is an issue while downloading the asset

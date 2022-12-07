@@ -2,16 +2,21 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class MessageDAOTest : BaseDatabaseTest() {
@@ -317,6 +322,262 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(1L, result)
+    }
+
+    @Test
+    fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "assetMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "MP4",
+                        assetDownloadStatus = null,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = "assetId",
+                        assetToken = "",
+                        assetDomain = "domain",
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                        assetDurationMs = 10,
+                        assetNormalizedLoudness = byteArrayOf(1),
+                    )
+                )
+            )
+        )
+
+        // when
+        val messageIds = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+            .first()
+        // then
+        assertContains(messageIds, messageId)
+    }
+
+    @Test
+    fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "missedCall"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.MissedCall
+                )
+            )
+        )
+
+        // when
+        val messageIds = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+            .first()
+        // then
+        assertContains(messageIds, messageId)
+    }
+
+    @Test
+    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+
+        val message = buildList {
+            // add 9 Message before the lastReadDate
+            repeat(9) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        // when
+        val messages = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+            .first()
+        // then
+        assertEquals(0, messages.size)
+    }
+
+    @Test
+    fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+        val readMessagesCount = 3
+        val unreadMessagesCount = 2
+
+        val message = buildList {
+            // add 9 Message before the lastReadDate
+            repeat(readMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "read$it",
+                        date = "2000-01-01T11:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+            // add 9 Message past the lastReadDate
+            repeat(unreadMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "unread$it",
+                        date = "2000-01-01T13:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        // when
+        val messages = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+            .first()
+        // then
+        assertEquals(unreadMessagesCount, messages.size)
+    }
+
+    @Test
+    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+        val readMessagesCount = 3
+        val unreadMessagesCount = 2
+
+        val message = buildList {
+            // add 9 Message before the lastReadDate
+            repeat(readMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "read$it",
+                        date = "2000-01-01T11:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+            // add 9 Message past the lastReadDate
+            repeat(unreadMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "unread$it",
+                        date = "2000-01-01T13:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        // when
+        val messages = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+            .first()
+
+        assertNotNull(messages)
+        // then
+        assertEquals(unreadMessagesCount, messages.size)
+    }
+
+    @Test
+    fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Text("text")
+                )
+            )
+        )
+
+        // when
+        val messageIds = messageDAO.observeUnreadMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+            .first()
+        // then
+        assertContains(messageIds, messageId)
     }
 
     @Test

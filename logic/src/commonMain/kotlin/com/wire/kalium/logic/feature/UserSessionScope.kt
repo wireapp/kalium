@@ -89,6 +89,8 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -115,14 +117,14 @@ import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
+import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
@@ -158,6 +160,7 @@ import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.incremental.EventProcessorImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -199,6 +202,8 @@ import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
+import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -208,6 +213,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -429,9 +435,6 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
         )
 
-    private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
-
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
@@ -461,7 +464,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository, slowSyncRepository)
 
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
@@ -498,10 +501,11 @@ class UserSessionScope internal constructor(
             userRepository = userRepository, teamRepository = teamRepository
         )
 
-    val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
+    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            clientRepository,
             conversationRepository,
             mlsConversationRepository
         )
@@ -518,16 +522,37 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler
+        get() = SlowSyncRecoveryHandlerImpl(logout)
+
     private val slowSyncManager: SlowSyncManager by lazy {
-        SlowSyncManager(slowSyncCriteriaProvider, slowSyncRepository, slowSyncWorker)
+        SlowSyncManager(
+            slowSyncCriteriaProvider,
+            slowSyncRepository,
+            slowSyncWorker,
+            slowSyncRecoveryHandler
+        )
     }
 
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
-        IncrementalSyncWorkerImpl(eventGatherer, eventProcessor)
+        IncrementalSyncWorkerImpl(
+            eventGatherer,
+            eventProcessor
+        )
     }
+    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
+        get() =
+            IncrementalSyncRecoveryHandlerImpl(
+                slowSyncRepository
+            )
 
     private val incrementalSyncManager by lazy {
-        IncrementalSyncManager(slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository)
+        IncrementalSyncManager(
+            slowSyncRepository,
+            incrementalSyncWorker,
+            incrementalSyncRepository,
+            incrementalSyncRecoveryHandler
+        )
     }
 
     private val upgradeCurrentSessionUseCase
@@ -568,7 +593,7 @@ class UserSessionScope internal constructor(
         lazy { users.timestampKeyRepository })
 
     internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
-        featureSupport,
+        isMLSEnabled,
         incrementalSyncRepository,
         lazy { slowSyncRepository },
         lazy { clientRepository },
@@ -578,7 +603,7 @@ class UserSessionScope internal constructor(
             )
         })
 
-    internal val mlsPublicKeysRepository: MLSPublicKeysRepository
+    private val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsPublicKeyApi,
         )
@@ -753,7 +778,7 @@ class UserSessionScope internal constructor(
             globalScope.sessionRepository,
             upgradeCurrentSessionUseCase,
             userId,
-            featureSupport,
+            isAllowedToRegisterMLSClient,
             clientIdProvider
         )
     val conversations: ConversationScope
@@ -861,9 +886,13 @@ class UserSessionScope internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
-    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(kaliumConfigs, userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
-    internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
+    @OptIn(DelicateKaliumApi::class)
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
+
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, kaliumConfigs, userId
         )
@@ -898,6 +927,9 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    internal val getProxyCredentials: GetProxyCredentialsUseCase
+        get() = GetProxyCredentialsUseCaseImpl(sessionManager)
 
     private fun createPushTokenUpdater() = PushTokenUpdater(
         clientRepository, notificationTokenRepository, pushTokenRepository

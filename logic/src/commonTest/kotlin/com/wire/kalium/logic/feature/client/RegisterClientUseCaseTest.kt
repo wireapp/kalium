@@ -15,7 +15,6 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -260,11 +259,11 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenMLsSupportIsDisabled_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
+    fun givenWeAreNotAllowedToRegisterMLSClient_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
         val registeredClient = CLIENT
 
         val (arrangement, registerClient) = Arrangement()
-            .withIsMLSSupported(false)
+            .withIsAllowedToRegisterMLSClient(false)
             .withRegisterClient(Either.Right(registeredClient))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
             .arrange()
@@ -310,7 +309,7 @@ class RegisterClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val isAllowedToRegisterMLSClient = mock(classOf<IsAllowedToRegisterMLSClientUseCase>())
 
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
@@ -328,7 +327,7 @@ class RegisterClientUseCaseTest {
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
-            featureSupport,
+            isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
@@ -352,8 +351,9 @@ class RegisterClientUseCaseTest {
                 .whenInvoked()
                 .then { Either.Right(LAST_KEY) }
 
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
+            given(isAllowedToRegisterMLSClient)
+                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
+                .whenInvoked()
                 .thenReturn(true)
         }
 
@@ -406,9 +406,10 @@ class RegisterClientUseCaseTest {
                 .then { result }
         }
 
-        fun withIsMLSSupported(result: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
+        fun withIsAllowedToRegisterMLSClient(result: Boolean) = apply {
+            given(isAllowedToRegisterMLSClient)
+                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
+                .whenInvoked()
                 .thenReturn(result)
         }
 
