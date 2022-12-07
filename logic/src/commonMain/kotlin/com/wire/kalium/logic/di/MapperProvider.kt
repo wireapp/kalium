@@ -106,7 +106,8 @@ internal object MapperProvider {
             ProtocolInfoMapperImpl(),
             AvailabilityStatusMapperImpl(),
             DomainUserTypeMapperImpl(),
-            ConnectionStatusMapperImpl()
+            ConnectionStatusMapperImpl(),
+            ConversationRoleMapperImpl()
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()

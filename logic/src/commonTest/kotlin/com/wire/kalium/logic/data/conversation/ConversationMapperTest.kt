@@ -5,8 +5,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
@@ -14,6 +12,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -47,6 +47,9 @@ class ConversationMapperTest {
     @Mock
     val connectionStatusMapper = mock(classOf<ConnectionStatusMapper>())
 
+    @Mock
+    val conversationMemberMapper = mock(classOf<ConversationRoleMapper>())
+
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
@@ -57,7 +60,8 @@ class ConversationMapperTest {
             protocolInfoMapper,
             userAvailabilityStatusMapper,
             domainUserTypeMapper,
-            connectionStatusMapper
+            connectionStatusMapper,
+            conversationMemberMapper
         )
     }
 
