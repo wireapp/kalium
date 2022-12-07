@@ -6,7 +6,6 @@ import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErro
 import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_USER_ID
 import com.wire.kalium.cryptography.backup.BackupCoder.Header.HeaderDecodingErrors.INVALID_VERSION
 import com.wire.kalium.cryptography.utils.ChaCha20Utils
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId

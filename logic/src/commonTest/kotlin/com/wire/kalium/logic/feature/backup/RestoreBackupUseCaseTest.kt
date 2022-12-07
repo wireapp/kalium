@@ -190,7 +190,7 @@ class RestoreBackupUseCaseTest {
                 sink(dbPath).buffer().use {
                     it.write(dbData)
                 }
-                val backupPath = extractedBackupRootPath/ "backup.zip"
+                val backupPath = extractedBackupRootPath / "backup.zip"
                 val backupMetadataPath = createMetadataFile(userId)
                 val encryptedBackupPath = extractedBackupRootPath / "encryptedBackup.zip"
                 val backupSink = sink(backupPath)
