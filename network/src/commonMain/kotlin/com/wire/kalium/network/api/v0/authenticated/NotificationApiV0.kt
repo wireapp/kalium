@@ -7,6 +7,15 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_AWAIT
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_LAST
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_NOTIFICATIONS
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SINCE_QUERY_KEY
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SIZE_QUERY_KEY
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -18,6 +27,7 @@ import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
@@ -56,12 +66,18 @@ internal open class NotificationApiV0 internal constructor(
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
-    private suspend fun notificationsCall(
+    protected open suspend fun notificationsCall(
         querySize: Int,
         queryClient: String,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return wrapKaliumResponse {
+        return wrapKaliumResponse({
+            if (it.status.value != HttpStatusCode.NotFound.value) null
+            else {
+                // In case of 404, we ignore the content completely and fallback to a 404 response to match API V3
+                NetworkResponse.Error(KaliumException.InvalidRequestError(NOTIFICATIONS_4O4_ERROR))
+            }
+        }) {
             httpClient.get(PATH_NOTIFICATIONS) {
                 parameter(SIZE_QUERY_KEY, querySize)
                 parameter(CLIENT_QUERY_KEY, queryClient)
@@ -122,12 +138,20 @@ internal open class NotificationApiV0 internal constructor(
             }
     }
 
-    private companion object {
+    protected object V0 {
         const val PATH_AWAIT = "await"
         const val PATH_NOTIFICATIONS = "notifications"
         const val PATH_LAST = "last"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
+    }
+
+    internal object Hardcoded {
+        val NOTIFICATIONS_4O4_ERROR = ErrorResponse(
+            code = HttpStatusCode.NotFound.value,
+            message = "Event or client not found",
+            label = "missing_events_or_client_(hardcoded_v0_response)"
+        )
     }
 }
