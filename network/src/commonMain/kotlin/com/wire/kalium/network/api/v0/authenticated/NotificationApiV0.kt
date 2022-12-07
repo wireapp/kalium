@@ -7,8 +7,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -20,7 +18,6 @@ import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
@@ -64,18 +61,7 @@ internal open class NotificationApiV0 internal constructor(
         queryClient: String,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return wrapKaliumResponse({
-            if (it.status.value != HttpStatusCode.NotFound.value) null
-            else {
-                NetworkResponse.Error(
-                    KaliumException.InvalidRequestError(
-                        ErrorResponse(
-                            404, "Event or client not found", "missing-events"
-                        )
-                    )
-                )
-            }
-        }) {
+        return wrapKaliumResponse {
             httpClient.get(PATH_NOTIFICATIONS) {
                 parameter(SIZE_QUERY_KEY, querySize)
                 parameter(CLIENT_QUERY_KEY, queryClient)

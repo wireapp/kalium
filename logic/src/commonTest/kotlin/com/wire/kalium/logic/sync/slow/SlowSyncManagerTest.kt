@@ -332,7 +332,7 @@ class SlowSyncManagerTest {
                 .whenInvokedWith(any(), any())
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
         }
-        
+
         private val slowSyncManager = SlowSyncManager(
             slowSyncCriteriaProvider,
             slowSyncRepository,
