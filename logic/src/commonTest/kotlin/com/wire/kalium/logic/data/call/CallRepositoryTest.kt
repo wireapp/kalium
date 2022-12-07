@@ -205,7 +205,8 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -272,7 +273,8 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -334,7 +336,8 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -405,7 +408,8 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -462,7 +466,8 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadEventCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )

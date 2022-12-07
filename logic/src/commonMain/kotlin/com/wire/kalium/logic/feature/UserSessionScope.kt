@@ -296,7 +296,7 @@ class UserSessionScope internal constructor(
 
     private val mlsClientProvider: MLSClientProvider by lazy {
         MLSClientProviderImpl(
-            "${authenticatedDataSourceSet.authenticatedRootDir}/mls", userId, clientRepository, globalPreferences.passphraseStorage
+            "${authenticatedDataSourceSet.authenticatedRootDir}/mls", userId, clientIdProvider, globalPreferences.passphraseStorage
         )
     }
 
@@ -595,7 +595,7 @@ class UserSessionScope internal constructor(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository,
+            currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
@@ -730,7 +730,7 @@ class UserSessionScope internal constructor(
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
-            clientRepository, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
+            clientIdProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
@@ -765,7 +765,7 @@ class UserSessionScope internal constructor(
             userRepository,
             syncManager,
             mlsConversationRepository,
-            clientRepository,
+            clientIdProvider,
             assetRepository,
             messages.messageSender,
             teamRepository,

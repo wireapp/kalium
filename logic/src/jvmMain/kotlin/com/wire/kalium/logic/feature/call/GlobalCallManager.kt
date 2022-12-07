@@ -7,13 +7,13 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import io.ktor.util.collections.ConcurrentMap
 
@@ -26,7 +26,7 @@ actual class GlobalCallManager {
     private val calling by lazy {
         Calling.INSTANCE.apply {
             wcall_setup()
-	    wcall_run()
+            wcall_run()
             wcall_set_log_handler(
                 logHandler = LogHandlerImpl,
                 arg = null
@@ -43,7 +43,7 @@ actual class GlobalCallManager {
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
-        clientRepository: ClientRepository,
+        currentClientIdProvider: CurrentClientIdProvider,
         conversationRepository: ConversationRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,
@@ -55,7 +55,7 @@ actual class GlobalCallManager {
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository,
+            currentClientIdProvider = currentClientIdProvider,
             callMapper = callMapper,
             messageSender = messageSender,
             conversationRepository = conversationRepository,
