@@ -2564,7 +2564,7 @@ $dokka.location:com.wire.kalium.logic.failure/ProteusSendMessageFailure/deletedC
 $dokka.location:com.wire.kalium.logic.failure/ProteusSendMessageFailure/missingClientsOfUsers/#/PointingToDeclaration/logic/com.wire.kalium.logic.failure/-proteus-send-message-failure/missing-clients-of-users.html
 $dokka.location:com.wire.kalium.logic.failure/ProteusSendMessageFailure/redundantClientsOfUsers/#/PointingToDeclaration/logic/com.wire.kalium.logic.failure/-proteus-send-message-failure/redundant-clients-of-users.html
 $dokka.location:com.wire.kalium.logic.failure/ResourceFailure///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-resource-failure/index.html
-$dokka.location:com.wire.kalium.logic.failure/ResourceNotFound///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-resource-not-found/index.html
+$dokka.location:com.wire.kalium.logic.failure/SelfUserDeleted///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-self-user-deleted/index.html
 $dokka.location:com.wire.kalium.logic.failure/ServerConfigFailure.NewServerVersion///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-server-config-failure/-new-server-version/index.html
 $dokka.location:com.wire.kalium.logic.failure/ServerConfigFailure.UnknownServerVersion///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-server-config-failure/-unknown-server-version/index.html
 $dokka.location:com.wire.kalium.logic.failure/ServerConfigFailure///PointingToDeclaration/logic/com.wire.kalium.logic.failure/-server-config-failure/index.html
@@ -4040,7 +4040,6 @@ $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/getPersistentWebS
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/getSecurityClassificationType/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/get-security-classification-type.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/isFileSharingEnabled/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/is-file-sharing-enabled.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/isMLSEnabled/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/is-m-l-s-enabled.html
-$dokka.location:com.wire.kalium.logic.feature/UserSessionScope/joinExistingMLSConversations/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/join-existing-m-l-s-conversations.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/kaliumFileSystem/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/kalium-file-system.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/logout/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/logout.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScope/messages/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/messages.html

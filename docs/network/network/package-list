@@ -2099,6 +2099,7 @@ $dokka.location:com.wire.kalium.network.tools/ServerConfigDTO/id/#/PointingToDec
 $dokka.location:com.wire.kalium.network.tools/ServerConfigDTO/links/#/PointingToDeclaration/network/com.wire.kalium.network.tools/-server-config-d-t-o/links.html
 $dokka.location:com.wire.kalium.network.tools/ServerConfigDTO/metaData/#/PointingToDeclaration/network/com.wire.kalium.network.tools/-server-config-d-t-o/meta-data.html
 $dokka.location:com.wire.kalium.network.utils////PointingToDeclaration/network/com.wire.kalium.network.utils/index.html
+$dokka.location:com.wire.kalium.network.utils//NOT_FOUND_ERROR_CODE/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-n-o-t_-f-o-u-n-d_-e-r-r-o-r_-c-o-d-e.html
 $dokka.location:com.wire.kalium.network.utils//deleteSensitiveItemsFromJson/#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network.utils/delete-sensitive-items-from-json.html
 $dokka.location:com.wire.kalium.network.utils//domainJsonKeys/#/PointingToDeclaration/network/com.wire.kalium.network.utils/domain-json-keys.html
 $dokka.location:com.wire.kalium.network.utils//flatMap/com.wire.kalium.network.utils.NetworkResponse[TypeParam(bounds=[kotlin.Any])]#kotlin.Function1[com.wire.kalium.network.utils.NetworkResponse.Success[TypeParam(bounds=[kotlin.Any])],com.wire.kalium.network.utils.NetworkResponse[TypeParam(bounds=[kotlin.Any])]]/PointingToDeclaration/network/com.wire.kalium.network.utils/flat-map.html
@@ -2129,6 +2130,13 @@ $dokka.location:com.wire.kalium.network.utils//toJsonObject/kotlin.collections.M
 $dokka.location:com.wire.kalium.network.utils//wrapKaliumResponse/#kotlin.Function1[io.ktor.client.statement.HttpResponse,com.wire.kalium.network.utils.NetworkResponse[TypeParam(bounds=[kotlin.Any])]?]#kotlin.Function0[io.ktor.client.statement.HttpResponse]/PointingToDeclaration/network/com.wire.kalium.network.utils/wrap-kalium-response.html
 $dokka.location:com.wire.kalium.network.utils/CustomErrors///PointingToDeclaration/network/com.wire.kalium.network.utils/-custom-errors/index.html
 $dokka.location:com.wire.kalium.network.utils/CustomErrors/MISSING_REFRESH_TOKEN/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-custom-errors/-m-i-s-s-i-n-g_-r-e-f-r-e-s-h_-t-o-k-e-n.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND///PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/index.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/code/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/code.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/name/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/name.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/ordinal/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/ordinal.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes///PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/index.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes/HttpErrorCodes/#kotlin.Int/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-http-error-codes.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes/code/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/code.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error///PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/index.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error/Error/#com.wire.kalium.network.exceptions.KaliumException/PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/-error.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error/kException/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/k-exception.html

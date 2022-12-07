@@ -1404,6 +1404,12 @@ $dokka.location:com.wire.kalium.network.utils//toJsonElement/kotlin.Any?#/Pointi
 $dokka.location:com.wire.kalium.network.utils//toJsonObject/kotlin.collections.Map[*,*]#/PointingToDeclaration/network/com.wire.kalium.network.utils/to-json-object.html
 $dokka.location:com.wire.kalium.network.utils/CustomErrors///PointingToDeclaration/network/com.wire.kalium.network.utils/-custom-errors/index.html
 $dokka.location:com.wire.kalium.network.utils/CustomErrors/MISSING_REFRESH_TOKEN/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-custom-errors/-m-i-s-s-i-n-g_-r-e-f-r-e-s-h_-t-o-k-e-n.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND///PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/index.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/code/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/code.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/name/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/name.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes.NOT_FOUND/ordinal/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/-n-o-t_-f-o-u-n-d/ordinal.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes///PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/index.html
+$dokka.location:com.wire.kalium.network.utils/HttpErrorCodes/code/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-http-error-codes/code.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error///PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/index.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error/Error/#com.wire.kalium.network.exceptions.KaliumException/PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/-error.html
 $dokka.location:com.wire.kalium.network.utils/NetworkResponse.Error/kException/#/PointingToDeclaration/network/com.wire.kalium.network.utils/-network-response/-error/k-exception.html
