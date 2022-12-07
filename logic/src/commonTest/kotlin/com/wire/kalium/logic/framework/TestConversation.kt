@@ -127,7 +127,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        isMember = 1L,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -140,7 +139,8 @@ object TestConversation {
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
         mlsProposalTimer = null,
         mutedTime = 0L,
-        removedBy = null
+        removedBy = null,
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -249,7 +249,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        isMember = 1L,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -262,7 +261,8 @@ object TestConversation {
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
         mlsProposalTimer = null,
         mutedTime = 0L,
-        removedBy = null
+        removedBy = null,
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     val CONVERSATION = Conversation(

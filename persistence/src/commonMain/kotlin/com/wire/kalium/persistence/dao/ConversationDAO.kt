@@ -83,7 +83,7 @@ data class ConversationViewEntity(
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,
     val lastNotificationDate: String?,
-    val isMember: Long,
+    val selfRole: Member.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
     val accessRoleList: List<ConversationEntity.AccessRole>,
@@ -97,7 +97,9 @@ data class ConversationViewEntity(
     val mutedTime: Long,
     val creatorId: String,
     val removedBy: UserIDEntity? = null, // TODO how to calculate?
-)
+) {
+    val isMember: Boolean get() = selfRole != null
+}
 
 // TODO: rename to MemberEntity
 data class Member(

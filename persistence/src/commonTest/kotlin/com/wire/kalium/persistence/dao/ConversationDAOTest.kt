@@ -855,7 +855,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then
-        assertEquals(0L, result?.isMember)
+        assertEquals(false, result?.isMember)
     }
 
     @Test
@@ -922,7 +922,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
             isCreator = 0L,
             lastNotificationDate = lastNotificationDate,
-            isMember = 1L,
             protocolInfo = protocolInfo,
             accessList = access,
             accessRoleList = accessRole,
@@ -934,7 +933,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsGroupState = mlsGroupState,
             mlsProposalTimer = null,
             mutedTime = mutedTime,
-            creatorId = creatorId
+            creatorId = creatorId,
+            selfRole = Member.Role.Member
         )
     }
 

@@ -51,14 +51,15 @@ interface ConversationMapper {
     fun toDaoModel(conversation: Conversation): ConversationEntity
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
     private val protocolInfoMapper: ProtocolInfoMapper,
     private val userAvailabilityStatusMapper: AvailabilityStatusMapper,
     private val domainUserTypeMapper: DomainUserTypeMapper,
-    private val connectionStatusMapper: ConnectionStatusMapper
+    private val connectionStatusMapper: ConnectionStatusMapper,
+    private val conversationRoleMapper: ConversationRoleMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -122,6 +123,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.Type.GLOBAL_TEAM -> {
                     ConversationDetails.Team(fromDaoModel(daoModel))
                 }
+
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
@@ -153,8 +155,9 @@ internal class ConversationMapperImpl(
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
-                        isSelfUserMember = isMember == 1L,
+                        isSelfUserMember = isMember,
                         isSelfUserCreator = isCreator == 1L,
+                        selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) }
                     )
                 }
 

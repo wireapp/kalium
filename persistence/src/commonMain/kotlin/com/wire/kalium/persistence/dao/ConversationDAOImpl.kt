@@ -56,7 +56,7 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            isMember = isMember
+            selfRole = selfRole
         )
     }
 
@@ -99,7 +99,7 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                isMember = isMember
+                selfRole = selfRole
             )
         }
     }

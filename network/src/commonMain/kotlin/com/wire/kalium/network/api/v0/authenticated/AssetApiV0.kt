@@ -45,7 +45,7 @@ internal open class AssetApiV0 internal constructor(
     override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> =
         httpClient.prepareGet(buildAssetsPath(assetId)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
-        }.execute<NetworkResponse<Unit>> { httpResponse ->
+        }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
                 try {
                     val channel = httpResponse.body<ByteReadChannel>()
