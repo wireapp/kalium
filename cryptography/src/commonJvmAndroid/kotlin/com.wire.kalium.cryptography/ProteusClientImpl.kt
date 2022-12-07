@@ -1,5 +1,6 @@
 package com.wire.kalium.cryptography
 
+@Suppress("TooManyFunctions")
 actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private var client: ProteusClient = databaseKey?.let {
@@ -56,5 +57,9 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
 
     override suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray {
         return client.encryptWithPreKey(message, preKeyCrypto, sessionId)
+    }
+
+    override fun deleteSession(sessionId: CryptoSessionId) {
+        client.deleteSession(sessionId)
     }
 }
