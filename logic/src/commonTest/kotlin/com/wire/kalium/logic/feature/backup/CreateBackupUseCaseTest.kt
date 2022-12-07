@@ -6,7 +6,7 @@ class CreateBackupUseCaseTest {
     // TODO: Implement tests for CreateBackupUseCase
 
     @Test
-    fun `given some valid data, when creating a non-encrypted backup, then the final backup file is created correctly`() {
+    fun givenSomeValidData_whenCreatingNonEncryptedBackup_thenTheFinalBackupFileIsCreatedCorrectly() {
         // Given
 
         // When

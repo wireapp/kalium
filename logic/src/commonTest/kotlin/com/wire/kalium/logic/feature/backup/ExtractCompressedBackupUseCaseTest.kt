@@ -23,7 +23,7 @@ class ExtractCompressedBackupUseCaseTest {
     }
 
     @Test
-    fun `given some correct compressed encrypted backup file path, when invoked, then files are extracted correctly`() = runTest {
+    fun givenSomeCorrectCompressedEncryptedBackupFile_whenInvoked_thenFilesAreExtractedCorrectly() = runTest {
         // Given
         val encryptedDataFileName = "encryptedData.cc20"
         val encryptedDataPath = fakeFileSystem.tempFilePath(encryptedDataFileName)
@@ -45,7 +45,7 @@ class ExtractCompressedBackupUseCaseTest {
     }
 
     @Test
-    fun `given some correct compressed non-encrypted backup file path, when invoked, then files are extracted correctly`() = runTest {
+    fun givenSomeCorrectCompressedNonEncryptedBackupFile_whenInvoked_thenFilesAreExtractedCorrectly() = runTest {
         // Given
         val dbFileName = "encryptedData.db"
         val dbPath = fakeFileSystem.tempFilePath(dbFileName)
@@ -71,24 +71,23 @@ class ExtractCompressedBackupUseCaseTest {
     }
 
     @Test
-    fun `given some incorrect compressed non-encrypted backup file path, when invoked, then the total uncompressed size is 0`() =
-        runTest {
-            // Given
-            val wrongBackupFilePath = fakeFileSystem.tempFilePath("compressedBackupFile.weird")
-            val weirdData = "Some weird data".encodeToByteArray()
-            val extractCompressedBackup = Arrangement()
-                .withWrongPreStoredData(weirdData, wrongBackupFilePath)
-                .arrange()
+    fun givenSomeIncorrectCompressedNonEncryptedBackupFile_whenInvoked_thenTheTotalUncompressedSizeIs0() = runTest {
+        // Given
+        val wrongBackupFilePath = fakeFileSystem.tempFilePath("compressedBackupFile.weird")
+        val weirdData = "Some weird data".encodeToByteArray()
+        val extractCompressedBackup = Arrangement()
+            .withWrongPreStoredData(weirdData, wrongBackupFilePath)
+            .arrange()
 
-            // When
-            val result = extractCompressedBackup(wrongBackupFilePath)
+        // When
+        val result = extractCompressedBackup(wrongBackupFilePath)
 
-            // Then
-            assertTrue(result is ExtractCompressedBackupFileResult.Success)
-            assertEquals(false, result.isEncrypted)
-            val totalExtractedFilesSize = getTotalExtractedFilesSize(result.extractedFilesRootPath, result.isEncrypted)
-            assertNotEquals(weirdData.size.toLong(), totalExtractedFilesSize)
-        }
+        // Then
+        assertTrue(result is ExtractCompressedBackupFileResult.Success)
+        assertEquals(false, result.isEncrypted)
+        val totalExtractedFilesSize = getTotalExtractedFilesSize(result.extractedFilesRootPath, result.isEncrypted)
+        assertNotEquals(weirdData.size.toLong(), totalExtractedFilesSize)
+    }
 
     private class Arrangement {
         @Suppress("NestedBlockDepth")
