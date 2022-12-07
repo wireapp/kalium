@@ -74,6 +74,32 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
+    fun `given a non encrypted backup file with wrong metadata file name, when restoring, then the correct error is thrown`() = runTest {
+        // given
+        val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
+        val (arrangement, useCase) = Arrangement()
+            .withUnencryptedBackup(
+                unencryptedDBPath = extractedBackupPath,
+                userId = currentTestUserId,
+                withWrongMetadataFile = true
+            )
+            .withCorrectDbImportAction()
+            .arrange()
+
+        // when
+        val result = useCase(extractedBackupPath, "")
+
+        // then
+        assertTrue(result is RestoreBackupResult.Failure)
+        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
+
+        verify(arrangement.databaseImporter)
+            .suspendFunction(arrangement.databaseImporter::importFromFile)
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .wasNotInvoked()
+    }
+
+    @Test
     fun `given a valid encrypted backup file, when restoring, then the backup is restored correctly`() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
@@ -208,10 +234,10 @@ class RestoreBackupUseCaseTest {
                 return encryptedBackupPath
             }
 
-        fun withUnencryptedBackup(unencryptedDBPath: Path, userId: UserId) = apply {
+        fun withUnencryptedBackup(unencryptedDBPath: Path, userId: UserId, withWrongMetadataFile: Boolean = false) = apply {
             val metadataJson =
                 BackupMetadata(clientPlatform, BackupCoder.version, userId.toString(), "7-12-2022:14:00:00", "some-client-id").toString()
-            val metadataFilePath = BackupConstants.BACKUP_METADATA_FILE_NAME
+            val metadataFilePath = if (withWrongMetadataFile) "wrong-metadata.json" else BackupConstants.BACKUP_METADATA_FILE_NAME
             fakeFileSystem.createDirectory(unencryptedDBPath)
             fakeFileSystem.sink(unencryptedDBPath / fakeDBFileName).buffer().use {
                 it.write(fakeDBData)
@@ -254,7 +280,7 @@ class RestoreBackupUseCaseTest {
     }
 
     companion object {
-        val fakeFileSystem = FakeKaliumFileSystem()
+        var fakeFileSystem = FakeKaliumFileSystem()
         val currentTestUserId = UserId("some-user-id", "some-domain")
     }
 
