@@ -59,7 +59,7 @@ private class ConversationMapper {
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
             unreadMentionsCount = 0,
-            isMember = isMember,
+            selfRole = selfRole,
             unreadContentCountEntity = mapOf(),
             unreadRepliesCount = 0L
         )
@@ -107,7 +107,7 @@ private class ConversationMapper {
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
                 unreadMentionsCount = 0,
-                isMember = isMember,
+                selfRole = selfRole,
                 unreadContentCountEntity = mapOf(),
                 unreadRepliesCount = 0L
             )

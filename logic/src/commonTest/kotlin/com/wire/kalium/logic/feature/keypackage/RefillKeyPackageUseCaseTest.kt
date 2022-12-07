@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
@@ -83,16 +83,16 @@ class RefillKeyPackageUseCaseTest {
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
         @Mock
-        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
             keyPackageLimitsProvider,
-            clientRepository
+            currentClientIdProvider
         )
 
         fun withExistingSelfClientId() = apply {
-            given(clientRepository).suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider).suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .then { Either.Right(TestClient.CLIENT_ID) }
         }
