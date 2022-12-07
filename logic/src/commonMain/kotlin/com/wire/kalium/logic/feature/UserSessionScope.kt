@@ -123,6 +123,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
+import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
@@ -923,6 +925,9 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    internal val getProxyCredentials: GetProxyCredentialsUseCase
+        get() = GetProxyCredentialsUseCaseImpl(sessionManager)
 
     private fun createPushTokenUpdater() = PushTokenUpdater(
         clientRepository, notificationTokenRepository, pushTokenRepository
