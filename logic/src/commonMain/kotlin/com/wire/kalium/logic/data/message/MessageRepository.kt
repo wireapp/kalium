@@ -333,7 +333,8 @@ class MessageDataSource(
                         messageContent.editMessageId,
                         MessageEntityContent.Text(
                             messageContent.newContent,
-                            messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
+                            messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) },
+                            expectsReadConfirmation = (message.content as MessageContent.Text).expectsReadConfirmation
                         )
                     )
                 } else {

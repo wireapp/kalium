@@ -44,6 +44,7 @@ class SendTextMessageUseCase internal constructor(
         }
 
         val generatedMessageUuid = uuid4().toString()
+        val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
@@ -57,9 +58,10 @@ class SendTextMessageUseCase internal constructor(
                             quotedMessageSha256 = null,
                             isVerified = true
                         )
-                    }
+                    },
+                    expectsReadConfirmation = expectsReadConfirmation
                 ),
-                expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus(),
+                expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,

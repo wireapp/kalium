@@ -195,7 +195,8 @@ class AssetMapperImpl(
                     assetDomain = remoteData.assetDomain,
                     encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                 )
-            )
+            ),
+            expectsReadConfirmation = messageContent.expectsReadConfirmation
         )
     }
 

@@ -239,7 +239,8 @@ object MessageMapper {
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
                     )
-                }
+                },
+                expectsReadConfirmation = expectsReadConfirmation ?: false
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -257,7 +258,8 @@ object MessageMapper {
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness
+                assetNormalizedLoudness = assetNormalizedLoudness,
+                expectsReadConfirmation = expectsReadConfirmation ?: false
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)

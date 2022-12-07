@@ -151,7 +151,8 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -185,7 +186,8 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
+                expectsReadConfirmation = expectsReadConfirmation
             )
         }
 
@@ -243,12 +245,14 @@ class MessageMapperImpl(
                         isVerified = it.isVerified
                     )
                 },
-                quotedMessageDetails = quotedMessageDetails
+                quotedMessageDetails = quotedMessageDetails,
+                expectsReadConfirmation = expectsReadConfirmation
             )
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this),
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)

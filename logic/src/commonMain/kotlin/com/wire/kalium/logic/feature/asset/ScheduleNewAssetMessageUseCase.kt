@@ -117,7 +117,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                    )
+                    ),
+                    expectsReadConfirmation = expectsReadConfirmation
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -161,10 +162,11 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
                 content = MessageContent.Asset(
-                    provideAssetMessageContent(
+                    value = provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOADED
-                    )
+                    ),
+                    expectsReadConfirmation = expectsReadConfirmation
                 ),
                 expectsReadConfirmation = expectsReadConfirmation
             )
