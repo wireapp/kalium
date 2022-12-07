@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
@@ -178,7 +179,24 @@ class UserRepositoryTest {
             .wasNotInvoked()
     }
 
-    // TODO other UserRepository tests
+    @Test
+    fun givenARemoteUserIsDeleted_whenFetchingSelfUser_thenShouldFailWithProperError() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withRemoteGetSelfReturningDeletedUser()
+            .arrange()
+        // when
+        val result = userRepository.fetchSelfUser()
+        // then
+        with(result) {
+            shouldFail { it is SelfUserDeleted }
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::getSelfInfo)
+                .wasInvoked(exactly = once)
+        }
+    }
+
+// TODO other UserRepository tests
 
     private class Arrangement {
         @Mock
@@ -263,6 +281,14 @@ class UserRepositoryTest {
                     }
                 """.trimIndent()
                 )
+            return this
+        }
+
+        fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::getSelfInfo)
+                .whenInvoked()
+                .thenReturn(NetworkResponse.Success(TestUser.USER_DTO.copy(deleted = true), mapOf(), 200))
             return this
         }
 
