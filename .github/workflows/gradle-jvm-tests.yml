@@ -39,13 +39,11 @@ jobs:
         # to prevent the generation from overwriting the committed .db file
       - name: Verify DB Migrations
         run: |
-            ./gradlew :persistence:verifySqlDelightMigration
+            make db/verify-all-migrations
 
       - name: Verify DB schemas are all present
         run: |
-          ./gradlew :persistence:generateCommonMainUserDatabaseSchema
-          ./gradlew :persistence:generateCommonMainGlobalDatabaseSchema
-          ./persistence/verifySchemas.sh
+          make db/verify-all-schemas
 
       - name: Test with Gradle
         run: |
