@@ -6,7 +6,6 @@ import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.kaliumLogger
 
-
 internal interface SlowSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onSlowSyncRetryCallback: OnSlowSyncRetryCallback)
 }
