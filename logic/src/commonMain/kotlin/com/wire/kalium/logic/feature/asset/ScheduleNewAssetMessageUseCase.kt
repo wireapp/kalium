@@ -117,8 +117,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                    ),
-                    expectsReadConfirmation = expectsReadConfirmation
+                    )
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -126,6 +125,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
+                expectsReadConfirmation = expectsReadConfirmation
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
@@ -164,9 +164,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOADED
-                    ),
-                    expectsReadConfirmation = expectsReadConfirmation
-                )
+                    )
+                ),
+                expectsReadConfirmation = expectsReadConfirmation
             )
             persistMessage(updatedMessage).onFailure {
                 // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408

@@ -55,8 +55,7 @@ sealed class MessageContent {
         val value: String,
         val mentions: List<MessageMention> = listOf(),
         val quotedMessageReference: QuoteReference? = null,
-        val quotedMessageDetails: QuotedMessageDetails? = null,
-        val expectsReadConfirmation: Boolean? = null
+        val quotedMessageDetails: QuotedMessageDetails? = null
     ) : Regular()
 
     data class QuoteReference(
@@ -119,7 +118,7 @@ sealed class MessageContent {
         object Invalid : Content
     }
 
-    data class Asset(val value: AssetContent, val expectsReadConfirmation: Boolean? = null) : Regular()
+    data class Asset(val value: AssetContent) : Regular()
 
     data class RestrictedAsset(
         val mimeType: String,
@@ -142,7 +141,7 @@ sealed class MessageContent {
         val newMentions: List<MessageMention> = listOf()
     ) : Signaling()
 
-    data class Knock(val hotKnock: Boolean, val expectsReadConfirmation: Boolean? = null) : Regular()
+    data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,

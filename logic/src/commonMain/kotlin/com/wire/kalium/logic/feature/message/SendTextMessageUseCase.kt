@@ -57,9 +57,9 @@ class SendTextMessageUseCase internal constructor(
                             quotedMessageSha256 = null,
                             isVerified = true
                         )
-                    },
-                    expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
+                    }
                 ),
+                expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus(),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,

@@ -284,8 +284,7 @@ class ProtoContentMapperImpl(
             Text(
                 content = readableContent.value,
                 mentions = mentions,
-                quote = quote,
-                expectsReadConfirmation = readableContent.expectsReadConfirmation
+                quote = quote
             )
         )
     }
@@ -298,8 +297,7 @@ class ProtoContentMapperImpl(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
             )
         },
-        quotedMessageDetails = null,
-        expectsReadConfirmation = protoContent.value.expectsReadConfirmation
+        quotedMessageDetails = null
     )
 
     private fun packAsset(readableContent: MessageContent.Asset): GenericMessage.Content.Asset {
@@ -314,8 +312,7 @@ class ProtoContentMapperImpl(
         // Backend sends some preview asset messages just with img metadata and no
         // keys or asset id,so we need to overwrite one with the other one
         return MessageContent.Asset(
-            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value),
-            expectsReadConfirmation = protoContent.value.expectsReadConfirmation
+            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
         )
     }
 

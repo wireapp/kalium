@@ -58,7 +58,8 @@ class MessageMapperImpl(
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is Message.System -> MessageEntity.System(
@@ -99,7 +100,8 @@ class MessageMapperImpl(
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                 senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is MessageEntity.System -> Message.System(
@@ -149,8 +151,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified,
-            expectsReadConfirmation = this.expectsReadConfirmation ?: false
+            isQuoteVerified = this.quotedMessageReference?.isVerified
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -184,8 +185,7 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-                expectsReadConfirmation = this@toMessageEntityContent.expectsReadConfirmation ?: false
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
             )
         }
 
@@ -243,14 +243,12 @@ class MessageMapperImpl(
                         isVerified = it.isVerified
                     )
                 },
-                quotedMessageDetails = quotedMessageDetails,
-                expectsReadConfirmation = expectsReadConfirmation
+                quotedMessageDetails = quotedMessageDetails
             )
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this),
-            expectsReadConfirmation = expectsReadConfirmation
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
