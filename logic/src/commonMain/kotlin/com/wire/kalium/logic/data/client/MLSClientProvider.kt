@@ -8,6 +8,7 @@ import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.SecurityHelper
@@ -21,14 +22,14 @@ interface MLSClientProvider {
 class MLSClientProviderImpl(
     private val rootKeyStorePath: String,
     private val userId: UserId,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val passphraseStorage: PassphraseStorage
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
-        val currentClientId = clientId ?: clientRepository.currentClientId().fold({ return Either.Left(it) }, { it })
+        val currentClientId = clientId ?: currentClientIdProvider().fold({ return Either.Left(it) }, { it })
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
         val location = "$rootKeyStorePath/${currentClientId.value}".also {

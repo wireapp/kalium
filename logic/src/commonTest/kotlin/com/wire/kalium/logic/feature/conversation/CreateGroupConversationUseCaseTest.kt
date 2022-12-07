@@ -3,12 +3,12 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -16,6 +16,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
@@ -145,7 +146,7 @@ class CreateGroupConversationUseCaseTest {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         @Mock
-        val clientRepository = mock(ClientRepository::class)
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         val syncManager = configure(mock(SyncManager::class)) {
@@ -153,7 +154,7 @@ class CreateGroupConversationUseCaseTest {
         }
 
         private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, conversationGroupRepository, syncManager, clientRepository
+            conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -181,8 +182,8 @@ class CreateGroupConversationUseCaseTest {
         }
 
         fun withCurrentClientIdReturning(clientId: String) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(ClientId(clientId)))
         }
