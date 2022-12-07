@@ -60,6 +60,7 @@ class SlowSyncManagerTest {
         val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
             .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
+            .withRecoveringFromFailure()
             .arrange()
 
         advanceUntilIdle()
@@ -325,6 +326,13 @@ class SlowSyncManagerTest {
                 .thenReturn(stepFlow)
         }
 
+        fun withRecoveringFromFailure() = apply {
+            given(slowSyncRecoveryHandler)
+                .suspendFunction(slowSyncRecoveryHandler::recover)
+                .whenInvokedWith(any(), any())
+                .then { _, onRetryCallback -> onRetryCallback.retry() }
+        }
+        
         private val slowSyncManager = SlowSyncManager(
             slowSyncCriteriaProvider,
             slowSyncRepository,
