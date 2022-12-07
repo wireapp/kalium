@@ -98,14 +98,14 @@ complexity:
         threshold: 4
     StringLiteralDuplication:
         active: false
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         threshold: 3
         ignoreAnnotation: true
         excludeStringsWithLessThan5Characters: true
         ignoreStringsRegex: '$^'
     TooManyFunctions:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         thresholdInFiles: 14
         thresholdInClasses: 14
         thresholdInInterfaces: 14
@@ -323,44 +323,44 @@ formatting:
 
 naming:
     active: true
-    excludes: [ '**/generated/pbandk/**', '**/build/generated/**', '**/protobuf/**' ]
+    excludes: [ '**/generated/pbandk/**', '**/build/generated/**', '**/protobuf/**' , '**/build/**' ]
     ClassNaming:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         classPattern: '[A-Z][a-zA-Z0-9]*'
     ConstructorParameterNaming:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         parameterPattern: '[a-z][A-Za-z0-9]*'
         privateParameterPattern: '[a-z][A-Za-z0-9]*'
         excludeClassPattern: '$^'
         ignoreOverridden: true
     EnumNaming:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         enumEntryPattern: '[A-Z][_a-zA-Z0-9]*'
     ForbiddenClassName:
         active: false
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         forbiddenName: [ ]
     FunctionMaxLength:
         active: false
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         maximumFunctionNameLength: 30
     FunctionMinLength:
         active: false
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         minimumFunctionNameLength: 3
     FunctionNaming:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         functionPattern: '([a-z][a-zA-Z0-9]*)|(`.*`)'
         excludeClassPattern: '$^'
         ignoreAnnotated: [ 'Composable' ]
         ignoreOverridden: true
     FunctionParameterNaming:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         parameterPattern: '[a-z][A-Za-z0-9]*'
         excludeClassPattern: '$^'
         ignoreOverridden: true
