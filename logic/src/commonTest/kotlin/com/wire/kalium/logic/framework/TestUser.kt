@@ -11,8 +11,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -94,6 +96,23 @@ object TestUser {
         expiresAt = null,
         nonQualifiedId = NETWORK_ID.value,
         service = null
+    )
 
+    val USER_DTO = UserDTO(
+        id = QualifiedID("user_id", "domain.com"),
+        name = "user_name_123",
+        accentId = 2,
+        assets = listOf(),
+        deleted = null,
+        email = null,
+        handle = null,
+        service = null,
+        teamId = null,
+        expiresAt = "",
+        nonQualifiedId = "",
+        locale = "",
+        managedByDTO = null,
+        phone = null,
+        ssoID = null
     )
 }

@@ -51,6 +51,7 @@ internal class IncrementalSyncManager(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncWorker: IncrementalSyncWorker,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -61,21 +62,27 @@ internal class IncrementalSyncManager(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val coroutineExceptionHandler = SyncExceptionHandler({
-        kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-        syncScope.launch {
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+    private val coroutineExceptionHandler = SyncExceptionHandler(
+        onCancellation = {
+            kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
+            syncScope.launch {
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+            }
+        },
+        onFailure = { failure ->
+            kaliumLogger.i("$TAG ExceptionHandler error $failure")
+            syncScope.launch {
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
+
+                incrementalSyncRecoveryHandler.recover(failure = failure) {
+                    kaliumLogger.i("$TAG Triggering delay")
+                    delay(RETRY_DELAY)
+                    kaliumLogger.i("$TAG Delay finished")
+                    startMonitoringForSync()
+                }
+            }
         }
-    }, {
-        kaliumLogger.i("$TAG ExceptionHandler error $it")
-        syncScope.launch {
-            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
-            kaliumLogger.i("$TAG Triggering delay")
-            delay(RETRY_DELAY)
-            kaliumLogger.i("$TAG Delay finished")
-            startMonitoringForSync()
-        }
-    })
+    )
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
