@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -52,10 +53,29 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
     @Test
+    fun givenNoMLSClientIsRegistered_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
+                .withGetConversationsByGroupStateSuccessful()
+                .withJoinByExternalCommitSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+                .with(eq(Arrangement.MLS_CONVERSATION1), anything())
+                .wasNotInvoked()
+        }
+
+    @Test
     fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withGetConversationsByGroupStateSuccessful()
                 .withFetchingGroupInfoSuccessful()
                 .withJoinByExternalCommitSuccessful()
@@ -79,6 +99,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION))
                 .withEstablishMLSGroupSuccessful()
                 .arrange()
@@ -96,6 +117,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION))
                 .withEstablishMLSGroupSuccessful()
                 .arrange()
@@ -113,6 +135,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_UNESTABLISHED_GLOBAL_TEAM_CONVERSATION))
                 .withEstablishMLSGroupSuccessful()
                 .arrange()
@@ -129,6 +152,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     fun givenOutOfDateEpochFailure_whenInvokingUseCase_ThenRetryWithNewEpoch() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
             .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_CONVERSATION1))
             .withJoinByExternalCommitSuccessful()
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
@@ -155,6 +179,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
             .withGetConversationsByGroupStateSuccessful()
             .withFetchingGroupInfoSuccessful()
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
@@ -172,6 +197,9 @@ class JoinExistingMLSConversationsUseCaseTest {
         val conversationApi = mock(classOf<ConversationApi>())
 
         @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
@@ -180,6 +208,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             conversationApi,
+            clientRepository,
             conversationRepository,
             mlsConversationRepository
         )
@@ -240,6 +269,13 @@ class JoinExistingMLSConversationsUseCaseTest {
             given(featureSupport)
                 .invocation { featureSupport.isMLSSupported }
                 .thenReturn(supported)
+        }
+
+        fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
+                .whenInvoked()
+                .thenReturn(Either.Right(result))
         }
 
         companion object {

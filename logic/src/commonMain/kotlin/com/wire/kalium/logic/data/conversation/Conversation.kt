@@ -161,7 +161,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadEventCount: UnreadEventCount,
         val lastMessage: MessagePreview?,
         val isSelfUserMember: Boolean,
-        val isSelfUserCreator: Boolean
+        val isSelfUserCreator: Boolean,
+        val selfRole: Conversation.Member.Role?
     ) : ConversationDetails(conversation)
 
     data class Connection(

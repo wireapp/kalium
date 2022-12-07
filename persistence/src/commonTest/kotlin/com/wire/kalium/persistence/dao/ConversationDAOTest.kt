@@ -1111,7 +1111,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then
-        assertEquals(0L, result?.isMember)
+        assertEquals(false, result?.isMember)
     }
 
     @Test
@@ -1179,7 +1179,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             isCreator = 0L,
             lastNotificationDate = lastNotificationDate,
             unreadMentionsCount = 0,
-            isMember = 1L,
             protocolInfo = protocolInfo,
             accessList = access,
             accessRoleList = accessRole,
@@ -1193,7 +1192,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedTime = mutedTime,
             creatorId = creatorId,
             unreadContentCountEntity = emptyMap(),
-            unreadRepliesCount = 0L // TODO remove
+            unreadRepliesCount = 0L, // TODO remove
+            selfRole = Member.Role.Member
         )
     }
 
