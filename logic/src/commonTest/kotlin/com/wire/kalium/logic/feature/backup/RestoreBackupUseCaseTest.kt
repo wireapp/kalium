@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
 class RestoreBackupUseCaseTest {
 
     @Test
-    fun `given a correct non encrypted backup file, when restoring, then the backup is restored successfully`() = runTest {
+    fun givenACorrectNonEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredSuccessfully() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val (arrangement, useCase) = Arrangement()
@@ -52,7 +52,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given a non encrypted backup file with wrong author, when restoring, then the correct error is thrown`() = runTest {
+    fun givenACorrectNonEncryptedBackupFileWithWrongAuthor_whenRestoring_thenTheCorrectErrorIsThrown() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val (arrangement, useCase) = Arrangement()
@@ -74,7 +74,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given a non encrypted backup file with wrong metadata file name, when restoring, then the correct error is thrown`() = runTest {
+    fun givenACorrectNonEncryptedBackupFileWithWrongMetadataFileName_whenRestoring_thenTheCorrectErrorIsThrown() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val (arrangement, useCase) = Arrangement()
@@ -100,7 +100,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given a valid encrypted backup file, when restoring, then the backup is restored correctly`() = runTest {
+    fun givenAValidEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredCorrectly() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val password = "KittenWars"
@@ -122,7 +122,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given an encrypted backup file from different user ID, when restoring, then the right error is thrown`() = runTest {
+    fun givenAnEncryptedBackupFileFromDifferentUserID_whenRestoring_thenTheRightErrorIsThrown() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val password = "KittenWars"
@@ -144,7 +144,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given a correctly encrypted backup, when restoring with wrong password, then the right error is thrown`() = runTest {
+    fun givenACorrectlyEncryptedBackup_whenRestoringWithWrongPassword_thenTheRightErrorIsThrown() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val password = "KittenWars"
@@ -166,7 +166,7 @@ class RestoreBackupUseCaseTest {
     }
 
     @Test
-    fun `given a correctly encrypted backup, when restoring with a DB import error, then the right error is thrown`() = runTest {
+    fun givenACorrectlyEncryptedBackup_whenRestoringWithADBImportError_thenTheRightErrorIsThrown() = runTest {
         // given
         val extractedBackupPath = fakeFileSystem.tempFilePath("extractedBackupPath")
         val password = "KittenWars"
