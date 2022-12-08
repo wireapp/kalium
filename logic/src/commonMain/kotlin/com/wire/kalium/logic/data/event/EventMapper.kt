@@ -282,7 +282,7 @@ class EventMapper(
         timestampIso = deletedConversationDTO.time
     )
 
-    private fun conversationRenamed(
+    fun conversationRenamed(
         id: String,
         event: EventContentDTO.Conversation.ConversationRenameDTO,
         transient: Boolean
