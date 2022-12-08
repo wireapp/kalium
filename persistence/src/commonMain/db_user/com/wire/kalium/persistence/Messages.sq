@@ -115,9 +115,9 @@ CREATE TABLE MessageUnknownContent (
 CREATE TABLE MessageFailedToDecryptContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       unknown_encoded_data BLOB,
+      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
