@@ -64,7 +64,6 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             )
         )
 
-
         // when
         userDAO.observeUsersNotInConversation(conversationId).test {
             val result = awaitItem()
@@ -111,7 +110,6 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(conversationId, emptyList())
 
-
         // when
         userDAO.observeUsersNotInConversation(conversationId).test {
             // then
@@ -156,7 +154,6 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
                 cancelAndIgnoreRemainingEvents()
             }
     }
-
 
     @Test
     fun givenAUserAndConversationMembers_whenGettingUsersByEmail_ThenReturnUserMatchingTheEmailAndNotInTheConversation() = runTest {

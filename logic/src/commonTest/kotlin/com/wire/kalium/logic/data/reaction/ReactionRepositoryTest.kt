@@ -52,7 +52,6 @@ class ReactionRepositoryTest {
         reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, "Date", "🤯")
         reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, "Date2", "❤️")
 
-
             reactionRepository.observeMessageReactions(
                 messageId = TEST_MESSAGE_ID,
                 conversationId = TEST_CONVERSATION_ID

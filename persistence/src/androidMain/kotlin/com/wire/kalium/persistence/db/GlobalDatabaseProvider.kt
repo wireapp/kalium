@@ -16,7 +16,6 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-
 // TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(private val context: Context, passphrase: GlobalDatabaseSecret, encrypt: Boolean = true) {
     private val dbName = FileNameUtil.globalDBName()
