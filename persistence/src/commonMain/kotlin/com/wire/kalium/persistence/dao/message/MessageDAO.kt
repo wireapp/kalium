@@ -65,15 +65,9 @@ interface MessageDAO {
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
-    suspend fun observeConversationLastMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?>
-
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
-
-    suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
 
     suspend fun resetAssetUploadStatus()
 

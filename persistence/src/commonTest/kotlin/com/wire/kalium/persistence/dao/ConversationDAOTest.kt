@@ -443,45 +443,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationsHaveLastReadDateAfterModified_whenGettingUnReadConversationCount_ThenReturnTheExpectedCount() = runTest {
-        // given
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("1", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("2", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-
-        // when
-        val result = conversationDAO.getUnreadConversationCount()
-
-        // then
-        assertEquals(0L, result)
-    }
-
-    @Test
     fun givenMember_whenUpdatingMemberRole_thenItsUpdated() = runTest {
         // given
         val conversation = conversationEntity1
