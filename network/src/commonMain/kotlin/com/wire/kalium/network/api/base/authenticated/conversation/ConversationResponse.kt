@@ -77,13 +77,7 @@ data class ConversationResponse(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
-    /**
-     * **Deprecation info**: Since API v3 `access_role_v2` is deprecated and replaced by `access_role`,
-     * when the minimum supported version is API v3 we can remove `access_role_v2`.
-     *
-     * Further info: https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/672006169/API+changes+v2+v3
-     */
-    @SerialName("access_role_v2") @JsonNames("access_role")
+    @SerialName("access_role_v2")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 ) {
 
@@ -103,7 +97,52 @@ data class ConversationResponse(
     }
 }
 
-@kotlinx.serialization.Serializable
+@Serializable
+data class ConversationResponseV3(
+    @SerialName("creator")
+    val creator: String,
+
+    @SerialName("members")
+    val members: ConversationMembersResponse,
+
+    @SerialName("name")
+    val name: String?,
+
+    @SerialName("qualified_id")
+    val id: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String?,
+
+    @SerialName("epoch")
+    val epoch: ULong?,
+
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: ConversationResponse.Type,
+
+    @SerialName("message_timer")
+    val messageTimer: Long?,
+
+    @SerialName("team")
+    val teamId: TeamId?,
+
+    @SerialName("protocol")
+    val protocol: ConvProtocol,
+
+    @SerialName("last_event_time")
+    val lastEventTime: String,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+
+    @SerialName("access_role")
+    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+)
+
+@Serializable
 data class ConversationMembersResponse(
     @SerialName("self")
     val self: ConversationMemberDTO.Self,

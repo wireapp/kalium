@@ -10,6 +10,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.GlobalTeamConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
@@ -39,18 +40,22 @@ internal open class ConversationApiV3 internal constructor(
      */
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(requestMapper.toApiV3(createConversationRequest))
         }
+    }.mapSuccess {
+        requestMapper.fromApiV3(it)
     }
 
     override suspend fun createOne2OneConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
         httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
             setBody(requestMapper.toApiV3(createConversationRequest))
         }
+    }.mapSuccess {
+        requestMapper.fromApiV3(it)
     }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
