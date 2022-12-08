@@ -7,14 +7,17 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequestV3
 
-internal interface RequestMapper {
+/**
+ * Mapping between the base API model and the versioned API models.
+ */
+internal interface ApiModelMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
 }
 
-internal class RequestMapperImpl : RequestMapper {
+internal class ApiModelMapperImpl : ApiModelMapper {
 
     override fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3 =
         CreateConversationRequestV3(

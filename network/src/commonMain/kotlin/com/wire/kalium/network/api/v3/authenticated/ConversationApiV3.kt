@@ -17,8 +17,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.RequestMapper
-import com.wire.kalium.network.api.base.model.RequestMapperImpl
+import com.wire.kalium.network.api.base.model.ApiModelMapper
+import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
@@ -32,7 +32,7 @@ import okio.IOException
 
 internal open class ConversationApiV3 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val requestMapper: RequestMapper = RequestMapperImpl()
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ConversationApiV2(authenticatedNetworkClient) {
 
     /**
@@ -42,20 +42,20 @@ internal open class ConversationApiV3 internal constructor(
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
         httpClient.post(PATH_CONVERSATIONS) {
-            setBody(requestMapper.toApiV3(createConversationRequest))
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
         }
     }.mapSuccess {
-        requestMapper.fromApiV3(it)
+        apiModelMapper.fromApiV3(it)
     }
 
     override suspend fun createOne2OneConversation(
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
         httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
-            setBody(requestMapper.toApiV3(createConversationRequest))
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
         }
     }.mapSuccess {
-        requestMapper.fromApiV3(it)
+        apiModelMapper.fromApiV3(it)
     }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
@@ -99,7 +99,7 @@ internal open class ConversationApiV3 internal constructor(
         updateConversationAccessRequest: UpdateConversationAccessRequest
     ): NetworkResponse<UpdateConversationAccessResponse> = try {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
-            setBody(requestMapper.toApiV3(updateConversationAccessRequest))
+            setBody(apiModelMapper.toApiV3(updateConversationAccessRequest))
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
