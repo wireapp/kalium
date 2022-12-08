@@ -230,7 +230,7 @@ class UserDatabaseDataGenerator(
 
             generatedConversationsCount += 1
 
-            userDatabaseBuilder.messageDAO.insertMessages(
+            userDatabaseBuilder.messageDAO.insertOrIgnoreMessages(
                 if (messageType == MessageType.Regular) {
                     generateAndInsertRegularMessages(messagePerConversation, conversationId)
                 } else {
@@ -514,7 +514,7 @@ class UserDatabaseDataGenerator(
 
             generatedConversationsCount += 1
 
-            userDatabaseBuilder.messageDAO.insertMessages(
+            userDatabaseBuilder.messageDAO.insertOrIgnoreMessages(
                 generateAssetMessages(
                     amount = assetAmountPerConversation,
                     conversationIDEntity = conversationId,
