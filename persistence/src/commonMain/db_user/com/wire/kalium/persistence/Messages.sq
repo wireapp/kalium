@@ -349,18 +349,9 @@ UPDATE Message
 SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
-insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(id, conversation_id) DO UPDATE SET
-id = excluded.id,
-content_type = excluded.content_type,
-date = excluded.date,
-sender_user_id = excluded.sender_user_id,
-sender_client_id = excluded.sender_client_id,
-status = excluded.status,
-visibility = excluded.visibility,
-expects_read_confirmation = excluded.expects_read_confirmation;
+insertOrIgnoreMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)

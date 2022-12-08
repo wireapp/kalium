@@ -43,7 +43,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         val count = MESSAGE_COUNT
         val messagesToInsert = generateRandomMessages(count)
         val duration = measureTime {
-            messageDAO.insertMessages(messagesToInsert)
+            messageDAO.insertOrIgnoreMessages(messagesToInsert)
         }
 
         println("Took $duration to insert $count text messages")
@@ -143,7 +143,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         setupData()
         val totalMessageCount = MESSAGE_COUNT
         val messagesToInsert = generateRandomMessages(totalMessageCount)
-        messageDAO.insertMessages(messagesToInsert)
+        messageDAO.insertOrIgnoreMessages(messagesToInsert)
         repeat(4) {
             measureTime {
                 messageDAO.getMessagesByConversationAndVisibility(

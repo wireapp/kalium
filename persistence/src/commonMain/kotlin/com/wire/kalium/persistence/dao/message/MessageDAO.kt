@@ -12,14 +12,27 @@ interface MessageDAO {
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
-    suspend fun insertMessage(
+
+    /**
+     * Inserts the message, or ignores if there's already a message
+     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     *
+     * @see insertOrIgnoreMessages
+     */
+    suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
         updateConversationNotificationsDate: Boolean = false
     )
 
-    suspend fun insertMessages(messages: List<MessageEntity>)
+    /**
+     * Inserts the messages, or ignores messages if there already exists a message
+     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     *
+     * @see insertOrIgnoreMessage
+     */
+    suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)

@@ -53,7 +53,7 @@ class MessageMentionsTest : BaseMessageTest() {
 
     override suspend fun insertInitialData() {
         super.insertInitialData()
-        messageDAO.insertMessage(
+        messageDAO.insertOrIgnoreMessage(
             TEST_MESSAGE.copy(
                 content = MessageEntityContent.Text(
                     messageBody = "@${SELF_USER.name} @${OTHER_USER_2.name}",
