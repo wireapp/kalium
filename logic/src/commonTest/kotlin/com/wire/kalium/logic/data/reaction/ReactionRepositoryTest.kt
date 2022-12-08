@@ -68,7 +68,7 @@ class ReactionRepositoryTest {
     suspend fun insertInitialData() {
         userDao.insertUser(TEST_SELF_USER_ENTITY)
         conversationDao.insertConversation(TEST_CONVERSATION_ENTITY)
-        messageDao.insertMessage(TEST_MESSAGE_ENTITY)
+        messageDao.insertOrIgnoreMessage(TEST_MESSAGE_ENTITY)
     }
 
     private companion object {

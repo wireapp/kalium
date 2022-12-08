@@ -41,7 +41,7 @@ class MessageDAOImpl(
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(
+    override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
@@ -64,7 +64,7 @@ class MessageDAOImpl(
     }
 
     @Deprecated("For test only!")
-    override suspend fun insertMessages(messages: List<MessageEntity>) =
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
@@ -75,7 +75,7 @@ class MessageDAOImpl(
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            queries.insertMessage(
+            queries.insertOrIgnoreMessage(
                 id = message.id,
                 conversation_id = message.conversationId,
                 date = message.date,

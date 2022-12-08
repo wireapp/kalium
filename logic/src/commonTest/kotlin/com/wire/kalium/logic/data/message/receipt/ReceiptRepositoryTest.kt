@@ -96,7 +96,7 @@ class ReceiptRepositoryTest {
     suspend fun insertInitialData() {
         userDao.insertOrIgnoreUsers(listOf(TEST_SELF_USER_ENTITY, TEST_OTHER_USER_ENTITY, TEST_OTHER_USER_ENTITY_2))
         conversationDao.insertConversation(TEST_CONVERSATION_ENTITY)
-        messageDao.insertMessage(TEST_MESSAGE_ENTITY)
+        messageDao.insertOrIgnoreMessage(TEST_MESSAGE_ENTITY)
     }
 
     private companion object {
