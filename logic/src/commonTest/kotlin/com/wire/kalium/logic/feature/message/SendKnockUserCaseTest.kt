@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -12,6 +11,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -54,7 +54,7 @@ class SendKnockUserCaseTest {
         private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
-        private val clientRepository = mock(classOf<ClientRepository>())
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
@@ -85,8 +85,8 @@ class SendKnockUserCaseTest {
                 .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(fakeSelfUser()))
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(persistMessage)
@@ -107,7 +107,7 @@ class SendKnockUserCaseTest {
         fun arrange() = this to SendKnockUseCase(
             persistMessage,
             userRepository,
-            clientRepository,
+            currentClientIdProvider,
             slowSyncRepository,
             messageSender
         )

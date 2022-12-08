@@ -98,11 +98,9 @@ actual class KaliumFileSystemImpl actual constructor(
      * Reads the data of the given path as a byte array
      * @param inputPath the path pointing to the stored data
      */
-    override suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
-        withContext(dispatcher.io) {
-            it.buffer().use { bufferedFileSource ->
-                bufferedFileSource.readByteArray()
-            }
+    override suspend fun readByteArray(inputPath: Path): ByteArray = withContext(dispatcher.io) {
+        source(inputPath).buffer().use { bufferedFileSource ->
+            bufferedFileSource.readByteArray()
         }
     }
 

@@ -45,11 +45,11 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadRepliesCount = 0,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -81,11 +81,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -119,11 +119,11 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadRepliesCount = 0,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadEventCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
         )
 
@@ -132,7 +132,6 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
-            unreadRepliesCount = 0,
             lastMessage = null,
             unreadEventCount = emptyMap()
         )
@@ -141,7 +140,6 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER.copy(name = "New User Name"),
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
-            unreadRepliesCount = 0,
             lastMessage = null,
             unreadEventCount = emptyMap()
         )
@@ -178,11 +176,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val selfConversation = TestConversation.SELF()
@@ -216,11 +214,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -248,11 +246,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadRepliesCount = 0,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadEventCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)

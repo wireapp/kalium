@@ -18,7 +18,6 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 
 @Suppress("LongParameterList")
 class ClientScope(
@@ -33,12 +32,12 @@ class ClientScope(
     private val sessionRepository: SessionRepository,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val selfUserId: UserId,
-    private val featureSupport: FeatureSupport,
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
-            featureSupport,
+            isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
@@ -49,16 +48,16 @@ class ClientScope(
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
-        get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
+        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository, keyPackageLimitsProvider)
+        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientIdProvider, keyPackageLimitsProvider)
     val refillKeyPackages: RefillKeyPackagesUseCase
         get() = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
             keyPackageLimitsProvider,
-            clientRepository
+            clientIdProvider
         )
     val persistOtherUserClients: PersistOtherUserClientsUseCase
         get() = PersistOtherUserClientsUseCaseImpl(

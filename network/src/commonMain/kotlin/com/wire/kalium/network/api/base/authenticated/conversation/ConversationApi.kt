@@ -55,7 +55,7 @@ interface ConversationApi {
         conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 
-    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit>
+    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<ConversationRenameResponse>
 
     suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
 }

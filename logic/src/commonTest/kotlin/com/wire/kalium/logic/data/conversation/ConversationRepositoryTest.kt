@@ -18,6 +18,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -25,7 +26,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -65,6 +68,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -481,13 +485,13 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Ignore // TODO kubaz
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
         val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
-            unreadContentCountEntity = unreadContentCount
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -523,7 +527,6 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadRepliesCount == 0L }
             assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
@@ -548,21 +551,20 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadRepliesCount == 0L }
             assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
     }
 
+    @Ignore // TODO kubaz
     @Test
     fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
         val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.ONE_ON_ONE,
-            otherUserId = QualifiedIDEntity("otherUser", "domain"),
-            unreadContentCountEntity = unreadContentCount
+            otherUserId = QualifiedIDEntity("otherUser", "domain")
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -701,21 +703,6 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversation_WhenUpdatingTheName_ShouldReturnSuccess() = runTest {
-        val conversationId = ConversationId("conv_id", "conv_domain")
-        val (arrange, conversationRepository) = Arrangement().withExpectedObservableConversation(TestConversation.VIEW_ENTITY).arrange()
-
-        val result = conversationRepository.updateConversationName(conversationId, "newName", "2022-03-30T15:36:00.000Z")
-        with(result) {
-            shouldSucceed()
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationName)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
     fun givenAnUserId_WhenGettingConversationIds_ShouldReturnSuccess() = runTest {
         val userId = UserId("user_id", "user_domain")
         val (arrange, conversationRepository) = Arrangement().withConversationIdsByUserId(listOf(TestConversation.ID)).arrange()
@@ -741,9 +728,9 @@ class ConversationRepositoryTest {
         val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
         with(result) {
             shouldSucceed()
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationName)
-                .with(any(), eq(newConversationName), any())
+            verify(arrange.renamedConversationEventHandler)
+                .suspendFunction(arrange.renamedConversationEventHandler::handle)
+                .with(any())
                 .wasInvoked(exactly = once)
         }
     }
@@ -792,6 +779,9 @@ class ConversationRepositoryTest {
         @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val renamedConversationEventHandler = configure(mock(RenamedConversationEventHandler::class)) { stubsUnitByDefault = true }
+
         val conversationRepository =
             ConversationDataSource(
                 TestUser.USER_ID,
@@ -801,7 +791,8 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
-                clientApi
+                clientApi,
+                renamedConversationEventHandler
             )
 
         init {
@@ -998,7 +989,7 @@ class ConversationRepositoryTest {
             given(conversationApi)
                 .suspendFunction(conversationApi::updateConversationName)
                 .whenInvokedWith(any(), eq(newName))
-                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+                .thenReturn(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
 
         suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
@@ -1075,6 +1066,15 @@ class ConversationRepositoryTest {
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
+
+        val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
+            EventContentDTO.Conversation.ConversationRenameDTO(
+                MapperProvider.idMapper().toApiModel(CONVERSATION_ID),
+                MapperProvider.idMapper().toApiModel(USER_ID),
+                Clock.System.now().toString(),
+                ConversationNameUpdateEvent("newName")
+            )
+        )
 
     }
 }
