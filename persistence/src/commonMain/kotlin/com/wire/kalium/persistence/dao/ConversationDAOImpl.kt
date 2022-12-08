@@ -363,9 +363,6 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun getUnreadConversationCount(): Long =
-        conversationQueries.getUnreadConversationCount().executeAsOne()
-
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationReadDate(date, conversationID)
     }

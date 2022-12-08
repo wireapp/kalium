@@ -817,7 +817,8 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider,
-            selfTeamId
+            selfTeamId,
+            messages.sendConfirmation
         )
     val debug: DebugScope
         get() = DebugScope(
@@ -861,6 +862,7 @@ class UserSessionScope internal constructor(
             timeParser,
             applicationMessageHandler,
             userStorage,
+            userPropertyRepository,
             this
         )
     val users: UserScope
