@@ -37,7 +37,8 @@ internal class PersistMessageUseCaseImpl(
     private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
         when (selfUser.availabilityStatus) {
             UserAvailabilityStatus.AWAY -> true
-            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id) // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
+            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id)
+            // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
             else -> this.isSelfTheSender(selfUser.id)
         }
 
