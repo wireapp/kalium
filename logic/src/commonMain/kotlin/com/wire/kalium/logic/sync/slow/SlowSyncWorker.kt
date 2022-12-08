@@ -52,8 +52,8 @@ internal class SlowSyncWorkerImpl(
         ) = flatMap { performStep(slowSyncStep, step) }
 
         logger.d("Starting SlowSync")
-        emit(SlowSyncStep.SELF_USER)
-        syncSelfUser()
+
+        performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
             .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)

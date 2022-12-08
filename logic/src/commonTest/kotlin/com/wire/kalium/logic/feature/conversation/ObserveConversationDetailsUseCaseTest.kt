@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
@@ -59,22 +60,22 @@ class ObserveConversationDetailsUseCaseTest {
                 ConversationDetails.Group(
                     conversation,
                     LegalHoldStatus.DISABLED,
-                    unreadRepliesCount = 0,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,
-                    unreadEventCount = emptyMap()
+                    unreadEventCount = emptyMap(),
+                    selfRole = Conversation.Member.Role.Member
                 )
             ),
             Either.Right(
                 ConversationDetails.Group(
                     conversation.copy(name = "New Name"),
                     LegalHoldStatus.DISABLED,
-                    unreadRepliesCount = 0,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,
-                    unreadEventCount = emptyMap()
+                    unreadEventCount = emptyMap(),
+                    selfRole = Conversation.Member.Role.Member
                 )
             )
         )

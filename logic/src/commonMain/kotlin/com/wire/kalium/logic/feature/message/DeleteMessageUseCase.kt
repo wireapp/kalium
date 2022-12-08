@@ -1,11 +1,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -14,6 +13,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -27,7 +27,7 @@ import kotlinx.datetime.Clock
 class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetRepository: AssetRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
@@ -45,12 +45,11 @@ class DeleteMessageUseCase internal constructor(
                     val selfUser = userRepository.observeSelfUser().first()
                     val generatedMessageUuid = uuid4().toString()
 
-                    return clientRepository.currentClientId().flatMap { currentClientId ->
+                    return currentClientIdProvider().flatMap { currentClientId ->
                         val regularMessage = Message.Signaling(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
-                                unqualifiedConversationId = conversationId.value,
                                 conversationId = conversationId
                             ),
                             conversationId = if (deleteForEveryone) conversationId else selfUser.id,
