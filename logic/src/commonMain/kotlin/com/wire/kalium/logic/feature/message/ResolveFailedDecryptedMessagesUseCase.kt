@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.conversation
+package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
