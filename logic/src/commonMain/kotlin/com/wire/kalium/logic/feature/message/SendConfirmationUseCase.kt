@@ -96,7 +96,10 @@ internal class SendConfirmationUseCase internal constructor(
         if (conversation.type == Conversation.Type.ONE_ON_ONE) {
             userPropertyRepository.getReadReceiptsStatus()
         } else {
-            false
+            when (conversation.receiptMode) {
+                Conversation.ReceiptMode.DISABLED -> false
+                Conversation.ReceiptMode.ENABLED -> true
+            }
         }
 
 }
