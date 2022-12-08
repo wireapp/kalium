@@ -2,7 +2,7 @@ package com.wire.kalium.api.v3
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.AccessRoleUpdateRequestJson
+import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -94,6 +94,6 @@ class ConversationApiV3Test : ApiTest {
         const val PATH_CONVERSATIONS = "/conversations"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v3.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
-        val ACCESS_ROLE_UPDATE_REQUEST = AccessRoleUpdateRequestJson.v3
+        val ACCESS_ROLE_UPDATE_REQUEST = UpdateConversationAccessRequestJson.v3
     }
 }

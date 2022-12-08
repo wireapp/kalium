@@ -2,7 +2,7 @@ package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.AccessRoleUpdateRequestJson
+import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
@@ -12,7 +12,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddConversati
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -273,7 +272,7 @@ class ConversationApiV0Test : ApiTest {
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
-        val UPDATE_ACCESS_ROLE_REQUEST = AccessRoleUpdateRequestJson.v0
+        val UPDATE_ACCESS_ROLE_REQUEST = UpdateConversationAccessRequestJson.v0
         val CONVERSATION_IDS_RESPONSE = ConversationListIdsResponseJson.validGetIds
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
         val MEMBER_UPDATE_REQUEST = MemberUpdateRequestJson.valid

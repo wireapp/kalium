@@ -1,19 +1,19 @@
 package com.wire.kalium.model.conversation
 
 import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 
-object AccessRoleUpdateRequestJson {
+object UpdateConversationAccessRequestJson {
 
-    private val conversationAccessInfo = ConversationAccessInfoDTO(
+    private val updateConversationAccessRequest = UpdateConversationAccessRequest(
         setOf(ConversationAccessDTO.PRIVATE),
         setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
     )
 
     val v0 = ValidJsonProvider(
-        conversationAccessInfo
+        updateConversationAccessRequest
     ) {
         """
         |{
@@ -28,7 +28,7 @@ object AccessRoleUpdateRequestJson {
     }
 
     val v3 = ValidJsonProvider(
-        conversationAccessInfo
+        updateConversationAccessRequest
     ) {
         """
         |{
