@@ -19,7 +19,7 @@ dependencies {
 
 sqldelight {
     database("UserDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_user"
         sourceFolders = listOf(sourceFolderName)
@@ -27,7 +27,7 @@ sqldelight {
     }
 
     database("GlobalDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_global"
         sourceFolders = listOf(sourceFolderName)
@@ -41,11 +41,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutinesExtension)

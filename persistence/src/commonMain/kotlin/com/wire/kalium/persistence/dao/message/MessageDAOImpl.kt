@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -17,6 +17,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
+import com.wire.kalium.persistence.kaliumLogger
+import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions")
@@ -166,6 +169,12 @@ class MessageDAOImpl(
                     conversation_id = message.conversationId,
                     conversation_name = content.conversationName
                 )
+
+                is MessageEntityContent.TeamMemberRemoved -> {
+                    // TODO: What needs to be done here?
+                    //       When migrating to Kotlin 1.7, when branches must be exhaustive!
+                    kaliumLogger.w("TeamMemberRemoved message insertion not handled")
+                }
             }
         }
     }

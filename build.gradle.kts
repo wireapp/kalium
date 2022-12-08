@@ -29,9 +29,9 @@ repositories {
 }
 
 plugins {
-    val dokkaVersion = "1.6.10"
-    id("org.jetbrains.dokka") version "$dokkaVersion"
-    id("org.jetbrains.kotlinx.kover") version "0.5.1"
+    val dokkaVersion = "1.7.20"
+    id("org.jetbrains.dokka") version dokkaVersion
+    id("org.jetbrains.kotlinx.kover") version "0.5.1" //
     id("scripts.testing")
 }
 
