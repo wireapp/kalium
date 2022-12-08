@@ -101,8 +101,14 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
+import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
@@ -502,13 +508,30 @@ class UserSessionScope internal constructor(
             userRepository = userRepository, teamRepository = teamRepository
         )
 
-    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCaseImpl(
+    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
+        get() = JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
             mlsConversationRepository
+        )
+
+    private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
+        get() = RecoverMLSConversationsUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            conversationRepository,
+            mlsConversationRepository,
+            joinExistingMLSConversationUseCase
+        )
+
+    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
+        get() = JoinExistingMLSConversationsUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            conversationRepository,
+            joinExistingMLSConversationUseCase
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
@@ -532,6 +555,15 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             slowSyncWorker,
             slowSyncRecoveryHandler
+        )
+    }
+    private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
+        MLSConversationsRecoveryManagerImpl(
+            featureSupport,
+            incrementalSyncRepository,
+            clientRepository,
+            recoverMLSConversationsUseCase,
+            slowSyncRepository
         )
     }
 
@@ -952,6 +984,10 @@ class UserSessionScope internal constructor(
         launch {
             val pushTokenUpdater = createPushTokenUpdater()
             pushTokenUpdater.monitorTokenChanges()
+        }
+
+        launch {
+            mlsConversationsRecoveryManager.invoke()
         }
     }
 

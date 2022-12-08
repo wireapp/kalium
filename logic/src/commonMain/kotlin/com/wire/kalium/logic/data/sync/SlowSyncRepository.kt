@@ -14,6 +14,8 @@ internal interface SlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)
     suspend fun clearLastSlowSyncCompletionInstant()
+    suspend fun updateMLSNeedsRecovery(state: Boolean)
+    suspend fun isMLSNeedsRecovery(): Boolean
     suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
 }
@@ -33,6 +35,18 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
         metadataDao.deleteValue(key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
+    override suspend fun updateMLSNeedsRecovery(state: Boolean) {
+        if (state) {
+            metadataDao.insertValue(value = "true", key = MLS_NEEDS_RECOVERY_KEY)
+        } else {
+            metadataDao.deleteValue(key = MLS_NEEDS_RECOVERY_KEY)
+        }
+    }
+
+    override suspend fun isMLSNeedsRecovery(): Boolean {
+        return metadataDao.valueByKey(key = MLS_NEEDS_RECOVERY_KEY).toBoolean()
+    }
+
     override suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
         metadataDao.valueByKeyFlow(key = LAST_SLOW_SYNC_INSTANT_KEY)
             .map { instantString ->
@@ -46,5 +60,6 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
 
     private companion object {
         const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
+        const val MLS_NEEDS_RECOVERY_KEY = "mlsNeedsRecovery"
     }
 }
