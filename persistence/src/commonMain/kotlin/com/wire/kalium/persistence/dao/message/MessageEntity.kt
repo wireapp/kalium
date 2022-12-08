@@ -29,7 +29,8 @@ sealed class MessageEntity(
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
+        val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -161,7 +162,7 @@ sealed class MessageEntityContent {
          * Details of the message being quoted.
          * Unused when inserting into the DB.
          */
-        val quotedMessage: QuotedMessage? = null
+        val quotedMessage: QuotedMessage? = null,
     ) : Regular() {
         data class QuotedMessage(
             val id: String,

@@ -56,16 +56,19 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> packText(readableContent)
+            is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
-            is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
+            is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
 
-            is MessageContent.Availability ->
-                GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
+            is MessageContent.Availability -> GenericMessage.Content.Availability(
+                availabilityMapper.fromModelAvailabilityToProto(
+                    readableContent.status
+                )
+            )
 
             is MessageContent.LastRead -> packLastRead(readableContent)
 
@@ -77,19 +80,17 @@ class ProtoContentMapperImpl(
 
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
 
-            is MessageContent.FailedDecryption,
-            is MessageContent.RestrictedAsset,
-            is MessageContent.Unknown,
-            MessageContent.Ignored -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
+            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+                throw IllegalArgumentException(
+                    "Unexpected message content type: $readableContent"
+                )
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
         GenericMessage.Content.External(
-            External(
-                ByteArr(protoContent.otrKey),
+            External(ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
-                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) }
-            )
+                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) })
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
@@ -97,8 +98,7 @@ class ProtoContentMapperImpl(
         val protobufModel = genericMessage.content
         protobufModel?.let {
             kaliumLogger.d(
-                "Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," +
-                        "content: ${it::class}}"
+                "Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," + "content: ${it::class}}"
             )
         }
 
@@ -107,25 +107,36 @@ class ProtoContentMapperImpl(
             val algorithm = encryptionAlgorithmMapper.fromProtobufModel(external.encryption)
             ProtoContent.ExternalMessageInstructions(genericMessage.messageId, external.otrKey.array, external.sha256?.array, algorithm)
         } else {
-            ProtoContent.Readable(genericMessage.messageId, getReadableContent(genericMessage, encodedContent))
+            val expectsReadConfirmation = when (val content = genericMessage.content) {
+                is GenericMessage.Content.Text -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
+                else -> false
+            }
+            ProtoContent.Readable(
+                genericMessage.messageId,
+                getReadableContent(genericMessage, encodedContent),
+                expectsReadConfirmation
+            )
         }
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    private fun getReadableContent(genericMessage: GenericMessage, encodedContent: PlainMessageBlob): MessageContent.FromProto {
+    private fun getReadableContent(
+        genericMessage: GenericMessage,
+        encodedContent: PlainMessageBlob
+    ): MessageContent.FromProto {
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent)
 
-            is GenericMessage.Content.Asset -> {
-                // Backend sends some preview asset messages just with img metadata and no
-                // keys or asset id,so we need to overwrite one with the other one
-                MessageContent.Asset(assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value))
-            }
+            is GenericMessage.Content.Asset -> unpackAsset(protoContent)
 
-            is GenericMessage.Content.Availability ->
-                MessageContent.Availability(availabilityMapper.fromProtoAvailabilityToModel(protoContent.value))
+            is GenericMessage.Content.Availability -> MessageContent.Availability(
+                availabilityMapper.fromProtoAvailabilityToModel(
+                    protoContent.value
+                )
+            )
 
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
@@ -161,11 +172,9 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.Confirmation(
             Confirmation(
                 type = when (receiptContent.type) {
-                    ReceiptType.DELIVERY -> Confirmation.Type.DELIVERED
+                    ReceiptType.DELIVERED -> Confirmation.Type.DELIVERED
                     ReceiptType.READ -> Confirmation.Type.READ
-                },
-                firstMessageId = firstMessage,
-                moreMessageIds = restOfMessageIds
+                }, firstMessageId = firstMessage, moreMessageIds = restOfMessageIds
             )
         )
     }
@@ -173,7 +182,7 @@ class ProtoContentMapperImpl(
     private fun unpackReceipt(
         protoContent: GenericMessage.Content.Confirmation
     ): MessageContent.FromProto = when (val protoType = protoContent.value.type) {
-        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERY
+        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERED
         Confirmation.Type.READ -> ReceiptType.READ
         is Confirmation.Type.UNRECOGNIZED -> {
             kaliumLogger.w("Unrecognised receipt type received = ${protoType.value}:${protoType.name}")
@@ -181,27 +190,20 @@ class ProtoContentMapperImpl(
         }
     }?.let { type ->
         MessageContent.Receipt(
-            type = type,
-            messageIds = listOf(protoContent.value.firstMessageId) + protoContent.value.moreMessageIds
+            type = type, messageIds = listOf(protoContent.value.firstMessageId) + protoContent.value.moreMessageIds
         )
     } ?: MessageContent.Ignored
 
-    private fun packReaction(readableContent: MessageContent.Reaction) = GenericMessage.Content.Reaction(
-        Reaction(
-            emoji = readableContent.emojiSet
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .joinToString(separator = ",") { it },
+    private fun packReaction(readableContent: MessageContent.Reaction) =
+        GenericMessage.Content.Reaction(Reaction(emoji = readableContent.emojiSet.map { it.trim() }.filter { it.isNotBlank() }
+            .joinToString(separator = ",") { it },
             messageId = readableContent.messageId
         )
-    )
+        )
 
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji
-        val emojiSet = emoji?.split(',')
-            ?.map { it.trim() }
-            ?.filter { it.isNotBlank() }
-            ?.toSet() ?: emptySet()
+        val emojiSet = emoji?.split(',')?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
         return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
     }
 
@@ -257,9 +259,7 @@ class ProtoContentMapperImpl(
             is MessageEdit.Content.Text -> {
                 val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
                 MessageContent.TextEdited(
-                    editMessageId = replacingMessageId,
-                    newContent = editContent.value.content,
-                    newMentions = mentions
+                    editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
             }
             // TODO: for now we do not implement it
@@ -287,7 +287,7 @@ class ProtoContentMapperImpl(
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
 
-    private fun packText(readableContent: MessageContent.Text): GenericMessage.Content.Text {
+    private fun packText(readableContent: MessageContent.Text, expectsReadConfirmation: Boolean): GenericMessage.Content.Text {
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
@@ -296,30 +296,45 @@ class ProtoContentMapperImpl(
             Text(
                 content = readableContent.value,
                 mentions = mentions,
-                quote = quote
+                quote = quote,
+                expectsReadConfirmation = expectsReadConfirmation
             )
         )
     }
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
-        protoContent.value.content,
-        protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
-        protoContent.value.quote?.let {
+        value = protoContent.value.content,
+        mentions = protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+        quotedMessageReference = protoContent.value.quote?.let {
             MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId,
-                quotedMessageSha256 = it.quotedMessageSha256?.array,
-                isVerified = false
+                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
             )
         },
-        null
+        quotedMessageDetails = null
     )
+
+    private fun packAsset(readableContent: MessageContent.Asset, expectsReadConfirmation: Boolean): GenericMessage.Content.Asset {
+        return GenericMessage.Content.Asset(
+            asset = assetMapper.fromAssetContentToProtoAssetMessage(
+                readableContent,
+                expectsReadConfirmation
+            )
+        )
+    }
+
+    private fun unpackAsset(protoContent: GenericMessage.Content.Asset): MessageContent.Asset {
+        // Backend sends some preview asset messages just with img metadata and no
+        // keys or asset id,so we need to overwrite one with the other one
+        return MessageContent.Asset(
+            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
+        )
+    }
 
     private fun extractConversationId(
         qualifiedConversationID: QualifiedConversationId?,
         unqualifiedConversationID: String
     ): ConversationId {
-        return if (qualifiedConversationID != null)
-            idMapper.fromProtoModel(qualifiedConversationID)
+        return if (qualifiedConversationID != null) idMapper.fromProtoModel(qualifiedConversationID)
         else ConversationId(unqualifiedConversationID, selfUserId.domain)
     }
 }

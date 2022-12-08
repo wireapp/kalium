@@ -1124,7 +1124,8 @@ class ConversationRepositoryTest {
                 senderClientId = "sender",
                 status = MessageEntity.Status.SENT,
                 editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "sender"
+                senderName = "sender",
+                expectsReadConfirmation = false
             )
 
         val TEST_MESSAGE_PREVIEW_ENTITY =

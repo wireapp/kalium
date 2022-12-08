@@ -92,7 +92,7 @@ class ReceiptMessageHandlerTest {
         val date = Clock.System.now()
         val senderUserId = OTHER_USER_ID
         // Delivery != Read
-        val type = ReceiptType.DELIVERY
+        val type = ReceiptType.DELIVERED
 
         handleNewReceipt(type, date, senderUserId)
 

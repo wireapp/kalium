@@ -42,7 +42,7 @@ class ProteusMessageUnpackerTest {
     fun givenNewMessageEvent_whenUnpacking_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
-            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
+            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown(), false))
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
@@ -86,7 +86,7 @@ class ProteusMessageUnpackerTest {
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
-                ProtoContent.Readable(messageUid, decryptedExternalContent)
+                ProtoContent.Readable(messageUid, decryptedExternalContent, false)
             ).arrange()
 
         val messageEvent = TestEvent.newMessageEvent(
