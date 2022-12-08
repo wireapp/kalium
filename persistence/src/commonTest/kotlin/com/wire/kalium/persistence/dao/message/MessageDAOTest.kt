@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -644,6 +645,38 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(allMessages)
         val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun givenMessageFailedToDecrypt_WhenMarkingAsResolved_ThenTheValuesShouldBeUpdated() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.FailedDecryption(null, false)
+                )
+            )
+        )
+
+        // when
+        messageDAO.markMessagesAsDecryptionResolved(conversationId)
+
+        // then
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
     }
 
     private suspend fun insertInitialData() {
