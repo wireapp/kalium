@@ -16,6 +16,7 @@ object MessageMapper {
 
     private val serializer = JsonSerializer()
 
+    @Suppress("ComplexMethod")
     private fun toMessagePreviewEntityContent(
         contentType: MessageEntity.ContentType,
         senderName: String?,

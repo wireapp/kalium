@@ -67,7 +67,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             }
     }
 
-    //TODO: will consider these values in query lever after sqldeight added window functions
+    // TODO: will consider these values in query lever after SQLDelight added window functions
     companion object {
         private const val DEFAULT_MESSAGE_LIMIT = 100
         private const val DEFAULT_MESSAGE_OFFSET = 0

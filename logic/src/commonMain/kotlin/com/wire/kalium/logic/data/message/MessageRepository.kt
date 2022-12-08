@@ -168,7 +168,7 @@ class MessageDataSource(
                 item.conversationId
             }.map { (conversationId, messages) ->
                 LocalNotificationConversation(
-                    //todo: needs some clean up!
+                    // todo: needs some clean up!
                     id = idMapper.fromDaoModel(conversationId),
                     conversationName = messages.first().conversationName ?: "",
                     messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
