@@ -32,6 +32,10 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
+    suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>>
+
     suspend fun getMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,

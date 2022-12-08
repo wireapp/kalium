@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName
@@ -240,6 +241,15 @@ data class MessagePreviewEntity(
     val date: String,
     val visibility: MessageEntity.Visibility,
     val isSelfMessage: Boolean
+)
+
+data class NotificationMessageEntity(
+    val id: String,
+    val content: MessagePreviewEntityContent,
+    val conversationId: QualifiedIDEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type?,
+    val date: String
 )
 
 sealed class MessagePreviewEntityContent {

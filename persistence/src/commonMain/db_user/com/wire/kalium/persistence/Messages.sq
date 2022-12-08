@@ -293,7 +293,10 @@ Mention.user_id AS mentionedUserId,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) < strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_notified_message_date)) AS isNotified,
+Conversation.muted_status AS mutedStatus,
+Conversation.type AS conversationType
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
@@ -516,6 +519,14 @@ WHERE message.conversationId
 IS :conversation_id
 ORDER BY message.date ASC
 LIMIT  1;
+
+getNotificationsMessages:
+SELECT * FROM MessagePreview AS message
+WHERE isNotified == 0
+AND isSelfMessage == 0
+AND visibility = 'VISIBLE'
+AND mutedStatus <> 'ALL_MUTED'
+AND contentType IN ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
