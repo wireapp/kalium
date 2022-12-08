@@ -233,6 +233,11 @@ sealed class MessageEntityContent {
     data class TeamMemberRemoved(val userName: String) : System()
 }
 
+/**
+ * Simplified model of [MessageEntity]
+ * used everywhere where there is no need to have all the fields
+ * for example in conversation list or notifications
+ */
 data class MessagePreviewEntity(
     val id: String,
     val conversationId: QualifiedIDEntity,
