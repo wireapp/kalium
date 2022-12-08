@@ -515,3 +515,8 @@ AND visibility IN ?
 AND (expectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+
+markMessagesAsDecryptionResolved:
+UPDATE MessageFailedToDecryptContent
+SET is_session_resolved = 1
+WHERE conversation_id = :conversation_id;

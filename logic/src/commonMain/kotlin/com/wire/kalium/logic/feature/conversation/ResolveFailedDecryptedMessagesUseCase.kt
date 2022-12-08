@@ -1,10 +1,11 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * Mark decrypted messages with errors as resolved.
@@ -19,14 +20,16 @@ interface ResolveFailedDecryptedMessagesUseCase {
 }
 
 internal class ResolveFailedDecryptedMessagesUseCaseImpl(
-    private val messageRepository: MessageRepository,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val messageRepository: MessageRepository
 ) :
     ResolveFailedDecryptedMessagesUseCase {
-    override suspend fun invoke(conversationId: ConversationId): ResolveDecryptedErrorResult {
-        TODO("Not yet implemented")
-    }
-
+    override suspend fun invoke(conversationId: ConversationId): ResolveDecryptedErrorResult =
+        messageRepository.markMessagesAsDecryptionResolved(conversationId).fold({
+            kaliumLogger.withFeatureId(MESSAGES).e("There was an error marking messages as decryption resolved")
+            ResolveDecryptedErrorResult.Failure(it)
+        }, {
+            ResolveDecryptedErrorResult.Success
+        })
 }
 
 sealed class ResolveDecryptedErrorResult {
