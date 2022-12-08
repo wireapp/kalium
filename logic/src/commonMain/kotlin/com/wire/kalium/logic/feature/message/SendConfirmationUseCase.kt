@@ -23,8 +23,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
 /**
- * This use case allows to send a confirmation type [ReceiptType.READ] or [ReceiptType.DELIVERED] accordingly to
- * configurations criteria.
+ * This use case allows to send a confirmation type [ReceiptType.READ]
  *
  * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
