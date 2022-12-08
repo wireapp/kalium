@@ -120,7 +120,6 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
@@ -470,9 +469,6 @@ internal class ConversationDataSource internal constructor(
      */
     override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
-
-    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
-        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

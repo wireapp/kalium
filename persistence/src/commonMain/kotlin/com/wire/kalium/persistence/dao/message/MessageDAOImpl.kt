@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.dao.message
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -19,7 +18,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRIC
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
@@ -40,7 +38,7 @@ class MessageDAOImpl(
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(
+    override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
@@ -63,7 +61,7 @@ class MessageDAOImpl(
     }
 
     @Deprecated("For test only!")
-    override suspend fun insertMessages(messages: List<MessageEntity>) =
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
@@ -74,7 +72,7 @@ class MessageDAOImpl(
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            queries.insertMessage(
+            queries.insertOrIgnoreMessage(
                 id = message.id,
                 conversation_id = message.conversationId,
                 date = message.date,
@@ -82,7 +80,8 @@ class MessageDAOImpl(
                 sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
                 visibility = message.visibility,
                 status = message.status,
-                content_type = contentTypeOf(message.content)
+                content_type = contentTypeOf(message.content),
+                expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
             )
             when (val content = message.content) {
                 is MessageEntityContent.Text -> {
@@ -264,7 +263,7 @@ class MessageDAOImpl(
             mapper::toNotificationEntity
         ).asFlow().mapToList()
 
-    override suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
@@ -314,24 +313,11 @@ class MessageDAOImpl(
         queries.deleteAllConversationMessages(conversationId)
     }
 
-    override suspend fun observeConversationLastMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getConversationLastMessage(
-        conversationID,
-        mapper::toEntityMessageFromView
-    ).asFlow().mapToOneOrNull()
-
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
-
-    override suspend fun observeUnreadMentionsCount(
-        conversationId: QualifiedIDEntity
-    ): Flow<Long> =
-        queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
-            .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
@@ -349,6 +335,16 @@ class MessageDAOImpl(
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
+
+    override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility>
+    ): List<MessageEntity> {
+        return queries
+            .selectPendingMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
+            .executeAsList()
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }

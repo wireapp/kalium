@@ -24,12 +24,12 @@ internal class ReceiptsMapperImpl(
 
     override fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity = when (type) {
         ReceiptType.READ -> ReceiptTypeEntity.READ
-        ReceiptType.DELIVERY -> ReceiptTypeEntity.DELIVERY
+        ReceiptType.DELIVERED -> ReceiptTypeEntity.DELIVERY
     }
 
     override fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType = when (type) {
         ReceiptTypeEntity.READ -> ReceiptType.READ
-        ReceiptTypeEntity.DELIVERY -> ReceiptType.DELIVERY
+        ReceiptTypeEntity.DELIVERY -> ReceiptType.DELIVERED
     }
 
     override fun fromEntityToModel(detailedReceiptEntity: DetailedReceiptEntity): DetailedReceipt =
