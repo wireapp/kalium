@@ -91,7 +91,7 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         isUnread: Boolean,
-        isNotified: Boolean,
+        isNotified: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
         conversationType: ConversationEntity.Type?
     ): MessagePreviewEntity {
@@ -139,7 +139,7 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         isUnread: Boolean,
-        isNotified: Boolean,
+        isNotified: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
         conversationType: ConversationEntity.Type?
     ): NotificationMessageEntity {

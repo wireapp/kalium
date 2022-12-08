@@ -296,7 +296,7 @@ QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
 (strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) < strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_notified_message_date)) AS isNotified,
+IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) < strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_notified_message_date)), FALSE) AS isNotified,
 Conversation.muted_status AS mutedStatus,
 Conversation.type AS conversationType
 FROM Message
