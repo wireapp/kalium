@@ -74,7 +74,7 @@ class MessageDAOImpl(
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            queries.insertMessage(
+            queries.insertOrIgnoreMessage(
                 id = message.id,
                 conversation_id = message.conversationId,
                 date = message.date,
