@@ -186,6 +186,8 @@ sealed class MessageContent {
     object Ignored : Signaling() // messages that aren't processed in any way
 
     data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
+
+    object SessionReset : Signaling()
 }
 
 sealed class MessagePreviewContent {
