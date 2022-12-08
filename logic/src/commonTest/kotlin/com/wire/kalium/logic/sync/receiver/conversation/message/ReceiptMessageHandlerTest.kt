@@ -32,7 +32,7 @@ class ReceiptMessageHandlerTest {
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = OTHER_USER_ID_ENTITY))
         userDatabase.builder.conversationDAO.insertConversation(CONVERSATION_ENTITY)
-        userDatabase.builder.messageDAO.insertMessage(MESSAGE_ENTITY)
+        userDatabase.builder.messageDAO.insertOrIgnoreMessage(MESSAGE_ENTITY)
     }
 
     @Test
@@ -92,7 +92,7 @@ class ReceiptMessageHandlerTest {
         val date = Clock.System.now()
         val senderUserId = OTHER_USER_ID
         // Delivery != Read
-        val type = ReceiptType.DELIVERY
+        val type = ReceiptType.DELIVERED
 
         handleNewReceipt(type, date, senderUserId)
 

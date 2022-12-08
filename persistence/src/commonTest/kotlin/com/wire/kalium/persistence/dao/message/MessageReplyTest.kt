@@ -16,7 +16,7 @@ class MessageReplyTest : BaseMessageTest() {
     @Test
     fun givenInsertedTextMessage_whenNewMessageQuotesIt_thenNewMessageShouldBeQueriedWithQuoteInfo() = runTest(dispatcher) {
         insertInitialData()
-        messageDAO.insertMessage(MESSAGE_QUOTING_TEXT)
+        messageDAO.insertOrIgnoreMessage(MESSAGE_QUOTING_TEXT)
 
         val message = messageDAO.getMessageById(MESSAGE_QUOTING_TEXT.id, MESSAGE_QUOTING_TEXT.conversationId).first()
 
@@ -38,7 +38,7 @@ class MessageReplyTest : BaseMessageTest() {
     @Test
     fun givenInsertedAssetMessage_whenNewMessageQuotesIt_thenNewMessageShouldBeQueriedWithQuoteAndAssetInfo() = runTest(dispatcher) {
         insertInitialData()
-        messageDAO.insertMessage(MESSAGE_QUOTING_IMAGE)
+        messageDAO.insertOrIgnoreMessage(MESSAGE_QUOTING_IMAGE)
 
         val message = messageDAO.getMessageById(MESSAGE_QUOTING_IMAGE.id, MESSAGE_QUOTING_IMAGE.conversationId).first()
 
@@ -61,8 +61,8 @@ class MessageReplyTest : BaseMessageTest() {
     override suspend fun insertInitialData() {
         super.insertInitialData()
         // Always insert original messages
-        messageDAO.insertMessage(ORIGINAL_TEXT_MESSAGE)
-        messageDAO.insertMessage(ORIGINAL_IMAGE_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(ORIGINAL_TEXT_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(ORIGINAL_IMAGE_MESSAGE)
     }
 
     private companion object {
