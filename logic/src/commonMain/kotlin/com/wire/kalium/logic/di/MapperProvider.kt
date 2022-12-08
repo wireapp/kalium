@@ -48,6 +48,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapperImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
@@ -77,7 +79,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
     fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
@@ -88,6 +90,7 @@ internal object MapperProvider {
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
+    fun receiptsMapper(): ReceiptsMapper = ReceiptsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
         idMapper = idMapper(),
@@ -103,7 +106,8 @@ internal object MapperProvider {
             ProtocolInfoMapperImpl(),
             AvailabilityStatusMapperImpl(),
             DomainUserTypeMapperImpl(),
-            ConnectionStatusMapperImpl()
+            ConnectionStatusMapperImpl(),
+            ConversationRoleMapperImpl()
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()

@@ -2,8 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
-import kotlin.Int;
 import kotlin.Boolean;
+import kotlin.Int;
 import kotlin.collections.List;
 
 CREATE TABLE Message (
@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -148,10 +149,7 @@ AS SELECT
     MessageTextContent.quoted_message_id AS quotedMessageId,
     MessageTextContent.is_quote_verified AS isQuoteVerified,
     QuotedSender.qualified_id AS quotedSenderId,
-    CASE
-        WHEN (qualified_id = SelfUser.id) THEN 1
-        ELSE 0
-    END AS isQuotingSelfUser,
+    (qualified_id == SelfUser.id) AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
     QuotedMessage.date AS quotedMessageDateTime,
     QuotedMessage.last_edit_timestamp AS quotedMessageEditTimestamp,
@@ -178,6 +176,7 @@ Message.sender_client_id AS senderClientId,
 Message.status AS status,
 Message.last_edit_timestamp AS lastEditTimestamp,
 Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -191,6 +190,7 @@ User.user_availability_status AS senderAvailabilityStatus,
 User.user_type AS senderUserType,
 User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
@@ -275,6 +275,49 @@ LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.mes
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.date AS date,
+Message.visibility AS visibility,
+User.name AS senderName,
+User.connection_status AS senderConnectionStatus,
+User.deleted AS senderIsDeleted,
+SelfUser.id AS selfUserId,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
+ConversationNameChangedContent.conversation_name AS conversationName,
+Mention.user_id AS mentionedUserId,
+QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+TextContent.text_body AS text,
+AssetContent.asset_mime_type AS assetMimeType,
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread
+FROM Message
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN SelfUser;
+
+getLastMessages:
+SELECT * FROM MessagePreview AS message
+GROUP BY conversationId
+HAVING date = MAX(date) AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
+ORDER BY message.date ASC;
+
+getUnreadMessages:
+SELECT * FROM MessagePreview AS message
+WHERE isUnread
+AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
+
 deleteAllMessages:
 DELETE FROM Message;
 
@@ -306,17 +349,9 @@ UPDATE Message
 SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
-insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(id, conversation_id) DO UPDATE SET
-id = excluded.id,
-content_type = excluded.content_type,
-date = excluded.date,
-sender_user_id = excluded.sender_user_id,
-sender_client_id = excluded.sender_client_id,
-status = excluded.status,
-visibility = excluded.visibility;
+insertOrIgnoreMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
@@ -433,19 +468,19 @@ SET id = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
-SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
@@ -458,22 +493,8 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
-getLastUnreadMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-ORDER BY message.date ASC
-LIMIT  1;
-
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
-
-getUnreadMentionsCount:
-SELECT COUNT(DISTINCT message.id) FROM Message AS message
-WHERE message.conversation_id IS :conversation_id
-AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent
@@ -484,3 +505,11 @@ resetAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
+
+selectPendingMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = ?
+AND visibility IN ?
+AND (expectsReadConfirmation = 1)
+AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;

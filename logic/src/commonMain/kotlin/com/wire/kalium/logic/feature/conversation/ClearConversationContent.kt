@@ -4,13 +4,13 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -59,7 +59,7 @@ interface ClearConversationContentUseCase {
 
 internal class ClearConversationContentUseCaseImpl(
     private val clearConversationContent: ClearConversationContent,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider
@@ -67,13 +67,11 @@ internal class ClearConversationContentUseCaseImpl(
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
         clearConversationContent(conversationId).flatMap {
-            clientRepository.currentClientId().flatMap { currentClientId ->
+            currentClientIdProvider().flatMap { currentClientId ->
                 selfConversationIdProvider().flatMap { selfConversationId ->
-                    val regularMessage = Message.Regular(
+                    val regularMessage = Message.Signaling(
                         id = uuid4().toString(),
                         content = MessageContent.Cleared(
-                            unqualifiedConversationId = conversationId.value,
-                            // the id of the conversation that we want to clear
                             conversationId = conversationId,
                             time = Clock.System.now()
                         ),
@@ -82,8 +80,7 @@ internal class ClearConversationContentUseCaseImpl(
                         date = Clock.System.now().toString(),
                         senderUserId = selfUserId,
                         senderClientId = currentClientId,
-                        status = Message.Status.PENDING,
-                        editStatus = Message.EditStatus.NotEdited,
+                        status = Message.Status.PENDING
                     )
                     messageSender.sendMessage(regularMessage)
                 }

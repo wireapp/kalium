@@ -13,7 +13,8 @@ sealed class MessageEntity(
     open val date: String,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
-    open val visibility: Visibility
+    open val visibility: Visibility,
+    open val isSelfMessage: Boolean,
 ) {
 
     data class Regular(
@@ -24,10 +25,13 @@ sealed class MessageEntity(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
+        val expectsReadConfirmation: Boolean = false
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
         override val id: String,
@@ -36,8 +40,10 @@ sealed class MessageEntity(
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+        override val visibility: Visibility = Visibility.VISIBLE,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -121,6 +127,7 @@ sealed class MessageEntity(
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
+
         val isVisible get() = this == VISIBLE
     }
 
@@ -155,7 +162,7 @@ sealed class MessageEntityContent {
          * Details of the message being quoted.
          * Unused when inserting into the DB.
          */
-        val quotedMessage: QuotedMessage? = null
+        val quotedMessage: QuotedMessage? = null,
     ) : Regular() {
         data class QuotedMessage(
             val id: String,
@@ -225,6 +232,56 @@ sealed class MessageEntityContent {
     object MissedCall : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
+}
+
+/**
+ * Simplified model of [MessageEntity]
+ * used everywhere where there is no need to have all the fields
+ * for example in conversation list or notifications
+ */
+data class MessagePreviewEntity(
+    val id: String,
+    val conversationId: QualifiedIDEntity,
+    val content: MessagePreviewEntityContent,
+    val date: String,
+    val visibility: MessageEntity.Visibility,
+    val isSelfMessage: Boolean
+)
+
+sealed class MessagePreviewEntityContent {
+
+    data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
+
+    data class MentionedSelf(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class QuotedSelf(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberChange(
+        val adminName: String?,
+        val count: Int, // TODO add usernames
+        val type: MessageEntity.MemberChangeType
+    ) : MessagePreviewEntityContent()
+
+    data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
+
+    data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
+
+    object Unknown : MessagePreviewEntityContent()
+
+}
+
+enum class AssetTypeEntity {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    ASSET,
+    FILE
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>

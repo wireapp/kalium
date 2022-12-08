@@ -44,7 +44,8 @@ object EventContentDTOJson {
         |  }, 
         |  "data" : {
         |       "access": [code],
-        |       "access_role_v2": [team_member]
+        |       "access_role_v2": [team_member],
+        |       "access_role": "activated"
         |  }
         |}
         """.trimMargin()

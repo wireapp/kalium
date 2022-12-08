@@ -46,6 +46,7 @@ object TestConversation {
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null
     )
+
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
@@ -126,8 +127,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
-        isMember = 1L,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -141,7 +140,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -250,8 +249,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
-        isMember = 1L,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -265,7 +262,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     val CONVERSATION = Conversation(

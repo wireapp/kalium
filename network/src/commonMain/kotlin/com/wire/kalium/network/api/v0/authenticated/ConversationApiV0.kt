@@ -7,14 +7,15 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.PaginationRequest
@@ -144,12 +145,12 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    override suspend fun updateAccessRole(
+    override suspend fun updateAccess(
         conversationId: ConversationId,
-        conversationAccessInfoDTO: ConversationAccessInfoDTO
+        updateConversationAccessRequest: UpdateConversationAccessRequest
     ): NetworkResponse<UpdateConversationAccessResponse> = try {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
-            setBody(conversationAccessInfoDTO)
+            setBody(updateConversationAccessRequest)
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
@@ -175,14 +176,25 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    override suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.put(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_NAME"
-            ) {
-                setBody(ConversationRenameRequest(conversationName))
+    override suspend fun updateConversationName(
+        conversationId: QualifiedID,
+        conversationName: String
+    ): NetworkResponse<ConversationRenameResponse> = try {
+        httpClient.put(
+            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_NAME"
+        ) {
+            setBody(ConversationRenameRequest(conversationName))
+        }.let { response ->
+            when (response.status) {
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.ConversationRenameDTO> { response }
+                    .mapSuccess { ConversationRenameResponse.Changed(it) }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationRenameResponse.Unchanged, response)
+                else -> wrapKaliumResponse { response }
             }
         }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         NetworkResponse.Error(

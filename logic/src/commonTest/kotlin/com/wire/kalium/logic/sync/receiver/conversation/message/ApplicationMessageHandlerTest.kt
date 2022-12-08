@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
 import io.mockative.Mock
@@ -52,7 +54,7 @@ class ApplicationMessageHandlerTest {
                 Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent)
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
         val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -101,6 +103,9 @@ class ApplicationMessageHandlerTest {
         private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
+        private val receiptRepository = mock(classOf<ReceiptRepository>())
+
+        @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         @Mock
@@ -130,12 +135,14 @@ class ApplicationMessageHandlerTest {
                 selfConversationIdProvider = selfConversationIdProvider
             ),
             DeleteForMeHandler(
-                conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
-                selfUserId = TestUser.USER_ID,
                 selfConversationIdProvider = selfConversationIdProvider
             ),
-            MessageContentEncoder()
+            MessageContentEncoder(),
+            ReceiptMessageHandler(
+                selfUserId = TestUser.USER_ID,
+                receiptRepository = receiptRepository
+            )
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {

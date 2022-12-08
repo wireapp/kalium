@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
@@ -30,6 +31,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class UserRepositoryTest {
 
@@ -138,7 +140,63 @@ class UserRepositoryTest {
         }
     }
 
-    // TODO other UserRepository tests
+    @Test
+    fun givenAnEmptyUserIdList_whenFetchingUsers_thenShouldNotFetchFromApiAndSucceed() = runTest {
+        // given
+        val requestedUserIds = emptySet<UserId>()
+        val (arrangement, userRepository) = Arrangement()
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnEmptyUserIdListFromSameDomainAsSelf_whenFetchingUsers_thenShouldNotFetchMultipleUsersAndSucceed() = runTest {
+        // given
+        val requestedUserIds = setOf(
+            UserId(value = "id1", domain = "domain1"),
+            UserId(value = "id2", domain = "domain2")
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+        assertTrue { requestedUserIds.none { it.domain == arrangement.selfUserId.domain } }
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenARemoteUserIsDeleted_whenFetchingSelfUser_thenShouldFailWithProperError() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withRemoteGetSelfReturningDeletedUser()
+            .arrange()
+        // when
+        val result = userRepository.fetchSelfUser()
+        // then
+        with(result) {
+            shouldFail { it is SelfUserDeleted }
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::getSelfInfo)
+                .wasInvoked(exactly = once)
+        }
+    }
+
+// TODO other UserRepository tests
 
     private class Arrangement {
         @Mock
@@ -162,8 +220,10 @@ class UserRepositoryTest {
         @Mock
         val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
+        val selfUserId = TestUser.SELF.id
+
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id, qualifiedIdMapper)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper)
         }
 
         init {
@@ -221,6 +281,14 @@ class UserRepositoryTest {
                     }
                 """.trimIndent()
                 )
+            return this
+        }
+
+        fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::getSelfInfo)
+                .whenInvoked()
+                .thenReturn(NetworkResponse.Success(TestUser.USER_DTO.copy(deleted = true), mapOf(), 200))
             return this
         }
 

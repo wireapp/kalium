@@ -201,11 +201,11 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             false,
-                            unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -268,11 +268,11 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -330,11 +330,11 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -401,11 +401,11 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -458,11 +458,11 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap(),
+                            selfRole = Conversation.Member.Role.Member
                         )
                     )
                 )
@@ -1312,9 +1312,8 @@ class CallRepositoryTest {
             otherUser = TestUser.OTHER,
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
-            unreadContentCount = emptyMap()
+            lastMessage = null,
+            unreadEventCount = emptyMap()
         )
     }
 }
