@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.utils.toJsonElement
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonNull
@@ -253,6 +254,24 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                     "conversationName" to conversationName,
                     "timestampIso" to timestampIso,
                 )
+                return "${properties.toJsonElement()}"
+            }
+        }
+
+        data class ConversationReceiptMode(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val receiptMode: ReceiptMode
+        ) : Conversation(id, transient, conversationId) {
+
+            override fun toString(): String {
+                val properties = mapOf(
+                    "id" to id.obfuscateId(),
+                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                    "receiptMode" to "${receiptMode.value}"
+                )
+
                 return "${properties.toJsonElement()}"
             }
         }

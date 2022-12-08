@@ -63,7 +63,19 @@ class EventMapper(
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
         }
+
+    private fun conversationReceiptModeUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ReceiptModeUpdate,
+        transient: Boolean
+    ): Event = Event.Conversation.ConversationReceiptMode(
+        id,
+        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        transient,
+        eventContentDTO.data
+    )
 
     private fun updateUserProperties(
         id: String,

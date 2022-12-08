@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationN
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
@@ -191,7 +192,13 @@ sealed class EventContentDTO {
 
         // TODO conversation.code-delete
 
-        // TODO conversation.receipt-mode-update
+        @Serializable
+        @SerialName("conversation.receipt-mode-update")
+        data class ReceiptModeUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ReceiptMode,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
 
         // TODO conversation.message-timer-update
 
