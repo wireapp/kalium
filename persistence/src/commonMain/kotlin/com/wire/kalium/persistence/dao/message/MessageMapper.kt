@@ -199,7 +199,7 @@ object MessageMapper {
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
-        isSessionResolved: Boolean?,
+        isDecryptionResolved: Boolean?,
         conversationName: String?,
         allReactionsJson: String,
         selfReactionsJson: String,
@@ -275,7 +275,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
-                isSessionResolved = isSessionResolved ?: false
+                isDecryptionResolved = isDecryptionResolved ?: false
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(

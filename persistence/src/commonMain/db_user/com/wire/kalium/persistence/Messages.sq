@@ -115,7 +115,7 @@ CREATE TABLE MessageUnknownContent (
 CREATE TABLE MessageFailedToDecryptContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      is_session_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
+      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       unknown_encoded_data BLOB,
 
@@ -217,7 +217,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
-FailedToDecryptContent.is_session_resolved AS isSessionResolved,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
@@ -518,5 +518,5 @@ ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
-SET is_session_resolved = 1
+SET is_decryption_resolved = 1
 WHERE conversation_id = :conversation_id;

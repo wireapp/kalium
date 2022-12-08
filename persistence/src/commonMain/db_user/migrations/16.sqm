@@ -1,7 +1,7 @@
 import kotlin.Boolean;
 
 DROP VIEW MessageDetailsView;
-ALTER TABLE MessageFailedToDecryptContent ADD COLUMN is_session_resolved INTEGER AS Boolean NOT NULL DEFAULT(0);
+ALTER TABLE MessageFailedToDecryptContent ADD COLUMN is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -54,7 +54,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
-FailedToDecryptContent.is_session_resolved AS isSessionResolved,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)

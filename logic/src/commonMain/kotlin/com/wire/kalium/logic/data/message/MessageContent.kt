@@ -185,7 +185,7 @@ sealed class MessageContent {
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
-    data class FailedDecryption(val encodedData: ByteArray? = null, val isSessionResolved: Boolean) : Regular()
+    data class FailedDecryption(val encodedData: ByteArray? = null, val isDecryptionResolved: Boolean) : Regular()
 }
 
 sealed class MessagePreviewContent {
