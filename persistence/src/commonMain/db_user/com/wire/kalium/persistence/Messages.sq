@@ -115,6 +115,7 @@ CREATE TABLE MessageUnknownContent (
 CREATE TABLE MessageFailedToDecryptContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      is_session_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       unknown_encoded_data BLOB,
 
@@ -216,6 +217,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_session_resolved AS isSessionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)

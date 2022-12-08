@@ -30,7 +30,9 @@ internal class NewMessageEventHandlerImpl(
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    content = MessageContent.FailedDecryption(event.encryptedExternalContent?.data)
+                    content = MessageContent.FailedDecryption(
+                        encodedData = event.encryptedExternalContent?.data, isSessionResolved = false
+                    )
                 )
             }.onSuccess {
                 handleSuccessfulResult(it)
@@ -46,7 +48,7 @@ internal class NewMessageEventHandlerImpl(
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    content = MessageContent.FailedDecryption()
+                    content = MessageContent.FailedDecryption(isSessionResolved = false)
                 )
             }.onSuccess {
                 handleSuccessfulResult(it)
