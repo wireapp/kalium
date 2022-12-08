@@ -85,7 +85,7 @@ internal class SendConfirmationUseCase internal constructor(
             } else {
                 messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
                     .fold({
-                        logger.e("$TAG There was an unknown error trying to get latest messages $it")
+                        logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
                         emptyList()
                     }, { messages ->
                         messages.map { it.id }
