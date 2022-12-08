@@ -7,7 +7,6 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class GlobalTeamConversationResponse(
