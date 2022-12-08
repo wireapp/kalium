@@ -564,7 +564,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 }
             }
 
-            messageDAO.insertMessages(messages)
+            messageDAO.insertOrIgnoreMessages(messages)
 
             // when
             messageDAO.deleteAllConversationMessages(conversation.id)
@@ -710,6 +710,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
         val message1 = newSystemMessageEntity(
+            id = "1",
             senderUserId = member1.user,
             content = MessageEntityContent.MemberChange(
                 listOf(mySelfId),
@@ -719,6 +720,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id
         )
         val message2 = newSystemMessageEntity(
+            id = "2",
             senderUserId = member3.user,
             content = MessageEntityContent.MemberChange(
                 listOf(mySelfId),
@@ -730,8 +732,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1)
         userDAO.insertUser(user2)
         userDAO.insertUser(user3)
-        messageDAO.insertMessage(message1)
-        messageDAO.insertMessage(message2)
+        messageDAO.insertOrIgnoreMessage(message1)
+        messageDAO.insertOrIgnoreMessage(message2)
 
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
@@ -765,7 +767,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Clock.System.now().toString(),
             conversationId = conversationEntity1.id
         )
-        messageDAO.insertMessage(removalMessage)
+        messageDAO.insertOrIgnoreMessage(removalMessage)
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
             conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"

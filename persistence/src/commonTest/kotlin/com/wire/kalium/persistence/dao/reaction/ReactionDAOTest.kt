@@ -35,7 +35,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val expectedReaction = "🐻"
 
         reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", expectedReaction)
@@ -52,7 +52,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val expectedReaction = "🐻"
 
         reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", expectedReaction)
@@ -70,7 +70,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val wantedUserId = SELF_USER.id
         val otherUserId = OTHER_USER.id
         val expectedReactions = setOf("🐻", "🧱", "🍻")
@@ -94,8 +94,8 @@ class ReactionDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(TEST_CONVERSATION)
         val wantedMessageId = "wantedMessageId"
         val otherMessageId = "otherMessageId"
-        messageDAO.insertMessage(TEST_MESSAGE.copy(id = wantedMessageId))
-        messageDAO.insertMessage(TEST_MESSAGE.copy(id = otherMessageId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE.copy(id = wantedMessageId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE.copy(id = otherMessageId))
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
         expectedReactions.forEach {
@@ -118,8 +118,8 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val otherConversationId = TEST_CONVERSATION.id.copy(value = "otherConversation")
         conversationDAO.insertConversation(TEST_CONVERSATION.copy(id = wantedConversationId))
         conversationDAO.insertConversation(TEST_CONVERSATION.copy(id = otherConversationId))
-        messageDAO.insertMessage(TEST_MESSAGE.copy(conversationId = wantedConversationId))
-        messageDAO.insertMessage(TEST_MESSAGE.copy(conversationId = otherConversationId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE.copy(conversationId = wantedConversationId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE.copy(conversationId = otherConversationId))
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
         expectedReactions.forEach {
@@ -139,7 +139,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val initialReaction = "😎"
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
@@ -159,7 +159,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val initialReaction = "😎"
         val expectedReactions = setOf("😎", "🐻", "🧱", "🍻")
 

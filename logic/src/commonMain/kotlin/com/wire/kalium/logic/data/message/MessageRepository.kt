@@ -152,7 +152,7 @@ class MessageDataSource(
         updateConversationModifiedDate: Boolean,
         updateConversationNotificationsDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(
+        messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
             updateConversationModifiedDate,

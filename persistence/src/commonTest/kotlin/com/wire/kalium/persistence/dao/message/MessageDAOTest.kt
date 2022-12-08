@@ -16,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -82,11 +83,53 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
 
         val result = messageDAO.getAllPendingMessagesFromUser(userInQuestion.id)
 
         assertContentEquals(expectedMessages, result)
+    }
+
+    @Test
+    fun givenMessageIsInserted_whenInsertingAgainSameIdAndConversationId_thenShouldKeepOriginalData() = runTest {
+        insertInitialData()
+        val messageId = "testMessageId"
+        val originalUser = userEntity1
+        val replacementUser = userEntity2
+
+        val originalMessage = newRegularMessageEntity(
+            id = messageId,
+            conversationId = conversationEntity1.id,
+            senderUserId = originalUser.id,
+            senderClientId = "initialClientId",
+            content = MessageEntityContent.Text("Howdy"),
+            date = "initialDate",
+            visibility = MessageEntity.Visibility.VISIBLE
+        )
+
+        messageDAO.insertOrIgnoreMessage(originalMessage)
+
+        val replacementMessage = newRegularMessageEntity(
+            id = originalMessage.id,
+            conversationId = originalMessage.conversationId,
+            senderUserId = replacementUser.id,
+            senderClientId = "replacementClientId",
+            content = MessageEntityContent.Knock(true),
+            date = "replacementDate",
+            visibility = MessageEntity.Visibility.DELETED
+        )
+
+        val result = messageDAO.getMessageById(originalMessage.id, originalMessage.conversationId).first()
+
+        assertNotNull(result)
+        assertIs<MessageEntity.Regular>(result)
+        assertEquals(originalMessage.id, result.id)
+        assertEquals(originalMessage.conversationId, result.conversationId)
+        assertEquals(originalMessage.senderUserId, result.senderUserId)
+        assertEquals(originalMessage.senderClientId, result.senderClientId)
+        assertEquals(originalMessage.content, result.content)
+        assertEquals(originalMessage.date, result.date)
+        assertEquals(originalMessage.visibility, result.visibility)
     }
 
     @Test
@@ -113,7 +156,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
 
         val result = messageDAO.getAllPendingMessagesFromUser(userInQuestion.id)
 
@@ -147,7 +190,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.SENT
             )
         )
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
 
         messageDAO.markMessageAsDeleted(deleteMessageUuid, deleteMessageConversationId)
 
@@ -185,7 +228,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.SENT
             )
         )
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
 
         messageDAO.markMessageAsDeleted(messageUuid, deleteMessageConversationId)
 
@@ -256,7 +299,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
         val result =
             messageDAO.getMessagesByConversationAndVisibility(conversationInQuestion.id, 10, 0, listOf(visibilityInQuestion))
         assertContentEquals(expectedMessages, result.first())
@@ -293,7 +336,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        messageDAO.insertMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(allMessages)
         val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
     }
@@ -338,7 +381,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         userDAO.insertUser(userEntity1)
 
-        messageDAO.insertMessages(
+        messageDAO.insertOrIgnoreMessages(
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
@@ -387,7 +430,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         userDAO.insertUser(userEntity1)
 
-        messageDAO.insertMessages(
+        messageDAO.insertOrIgnoreMessages(
             listOf(
                 newSystemMessageEntity(
                     id = messageId,
@@ -434,7 +477,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             }
         }
 
-        messageDAO.insertMessages(message)
+        messageDAO.insertOrIgnoreMessages(message)
 
         // when
         val messages = messageDAO.observeUnreadMessages()
@@ -484,7 +527,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             }
         }
 
-        messageDAO.insertMessages(message)
+        messageDAO.insertOrIgnoreMessages(message)
 
         // when
         val messages = messageDAO.observeUnreadMessages()
@@ -534,7 +577,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             }
         }
 
-        messageDAO.insertMessages(message)
+        messageDAO.insertOrIgnoreMessages(message)
 
         // when
         val messages = messageDAO.observeUnreadMessages()
@@ -560,7 +603,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         userDAO.insertUser(userEntity1)
 
-        messageDAO.insertMessages(
+        messageDAO.insertOrIgnoreMessages(
             listOf(
                 newRegularMessageEntity(
                     id = messageId,

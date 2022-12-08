@@ -121,7 +121,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                 )
             }
         }
-        messageDAO.insertMessages(messages)
+        messageDAO.insertOrIgnoreMessages(messages)
     }
 
     private companion object {
