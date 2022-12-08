@@ -105,7 +105,8 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
-            creatorId = creatorId
+            creatorId = creatorId,
+            receiptMode = receiptToModel(receiptMode)
         )
     }
 
@@ -291,7 +292,7 @@ internal class ConversationMapperImpl(
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
-            receiptMode = ConversationEntity.ReceiptMode.DISABLED // todo: map it later.
+            receiptMode = receiptToDaoModel(conversation.receiptMode)
         )
     }
 
@@ -313,6 +314,18 @@ internal class ConversationMapperImpl(
         ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
         ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
         else -> ConversationEntity.ReceiptMode.DISABLED
+    }
+
+    private fun receiptToDaoModel(receiptMode: Conversation.ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
+        Conversation.ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
+        Conversation.ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
+        null -> ConversationEntity.ReceiptMode.DISABLED
+    }
+
+    private fun receiptToModel(receiptMode: ConversationEntity.ReceiptMode?): Conversation.ReceiptMode = when (receiptMode) {
+        ConversationEntity.ReceiptMode.DISABLED -> Conversation.ReceiptMode.DISABLED
+        ConversationEntity.ReceiptMode.ENABLED -> Conversation.ReceiptMode.ENABLED
+        null -> Conversation.ReceiptMode.DISABLED
     }
 
     private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
