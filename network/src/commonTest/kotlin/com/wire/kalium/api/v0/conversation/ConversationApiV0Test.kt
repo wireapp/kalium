@@ -10,9 +10,10 @@ import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.MemberUpdateRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -112,7 +113,7 @@ class ConversationApiV0Test : ApiTest {
 
     @Test
     fun whenUpdatingAccessRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
-        val accessRoles = ConversationAccessInfoDTO(
+        val accessRoles = UpdateConversationAccessRequest(
             setOf(ConversationAccessDTO.PRIVATE), setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -125,12 +126,12 @@ class ConversationApiV0Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles)
+        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles)
     }
 
     @Test
     fun givenAccessUnchangedResponse_whenUpdatingAccessRole_thenAccessUnchangedIsPropagated() = runTest {
-        val accessRoles = ConversationAccessInfoDTO(
+        val accessRoles = UpdateConversationAccessRequest(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -138,14 +139,14 @@ class ConversationApiV0Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUnchanged>>(it)
         }
     }
 
     @Test
     fun givenSuccessAccessUpdateResponse_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
-        val accessRoles = ConversationAccessInfoDTO(
+        val accessRoles = UpdateConversationAccessRequest(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -153,14 +154,14 @@ class ConversationApiV0Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
         }
     }
 
     @Test
     fun givenSuccessAccessUpdateResponseWithDeprecatedAccessRoleField_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
-        val accessRoles = ConversationAccessInfoDTO(
+        val accessRoles = UpdateConversationAccessRequest(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -168,14 +169,14 @@ class ConversationApiV0Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
         }
     }
 
     @Test
     fun givenResponseWithNullAccessRole_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
-        val accessRoles = ConversationAccessInfoDTO(
+        val accessRoles = UpdateConversationAccessRequest(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -183,7 +184,7 @@ class ConversationApiV0Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
             assertEquals(ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL, it.value.event.data.accessRole)
         }

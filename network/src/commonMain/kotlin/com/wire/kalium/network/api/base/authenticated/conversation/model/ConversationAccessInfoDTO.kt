@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.base.authenticated.conversation.model
 
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -69,15 +68,6 @@ data class ConversationAccessInfoDTO constructor(
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
 )
 
-@Serializable
-@OptIn(ExperimentalSerializationApi::class)
-internal data class ConversationAccessInfoDTOV3 constructor(
-    @SerialName("access")
-    val access: Set<ConversationAccessDTO>,
-    @SerialName("access_role")
-    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
-)
-
 /**
  * Surrogate class of the ConversationAccessInfoDTO to provide access to the plugin generated
  * serializer and also use with @Serializable(with=).
@@ -94,8 +84,3 @@ private data class ConversationAccessInfoDTOSurrogate constructor(
     @SerialName("access_role_v2") @JsonNames("access_role")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
 )
-
-sealed class UpdateConversationAccessResponse {
-    object AccessUnchanged : UpdateConversationAccessResponse()
-    data class AccessUpdated(val event: EventContentDTO.Conversation.AccessUpdate) : UpdateConversationAccessResponse()
-}

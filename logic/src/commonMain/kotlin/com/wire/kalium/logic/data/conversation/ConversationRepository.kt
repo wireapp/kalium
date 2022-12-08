@@ -35,9 +35,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -439,12 +439,12 @@ internal class ConversationDataSource internal constructor(
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit> =
-        ConversationAccessInfoDTO(
+        UpdateConversationAccessRequest(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
             accessRole.map { conversationMapper.toApiModel(it) }.toSet()
         ).let { updateConversationAccessRequest ->
             wrapApiRequest {
-                conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
+                conversationApi.updateAccess(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
             }
         }.flatMap { response ->
             when (response) {

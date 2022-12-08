@@ -31,9 +31,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationP
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -365,7 +366,7 @@ class ConversationRepositoryTest {
     fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
 
         val conversationIdDTO = ConversationIdDTO("conv_id", "conv_domain")
-        val newAccessIndoDTO = ConversationAccessInfoDTO(
+        val newAccessInfoDTO = ConversationAccessInfoDTO(
             accessRole = setOf(
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER,
@@ -382,7 +383,7 @@ class ConversationRepositoryTest {
         val newAccess = UpdateConversationAccessResponse.AccessUpdated(
             EventContentDTO.Conversation.AccessUpdate(
                 conversationIdDTO,
-                data = newAccessIndoDTO,
+                data = newAccessInfoDTO,
                 qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
             )
         )
@@ -410,7 +411,15 @@ class ConversationRepositoryTest {
 
         with(arrange) {
             verify(conversationApi)
-                .coroutine { conversationApi.updateAccessRole(conversationIdDTO, newAccessIndoDTO) }
+                .coroutine {
+                    conversationApi.updateAccess(
+                        conversationIdDTO,
+                        UpdateConversationAccessRequest(
+                            newAccessInfoDTO.access,
+                            newAccessInfoDTO.accessRole
+                        )
+                    )
+                }
                 .wasInvoked(exactly = once)
 
             verify(conversationDAO)
@@ -897,7 +906,7 @@ class ConversationRepositoryTest {
 
         fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
             given(conversationApi)
-                .suspendFunction(conversationApi::updateAccessRole)
+                .suspendFunction(conversationApi::updateAccess)
                 .whenInvokedWith(any(), any())
                 .thenReturn(response)
         }

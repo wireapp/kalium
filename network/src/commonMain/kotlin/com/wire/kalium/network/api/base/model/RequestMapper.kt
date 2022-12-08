@@ -2,13 +2,13 @@ package com.wire.kalium.network.api.base.model
 
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequestV3
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTOV3
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequestV3
 
 internal interface RequestMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
-    fun toApiV3(request: ConversationAccessInfoDTO): ConversationAccessInfoDTOV3
+    fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
 }
 
 internal class RequestMapperImpl : RequestMapper {
@@ -27,8 +27,8 @@ internal class RequestMapperImpl : RequestMapper {
             request.creatorClient
         )
 
-    override fun toApiV3(request: ConversationAccessInfoDTO): ConversationAccessInfoDTOV3 =
-        ConversationAccessInfoDTOV3(
+    override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
+        UpdateConversationAccessRequestV3(
             request.access,
             request.accessRole
         )
