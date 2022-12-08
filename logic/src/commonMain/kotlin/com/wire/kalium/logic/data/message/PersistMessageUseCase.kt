@@ -36,13 +36,12 @@ internal class PersistMessageUseCaseImpl(
 
     private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
         when (selfUser.availabilityStatus) {
-            UserAvailabilityStatus.AWAY -> this.isMyMessage(selfUser.id)
-            UserAvailabilityStatus.BUSY -> true // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
-            UserAvailabilityStatus.NONE -> true
-            UserAvailabilityStatus.AVAILABLE -> true
+            UserAvailabilityStatus.AWAY -> true
+            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id) // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
+            else -> this.isSelfTheSender(selfUser.id)
         }
 
-    private fun Message.isMyMessage(selfUserId: UserId) = senderUserId == selfUserId
+    private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
