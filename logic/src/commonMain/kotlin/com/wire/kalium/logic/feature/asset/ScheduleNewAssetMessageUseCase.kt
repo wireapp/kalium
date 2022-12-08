@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -71,6 +72,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
@@ -107,6 +109,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         return currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
+            val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
             message = Message.Regular(
                 id = generatedMessageUuid,
@@ -121,13 +124,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                expectsReadConfirmation = expectsReadConfirmation
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
             persistMessage(message).onSuccess {
                 // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
-                scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId) }
+                scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId, expectsReadConfirmation) }
             }
         }.fold({
             updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
@@ -137,7 +141,11 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         })
     }
 
-    private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    private suspend fun uploadAssetAndUpdateMessage(
+        message: Message.Regular,
+        conversationId: ConversationId,
+        expectsReadConfirmation: Boolean
+    ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
             currentAssetMessageContent.mimeType,
@@ -152,7 +160,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
-                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED))
+                content = MessageContent.Asset(
+                    value = provideAssetMessageContent(
+                        currentAssetMessageContent,
+                        Message.UploadStatus.UPLOADED
+                    )
+                ),
+                expectsReadConfirmation = expectsReadConfirmation
             )
             persistMessage(updatedMessage).onFailure {
                 // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
@@ -175,7 +189,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
 
     @Suppress("LongParameterList")
-    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata, uploadStatus: Message.UploadStatus): AssetContent {
+    private fun provideAssetMessageContent(
+        assetMessageMetadata: AssetMessageMetadata,
+        uploadStatus: Message.UploadStatus
+    ): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
                 sizeInBytes = assetDataSize,
