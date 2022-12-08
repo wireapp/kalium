@@ -181,6 +181,7 @@ class MessageDAOImpl(
         when (message.content) {
             is MessageEntityContent.MemberChange,
             is MessageEntityContent.ConversationRenamed -> message.content
+
             else -> null
         }
             ?.let {
@@ -198,10 +199,12 @@ class MessageDAOImpl(
                     .firstOrNull {
                         LocalId.check(it.id) && when (messageContent) {
                             is MessageEntityContent.MemberChange ->
-                                    messageContent.memberChangeType == it.memberChangeType &&
-                                    it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+                                messageContent.memberChangeType == it.memberChangeType &&
+                                        it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+
                             is MessageEntityContent.ConversationRenamed ->
-                                    it.conversationName == messageContent.conversationName
+                                it.conversationName == messageContent.conversationName
+
                             else -> false
                         }
                     }?.let {
@@ -333,6 +336,8 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+    override suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity) =
+        queries.markMessagesAsDecryptionResolved(conversationId)
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 

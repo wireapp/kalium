@@ -124,6 +124,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
+    suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -381,4 +382,9 @@ class MessageDataSource(
             messageDAO.resetAssetDownloadStatus()
         }
     }
+
+    override suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.markMessagesAsDecryptionResolved(idMapper.toDaoModel(conversationId))
+    }
+
 }

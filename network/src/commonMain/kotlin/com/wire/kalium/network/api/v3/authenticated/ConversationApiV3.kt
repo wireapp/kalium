@@ -10,15 +10,53 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.GlobalTeamConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.ApiModelMapper
+import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.mapSuccess
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
 import kotlinx.datetime.Clock
+import okio.IOException
 
 internal open class ConversationApiV3 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ConversationApiV2(authenticatedNetworkClient) {
+
+    /**
+     * returns 201 when a new conversation is created or 200 if the conversation already existed
+     */
+    override suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
+        httpClient.post(PATH_CONVERSATIONS) {
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
+        }
+    }.mapSuccess {
+        apiModelMapper.fromApiV3(it)
+    }
+
+    override suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
+        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
+            setBody(apiModelMapper.toApiV3(createConversationRequest))
+        }
+    }.mapSuccess {
+        apiModelMapper.fromApiV3(it)
+    }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
@@ -56,9 +94,27 @@ internal open class ConversationApiV3 internal constructor(
         }
     }
 
+    override suspend fun updateAccess(
+        conversationId: ConversationId,
+        updateConversationAccessRequest: UpdateConversationAccessRequest
+    ): NetworkResponse<UpdateConversationAccessResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
+            setBody(apiModelMapper.toApiV3(updateConversationAccessRequest))
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
+                    .mapSuccess {
+                        UpdateConversationAccessResponse.AccessUpdated(it)
+                    }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
     companion object {
-        const val PATH_TEAM = "teams"
-        const val PATH_CONVERSATIONS = "conversations"
+        const val PATH_TEAM = "team"
         const val PATH_GLOBAL = "global"
         const val PATH_GROUP_INFO = "groupinfo"
     }
