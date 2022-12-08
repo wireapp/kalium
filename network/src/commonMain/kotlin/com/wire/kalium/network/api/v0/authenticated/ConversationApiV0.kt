@@ -13,9 +13,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.PaginationRequest
@@ -145,12 +145,12 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    override suspend fun updateAccessRole(
+    override suspend fun updateAccess(
         conversationId: ConversationId,
-        conversationAccessInfoDTO: ConversationAccessInfoDTO
+        updateConversationAccessRequest: UpdateConversationAccessRequest
     ): NetworkResponse<UpdateConversationAccessResponse> = try {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
-            setBody(conversationAccessInfoDTO)
+            setBody(updateConversationAccessRequest)
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
