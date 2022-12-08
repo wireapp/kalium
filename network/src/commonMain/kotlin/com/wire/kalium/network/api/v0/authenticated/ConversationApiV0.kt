@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
@@ -175,14 +176,25 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    override suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.put(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_NAME"
-            ) {
-                setBody(ConversationRenameRequest(conversationName))
+    override suspend fun updateConversationName(
+        conversationId: QualifiedID,
+        conversationName: String
+    ): NetworkResponse<ConversationRenameResponse> = try {
+        httpClient.put(
+            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_NAME"
+        ) {
+            setBody(ConversationRenameRequest(conversationName))
+        }.let { response ->
+            when (response.status) {
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.ConversationRenameDTO> { response }
+                    .mapSuccess { ConversationRenameResponse.Changed(it) }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationRenameResponse.Unchanged, response)
+                else -> wrapKaliumResponse { response }
             }
         }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
