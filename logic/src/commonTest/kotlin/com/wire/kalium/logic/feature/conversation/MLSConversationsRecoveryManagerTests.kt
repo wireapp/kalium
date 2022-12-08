@@ -134,8 +134,7 @@ class MLSConversationsRecoveryManagerTests {
 
         @Mock
         val slowSyncRepository = mock(classOf<SlowSyncRepository>())
-
-
+        
         fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {
             given(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::isMLSNeedsRecovery)
