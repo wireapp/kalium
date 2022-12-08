@@ -338,7 +338,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            renamedConversationHandler
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -734,7 +735,7 @@ class UserSessionScope internal constructor(
         )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
-            conversationRepository, persistMessage
+            userStorage.database.conversationDAO, persistMessage
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
