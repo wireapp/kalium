@@ -232,4 +232,7 @@ class MessageScope internal constructor(
             userPropertyRepository
         )
 
+    val resolveFailedDecryptedMessages: ResolveFailedDecryptedMessagesUseCase
+        get() = ResolveFailedDecryptedMessagesUseCaseImpl(messageRepository)
+
 }
