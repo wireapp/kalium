@@ -54,7 +54,7 @@ class ApplicationMessageHandlerTest {
                 Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent)
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
         val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))

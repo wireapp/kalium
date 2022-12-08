@@ -49,7 +49,7 @@ class ReceiptsMapperTest {
             .arrange()
 
         // when
-        val result = receiptsMapper.toTypeEntity(type = ReceiptType.DELIVERY)
+        val result = receiptsMapper.toTypeEntity(type = ReceiptType.DELIVERED)
 
         // then
         assertEquals(
@@ -85,7 +85,7 @@ class ReceiptsMapperTest {
 
         // then
         assertEquals(
-            ReceiptType.DELIVERY,
+            ReceiptType.DELIVERED,
             result
         )
     }

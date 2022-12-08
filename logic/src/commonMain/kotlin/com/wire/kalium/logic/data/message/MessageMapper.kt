@@ -59,7 +59,8 @@ class MessageMapperImpl(
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is Message.System -> MessageEntity.System(
@@ -100,7 +101,8 @@ class MessageMapperImpl(
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                 senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is MessageEntity.System -> Message.System(
@@ -165,7 +167,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -199,7 +201,7 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
             )
         }
 
@@ -262,7 +264,7 @@ class MessageMapperImpl(
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
@@ -326,6 +328,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
     }
+
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

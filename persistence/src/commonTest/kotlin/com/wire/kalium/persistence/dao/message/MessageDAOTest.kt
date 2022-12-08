@@ -294,34 +294,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         messageDAO.insertMessages(allMessages)
-        val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        val result = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
-    }
-
-    @Test
-    fun givenConversations_whenGettingUnreadConversationCount_ThenReturnCorrectCount() = runTest {
-        // given
-        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
-
-        conversationDAO.insertConversation(
-            conversationEntity1.copy(
-                lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastReadDate = "2000-01-01T12:00:00.000Z"
-            )
-        )
-
-        conversationDAO.insertConversation(
-            conversationEntity2.copy(
-                lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastReadDate = "2000-01-01T13:00:00.000Z"
-            )
-        )
-
-        // when
-        val result = conversationDAO.getUnreadConversationCount()
-
-        // then
-        assertEquals(1L, result)
     }
 
     @Test
@@ -578,6 +552,55 @@ class MessageDAOTest : BaseDatabaseTest() {
             .first()
         // then
         assertContains(messageIds, messageId)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val dateInQuestion = "2022-03-30T15:36:00.000Z"
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                // date after
+                date = "2022-03-30T15:37:00.000Z",
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:38:00.000Z",
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = false
+            ),
+
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:39:00.000Z",
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        assertEquals(2, result.size)
     }
 
     private suspend fun insertInitialData() {

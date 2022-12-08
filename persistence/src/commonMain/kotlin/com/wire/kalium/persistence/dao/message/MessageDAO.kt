@@ -32,7 +32,7 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
-    suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
@@ -52,19 +52,19 @@ interface MessageDAO {
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
-    suspend fun observeConversationLastMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?>
-
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
 
-    suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
-
     suspend fun resetAssetUploadStatus()
 
     suspend fun resetAssetDownloadStatus()
+
+    suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+    ): List<MessageEntity>
 
     val platformExtensions: MessageExtensions
 }
