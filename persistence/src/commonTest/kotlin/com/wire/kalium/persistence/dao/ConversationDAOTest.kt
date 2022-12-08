@@ -24,6 +24,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -709,6 +710,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(member3, conversationEntity1.id)
         conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
+
+        val firstRemovalDate = Clock.System.now()
+        val secondRemovalDate = firstRemovalDate.plus(1.seconds)
+
         val message1 = newSystemMessageEntity(
             id = "1",
             senderUserId = member1.user,
@@ -716,7 +721,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = Clock.System.now().toString(),
+            date = firstRemovalDate.toString(),
             conversationId = conversationEntity1.id
         )
         val message2 = newSystemMessageEntity(
@@ -726,7 +731,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = Clock.System.now().toString(),
+            date = secondRemovalDate.toString(),
             conversationId = conversationEntity1.id
         )
         userDAO.insertUser(user1)
