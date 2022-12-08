@@ -31,6 +31,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 @Suppress("LongMethod")
+@Ignore // TODO
 class ObserveConversationListDetailsUseCaseTest {
 
     @Test
