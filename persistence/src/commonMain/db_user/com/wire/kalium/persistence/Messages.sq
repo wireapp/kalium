@@ -117,6 +117,7 @@ CREATE TABLE MessageFailedToDecryptContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       unknown_encoded_data BLOB,
+      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -216,6 +217,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
@@ -513,3 +515,8 @@ AND visibility IN ?
 AND (expectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+
+markMessagesAsDecryptionResolved:
+UPDATE MessageFailedToDecryptContent
+SET is_decryption_resolved = 1
+WHERE conversation_id = :conversation_id;
