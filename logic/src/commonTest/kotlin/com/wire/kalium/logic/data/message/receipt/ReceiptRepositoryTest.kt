@@ -81,17 +81,15 @@ class ReceiptRepositoryTest {
                 messageIds = listOf(TEST_MESSAGE_ID)
             )
 
-            launch(UnconfinedTestDispatcher(testScheduler)) {
-                receiptRepository.observeMessageReceipts(
-                    conversationId = TEST_CONVERSATION_ID,
-                    messageId = TEST_MESSAGE_ID,
-                    type = ReceiptType.READ
-                ).test {
-                    val result = awaitItem()
-                    assertTrue(result.size == 2)
-                    assertTrue { awaitItem().first().userSummary.userName == TEST_OTHER_USER_ENTITY.name }
-                    assertTrue { awaitItem().last().userSummary.userName == TEST_OTHER_USER_ENTITY_2.name }
-                }
+            receiptRepository.observeMessageReceipts(
+                conversationId = TEST_CONVERSATION_ID,
+                messageId = TEST_MESSAGE_ID,
+                type = ReceiptType.READ
+            ).test {
+                val result = awaitItem()
+                assertTrue(result.size == 2)
+                assertTrue { result.first().userSummary.userName == TEST_OTHER_USER_ENTITY.name }
+                assertTrue { result.last().userSummary.userName == TEST_OTHER_USER_ENTITY_2.name }
             }
         }
 
