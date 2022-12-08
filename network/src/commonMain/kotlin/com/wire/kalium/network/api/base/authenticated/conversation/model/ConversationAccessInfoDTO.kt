@@ -38,15 +38,15 @@ object ConversationAccessInfoDTOSerializer : KSerializer<ConversationAccessInfoD
 
 /**
  * Transforms the conversation access info JSON by deleting the `access_role` field if it's a primitive
- * value indicates that it's a legacy field, which interferes with the @JsonNames alternative name parsing.
+ * value, because then it's a legacy field which interferes with the @JsonNames alternative name parsing.
  */
 object JsonCorrectingSerializer :
     JsonTransformingSerializer<ConversationAccessInfoDTO>(ConversationAccessInfoDTOSerializer) {
     override fun transformDeserialize(element: JsonElement): JsonElement {
         return JsonObject(
             element.jsonObject.toMutableMap().apply {
-                val foo = this["access_role"]
-                if (foo is JsonPrimitive && foo.isString) {
+                val accessRole = this["access_role"]
+                if (accessRole is JsonPrimitive && accessRole.isString) {
                     this.remove("access_role")
                 }
             }
@@ -68,7 +68,6 @@ data class ConversationAccessInfoDTO constructor(
     @SerialName("access_role_v2") @JsonNames("access_role")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL
 )
-
 
 /**
  * Surrogate class of the ConversationAccessInfoDTO to provide access to the plugin generated
