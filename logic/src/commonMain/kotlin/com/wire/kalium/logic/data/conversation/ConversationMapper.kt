@@ -80,7 +80,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() }
+        accessRole = apiModel.accessRole.map { it.toDAO() },
+        receiptMode = receiptFromApiToDaoModel(apiModel.receiptMode)
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -289,7 +290,8 @@ internal class ConversationMapperImpl(
             lastModifiedDate = "",
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
-            accessRole = conversation.accessRole.map { it.toDAO() }
+            accessRole = conversation.accessRole.map { it.toDAO() },
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED // todo: map it later.
         )
     }
 
@@ -305,6 +307,12 @@ internal class ConversationMapperImpl(
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
+    }
+
+    private fun receiptFromApiToDaoModel(receiptMode: ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
+        ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
+        ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
+        else -> ConversationEntity.ReceiptMode.DISABLED
     }
 
     private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {

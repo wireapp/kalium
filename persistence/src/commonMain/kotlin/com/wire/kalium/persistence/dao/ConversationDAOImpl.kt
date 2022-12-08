@@ -56,7 +56,8 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            selfRole = selfRole
+            selfRole = selfRole,
+            receiptMode = receipt_mode
         )
     }
 
@@ -99,7 +100,8 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                selfRole = selfRole
+                selfRole = selfRole,
+                receiptMode = receipt_mode
             )
         }
     }
@@ -191,7 +193,8 @@ class ConversationDAOImpl(
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
                 else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
-                else MLS_DEFAULT_CIPHER_SUITE
+                else MLS_DEFAULT_CIPHER_SUITE,
+                receiptMode
             )
         }
     }
