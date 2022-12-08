@@ -85,7 +85,7 @@ class MessageReactionsTest : BaseMessageTest() {
 
     protected override suspend fun insertInitialData() {
         super.insertInitialData()
-        messageDAO.insertMessages(
+        messageDAO.insertOrIgnoreMessages(
             listOf(
                 TEST_MESSAGE,
                 TEST_MESSAGE_2

@@ -107,7 +107,7 @@ class MessageRepositoryTest {
                 .wasInvoked(exactly = once)
 
             verify(messageDAO)
-                .suspendFunction(messageDAO::insertMessage)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
                 .with(eq(mappedEntity), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
