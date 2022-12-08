@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.device.ResetSessionUseCase
+import com.wire.kalium.logic.feature.device.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -216,5 +218,11 @@ class MessageScope internal constructor(
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase
         get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, protoContentMapper)
+
+    private val sessionResetSender: SessionResetSender
+        get() = SessionResetSender(userId, slowSyncRepository, messageSender, dispatcher)
+
+    val resetSession: ResetSessionUseCase
+        get() = ResetSessionUseCaseImpl(syncManager, proteusClientProvider, sessionResetSender)
 
 }

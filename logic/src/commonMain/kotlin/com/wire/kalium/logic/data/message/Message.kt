@@ -136,6 +136,10 @@ sealed interface Message {
                     typeKey to "calling"
                 )
 
+                is MessageContent.SessionReset -> mutableMapOf(
+                    typeKey to "sessionReset"
+                )
+
                 is MessageContent.DeleteMessage -> mutableMapOf(
                     typeKey to "delete"
                 )
