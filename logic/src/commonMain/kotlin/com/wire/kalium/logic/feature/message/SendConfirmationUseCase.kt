@@ -3,12 +3,14 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -18,16 +20,15 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 /**
- * This use case allows to send a confirmation type [ReceiptType.READ] or [ReceiptType.DELIVERED] accordingly to
- * configurations criteria.
+ * This use case allows to send a confirmation type [ReceiptType.READ]
  *
- * - For 1:1 we take into consideration [ObserveReadReceiptsEnabled]
+ * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
  */
+@Suppress("LongParameterList")
 internal class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val syncManager: SyncManager,
@@ -35,6 +36,7 @@ internal class SendConfirmationUseCase internal constructor(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
+    private val userPropertyRepository: UserPropertyRepository,
 ) {
     private companion object {
         const val TAG = "[SendConfirmationUseCase]"
@@ -45,7 +47,6 @@ internal class SendConfirmationUseCase internal constructor(
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
 
-        // todo: handle toggles for 1:1 and convo config
         val messageIds = getPendingUnreadMessagesIds(conversationId)
         if (messageIds.isEmpty()) {
             logger.d("$TAG skipping, NO messages to send confirmation signal")
@@ -71,13 +72,31 @@ internal class SendConfirmationUseCase internal constructor(
         }
     }
 
-    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId) =
+    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
         conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages $it")
+            logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
             emptyList()
         }, { conversation ->
-            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(conversationId, conversation.lastReadDate).firstOrNull()
-                ?.map { it.id }
-                ?: emptyList()
+
+            val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
+            if (!readReceiptsEnabled) {
+                emptyList()
+            } else {
+                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
+                    .fold({
+                        logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
+                        emptyList()
+                    }, { messages ->
+                        messages.map { it.id }
+                    })
+            }
         })
+
+    private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
+        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+            userPropertyRepository.getReadReceiptsStatus()
+        } else {
+            false
+        }
+
 }

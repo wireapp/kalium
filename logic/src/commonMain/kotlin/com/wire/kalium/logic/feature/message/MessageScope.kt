@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
@@ -60,6 +61,7 @@ class MessageScope internal constructor(
     private val timeParser: TimeParser,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -119,7 +121,8 @@ class MessageScope internal constructor(
             userId,
             currentClientIdProvider,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            userPropertyRepository
         )
 
     val getMessageById: GetMessageByIdUseCase
@@ -134,6 +137,7 @@ class MessageScope internal constructor(
             userId,
             slowSyncRepository,
             messageSender,
+            userPropertyRepository,
             scope,
             dispatcher
         )
@@ -224,7 +228,8 @@ class MessageScope internal constructor(
             messageSender,
             userId,
             conversationRepository,
-            messageRepository
+            messageRepository,
+            userPropertyRepository
         )
 
 }

@@ -82,7 +82,8 @@ class MessageDAOImpl(
                 sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
                 visibility = message.visibility,
                 status = message.status,
-                content_type = contentTypeOf(message.content)
+                content_type = contentTypeOf(message.content),
+                expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
             )
             when (val content = message.content) {
                 is MessageEntityContent.Text -> {
@@ -247,7 +248,7 @@ class MessageDAOImpl(
             mapper::toEntityMessageFromView
         ).asFlow().mapToList()
 
-    override suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
@@ -332,6 +333,16 @@ class MessageDAOImpl(
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
+
+    override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility>
+    ): List<MessageEntity> {
+        return queries
+            .selectPendingMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
+            .executeAsList()
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }

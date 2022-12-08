@@ -33,7 +33,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenTextContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.Text("Hello")
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -49,7 +49,7 @@ class ProtoContentMapperTest {
                 quotedMessageId = "quotedMessageId", quotedMessageSha256 = null, true
             )
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -98,7 +98,7 @@ class ProtoContentMapperTest {
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -109,7 +109,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenCallingContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val callingContent = MessageContent.Calling("Calling")
-        val protoContent = ProtoContent.Readable(TEST_CALLING_UUID, callingContent)
+        val protoContent = ProtoContent.Readable(TEST_CALLING_UUID, callingContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -120,7 +120,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenDeleteMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -133,7 +133,7 @@ class ProtoContentMapperTest {
         val messageContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, TEST_CONVERSATION_ID
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -179,7 +179,7 @@ class ProtoContentMapperTest {
             listOf("messageI", "messageII", "messageIII")
         )
 
-        val originalContent = ProtoContent.Readable(messageUid, content)
+        val originalContent = ProtoContent.Readable(messageUid, content, false)
         val encoded = protoContentMapper.encodeToProtobuf(originalContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
@@ -194,7 +194,7 @@ class ProtoContentMapperTest {
             listOf("messageI", "messageII", "messageIII")
         )
 
-        val originalContent = ProtoContent.Readable(messageUid, content)
+        val originalContent = ProtoContent.Readable(messageUid, content, false)
         val encoded = protoContentMapper.encodeToProtobuf(originalContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
