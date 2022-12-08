@@ -54,7 +54,12 @@ class MessageEnvelopeCreatorImpl(
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
 
-        val actualMessageContent = ProtoContent.Readable(message.id, message.content)
+        val expectsReadConfirmation = when (message) {
+            is Message.Regular -> message.expectsReadConfirmation
+            else -> false
+        }
+
+        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
         val (encodedContent, externalDataBlob) = getContentAndExternalData(actualMessageContent, recipients)
 
         return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->

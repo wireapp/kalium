@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -175,6 +176,7 @@ Message.sender_client_id AS senderClientId,
 Message.status AS status,
 Message.last_edit_timestamp AS lastEditTimestamp,
 Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -351,8 +353,8 @@ SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertOrIgnoreMessage:
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
@@ -528,3 +530,11 @@ resetAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
+
+selectPendingMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = ?
+AND visibility IN ?
+AND (expectsReadConfirmation = 1)
+AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;

@@ -45,7 +45,7 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
-    suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
@@ -78,6 +78,12 @@ interface MessageDAO {
     suspend fun resetAssetUploadStatus()
 
     suspend fun resetAssetDownloadStatus()
+
+    suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+    ): List<MessageEntity>
 
     val platformExtensions: MessageExtensions
 }
