@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
@@ -196,7 +197,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.receipt-mode-update")
         data class ReceiptModeUpdate(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("data") val data: ReceiptMode,
+            @SerialName("data") val data: ConversationReceiptModeDTO,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
