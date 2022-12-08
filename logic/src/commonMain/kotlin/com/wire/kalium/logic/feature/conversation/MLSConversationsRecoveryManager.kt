@@ -21,13 +21,14 @@ internal class MLSConversationsRecoveryManagerImpl(
     private val slowSyncRepository: SlowSyncRepository,
 ) : MLSConversationsRecoveryManager {
 
+    @Suppress("ComplexCondition")
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke() {
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->
             if (syncState is IncrementalSyncStatus.Live &&
                 featureSupport.isMLSSupported &&
-                clientRepository.hasRegisteredMLSClient().getOrElse(false)
-                && slowSyncRepository.isMLSNeedsRecovery()
+                clientRepository.hasRegisteredMLSClient().getOrElse(false) &&
+                slowSyncRepository.isMLSNeedsRecovery()
             ) {
                 recoverMLSConversations()
             }

@@ -74,12 +74,10 @@ class RecoverMLSConversationsUseCaseTests {
             .with(any(), any())
             .wasInvoked(Times(conversations.size))
 
-
         verify(arrangement.joinExistingMLSConversationUseCase)
             .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
             .with(any())
             .wasInvoked(Times(conversations.size))
-
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
@@ -101,7 +99,6 @@ class RecoverMLSConversationsUseCaseTests {
             .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
             .with(any(), any())
             .wasNotInvoked()
-
 
         verify(arrangement.joinExistingMLSConversationUseCase)
             .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
@@ -136,7 +133,6 @@ class RecoverMLSConversationsUseCaseTests {
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
-
 
     @Test
     fun whenFetchingListOfConversationsFails_ThenShouldReturnFailure() = runTest {
