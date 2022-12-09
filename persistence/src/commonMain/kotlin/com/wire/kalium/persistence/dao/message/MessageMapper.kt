@@ -33,10 +33,10 @@ object MessageMapper {
             isSelfMessage -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
-            )
-            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+
+)            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                 senderName = senderName,
-                messageBody = text.requireField("text")
+            messageBody = text.requireField("text")
             )
             (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(
                 senderName = senderName, messageBody = text.requireField("text")
@@ -44,7 +44,7 @@ object MessageMapper {
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
-            )
+        )
         }
         MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
