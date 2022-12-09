@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.eq
@@ -23,7 +24,7 @@ class MessageTextEditHandlerTest {
     @Mock
     private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
-    private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandler(messageRepository)
+    private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandlerImpl(messageRepository)
 
     @Test
     fun givenACorrectMessageAndMessageContent_whenHandling_ThenDataGetsUpdatedCorrectly() = runTest {

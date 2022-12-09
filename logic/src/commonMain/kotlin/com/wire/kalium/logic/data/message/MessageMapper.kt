@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -14,10 +13,12 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
+import com.wire.kalium.persistence.dao.message.AssetTypeEntity.IMAGE
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
@@ -25,12 +26,11 @@ interface MessageMapper {
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
-    fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
+    fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
 }
 
 class MessageMapperImpl(
     private val idMapper: IdMapper,
-    private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
@@ -144,21 +144,35 @@ class MessageMapperImpl(
         }
     }
 
-    override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage =
+    override fun fromMessageToLocalNotificationMessage(
+        message: NotificationMessageEntity
+    ): LocalNotificationMessage =
         when (val content = message.content) {
-            is MessageContent.Text -> LocalNotificationMessage.Text(author, message.date, content.value)
+            is MessagePreviewEntityContent.Text -> LocalNotificationMessage.Text(
+                LocalNotificationMessageAuthor(
+                    content.senderName ?: "",
+                    null
+                ), message.date, content.messageBody
+            )
             // TODO(notifications): Handle other message types
-            is MessageContent.Asset -> {
-                val type = if (content.value.metadata is Image) LocalNotificationCommentType.PICTURE
+            is MessagePreviewEntityContent.Asset -> {
+                val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
-
-                LocalNotificationMessage.Comment(author, message.date, type)
+                LocalNotificationMessage.Comment(LocalNotificationMessageAuthor(content.senderName ?: "", null), message.date, type)
             }
 
-            is MessageContent.MissedCall ->
-                LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.MISSED_CALL)
+            is MessagePreviewEntityContent.MissedCall ->
+                LocalNotificationMessage.Comment(
+                    LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                    message.date,
+                    LocalNotificationCommentType.MISSED_CALL
+                )
 
-            else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
+            else -> LocalNotificationMessage.Comment(
+                LocalNotificationMessageAuthor("", null),
+                message.date,
+                LocalNotificationCommentType.NOT_SUPPORTED_YET
+            )
         }
 
     @Suppress("ComplexMethod")
