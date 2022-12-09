@@ -5,7 +5,6 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
@@ -337,8 +336,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
-    override suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity) =
-        queries.markMessagesAsDecryptionResolved(conversationId)
+    override suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    ) = queries.transaction {
+        val messages = queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
+        queries.markMessagesAsDecryptionResolved(messages)
+    }
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 
