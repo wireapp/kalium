@@ -336,8 +336,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
-    override suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity) =
-        queries.markMessagesAsDecryptionResolved(conversationId)
+    override suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    ) = queries.transaction {
+        val messages = queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
+        queries.markMessagesAsDecryptionResolved(messages)
+    }
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 

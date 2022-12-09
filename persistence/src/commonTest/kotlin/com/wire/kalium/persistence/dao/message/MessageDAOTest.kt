@@ -666,13 +666,14 @@ class MessageDAOTest : BaseDatabaseTest() {
                     date = "2000-01-01T13:00:00.000Z",
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
-                    content = MessageEntityContent.FailedDecryption(null, false)
+                    senderClientId = "someClient",
+                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
                 )
             )
         )
 
         // when
-        messageDAO.markMessagesAsDecryptionResolved(conversationId)
+        messageDAO.markMessagesAsDecryptionResolved(conversationId, userEntity1.id, "someClient")
 
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
