@@ -42,6 +42,7 @@ object MessageMapper {
                     senderName = senderName,
                     messageBody = text.requireField("text")
                 )
+
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
                 (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
                 else -> MessagePreviewEntityContent.Text(
@@ -49,6 +50,7 @@ object MessageMapper {
                     messageBody = text.requireField("text")
                 )
             }
+
             MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
                 senderName = senderName,
                 type = assetMimeType?.let {
@@ -60,20 +62,24 @@ object MessageMapper {
                     }
                 } ?: AssetTypeEntity.FILE
             )
+
             MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
             MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
                 adminName = senderName,
                 count = memberChangeList.requireField("memberChangeList").size,
                 type = memberChangeType.requireField("memberChangeType")
             )
+
             MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
                 senderName = senderName,
                 type = AssetTypeEntity.ASSET
             )
+
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
                 adminName = senderName
             )
+
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
@@ -103,7 +109,8 @@ object MessageMapper {
         allReactionsJson: String?,
         selfReactionsJson: String?,
         senderName: String?,
-        isSelfMessage: Boolean
+        isSelfMessage: Boolean,
+        expectsReadConfirmation: Boolean
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -120,7 +127,8 @@ object MessageMapper {
                 selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
             ),
             senderName = senderName,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -151,6 +159,7 @@ object MessageMapper {
         status: MessageEntity.Status,
         lastEditTimestamp: String?,
         visibility: MessageEntity.Visibility,
+        expectsReadConfirmation: Boolean?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -190,6 +199,7 @@ object MessageMapper {
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
+        isDecryptionResolved: Boolean?,
         conversationName: String?,
         allReactionsJson: String,
         selfReactionsJson: String,
@@ -230,7 +240,7 @@ object MessageMapper {
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
                     )
-                }
+                },
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -264,7 +274,8 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
-                failedToDecryptData
+                encodedData = failedToDecryptData,
+                isDecryptionResolved = isDecryptionResolved ?: false
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
@@ -290,7 +301,8 @@ object MessageMapper {
             allReactionsJson,
             selfReactionsJson,
             senderName,
-            isSelfMessage
+            isSelfMessage,
+            expectsReadConfirmation ?: false
         )
     }
 

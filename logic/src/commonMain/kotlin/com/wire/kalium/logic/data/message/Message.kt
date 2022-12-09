@@ -54,7 +54,8 @@ sealed interface Message {
         override val isSelfMessage: Boolean = false,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
-        val reactions: Reactions = Reactions.EMPTY
+        val reactions: Reactions = Reactions.EMPTY,
+        val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -104,7 +105,8 @@ sealed interface Message {
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to "$editStatus"
+                "editStatus" to "$editStatus",
+                "expectsReadConfirmation" to "$expectsReadConfirmation"
             )
 
             properties.putAll(standardProperties)

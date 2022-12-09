@@ -59,7 +59,8 @@ class MessageMapperImpl(
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is Message.System -> MessageEntity.System(
@@ -100,7 +101,8 @@ class MessageMapperImpl(
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                 senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is MessageEntity.System -> Message.System(
@@ -165,7 +167,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -199,14 +201,14 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
             )
         }
 
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData)
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
@@ -262,7 +264,7 @@ class MessageMapperImpl(
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
@@ -272,7 +274,7 @@ class MessageMapperImpl(
         )
 
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData)
+        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
@@ -326,6 +328,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
     }
+
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

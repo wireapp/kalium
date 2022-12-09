@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.datetime.Clock
@@ -19,13 +20,15 @@ class UpdateConversationReadDateUseCase internal constructor(
     private val messageSender: MessageSender,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val sendConfirmation: SendConfirmationUseCase,
 ) {
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        selfConversationIdProvider().onSuccess {
+        selfConversationIdProvider().onSuccess { selfConversationId ->
+            sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time.toString())
-            sendLastReadMessageToOtherClients(conversationId, it, time)
+            sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
         }
     }
 

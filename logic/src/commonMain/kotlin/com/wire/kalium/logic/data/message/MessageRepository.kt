@@ -100,6 +100,11 @@ interface MessageRepository {
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
+    suspend fun getPendingConfirmationMessagesByConversationAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Either<CoreFailure, List<Message>>
 
     suspend fun updateTextMessageContent(
         conversationId: ConversationId,
@@ -113,6 +118,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
+    suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -152,7 +158,7 @@ class MessageDataSource(
         updateConversationModifiedDate: Boolean,
         updateConversationNotificationsDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(
+        messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
             updateConversationModifiedDate,
@@ -194,7 +200,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility>
-    ): Flow<List<Message>> = messageDAO.getMessagesByConversationAndVisibilityAfterDate(
+    ): Flow<List<Message>> = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(
         idMapper.toDaoModel(conversationId),
         date,
         visibility.map { it.toEntityVisibility() }
@@ -293,6 +299,18 @@ class MessageDataSource(
             .map(messageMapper::fromEntityToMessage)
     }
 
+    override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility>
+    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+        messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+            idMapper.toDaoModel(conversationId),
+            date,
+            visibility.map { it.toEntityVisibility() })
+            .map(messageMapper::fromEntityToMessage)
+    }
+
     override suspend fun updateMessageId(
         conversationId: ConversationId,
         oldMessageId: String,
@@ -332,4 +350,9 @@ class MessageDataSource(
             messageDAO.resetAssetDownloadStatus()
         }
     }
+
+    override suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.markMessagesAsDecryptionResolved(idMapper.toDaoModel(conversationId))
+    }
+
 }
