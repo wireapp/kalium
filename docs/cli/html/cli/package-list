@@ -31,6 +31,9 @@ $dokka.location:com.wire.kalium.cli.commands/ListenGroupCommand/run/#/PointingTo
 $dokka.location:com.wire.kalium.cli.commands/LoginCommand///PointingToDeclaration/cli/com.wire.kalium.cli.commands/-login-command/index.html
 $dokka.location:com.wire.kalium.cli.commands/LoginCommand/LoginCommand/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-login-command/-login-command.html
 $dokka.location:com.wire.kalium.cli.commands/LoginCommand/run/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-login-command/run.html
+$dokka.location:com.wire.kalium.cli.commands/MarkAsReadCommand///PointingToDeclaration/cli/com.wire.kalium.cli.commands/-mark-as-read-command/index.html
+$dokka.location:com.wire.kalium.cli.commands/MarkAsReadCommand/MarkAsReadCommand/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-mark-as-read-command/-mark-as-read-command.html
+$dokka.location:com.wire.kalium.cli.commands/MarkAsReadCommand/run/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-mark-as-read-command/run.html
 $dokka.location:com.wire.kalium.cli.commands/RefillKeyPackagesCommand///PointingToDeclaration/cli/com.wire.kalium.cli.commands/-refill-key-packages-command/index.html
 $dokka.location:com.wire.kalium.cli.commands/RefillKeyPackagesCommand/RefillKeyPackagesCommand/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-refill-key-packages-command/-refill-key-packages-command.html
 $dokka.location:com.wire.kalium.cli.commands/RefillKeyPackagesCommand/run/#/PointingToDeclaration/cli/com.wire.kalium.cli.commands/-refill-key-packages-command/run.html

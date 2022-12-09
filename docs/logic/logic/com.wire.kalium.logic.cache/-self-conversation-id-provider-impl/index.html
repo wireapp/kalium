@@ -24,7 +24,7 @@
           </div>
           <div class="cover ">
             <h1 class="cover"><span>Self</span><wbr><span>Conversation</span><wbr><span>Id</span><wbr><span>Provider</span><wbr><span>Impl</span></h1>
-            <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace">internal class <a href="index.html">SelfConversationIdProviderImpl</a>(conversationRepository: <a href="../../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a>) : <a href="../-self-conversation-id-provider/index.html">SelfConversationIdProvider</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+            <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace">internal class <a href="index.html">SelfConversationIdProviderImpl</a>(clientRepository: <a href="../../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a>, mlsSelfConversationIdProvider: <a href="../-m-l-s-self-conversation-id-provider/index.html">MLSSelfConversationIdProvider</a>, proteusSelfConversationIdProvider: <a href="../-proteus-self-conversation-id-provider/index.html">ProteusSelfConversationIdProvider</a>) : <a href="../-self-conversation-id-provider/index.html">SelfConversationIdProvider</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
           </div>
           <div class="tabbedcontent">
             <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
@@ -43,7 +43,7 @@
                       <div class="title"><div class="divergent-group" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="with-platform-tags"><span class="pull-right"></span></div>
 
   <div>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace">open suspend operator override fun <a href="invoke.html">invoke</a>(): <a href="../../com.wire.kalium.logic.functional/-either/index.html">Either</a>&lt;<a href="../../com.wire.kalium.logic/-storage-failure/index.html">StorageFailure</a>, <a href="../../com.wire.kalium.logic.data.id/index.html#620770604%2FClasslikes%2F867774983">ConversationId</a>&gt;<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace">open suspend operator override fun <a href="invoke.html">invoke</a>(): <a href="../../com.wire.kalium.logic.functional/-either/index.html">Either</a>&lt;<a href="../../com.wire.kalium.logic/-storage-failure/index.html">StorageFailure</a>, <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html">List</a>&lt;<a href="../../com.wire.kalium.logic.data.id/index.html#620770604%2FClasslikes%2F867774983">ConversationId</a>&gt;&gt;<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
   </div>
 </div>
 </div>
@@ -52,10 +52,10 @@
                 </div>
               </div>
               <h2 class="">Properties</h2>
-              <div class="table" data-togglable="Properties"><a data-name="-1061144508%2FProperties%2F867774983" anchor-label="_selfConversationId" id="-1061144508%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Properties"><a data-name="-363837576%2FProperties%2F867774983" anchor-label="clientRepository" id="-363837576%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex"><a href="_self-conversation-id.html">_selfConversationId</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1061144508%2FProperties%2F867774983"></span>
+                    <div class=""><span class="inline-flex"><a href="client-repository.html">clientRepository</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-363837576%2FProperties%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
@@ -63,15 +63,15 @@
                         <div class="platform-tag common-like">common</div>
                       </div>
                       <div class="title">
-                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1061144508%2FProperties%2F867774983" anchor-label="_selfConversationId" id="-1061144508%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">private var <a href="_self-conversation-id.html">_selfConversationId</a>: <a href="../../com.wire.kalium.logic.data.id/index.html#620770604%2FClasslikes%2F867774983">ConversationId</a>? = null<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-363837576%2FProperties%2F867774983" anchor-label="clientRepository" id="-363837576%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">private val <a href="client-repository.html">clientRepository</a>: <a href="../../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
                       </div>
                     </div>
                   </div>
                 </div>
-<a data-name="1655633856%2FProperties%2F867774983" anchor-label="conversationRepository" id="1655633856%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+<a data-name="1088054206%2FProperties%2F867774983" anchor-label="mlsSelfConversationIdProvider" id="1088054206%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex"><a href="conversation-repository.html">conversationRepository</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1655633856%2FProperties%2F867774983"></span>
+                    <div class=""><span class="inline-flex"><a href="mls-self-conversation-id-provider.html">mlsSelfConversationIdProvider</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1088054206%2FProperties%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
@@ -79,7 +79,23 @@
                         <div class="platform-tag common-like">common</div>
                       </div>
                       <div class="title">
-                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1655633856%2FProperties%2F867774983" anchor-label="conversationRepository" id="1655633856%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">private val <a href="conversation-repository.html">conversationRepository</a>: <a href="../../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1088054206%2FProperties%2F867774983" anchor-label="mlsSelfConversationIdProvider" id="1088054206%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">private val <a href="mls-self-conversation-id-provider.html">mlsSelfConversationIdProvider</a>: <a href="../-m-l-s-self-conversation-id-provider/index.html">MLSSelfConversationIdProvider</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="-1262050186%2FProperties%2F867774983" anchor-label="proteusSelfConversationIdProvider" id="-1262050186%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="proteus-self-conversation-id-provider.html">proteusSelfConversationIdProvider</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1262050186%2FProperties%2F867774983"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="platform-tags ">
+                        <div class="platform-tag common-like">common</div>
+                      </div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1262050186%2FProperties%2F867774983" anchor-label="proteusSelfConversationIdProvider" id="-1262050186%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace">private val <a href="proteus-self-conversation-id-provider.html">proteusSelfConversationIdProvider</a>: <a href="../-proteus-self-conversation-id-provider/index.html">ProteusSelfConversationIdProvider</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
                       </div>
                     </div>
                   </div>
