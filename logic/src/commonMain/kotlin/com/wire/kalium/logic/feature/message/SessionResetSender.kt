@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -18,13 +19,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
 class SessionResetSender internal constructor(
-    private val selfUserId: QualifiedID,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     suspend operator fun invoke(
         conversationId: ConversationId,
+        userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
@@ -37,11 +38,11 @@ class SessionResetSender internal constructor(
             content = MessageContent.SessionReset,
             conversationId = conversationId,
             date = Clock.System.now().toString(),
-            senderUserId = selfUserId,
+            senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT
         )
-        val recipient = Recipient(selfUserId, listOf(clientId))
+        val recipient = Recipient(userId, listOf(clientId))
         messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
     }
 

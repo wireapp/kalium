@@ -36,7 +36,11 @@ class ResetSessionUseCaseImpl internal constructor(
             )
             it.deleteSession(cryptoSessionId)
             // TODO("Update device verified state to false once implemented")
-            return@fold sessionResetSender(conversationId, clientId)
+            return@fold sessionResetSender(
+                conversationId = conversationId,
+                userId = userId,
+                clientId = clientId
+            )
         })
     }
 }
