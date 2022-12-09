@@ -23,7 +23,7 @@ internal class PersistMessageUseCaseImpl(
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
-            message.shouldUpdateConversationNotificationDate(it) to message.isMyMessage(it.id)
+            message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
         } ?: (false to false)
         return messageRepository
             .persistMessage(
