@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logger.UserScopedLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
@@ -24,6 +24,7 @@ internal interface EventProcessor {
     suspend fun processEvent(event: Event)
 }
 
+@Suppress("LongParameterList")
 internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
@@ -31,10 +32,10 @@ internal class EventProcessorImpl(
     private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
-    _logger: KaliumLogger
+    userLogger: UserScopedLogger
 ) : EventProcessor {
 
-    private val logger = _logger.withFeatureId(EVENT_RECEIVER)
+    private val logger = userLogger.withFeatureId(EVENT_RECEIVER)
 
     override suspend fun processEvent(event: Event) {
         logger.i("Processing event ${event.id.obfuscateId()}")

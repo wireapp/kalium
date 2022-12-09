@@ -96,6 +96,8 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
+import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -202,8 +204,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager

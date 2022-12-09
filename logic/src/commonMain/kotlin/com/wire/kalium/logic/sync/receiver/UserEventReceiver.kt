@@ -15,6 +15,7 @@ import com.wire.kalium.logic.functional.onSuccess
 
 interface UserEventReceiver : EventReceiver<Event.User>
 
+@Suppress("LongParameterList")
 class UserEventReceiverImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
