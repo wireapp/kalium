@@ -96,7 +96,7 @@ class SlowSyncRepositoryTest {
     }
 
     @Test
-    fun givenMLSRecoveryStatusIsUpdated_whenGettingStatus_thenTheStateMatches() = runTest {
+    fun givenMLSRecoveryStatusIsUpdated_whenGettingStatus_thenTheStateMatches() = runTest(testDispatcher) {
         val newStatus = true
         slowSyncRepository.updateMLSNeedsRecovery(newStatus)
 
