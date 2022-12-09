@@ -34,6 +34,7 @@ object MessageMapper {
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
+
             (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
             (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
             else -> MessagePreviewEntityContent.Text(
@@ -41,6 +42,7 @@ object MessageMapper {
                 messageBody = text.requireField("text")
             )
         }
+
         MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
             type = assetMimeType?.let {
@@ -56,15 +58,18 @@ object MessageMapper {
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
             adminName = senderName,
             count = memberChangeList.requireField("memberChangeList").size,
-            type = memberChangeType.requireField("memberChangeType"))
+            type = memberChangeType.requireField("memberChangeType")
+        )
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
             type = AssetTypeEntity.ASSET
         )
+
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
-            adminName = senderName)
+            adminName = senderName
+        )
 
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
@@ -346,7 +351,9 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
-                isDecryptionResolved = isDecryptionResolved ?: false
+                isDecryptionResolved = isDecryptionResolved ?: false,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
