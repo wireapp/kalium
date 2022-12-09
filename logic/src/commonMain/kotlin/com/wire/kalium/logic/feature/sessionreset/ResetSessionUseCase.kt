@@ -24,7 +24,7 @@ interface ResetSessionUseCase {
 /**
  * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
  */
-class ResetSessionUseCaseImpl internal constructor(
+internal class ResetSessionUseCaseImpl internal constructor(
     private val syncManager: SyncManager,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionResetSender: SessionResetSender,
