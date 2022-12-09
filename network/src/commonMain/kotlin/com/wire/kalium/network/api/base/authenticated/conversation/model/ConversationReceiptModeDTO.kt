@@ -5,7 +5,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-
 data class ConversationReceiptModeDTO constructor(
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode

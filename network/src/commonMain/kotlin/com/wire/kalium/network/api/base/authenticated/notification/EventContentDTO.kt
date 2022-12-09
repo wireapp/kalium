@@ -6,7 +6,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationN
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
