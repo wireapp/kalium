@@ -205,7 +205,13 @@ class MLSConversationDataSource(
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
+            }.onSuccess {
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    idMapper.toCryptoModel(groupID)
+                )
             }
+
         }
     }
 

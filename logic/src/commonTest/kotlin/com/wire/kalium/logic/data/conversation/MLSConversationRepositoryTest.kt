@@ -398,6 +398,11 @@ class MLSConversationRepositoryTest {
             .function(arrangement.mlsClient::mergePendingGroupFromExternalCommit)
             .with(any())
             .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
+            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
     }
 
     @Test
