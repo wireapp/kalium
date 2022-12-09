@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -120,8 +119,6 @@ interface MessageRepository {
 
     suspend fun resetAssetProgressStatus()
     suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit>
-
-    suspend fun getConversationIdByUserIdAndClientId(userId: UserId, clientId: ClientId): ConversationId
 
     val extensions: MessageRepositoryExtensions
 }
@@ -357,8 +354,4 @@ class MessageDataSource(
     override suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.markMessagesAsDecryptionResolved(idMapper.toDaoModel(conversationId))
     }
-
-    override suspend fun getConversationIdByUserIdAndClientId(userId: UserId, clientId: ClientId): ConversationId =
-        idMapper.fromDaoModel(messageDAO.getConversationIdByUserIdAndClientId(idMapper.toDaoModel(userId), clientId.value))
-
 }

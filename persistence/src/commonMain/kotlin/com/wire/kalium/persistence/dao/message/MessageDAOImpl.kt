@@ -346,7 +346,4 @@ class MessageDAOImpl(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 
-    override suspend fun getConversationIdByUserIdAndClientId(userId: UserIDEntity, clientId: String): ConversationIDEntity =
-        queries.getConversationIdByUserIdAndClientId(userId, clientId).executeAsOne().conversation_id
-
 }
