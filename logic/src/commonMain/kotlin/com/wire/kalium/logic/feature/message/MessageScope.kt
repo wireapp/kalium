@@ -241,8 +241,6 @@ class MessageScope internal constructor(
         get() = SessionResetSender(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
 
     val resetSession: ResetSessionUseCase
-        get() = ResetSessionUseCaseImpl(syncManager, proteusClientProvider, sessionResetSender)
-
-    val resolveFailedDecryptedMessages: ResolveFailedDecryptedMessagesUseCase
-        get() = ResolveFailedDecryptedMessagesUseCaseImpl(messageRepository)
+        get() = ResetSessionUseCaseImpl(syncManager, proteusClientProvider, sessionResetSender, messageRepository)
+    
 }
