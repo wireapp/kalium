@@ -182,6 +182,9 @@ SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER B
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
+selectReceiptModeFromGroupConversationByQualifiedId:
+SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
+
 selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 

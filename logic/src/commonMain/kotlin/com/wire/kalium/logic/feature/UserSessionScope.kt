@@ -411,8 +411,7 @@ class UserSessionScope internal constructor(
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(
             messageRepository,
-            userId,
-            conversationRepository
+            userId
         )
 
     private val callRepository: CallRepository by lazy {
