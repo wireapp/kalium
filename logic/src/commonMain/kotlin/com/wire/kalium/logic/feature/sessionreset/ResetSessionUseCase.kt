@@ -18,6 +18,9 @@ interface ResetSessionUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
 }
 
+/**
+ * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
+ */
 // TODO unit test in next PR
 class ResetSessionUseCaseImpl internal constructor(
     private val syncManager: SyncManager,
