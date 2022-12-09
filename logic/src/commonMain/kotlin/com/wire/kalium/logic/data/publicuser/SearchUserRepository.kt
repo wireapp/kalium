@@ -132,23 +132,29 @@ internal class SearchUserRepositoryImpl(
             maxResultSize,
             searchUsersOptions
         ).flatMap {
-            wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.documents.map { it.qualifiedID }))
-            }.map { userDetailsResponses ->
-                val selfUser = getSelfUser()
-
-                UserSearchResult(userDetailsResponses.map { userProfileDTO ->
-                    publicUserMapper.fromUserDetailResponseWithUsertype(
-                        userDetailResponse = userProfileDTO,
-                        userType = userTypeMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = selfUser.teamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser.id.domain,
-                            isService = userProfileDTO.service != null,
+            val qualifiedIdList = it.documents.map { it.qualifiedID }
+            val response =
+                if (qualifiedIdList.isEmpty()) Either.Right(listOf())
+                else wrapApiRequest {
+                    userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
+                }
+            response.map { userProfileDTOList ->
+                val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
+                    val selfUser = getSelfUser()
+                    userProfileDTOList.map { userProfileDTO ->
+                        publicUserMapper.fromUserDetailResponseWithUsertype(
+                            userDetailResponse = userProfileDTO,
+                            userType = userTypeMapper.fromTeamAndDomain(
+                                otherUserDomain = userProfileDTO.id.domain,
+                                selfUserTeamId = selfUser.teamId?.value,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUser.id.domain,
+                                isService = userProfileDTO.service != null,
+                            )
                         )
-                    )
-                })
+                    }
+                }
+                UserSearchResult(otherUserList)
             }
         }
 

@@ -116,6 +116,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
+    override fun deleteSession(sessionId: CryptoSessionId) {
+        wrapException {
+            box.deleteSession(sessionId.value)
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private fun <T> wrapException(b: () -> T): T {
         try {

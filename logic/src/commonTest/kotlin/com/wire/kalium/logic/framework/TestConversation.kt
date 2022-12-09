@@ -28,7 +28,6 @@ import kotlinx.datetime.Instant
 
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
-
     fun id(suffix: Int = 0) = ConversationId("valueConvo_$suffix", "domainConvo")
 
     val ONE_ON_ONE = Conversation(
@@ -46,12 +45,29 @@ object TestConversation {
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null
     )
-    val SELF = Conversation(
+
+    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
         Conversation.Type.SELF,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        protocolInfo,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
+    )
+
+    fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
+        ID.copy(value = "GLOBAL TEAM ID"),
+        "GLOBAL TEAM Name",
+        Conversation.Type.GLOBAL_TEAM,
+        TestTeam.TEAM_ID,
+        protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -110,8 +126,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
-        isMember = 1L,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -125,7 +139,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -234,8 +248,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
-        isMember = 1L,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -249,7 +261,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf()
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
     val CONVERSATION = Conversation(

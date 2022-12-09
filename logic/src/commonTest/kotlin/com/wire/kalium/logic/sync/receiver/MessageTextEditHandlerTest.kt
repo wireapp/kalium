@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.eq
@@ -23,27 +24,24 @@ class MessageTextEditHandlerTest {
     @Mock
     private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
-    private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandler(messageRepository)
+    private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandlerImpl(messageRepository)
 
     @Test
-    fun givenACorrectMessageAndMessageContent_whenHandeling_ThenDataGetsUpdatedCorrectly() = runTest {
+    fun givenACorrectMessageAndMessageContent_whenHandling_ThenDataGetsUpdatedCorrectly() = runTest {
         // given
-        val mockMessage = Message.Regular(
+        val mockMessageContent = MessageContent.TextEdited(
+            editMessageId = "someId",
+            newContent = "some new content",
+            newMentions = listOf()
+        )
+        val mockMessage = Message.Signaling(
             id = "someId",
-            content = MessageContent.Text("some new content"),
+            content = mockMessageContent,
             conversationId = ConversationId("someValue", "someDomain"),
             date = "someDate",
             senderUserId = UserId("someValue", "someDomain"),
             senderClientId = ClientId("someValue"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited,
-            visibility = Message.Visibility.VISIBLE
-        )
-
-        val mockMessageContent = MessageContent.TextEdited(
-            editMessageId = "someId",
-            newContent = "some new content",
-            newMentions = listOf()
         )
 
         given(messageRepository)

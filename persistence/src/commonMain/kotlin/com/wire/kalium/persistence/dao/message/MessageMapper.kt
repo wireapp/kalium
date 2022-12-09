@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -15,6 +16,157 @@ object MessageMapper {
 
     private val serializer = JsonSerializer()
 
+    @Suppress("ComplexMethod")
+    private fun toMessagePreviewEntityContent(
+        contentType: MessageEntity.ContentType,
+        senderName: String?,
+        selfUserId: QualifiedIDEntity?,
+        isSelfMessage: Boolean,
+        memberChangeList: List<QualifiedIDEntity>?,
+        memberChangeType: MessageEntity.MemberChangeType?,
+        mentionedUserId: QualifiedIDEntity?,
+        isQuotingSelfUser: Boolean?,
+        text: String?,
+        assetMimeType: String?
+    ) = when (contentType) {
+        MessageEntity.ContentType.TEXT -> when {
+            isSelfMessage -> MessagePreviewEntityContent.Text(
+                senderName = senderName,
+                messageBody = text.requireField("text")
+            )
+            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
+            (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
+            else -> MessagePreviewEntityContent.Text(
+                senderName = senderName,
+                messageBody = text.requireField("text")
+            )
+        }
+        MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
+            senderName = senderName,
+            type = assetMimeType?.let {
+                when {
+                    it.contains("image/") -> AssetTypeEntity.IMAGE
+                    it.contains("video/") -> AssetTypeEntity.VIDEO
+                    it.contains("audio/") -> AssetTypeEntity.AUDIO
+                    else -> AssetTypeEntity.FILE
+                }
+            } ?: AssetTypeEntity.FILE)
+
+        MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
+        MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
+            adminName = senderName,
+            count = memberChangeList.requireField("memberChangeList").size,
+            type = memberChangeType.requireField("memberChangeType"))
+
+        MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
+        MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
+            senderName = senderName,
+            type = AssetTypeEntity.ASSET
+        )
+        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
+            adminName = senderName)
+
+        MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+    }
+
+    @Suppress("ComplexMethod")
+    fun toPreviewEntity(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: String,
+        visibility: MessageEntity.Visibility,
+        senderName: String?,
+        senderConnectionStatus: ConnectionEntity.State?,
+        senderIsDeleted: Boolean?,
+        selfUserId: QualifiedIDEntity?,
+        isSelfMessage: Boolean,
+        memberChangeList: List<QualifiedIDEntity>?,
+        memberChangeType: MessageEntity.MemberChangeType?,
+        conversationName: String?,
+        mentionedUserId: QualifiedIDEntity?,
+        isQuotingSelfUser: Boolean?,
+        text: String?,
+        assetMimeType: String?,
+        isUnread: Boolean,
+        isNotified: Long,
+        mutedStatus: ConversationEntity.MutedStatus?,
+        conversationType: ConversationEntity.Type?
+    ): MessagePreviewEntity {
+        val content = toMessagePreviewEntityContent(
+            contentType = contentType,
+            senderName = senderName,
+            selfUserId = selfUserId,
+            isSelfMessage = isSelfMessage,
+            memberChangeList = memberChangeList,
+            memberChangeType = memberChangeType,
+            mentionedUserId = mentionedUserId,
+            isQuotingSelfUser = isQuotingSelfUser,
+            text = text,
+            assetMimeType = assetMimeType
+        )
+
+        return MessagePreviewEntity(
+            id = id,
+            conversationId = conversationId,
+            content = content,
+            date = date,
+            visibility = visibility,
+            isSelfMessage = isSelfMessage
+        )
+
+    }
+
+    @Suppress("ComplexMethod")
+    fun toNotificationEntity(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: String,
+        visibility: MessageEntity.Visibility,
+        senderName: String?,
+        senderConnectionStatus: ConnectionEntity.State?,
+        senderIsDeleted: Boolean?,
+        selfUserId: QualifiedIDEntity?,
+        isSelfMessage: Boolean,
+        memberChangeList: List<QualifiedIDEntity>?,
+        memberChangeType: MessageEntity.MemberChangeType?,
+        conversationName: String?,
+        mentionedUserId: QualifiedIDEntity?,
+        isQuotingSelfUser: Boolean?,
+        text: String?,
+        assetMimeType: String?,
+        isUnread: Boolean,
+        isNotified: Long,
+        mutedStatus: ConversationEntity.MutedStatus?,
+        conversationType: ConversationEntity.Type?
+    ): NotificationMessageEntity {
+        val content = toMessagePreviewEntityContent(
+            contentType = contentType,
+            senderName = senderName,
+            selfUserId = selfUserId,
+            isSelfMessage = isSelfMessage,
+            memberChangeList = memberChangeList,
+            memberChangeType = memberChangeType,
+            mentionedUserId = mentionedUserId,
+            isQuotingSelfUser = isQuotingSelfUser,
+            text = text,
+            assetMimeType = assetMimeType
+        )
+
+        return NotificationMessageEntity(
+            id = id,
+            content = content,
+            conversationId = conversationId,
+            conversationName = conversationName,
+            conversationType = conversationType,
+            date = date
+        )
+
+    }
+
     private fun createMessageEntity(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -26,7 +178,10 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         content: MessageEntityContent,
         allReactionsJson: String?,
-        selfReactionsJson: String?
+        selfReactionsJson: String?,
+        senderName: String?,
+        isSelfMessage: Boolean,
+        expectsReadConfirmation: Boolean
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -41,7 +196,10 @@ object MessageMapper {
             reactions = ReactionsEntity(
                 totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
                 selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-            )
+            ),
+            senderName = senderName,
+            isSelfMessage = isSelfMessage,
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -51,7 +209,9 @@ object MessageMapper {
             date = date,
             senderUserId = senderUserId,
             status = status,
-            visibility = visibility
+            visibility = visibility,
+            senderName = senderName,
+            isSelfMessage = isSelfMessage
         )
     }
 
@@ -70,6 +230,7 @@ object MessageMapper {
         status: MessageEntity.Status,
         lastEditTimestamp: String?,
         visibility: MessageEntity.Visibility,
+        expectsReadConfirmation: Boolean?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -83,6 +244,7 @@ object MessageMapper {
         senderUserType: UserTypeEntity?,
         senderBotService: BotEntity?,
         senderIsDeleted: Boolean?,
+        isSelfMessage: Boolean,
         text: String?,
         assetSize: Long?,
         assetName: String?,
@@ -108,13 +270,14 @@ object MessageMapper {
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
+        isDecryptionResolved: Boolean?,
         conversationName: String?,
         allReactionsJson: String,
         selfReactionsJson: String,
         mentions: String,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
-        isQuotingSelfUser: Long?,
+        isQuotingSelfUser: Boolean?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
         quotedMessageDateTime: String?,
@@ -137,7 +300,7 @@ object MessageMapper {
                     MessageEntityContent.Text.QuotedMessage(
                         id = it,
                         senderId = quotedSenderId.requireField("quotedSenderId"),
-                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser") != 0L,
+                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
                         senderName = quotedSenderName.requireField("quotedSenderName"),
                         dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
@@ -148,7 +311,7 @@ object MessageMapper {
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
                     )
-                }
+                },
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -182,7 +345,8 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
-                failedToDecryptData
+                encodedData = failedToDecryptData,
+                isDecryptionResolved = isDecryptionResolved ?: false
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
@@ -206,7 +370,10 @@ object MessageMapper {
             visibility,
             content,
             allReactionsJson,
-            selfReactionsJson
+            selfReactionsJson,
+            senderName,
+            isSelfMessage,
+            expectsReadConfirmation ?: false
         )
     }
 

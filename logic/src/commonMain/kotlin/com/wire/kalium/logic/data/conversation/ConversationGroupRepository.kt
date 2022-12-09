@@ -23,12 +23,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.first
 
 interface ConversationGroupRepository {
-    suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation)
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -54,31 +52,6 @@ internal class ConversationGroupRepositoryImpl(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
-
-    override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.requestToJoinGroup(
-                conversation.protocol.groupId,
-                conversation.protocol.epoch
-            )
-        } else {
-            Either.Right(Unit)
-        }
-    }
-
-    override suspend fun joinMLSGroupViaExternalCommit(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.joinGroupByExternalCommit(conversation.protocol.groupId, conversation.id)
-        } else {
-            Either.Right(Unit)
-        }
-    }
-
-    override suspend fun clearMLSGroupJoinViaExternalCommit(conversation: Conversation) {
-        if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.clearJoinViaExternalCommit(conversation.protocol.groupId)
-        }
-    }
 
     override suspend fun createGroupConversation(
         name: String?,
@@ -108,7 +81,7 @@ internal class ConversationGroupRepositoryImpl(
 
                         is Conversation.ProtocolInfo.MLS ->
                             persistMembersFromConversationResponse(conversationResponse)
-                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList) }
+                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList + selfUserId) }
                     }
                 }.flatMap {
                     wrapStorageRequest {
@@ -160,7 +133,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event, true))
+                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
             }
         }.map {
             Either.Right(Unit)
@@ -196,7 +169,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event, false))
+                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))
             }
         }.map { }
 }

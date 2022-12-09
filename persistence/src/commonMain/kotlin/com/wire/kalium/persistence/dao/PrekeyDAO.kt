@@ -5,7 +5,7 @@ import com.wire.kalium.persistence.MetadataQueries
 interface PrekeyDAO {
     suspend fun updateOTRLastPrekeyId(newKeyId: Int)
     suspend fun forceInsertOTRLastPrekeyId(newKeyId: Int)
-    suspend fun lastOTRPrekeyId(): Int
+    suspend fun lastOTRPrekeyId(): Int?
 }
 
 internal class PrekeyDAOImpl internal constructor(
@@ -13,8 +13,8 @@ internal class PrekeyDAOImpl internal constructor(
 ) : PrekeyDAO {
     override suspend fun updateOTRLastPrekeyId(newKeyId: Int) {
         metadataQueries.transaction {
-            val currentId = metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOne().toInt()
-            if (newKeyId > currentId) {
+            val currentId = metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOneOrNull()?.toInt()
+            if (currentId == null || newKeyId > currentId) {
                 metadataQueries.insertValue(OTR_LAST_PRE_KEY_ID, newKeyId.toString())
             }
         }
@@ -24,8 +24,8 @@ internal class PrekeyDAOImpl internal constructor(
         metadataQueries.insertValue(OTR_LAST_PRE_KEY_ID, newKeyId.toString())
     }
 
-    override suspend fun lastOTRPrekeyId(): Int =
-        metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOne().toInt()
+    override suspend fun lastOTRPrekeyId(): Int? =
+        metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOneOrNull()?.toInt()
 
     private companion object {
         const val OTR_LAST_PRE_KEY_ID = "otr_last_pre_key_id"

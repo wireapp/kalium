@@ -1,7 +1,7 @@
 package com.wire.kalium.api.base.authenticated.notification
 
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.JsonCorrectingSerializer
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.tools.KtxSerializer
@@ -35,11 +35,11 @@ class AccessUpdateTest {
     @Test
     fun givenPayloadWithAccessRoleAndDeprecatedAccessRoleField_whenDecoding_thenDeprecatedFieldIsPreferred() {
         val result = json.decodeFromString(
-            ConversationAccessInfoDTO.serializer(),
+            JsonCorrectingSerializer,
             """
                 {
-                    "access": ["invite"]
-                    "access_role": ["team_member"]
+                    "access": ["invite"],
+                    "access_role": "team_member",
                     "access_role_v2": ["guest"]
                 }
             """.trimIndent()

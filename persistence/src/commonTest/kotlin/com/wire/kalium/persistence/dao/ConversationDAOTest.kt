@@ -13,19 +13,18 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -220,13 +219,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity2.id,
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             mutedStatusTimestamp = 1649702788L
         )
 
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
 
-        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
+        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED, result?.mutedStatus)
     }
 
     @Test
@@ -381,12 +380,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
-        runTest() {
+        runTest {
             // given
             val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
             teamDAO.insertTeam(team)
-
-            launch(UnconfinedTestDispatcher(testScheduler)) {
+            launch {
                 // when
                 conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
                     // then
@@ -406,10 +404,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
                     assertTrue(conversationAfterUpdate != null)
                     assertEquals(conversationAfterUpdate.lastReadDate, expectedConversationSeenDate)
-
-                    cancelAndIgnoreRemainingEvents()
                 }
-            }
+            }.join()
         }
 
     @Test
@@ -444,315 +440,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
-    }
-
-    @Test
-    fun givenConversationsHaveLastReadDateAfterModified_whenGettingUnReadConversationCount_ThenReturnTheExpectedCount() = runTest {
-        // given
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("1", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("2", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
-            )
-        )
-
-        // when
-        val result = conversationDAO.getUnreadConversationCount()
-
-        // then
-        assertEquals(0L, result)
-    }
-
-    @Test
-    fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-        val readMessagesCount = 3
-        val unreadMessagesCount = 2
-
-        val message = buildList {
-            // add 9 Message before the lastReadDate
-            repeat(readMessagesCount) {
-                add(
-                    newRegularMessageEntity(
-                        id = "read$it",
-                        date = "2000-01-01T11:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-            // add 9 Message past the lastReadDate
-            repeat(unreadMessagesCount) {
-                add(
-                    newRegularMessageEntity(
-                        id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-        }
-
-        messageDAO.insertMessages(message)
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertEquals(unreadMessagesCount, conversation.unreadContentCountEntity.values.sum())
-            }
-        }
-    }
-
-    @Test
-    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        val systemMessagesCount = 3
-        val regularMessagesCount = 2
-
-        val message = buildList {
-            // add 5 Message past the lastReadDate
-            repeat(systemMessagesCount) {
-                add(
-                    newSystemMessageEntity(
-                        id = "system$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-            // add 9 Message past the lastReadDate
-            repeat(regularMessagesCount) {
-                add(
-                    newRegularMessageEntity(
-                        id = "regular$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-        }
-
-        messageDAO.insertMessages(message)
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertEquals(regularMessagesCount, conversation.unreadContentCountEntity.values.sum())
-            }
-        }
-    }
-
-    @Test
-    fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        messageDAO.insertMessages(
-            listOf(
-                newRegularMessageEntity(
-                    id = "regularAsset",
-                    date = "2000-01-01T13:00:00.000Z",
-                    conversationId = conversationId,
-                    senderUserId = user1.id,
-                    content = MessageEntityContent.Text("text")
-                )
-            )
-        )
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.TEXT)
-            }
-        }
-    }
-
-    @Test
-    fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        messageDAO.insertMessages(
-            listOf(
-                newRegularMessageEntity(
-                    id = "regularAsset",
-                    date = "2000-01-01T13:00:00.000Z",
-                    conversationId = conversationId,
-                    senderUserId = user1.id,
-                    content = MessageEntityContent.Asset(
-                        1000,
-                        assetName = "test name",
-                        assetMimeType = "MP4",
-                        assetDownloadStatus = null,
-                        assetOtrKey = byteArrayOf(1),
-                        assetSha256Key = byteArrayOf(1),
-                        assetId = "assetId",
-                        assetToken = "",
-                        assetDomain = "domain",
-                        assetEncryptionAlgorithm = "",
-                        assetWidth = 111,
-                        assetHeight = 111,
-                        assetDurationMs = 10,
-                        assetNormalizedLoudness = byteArrayOf(1),
-                    )
-                )
-            )
-        )
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.ASSET)
-            }
-        }
-    }
-
-    @Test
-    fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        messageDAO.insertMessages(
-            listOf(
-                newSystemMessageEntity(
-                    id = "regularAsset",
-                    date = "2000-01-01T13:00:00.000Z",
-                    conversationId = conversationId,
-                    senderUserId = user1.id,
-                    content = MessageEntityContent.MissedCall
-                )
-            )
-        )
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.MISSED_CALL)
-            }
-        }
-    }
-
-    @Test
-    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
-
-        userDAO.insertUser(user1)
-
-        val message = buildList {
-            // add 9 Message before the lastReadDate
-            repeat(9) {
-                add(
-                    newRegularMessageEntity(
-                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
-                        conversationId = conversationId,
-                        senderUserId = user1.id,
-                    )
-                )
-            }
-        }
-
-        messageDAO.insertMessages(message)
-
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
-                val conversation = awaitItem()
-                assertNotNull(conversation)
-                // then
-                assertEquals(0, conversation.unreadContentCountEntity.values.sum())
-            }
-        }
     }
 
     @Test
@@ -839,7 +526,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 }
             }
 
-            messageDAO.insertMessages(messages)
+            messageDAO.insertOrIgnoreMessages(messages)
 
             // when
             messageDAO.deleteAllConversationMessages(conversation.id)
@@ -984,29 +671,35 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(member3, conversationEntity1.id)
         conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
+
+        val firstRemovalDate = Clock.System.now()
+        val secondRemovalDate = firstRemovalDate.plus(1.seconds)
+
         val message1 = newSystemMessageEntity(
+            id = "1",
             senderUserId = member1.user,
             content = MessageEntityContent.MemberChange(
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = Clock.System.now().toString(),
+            date = firstRemovalDate.toString(),
             conversationId = conversationEntity1.id
         )
         val message2 = newSystemMessageEntity(
+            id = "2",
             senderUserId = member3.user,
             content = MessageEntityContent.MemberChange(
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = Clock.System.now().toString(),
+            date = secondRemovalDate.toString(),
             conversationId = conversationEntity1.id
         )
         userDAO.insertUser(user1)
         userDAO.insertUser(user2)
         userDAO.insertUser(user3)
-        messageDAO.insertMessage(message1)
-        messageDAO.insertMessage(message2)
+        messageDAO.insertOrIgnoreMessage(message1)
+        messageDAO.insertOrIgnoreMessage(message2)
 
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
@@ -1040,7 +733,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Clock.System.now().toString(),
             conversationId = conversationEntity1.id
         )
-        messageDAO.insertMessage(removalMessage)
+        messageDAO.insertOrIgnoreMessage(removalMessage)
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
             conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
@@ -1130,7 +823,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then
-        assertEquals(0L, result?.isMember)
+        assertEquals(false, result?.isMember)
     }
 
     @Test
@@ -1197,8 +890,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
             isCreator = 0L,
             lastNotificationDate = lastNotificationDate,
-            unreadMentionsCount = 0,
-            isMember = 1L,
             protocolInfo = protocolInfo,
             accessList = access,
             accessRoleList = accessRole,
@@ -1211,7 +902,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsProposalTimer = null,
             mutedTime = mutedTime,
             creatorId = creatorId,
-            unreadContentCountEntity = emptyMap()
+            selfRole = Member.Role.Member
         )
     }
 
@@ -1277,7 +968,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
@@ -1300,7 +991,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )

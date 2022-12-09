@@ -1,10 +1,9 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -21,6 +20,8 @@ interface ConversationApi {
     suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO>
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
+
+    suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
@@ -41,9 +42,9 @@ interface ConversationApi {
         conversationId: ConversationId
     ): NetworkResponse<Unit>
 
-    suspend fun updateAccessRole(
+    suspend fun updateAccess(
         conversationId: ConversationId,
-        conversationAccessInfoDTO: ConversationAccessInfoDTO
+        updateConversationAccessRequest: UpdateConversationAccessRequest
     ): NetworkResponse<UpdateConversationAccessResponse>
 
     suspend fun updateConversationMemberRole(
@@ -52,7 +53,7 @@ interface ConversationApi {
         conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 
-    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit>
+    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<ConversationRenameResponse>
 
     suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
 }

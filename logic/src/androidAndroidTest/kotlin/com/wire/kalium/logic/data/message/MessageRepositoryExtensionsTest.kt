@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.wire.kalium.logic.data.id.IdMapper
@@ -20,7 +19,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -38,13 +36,13 @@ class MessageRepositoryExtensionsTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
 
-        val kaliumPager = KaliumPager<MessageEntity>(pager, fakePagingSource)
+        val kaliumPager = KaliumPager(pager, fakePagingSource)
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()
-
+        MessageRepositoryExtensionsTest
         val visibilities = listOf(Message.Visibility.VISIBLE)
-        val result: Flow<PagingData<Message>> = messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
+        messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
             TestConversation.ID,
             visibilities,
             pagingConfig
@@ -112,6 +110,5 @@ class MessageRepositoryExtensionsTest {
     private companion object {
         val CONVERSATION_ID_ENTITY = TestConversation.ENTITY_ID
         val MESSAGE = TestMessage.TEXT_MESSAGE
-        val MESSAGE_ENTITY = TestMessage.ENTITY
     }
 }

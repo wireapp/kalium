@@ -30,7 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@Ignore
+@Ignore // TODO
 @Suppress("LongMethod")
 class ObserveConversationListDetailsUseCaseTest {
 
@@ -38,25 +38,24 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val conversations = listOf(selfConversation, groupConversation)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails =
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadMessagesCount = 0,
-                lastUnreadMessage = null,
+                lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadContentCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When
@@ -73,7 +72,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         // Given
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(selfConversation, groupConversation)
 
@@ -81,18 +80,17 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When
@@ -119,11 +117,11 @@ class ObserveConversationListDetailsUseCaseTest {
             ConversationDetails.Group(
                 groupConversation,
                 LegalHoldStatus.DISABLED,
-                unreadMessagesCount = 0,
-                lastUnreadMessage = null,
+                lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadContentCount = emptyMap()
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
             )
         )
 
@@ -132,18 +130,16 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
-            unreadContentCount = emptyMap()
+            lastMessage = null,
+            unreadEventCount = emptyMap()
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
-            unreadContentCount = emptyMap()
+            lastMessage = null,
+            unreadEventCount = emptyMap()
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -152,7 +148,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, groupConversationUpdates)
             .withConversationsDetailsChannelUpdates(oneOnOneConversation, oneOnOneDetailsChannel)
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -178,14 +173,14 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
-        val selfConversation = TestConversation.SELF
+        val selfConversation = TestConversation.SELF()
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
 
         val firstConversationsList = listOf(groupConversation)
@@ -196,7 +191,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -216,11 +210,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -231,7 +225,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -248,11 +241,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
-            unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap(),
+            selfRole = Conversation.Member.Role.Member
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -263,7 +256,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -284,7 +276,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(listOf(successConversation, failureConversation))
             .withSuccessfulConversationsDetailsListUpdates(successConversation, listOf(successConversationDetails))
             .withErrorConversationsDetailsListUpdates(failureConversation)
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -298,13 +289,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
         @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        fun withUnreadConversationCount(count: Long) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getUnreadConversationCount)
-                .whenInvoked()
-                .thenReturn(Either.Right(count))
-        }
 
         fun withConversationsDetailsChannelUpdates(
             conversation: Conversation,

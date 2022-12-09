@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -22,13 +23,16 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -41,7 +45,7 @@ interface MessageRepository {
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
     suspend fun persistMessage(
-        message: Message,
+        message: Message.Standalone,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
         updateConversationNotificationsDate: Boolean = false
@@ -78,6 +82,8 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
+    suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>>
+
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
@@ -100,6 +106,11 @@ interface MessageRepository {
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
+    suspend fun getPendingConfirmationMessagesByConversationAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Either<CoreFailure, List<Message>>
 
     suspend fun updateTextMessageContent(
         conversationId: ConversationId,
@@ -113,6 +124,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
+    suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -146,13 +158,39 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>> =
+        messageDAO.getNotificationMessage(
+            listOf(
+                MessageEntity.ContentType.TEXT,
+                MessageEntity.ContentType.RESTRICTED_ASSET,
+                MessageEntity.ContentType.ASSET,
+                MessageEntity.ContentType.KNOCK,
+                MessageEntity.ContentType.MISSED_CALL
+            )
+        ).mapLatest {
+            it.groupBy { item ->
+                item.conversationId
+            }.map { (conversationId, messages) ->
+                LocalNotificationConversation(
+                    // todo: needs some clean up!
+                    id = idMapper.fromDaoModel(conversationId),
+                    conversationName = messages.first().conversationName ?: "",
+                    messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                    isOneToOneConversation = messages.first().conversationType?.let { type ->
+                        type == ConversationEntity.Type.ONE_ON_ONE
+                    } ?: false
+                )
+            }
+        }
+
     override suspend fun persistMessage(
-        message: Message,
+        message: Message.Standalone,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
         updateConversationNotificationsDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(
+        messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
             updateConversationModifiedDate,
@@ -194,7 +232,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility>
-    ): Flow<List<Message>> = messageDAO.getMessagesByConversationAndVisibilityAfterDate(
+    ): Flow<List<Message>> = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(
         idMapper.toDaoModel(conversationId),
         date,
         visibility.map { it.toEntityVisibility() }
@@ -293,6 +331,18 @@ class MessageDataSource(
             .map(messageMapper::fromEntityToMessage)
     }
 
+    override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility>
+    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+        messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+            idMapper.toDaoModel(conversationId),
+            date,
+            visibility.map { it.toEntityVisibility() })
+            .map(messageMapper::fromEntityToMessage)
+    }
+
     override suspend fun updateMessageId(
         conversationId: ConversationId,
         oldMessageId: String,
@@ -332,4 +382,9 @@ class MessageDataSource(
             messageDAO.resetAssetDownloadStatus()
         }
     }
+
+    override suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.markMessagesAsDecryptionResolved(idMapper.toDaoModel(conversationId))
+    }
+
 }

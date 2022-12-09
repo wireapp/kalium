@@ -1,11 +1,9 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -16,8 +14,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
@@ -48,7 +46,8 @@ class DeleteMessageUseCaseTest {
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
-            .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
@@ -80,7 +79,8 @@ class DeleteMessageUseCaseTest {
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
-            .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
@@ -112,7 +112,8 @@ class DeleteMessageUseCaseTest {
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
-            .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
@@ -122,7 +123,7 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         val deletedForMeContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
+            TEST_MESSAGE_UUID,
             TEST_CONVERSATION_ID
         )
 
@@ -131,7 +132,7 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { message ->
-                    message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
+                    message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
                 anything()
             )
@@ -150,7 +151,8 @@ class DeleteMessageUseCaseTest {
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
-            .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
@@ -162,16 +164,18 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID,
-            TEST_CONVERSATION_ID.value,
             TEST_CONVERSATION_ID
         )
 
         // then
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(matching { message ->
-                message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
-            }, anything())
+            .with(
+                matching { message ->
+                message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
+            },
+                anything()
+            )
             .wasInvoked(exactly = once)
 
         verify(arrangement.assetRepository)
@@ -188,16 +192,16 @@ class DeleteMessageUseCaseTest {
     private class Arrangement {
 
         @Mock
+        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
+
+        @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
         @Mock
-        val clientRepository: ClientRepository = mock(ClientRepository::class)
-
-        @Mock
-        private val slowSyncRepository = mock(SlowSyncRepository::class)
+        val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
         val messageSender: MessageSender = mock(MessageSender::class)
@@ -205,17 +209,19 @@ class DeleteMessageUseCaseTest {
         @Mock
         val assetRepository: AssetRepository = mock(AssetRepository::class)
 
-        val idMapper: IdMapper = IdMapperImpl()
+        @Mock
+        val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         fun arrange() = this to DeleteMessageUseCase(
             messageRepository,
-            userRepository,
-            clientRepository,
             assetRepository,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            TestUser.SELF.id,
+            currentClientIdProvider,
+            selfConversationIdProvider
         )
 
         fun withSendMessageSucceed() = apply {
@@ -232,9 +238,9 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(flowOf(selfUser))
         }
 
-        fun withCurrentClientIdIs(clientId: ClientId) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+        fun withCurrentClientId(clientId: ClientId) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .then { Either.Right(clientId) }
         }
@@ -281,10 +287,15 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationIds) }
+        }
+
     }
 
     companion object {
         val TEST_CONVERSATION_ID = TestConversation.ID
+        val SELF_CONVERSATION_ID = TestConversation.SELF().id
         const val TEST_MESSAGE_UUID = "messageUuid"
         val SELF_CLIENT_ID: ClientId = PlainId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
@@ -305,16 +316,6 @@ class DeleteMessageUseCaseTest {
                 downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
                 mimeType = "image/jpeg"
             ),
-        )
-        val TEST_MESSAGE = Message.Regular(
-            id = TEST_MESSAGE_UUID,
-            content = MessageContent.Text("some text"),
-            conversationId = ConversationId("convo-id", "convo.domain"),
-            date = "some-date",
-            senderUserId = UserId("user-id", "domain"),
-            senderClientId = ClientId("client-id"),
-            status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

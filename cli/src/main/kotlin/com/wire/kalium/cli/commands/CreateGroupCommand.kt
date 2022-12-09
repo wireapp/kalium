@@ -33,8 +33,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
             echo("$index) ${user.id.value}  Name: ${user.name}")
         }
 
-        val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ")
-        val userIndices = userIndicesRaw?.split("\\s".toRegex())?.map(String::toInt) ?: emptyList()
+        val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ", default = "")
+        val userIndices = userIndicesRaw?.split("\\s".toRegex())?.filter { it.isNotEmpty() }?.map(String::toInt) ?: emptyList()
         val userToAddList = userIndices.map { users[it].id }
 
         val result = userSession.conversations.createGroupConversation(

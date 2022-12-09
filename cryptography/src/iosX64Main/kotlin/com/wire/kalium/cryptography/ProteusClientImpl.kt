@@ -187,6 +187,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
         return encrypt(message, sessionId)!!
     }
 
+    override fun deleteSession(sessionId: CryptoSessionId) {
+        // TODO Delete session for iOS
+    }
+
     companion object {
         private fun toPreKey(preKey: PreKeyCrypto): String = preKey.encodedData
 

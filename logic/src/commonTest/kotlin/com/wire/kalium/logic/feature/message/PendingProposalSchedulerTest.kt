@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -154,6 +155,9 @@ class PendingProposalSchedulerTest {
     private class Arrangement {
 
         val kaliumConfigs = KaliumConfigs()
+
+        @Mock
+        val sessionRepository = mock(classOf<SessionRepository>())
 
         @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()

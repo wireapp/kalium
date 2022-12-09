@@ -2,12 +2,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -24,7 +24,7 @@ class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val syncManager: SyncManager,
-    private val clientRepository: ClientRepository
+    private val currentClientIdProvider: CurrentClientIdProvider
 ) {
 
     /**
@@ -34,9 +34,9 @@ class CreateGroupConversationUseCase internal constructor(
      */
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): Result =
         syncManager.waitUntilLiveOrFailure().flatMap {
-            clientRepository.currentClientId()
+            currentClientIdProvider()
         }.flatMap { clientId ->
-            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId.value))
+            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
         }.flatMap { conversation ->
             conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
                 .map { conversation }

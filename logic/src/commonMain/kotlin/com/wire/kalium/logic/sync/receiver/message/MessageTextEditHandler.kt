@@ -1,14 +1,25 @@
 package com.wire.kalium.logic.sync.receiver.message
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
-class MessageTextEditHandler(private val messageRepository: MessageRepository) {
-
+interface MessageTextEditHandler {
     suspend fun handle(
-        message: Message,
+        message: Message.Signaling,
+        messageContent: MessageContent.TextEdited
+    ): Either<CoreFailure, Unit>
+}
+
+class MessageTextEditHandlerImpl(
+    private val messageRepository: MessageRepository
+) : MessageTextEditHandler {
+
+    override suspend fun handle(
+        message: Message.Signaling,
         messageContent: MessageContent.TextEdited
     ) = messageRepository.updateTextMessageContent(
         conversationId = message.conversationId,
