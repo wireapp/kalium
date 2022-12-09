@@ -11,7 +11,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -20,6 +22,8 @@ import kotlinx.datetime.Clock
 
 class SessionResetSender internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
+    private val selfUserId: QualifiedID,
+    private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -33,17 +37,19 @@ class SessionResetSender internal constructor(
         }
         val generatedMessageUuid = uuid4().toString()
 
-        val message = Message.Signaling(
-            id = generatedMessageUuid,
-            content = MessageContent.SessionReset,
-            conversationId = conversationId,
-            date = Clock.System.now().toString(),
-            senderUserId = userId,
-            senderClientId = clientId,
-            status = Message.Status.SENT
-        )
-        val recipient = Recipient(userId, listOf(clientId))
-        messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
+        provideClientId().flatMap { selfClientId ->
+            val message = Message.Signaling(
+                id = generatedMessageUuid,
+                content = MessageContent.SessionReset,
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = selfUserId,
+                senderClientId = selfClientId,
+                status = Message.Status.SENT
+            )
+            val recipient = Recipient(userId, listOf(clientId))
+            messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
+        }
     }
 
 }
