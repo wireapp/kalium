@@ -137,9 +137,9 @@ class ConversationScope internal constructor(
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-            currentClientIdProvider,
             messageSender,
             selfUserId,
+            currentClientIdProvider,
             selfConversationIdProvider
         )
 }

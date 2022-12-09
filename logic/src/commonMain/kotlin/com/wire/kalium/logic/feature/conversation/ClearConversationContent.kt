@@ -15,6 +15,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import kotlinx.datetime.Clock
 
 internal interface ClearConversationContent {
@@ -59,30 +60,32 @@ interface ClearConversationContentUseCase {
 
 internal class ClearConversationContentUseCaseImpl(
     private val clearConversationContent: ClearConversationContent,
-    private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
         clearConversationContent(conversationId).flatMap {
             currentClientIdProvider().flatMap { currentClientId ->
-                selfConversationIdProvider().flatMap { selfConversationId ->
-                    val regularMessage = Message.Signaling(
-                        id = uuid4().toString(),
-                        content = MessageContent.Cleared(
-                            conversationId = conversationId,
-                            time = Clock.System.now()
-                        ),
-                        // sending the message to clear this conversation
-                        conversationId = selfConversationId,
-                        date = Clock.System.now().toString(),
-                        senderUserId = selfUserId,
-                        senderClientId = currentClientId,
-                        status = Message.Status.PENDING
-                    )
-                    messageSender.sendMessage(regularMessage)
+                selfConversationIdProvider().flatMap { selfConversationIds ->
+                    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                        val regularMessage = Message.Signaling(
+                            id = uuid4().toString(),
+                            content = MessageContent.Cleared(
+                                conversationId = conversationId,
+                                time = Clock.System.now()
+                            ),
+                            // sending the message to clear this conversation
+                            conversationId = selfConversationId,
+                            date = Clock.System.now().toString(),
+                            senderUserId = selfUserId,
+                            senderClientId = currentClientId,
+                            status = Message.Status.PENDING
+                        )
+                        messageSender.sendMessage(regularMessage)
+                    }
                 }
             }
         }.fold({ ClearConversationContentUseCase.Result.Failure }, { ClearConversationContentUseCase.Result.Success })
