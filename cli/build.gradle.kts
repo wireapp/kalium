@@ -34,4 +34,5 @@ dependencies {
     implementation(libs.ktor.okHttp)
     implementation(libs.okhttp.loggingInterceptor)
     implementation(libs.coroutines.core)
+    implementation(libs.ktxDateTime)
 }
