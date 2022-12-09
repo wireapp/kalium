@@ -1,9 +1,13 @@
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.configuration.server
 
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -15,6 +19,11 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+
+data class ServerConfigWithUserId(
+    val serverConfig: ServerConfig,
+    val userId: UserId
+)
 
 @Serializable
 data class ServerConfig(
@@ -131,10 +140,12 @@ interface ServerConfigMapper {
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
     fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links
     fun fromEntity(apiProxy: ServerConfigEntity.ApiProxy): ServerConfig.ApiProxy
+    fun fromEntity(serverConfigEntity: ServerConfigWithUserIdEntity): ServerConfigWithUserId
 }
 
 class ServerConfigMapperImpl(
-    private val apiVersionMapper: ApiVersionMapper
+    private val apiVersionMapper: ApiVersionMapper,
+    private val idMapper: IdMapper
 ) : ServerConfigMapper {
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
         ServerConfigDTO(
@@ -279,6 +290,12 @@ class ServerConfigMapperImpl(
             port = port
         )
     }
+
+    override fun fromEntity(serverConfigEntity: ServerConfigWithUserIdEntity): ServerConfigWithUserId =
+        ServerConfigWithUserId(
+            fromEntity(serverConfigEntity.serverConfig),
+            idMapper.fromDaoModel(serverConfigEntity.userId)
+        )
 }
 
 sealed class CommonApiVersionType(open val version: Int) {

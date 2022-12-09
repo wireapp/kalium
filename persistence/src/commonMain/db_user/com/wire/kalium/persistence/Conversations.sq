@@ -136,11 +136,7 @@ CASE
     ELSE 0
     END AS isCreator,
 Conversation.last_notified_message_date AS lastNotifiedMessageDate,
-(SELECT COUNT() FROM Member
-    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
-    AND Member.conversation == Conversation.qualified_id
-    LIMIT 1)
-    AS isMember,
+memberRole. role AS selfRole,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
@@ -158,6 +154,8 @@ FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
     AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
 LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
@@ -198,10 +196,6 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-getUnreadConversationCount:
-SELECT COUNT() FROM Conversation AS conversation
- WHERE strftime('%Y-%m-%d %H:%M:%f', conversation.last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', conversation.last_read_date)
-AND conversation.type IS NOT "SELF";
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 

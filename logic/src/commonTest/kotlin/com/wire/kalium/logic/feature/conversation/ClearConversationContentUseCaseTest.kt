@@ -43,6 +43,10 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
+            verify(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .wasNotInvoked()
+
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -70,6 +74,10 @@ class ClearConversationContentUseCaseTest {
             verify(clearConversationContent)
                 .suspendFunction(clearConversationContent::invoke)
                 .with(anything())
+                .wasInvoked(Times(1))
+
+            verify(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .wasInvoked(Times(1))
 
             verify(messageSender)
@@ -101,6 +109,10 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
+            verify(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .wasInvoked(Times(1))
+
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -130,6 +142,10 @@ class ClearConversationContentUseCaseTest {
                 .with(anything())
                 .wasInvoked(Times(1))
 
+            verify(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .wasInvoked(Times(1))
+
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
@@ -144,16 +160,16 @@ class ClearConversationContentUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val clearConversationContent = mock(classOf<ClearConversationContent>())
 
         @Mock
-        val clearConversationContent: ClearConversationContent = mock(classOf<ClearConversationContent>())
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         @Mock
-        val messageSender: MessageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(classOf<MessageSender>())
 
         fun withClearConversationContent(isSuccessFull: Boolean): Arrangement {
             given(clearConversationContent)

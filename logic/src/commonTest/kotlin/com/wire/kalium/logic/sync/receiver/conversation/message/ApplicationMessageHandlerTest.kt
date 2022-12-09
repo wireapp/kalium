@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
@@ -48,7 +47,7 @@ class ApplicationMessageHandlerTest {
                 Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent)
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
         val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -76,7 +75,6 @@ class ApplicationMessageHandlerTest {
             )
             .wasInvoked()
     }
-
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -89,9 +87,6 @@ class ApplicationMessageHandlerTest {
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        private val receiptRepository = mock(classOf<ReceiptRepository>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
@@ -164,4 +159,5 @@ class ApplicationMessageHandlerTest {
         fun arrange() = this to applicationMessageHandler
 
     }
+
 }

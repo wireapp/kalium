@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -25,20 +26,23 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
@@ -49,7 +53,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
@@ -120,7 +123,6 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
@@ -148,11 +150,6 @@ interface ConversationRepository {
     suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
-    suspend fun updateConversationName(
-        conversationId: ConversationId,
-        conversationName: String,
-        timestamp: String
-    ): Either<CoreFailure, Unit>
 
     suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
 
@@ -171,13 +168,15 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
+    private val renamedConversationEventHandler: RenamedConversationEventHandler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId)
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -306,12 +305,18 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         combine(
             conversationDAO.getAllConversationDetails(),
-            messageDAO.observeLastMessages()
-        ) { conversationList, lastMessageList ->
+            messageDAO.observeLastMessages(),
+            messageDAO.observeUnreadMessages(),
+        ) { conversationList, lastMessageList, unreadMessageList ->
+            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) })
+                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    groupedMessages[conversation.id]?.mapNotNull { message ->
+                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
+                    }?.groupingBy { it }?.eachCount()
+                )
             }
         }
 
@@ -321,13 +326,8 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-            // we don't need last message here
-            .mapRight { conversationMapper.fromDaoModelToDetails(it, null) }
-            .distinctUntilChanged()
-
-    private suspend fun observeLastMessage(conversationId: ConversationId): Flow<Message?> =
-        messageDAO.observeConversationLastMessage(idMapper.toDaoModel(conversationId))
-            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
+            // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
+            .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
@@ -445,12 +445,12 @@ internal class ConversationDataSource internal constructor(
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit> =
-        ConversationAccessInfoDTO(
+        UpdateConversationAccessRequest(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
             accessRole.map { conversationMapper.toApiModel(it) }.toSet()
         ).let { updateConversationAccessRequest ->
             wrapApiRequest {
-                conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
+                conversationApi.updateAccess(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
             }
         }.flatMap { response ->
             when (response) {
@@ -476,9 +476,6 @@ internal class ConversationDataSource internal constructor(
      */
     override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
-
-    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
-        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client
@@ -580,9 +577,6 @@ internal class ConversationDataSource internal constructor(
         )?.let { idMapper.fromDaoModel(it) }
     }
 
-    override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
-        wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
-
     override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
         conversationDAO.revokeOneOnOneConversationsWithDeletedUser(idMapper.toDaoModel(userId))
     }
@@ -603,13 +597,13 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> {
-        return wrapApiRequest {
+    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> =
+        wrapApiRequest {
             conversationApi.updateConversationName(idMapper.toApiModel(conversationId), conversationName)
-        }.flatMap {
-            updateConversationName(conversationId, conversationName, Clock.System.now().toString())
-        }
-    }
+        }.onSuccess { response ->
+            if (response is ConversationRenameResponse.Changed)
+                renamedConversationEventHandler.handle(eventMapper.conversationRenamed(LocalId.generate(), response.event, true))
+        }.map { Either.Right(Unit) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

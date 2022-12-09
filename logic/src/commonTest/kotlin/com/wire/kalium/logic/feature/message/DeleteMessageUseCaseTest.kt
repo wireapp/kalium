@@ -123,7 +123,7 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         val deletedForMeContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
+            TEST_MESSAGE_UUID,
             TEST_CONVERSATION_ID
         )
 
@@ -164,7 +164,6 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID,
-            TEST_CONVERSATION_ID.value,
             TEST_CONVERSATION_ID
         )
 
@@ -217,10 +216,10 @@ class DeleteMessageUseCaseTest {
 
         fun arrange() = this to DeleteMessageUseCase(
             messageRepository,
-            userRepository,
             assetRepository,
             slowSyncRepository,
             messageSender,
+            TestUser.SELF.id,
             currentClientIdProvider,
             selfConversationIdProvider
         )

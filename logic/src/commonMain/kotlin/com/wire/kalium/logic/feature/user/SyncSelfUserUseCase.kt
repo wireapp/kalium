@@ -7,9 +7,5 @@ import com.wire.kalium.logic.functional.Either
 class SyncSelfUserUseCase internal constructor(
     private val userRepository: UserRepository
 ) {
-
-    suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return userRepository.fetchSelfUser()
-    }
-
+    suspend operator fun invoke(): Either<CoreFailure, Unit> = userRepository.fetchSelfUser()
 }

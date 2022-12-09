@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName
@@ -29,7 +30,8 @@ sealed class MessageEntity(
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
+        val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -161,7 +163,7 @@ sealed class MessageEntityContent {
          * Details of the message being quoted.
          * Unused when inserting into the DB.
          */
-        val quotedMessage: QuotedMessage? = null
+        val quotedMessage: QuotedMessage? = null,
     ) : Regular() {
         data class QuotedMessage(
             val id: String,
@@ -215,7 +217,7 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
-    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
+    data class FailedDecryption(val encodedData: ByteArray? = null, val isDecryptionResolved: Boolean) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
@@ -233,6 +235,11 @@ sealed class MessageEntityContent {
     data class TeamMemberRemoved(val userName: String) : System()
 }
 
+/**
+ * Simplified model of [MessageEntity]
+ * used everywhere where there is no need to have all the fields
+ * for example in conversation list or notifications
+ */
 data class MessagePreviewEntity(
     val id: String,
     val conversationId: QualifiedIDEntity,
@@ -240,6 +247,15 @@ data class MessagePreviewEntity(
     val date: String,
     val visibility: MessageEntity.Visibility,
     val isSelfMessage: Boolean
+)
+
+data class NotificationMessageEntity(
+    val id: String,
+    val content: MessagePreviewEntityContent,
+    val conversationId: QualifiedIDEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type?,
+    val date: String
 )
 
 sealed class MessagePreviewEntityContent {

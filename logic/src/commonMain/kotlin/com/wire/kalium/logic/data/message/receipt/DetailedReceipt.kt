@@ -10,5 +10,5 @@ data class DetailedReceipt(
 )
 
 enum class ReceiptType {
-    DELIVERY, READ
+    DELIVERED, READ
 }

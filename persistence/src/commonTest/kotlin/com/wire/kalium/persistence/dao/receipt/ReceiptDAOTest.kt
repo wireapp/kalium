@@ -116,7 +116,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
     fun givenReceiptsOfMultipleMessages_whenGettingDetails_shouldReturnOnlyFromSpecifiedMessage() = runTest {
         insertTestData()
         val otherMessageId = "someOtherTestMessage"
-        messageDAO.insertMessage(
+        messageDAO.insertOrIgnoreMessage(
             newRegularMessageEntity(
                 id = otherMessageId,
                 senderUserId = SELF_USER_ID,
@@ -152,7 +152,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(SELF_USER)
         userDAO.insertUser(OTHER_USER)
         conversationDAO.insertConversation(TEST_CONVERSATION)
-        messageDAO.insertMessage(TEST_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
     }
 
     private companion object {

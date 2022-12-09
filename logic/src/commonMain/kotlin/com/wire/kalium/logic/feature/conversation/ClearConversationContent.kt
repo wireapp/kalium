@@ -74,8 +74,6 @@ internal class ClearConversationContentUseCaseImpl(
                         val regularMessage = Message.Signaling(
                             id = uuid4().toString(),
                             content = MessageContent.Cleared(
-                                unqualifiedConversationId = conversationId.value,
-                                // the id of the conversation that we want to clear
                                 conversationId = conversationId,
                                 time = Clock.System.now()
                             ),

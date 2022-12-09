@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -14,22 +13,24 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
+import com.wire.kalium.persistence.dao.message.AssetTypeEntity.IMAGE
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import kotlinx.datetime.Instant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
-    fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
+    fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
+    fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
 }
 
 class MessageMapperImpl(
     private val idMapper: IdMapper,
-    private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
@@ -58,7 +59,8 @@ class MessageMapperImpl(
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is Message.System -> MessageEntity.System(
@@ -99,7 +101,8 @@ class MessageMapperImpl(
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                 senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage
+                isSelfMessage = message.isSelfMessage,
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
 
             is MessageEntity.System -> Message.System(
@@ -126,21 +129,50 @@ class MessageMapperImpl(
         )
     }
 
-    override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage =
-        when (val content = message.content) {
-            is MessageContent.Text -> LocalNotificationMessage.Text(author, message.date, content.value)
-            // TODO(notifications): Handle other message types
-            is MessageContent.Asset -> {
-                val type = if (content.value.metadata is Image) LocalNotificationCommentType.PICTURE
-                else LocalNotificationCommentType.FILE
+    override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
+        return when (message.content) {
+            is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
+            is MessagePreviewEntityContent.ConversationNameChange -> null
+            is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
+            is MessagePreviewEntityContent.MemberChange -> null
+            is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
+            is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
+            is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
+            is MessagePreviewEntityContent.TeamMemberRemoved -> null
+            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
+            MessagePreviewEntityContent.Unknown -> null
+        }
+    }
 
-                LocalNotificationMessage.Comment(author, message.date, type)
+    override fun fromMessageToLocalNotificationMessage(
+        message: NotificationMessageEntity
+    ): LocalNotificationMessage =
+        when (val content = message.content) {
+            is MessagePreviewEntityContent.Text -> LocalNotificationMessage.Text(
+                LocalNotificationMessageAuthor(
+                    content.senderName ?: "",
+                    null
+                ), message.date, content.messageBody
+            )
+            // TODO(notifications): Handle other message types
+            is MessagePreviewEntityContent.Asset -> {
+                val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
+                else LocalNotificationCommentType.FILE
+                LocalNotificationMessage.Comment(LocalNotificationMessageAuthor(content.senderName ?: "", null), message.date, type)
             }
 
-            is MessageContent.MissedCall ->
-                LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.MISSED_CALL)
+            is MessagePreviewEntityContent.MissedCall ->
+                LocalNotificationMessage.Comment(
+                    LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                    message.date,
+                    LocalNotificationCommentType.MISSED_CALL
+                )
 
-            else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
+            else -> LocalNotificationMessage.Comment(
+                LocalNotificationMessageAuthor("", null),
+                message.date,
+                LocalNotificationCommentType.NOT_SUPPORTED_YET
+            )
         }
 
     @Suppress("ComplexMethod")
@@ -149,7 +181,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -183,14 +215,14 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
             )
         }
 
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData)
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
@@ -246,7 +278,7 @@ class MessageMapperImpl(
         }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
-            MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
@@ -256,7 +288,7 @@ class MessageMapperImpl(
         )
 
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData)
+        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
@@ -310,6 +342,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
     }
+
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

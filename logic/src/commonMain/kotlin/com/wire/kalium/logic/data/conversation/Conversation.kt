@@ -146,8 +146,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
-        val unreadRepliesCount: Long = 0,
-        val unreadMentionsCount: Long = 0L,
         val unreadEventCount: UnreadEventCount,
         val lastMessage: MessagePreview?
     ) : ConversationDetails(conversation)
@@ -156,12 +154,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus,
         val hasOngoingCall: Boolean = false,
-        val unreadRepliesCount: Long = 0,
-        val unreadMentionsCount: Long = 0L,
         val unreadEventCount: UnreadEventCount,
         val lastMessage: MessagePreview?,
         val isSelfUserMember: Boolean,
-        val isSelfUserCreator: Boolean
+        val isSelfUserCreator: Boolean,
+        val selfRole: Conversation.Member.Role?
     ) : ConversationDetails(conversation)
 
     data class Connection(

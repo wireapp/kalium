@@ -19,8 +19,6 @@ import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
-        // TODO KBX
-//         val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
         ConversationViewEntity(
             id = qualifiedId,
             name = name,
@@ -58,17 +56,12 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            unreadMentionsCount = 0,
-            isMember = isMember,
-            unreadContentCountEntity = mapOf(),
-            unreadRepliesCount = 0L
+            selfRole = selfRole
         )
     }
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
-            // TODO KBX
-//             val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
             ConversationViewEntity(
                 id = qualifiedId,
                 name = name,
@@ -106,10 +99,7 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                unreadMentionsCount = 0,
-                isMember = isMember,
-                unreadContentCountEntity = mapOf(),
-                unreadRepliesCount = 0L
+                selfRole = selfRole
             )
         }
     }
@@ -373,9 +363,6 @@ class ConversationDAOImpl(
     ) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
-
-    override suspend fun getUnreadConversationCount(): Long =
-        conversationQueries.getUnreadConversationCount().executeAsOne()
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationReadDate(date, conversationID)

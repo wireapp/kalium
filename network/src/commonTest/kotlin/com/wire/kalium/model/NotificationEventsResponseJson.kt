@@ -134,7 +134,7 @@ object NotificationEventsResponseJson {
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
-            ConversationResponseJson.validGroup.serializableData
+            ConversationResponseJson.v3.serializableData
         ),
         newConversationSerializer
     )

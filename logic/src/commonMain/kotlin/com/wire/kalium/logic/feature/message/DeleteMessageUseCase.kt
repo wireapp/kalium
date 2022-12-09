@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -13,7 +13,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -28,10 +28,10 @@ import kotlinx.datetime.Clock
 @Suppress("LongParameterList")
 class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) {
@@ -45,23 +45,19 @@ class DeleteMessageUseCase internal constructor(
             when (message.status) {
                 Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
                 else -> {
-                    val selfUser = userRepository.observeSelfUser().first()
-                    val generatedMessageUuid = uuid4().toString()
-
                     return currentClientIdProvider().flatMap { currentClientId ->
                         selfConversationIdProvider().flatMap { selfConversationIds ->
                             selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                                 val regularMessage = Message.Signaling(
-                                    id = generatedMessageUuid,
+                                    id = uuid4().toString(),
                                     content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else
                                         MessageContent.DeleteForMe(
                                             messageId,
-                                            unqualifiedConversationId = conversationId.value,
                                             conversationId = conversationId
                                         ),
                                     conversationId = if (deleteForEveryone) conversationId else selfConversationId,
                                     date = Clock.System.now().toString(),
-                                    senderUserId = selfUser.id,
+                                    senderUserId = selfUserId,
                                     senderClientId = currentClientId,
                                     status = Message.Status.PENDING,
                                 )

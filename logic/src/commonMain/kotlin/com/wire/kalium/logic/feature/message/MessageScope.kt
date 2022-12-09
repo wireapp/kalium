@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
@@ -42,7 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
-    private val userId: QualifiedID,
+    private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
@@ -62,6 +63,7 @@ class MessageScope internal constructor(
     private val timeParser: TimeParser,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -73,19 +75,19 @@ class MessageScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl(selfUserId = userId)
+        get() = ProtoContentMapperImpl(selfUserId = selfUserId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
             proteusClientProvider = proteusClientProvider,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
             mlsClientProvider = mlsClientProvider,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
 
@@ -113,15 +115,16 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId)
+        get() = PersistMessageUseCaseImpl(messageRepository, userRepository)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             persistMessage,
-            userId,
+            selfUserId,
             currentClientIdProvider,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            userPropertyRepository
         )
 
     val getMessageById: GetMessageByIdUseCase
@@ -133,9 +136,10 @@ class MessageScope internal constructor(
             updateAssetMessageUploadStatus,
             currentClientIdProvider,
             assetRepository,
-            userId,
+            selfUserId,
             slowSyncRepository,
             messageSender,
+            userPropertyRepository,
             scope,
             dispatcher
         )
@@ -158,10 +162,10 @@ class MessageScope internal constructor(
     val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
             messageRepository,
-            userRepository,
             assetRepository,
             slowSyncRepository,
             messageSender,
+            selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider
         )
@@ -169,7 +173,7 @@ class MessageScope internal constructor(
     val toggleReaction: ToggleReactionUseCase
         get() = ToggleReactionUseCase(
             currentClientIdProvider,
-            userId,
+            selfUserId,
             slowSyncRepository,
             reactionRepository,
             messageSender
@@ -189,7 +193,7 @@ class MessageScope internal constructor(
         get() = SendKnockUseCase(
             persistMessage,
             userRepository,
-            clientRepository,
+            currentClientIdProvider,
             slowSyncRepository,
             messageSender
         )
@@ -213,11 +217,25 @@ class MessageScope internal constructor(
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             timeParser = timeParser,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase
         get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, protoContentMapper)
+
+    internal val sendConfirmation: SendConfirmationUseCase
+        get() = SendConfirmationUseCase(
+            currentClientIdProvider,
+            syncManager,
+            messageSender,
+            selfUserId,
+            conversationRepository,
+            messageRepository,
+            userPropertyRepository
+        )
+
+    val resolveFailedDecryptedMessages: ResolveFailedDecryptedMessagesUseCase
+        get() = ResolveFailedDecryptedMessagesUseCaseImpl(messageRepository)
 
 }
