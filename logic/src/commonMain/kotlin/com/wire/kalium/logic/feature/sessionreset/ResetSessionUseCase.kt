@@ -16,14 +16,14 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 
+/**
+ * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
+ */
 interface ResetSessionUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
 }
 
 // TODO unit test in next PR
-/**
- * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
- */
 internal class ResetSessionUseCaseImpl internal constructor(
     private val syncManager: SyncManager,
     private val proteusClientProvider: ProteusClientProvider,
