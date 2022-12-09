@@ -37,13 +37,13 @@ class MLSConversationsRecoveryManagerTests {
                 .suspendFunction(arrangement.recoverMLSConversationsUseCase::invoke)
                 .wasInvoked(once)
             verify(arrangement.slowSyncRepository)
-                .suspendFunction(arrangement.slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(arrangement.slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(eq(false))
                 .wasInvoked(once)
         }
 
     @Test
-    fun givenMLSNeedsRecoveryFalse_whenObservingAndSyncFinishes_RecoverMLSConversationNotPerformed() =
+    fun givenMLSNeedsRecoveryFalse_whenObservingAndSyncFinishes_recoverMLSConversationNotPerformed() =
         runTest {
             val (arrangement, mlsConversationsRecoveryManager) = Arrangement()
                 .withIsMLSSupported(true)
@@ -59,7 +59,7 @@ class MLSConversationsRecoveryManagerTests {
                 .suspendFunction(arrangement.recoverMLSConversationsUseCase::invoke)
                 .wasNotInvoked()
             verify(arrangement.slowSyncRepository)
-                .suspendFunction(arrangement.slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(arrangement.slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(anything())
                 .wasNotInvoked()
         }
@@ -76,7 +76,7 @@ class MLSConversationsRecoveryManagerTests {
                 .suspendFunction(arrangement.recoverMLSConversationsUseCase::invoke)
                 .wasNotInvoked()
             verify(arrangement.slowSyncRepository)
-                .suspendFunction(arrangement.slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(arrangement.slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(anything())
                 .wasNotInvoked()
         }
@@ -98,7 +98,7 @@ class MLSConversationsRecoveryManagerTests {
         }
 
     @Test
-    fun givenwithRecoverMLSConversationsResult_whenObservingAndSyncFinishes_updateMLSNeedsRecoveryNotCalled() =
+    fun givenRecoverMLSConversationFails_whenObservingAndSyncFinishes_updateMLSNeedsRecoveryNotCalled() =
         runTest {
             val (arrangement, mlsConversationsRecoveryManager) = Arrangement()
                 .withIsMLSSupported(true)
@@ -114,7 +114,7 @@ class MLSConversationsRecoveryManagerTests {
                 .suspendFunction(arrangement.recoverMLSConversationsUseCase::invoke)
                 .wasInvoked(once)
             verify(arrangement.slowSyncRepository)
-                .suspendFunction(arrangement.slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(arrangement.slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(anything())
                 .wasNotInvoked()
         }
@@ -137,7 +137,7 @@ class MLSConversationsRecoveryManagerTests {
 
         fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {
             given(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::isMLSNeedsRecovery)
+                .suspendFunction(slowSyncRepository::needsToRecoverMLSGroups)
                 .whenInvoked()
                 .thenReturn(state)
         }

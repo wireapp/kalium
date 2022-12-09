@@ -14,8 +14,8 @@ internal interface SlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)
     suspend fun clearLastSlowSyncCompletionInstant()
-    suspend fun updateMLSNeedsRecovery(state: Boolean)
-    suspend fun isMLSNeedsRecovery(): Boolean
+    suspend fun setNeedsToRecoverMLSGroups(value: Boolean)
+    suspend fun needsToRecoverMLSGroups(): Boolean
     suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
 }
@@ -35,15 +35,15 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
         metadataDao.deleteValue(key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
-    override suspend fun updateMLSNeedsRecovery(state: Boolean) {
-        if (state) {
+    override suspend fun setNeedsToRecoverMLSGroups(value: Boolean) {
+        if (value) {
             metadataDao.insertValue(value = "true", key = MLS_NEEDS_RECOVERY_KEY)
         } else {
             metadataDao.deleteValue(key = MLS_NEEDS_RECOVERY_KEY)
         }
     }
 
-    override suspend fun isMLSNeedsRecovery(): Boolean {
+    override suspend fun needsToRecoverMLSGroups(): Boolean {
         return metadataDao.valueByKey(key = MLS_NEEDS_RECOVERY_KEY).toBoolean()
     }
 

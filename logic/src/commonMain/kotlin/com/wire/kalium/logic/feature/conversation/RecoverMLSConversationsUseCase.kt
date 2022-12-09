@@ -21,8 +21,8 @@ sealed class RecoverMLSConversationsResult {
 }
 
 /**
- * Iterate all MLS Established conversation after 404 sync error to
- * check for outOfSync epochs, if find anything then tries to rejoin!
+ *Iterate over all MLS Established conversations after 404 sync error and
+ * check for out of sync epochs, if out of sync then it tries to re-join.
  */
 interface RecoverMLSConversationsUseCase {
     suspend operator fun invoke(): RecoverMLSConversationsResult
@@ -40,7 +40,7 @@ class RecoverMLSConversationsUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+            kaliumLogger.d("Skip attempting to recover established MLS conversation(s), since MLS is not supported.")
             RecoverMLSConversationsResult.Success
         } else {
             conversationRepository.getConversationsByGroupState(GroupState.ESTABLISHED)

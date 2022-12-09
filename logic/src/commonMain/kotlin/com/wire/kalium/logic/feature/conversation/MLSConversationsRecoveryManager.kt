@@ -28,7 +28,7 @@ internal class MLSConversationsRecoveryManagerImpl(
             if (syncState is IncrementalSyncStatus.Live &&
                 featureSupport.isMLSSupported &&
                 clientRepository.hasRegisteredMLSClient().getOrElse(false) &&
-                slowSyncRepository.isMLSNeedsRecovery()
+                slowSyncRepository.needsToRecoverMLSGroups()
             ) {
                 recoverMLSConversations()
             }
@@ -41,7 +41,7 @@ internal class MLSConversationsRecoveryManagerImpl(
                 is RecoverMLSConversationsResult.Failure ->
                     kaliumLogger.w("Error while recovering MLS conversations: ${result.failure}")
                 is RecoverMLSConversationsResult.Success ->
-                    slowSyncRepository.updateMLSNeedsRecovery(false)
+                    slowSyncRepository.setNeedsToRecoverMLSGroups(false)
             }
         }
 }

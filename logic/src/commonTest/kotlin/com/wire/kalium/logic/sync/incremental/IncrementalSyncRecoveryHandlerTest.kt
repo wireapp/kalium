@@ -27,7 +27,7 @@ class IncrementalSyncRecoveryHandlerTest {
                 .wasNotInvoked()
 
             verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(any())
                 .wasNotInvoked()
 
@@ -55,7 +55,7 @@ class IncrementalSyncRecoveryHandlerTest {
                 .wasNotInvoked()
 
             verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::updateMLSNeedsRecovery)
+                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
                 .with(any())
                 .wasNotInvoked()
 
