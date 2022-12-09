@@ -706,6 +706,25 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenConversationWithOutdatedEpoch_whenCallingIsGroupOutOfSync_returnsTrue() = runTest {
+        val returnEpoch = 10UL
+        val conversationEpoch = 5UL
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetGroupEpochReturn(returnEpoch)
+            .arrange()
+
+        val result = mlsConversationRepository.isGroupOutOfSync(Arrangement.GROUP_ID, conversationEpoch)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::conversationEpoch)
+            .with(any())
+            .wasInvoked(once)
+
+    }
+
     class Arrangement {
         val idMapper: IdMapper = IdMapperImpl()
 
@@ -786,6 +805,13 @@ class MLSConversationRepositoryTest {
                 .function(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(COMMIT_BUNDLE)
+        }
+
+        fun withGetGroupEpochReturn(epoch: ULong) = apply {
+            given(mlsClient)
+                .function(mlsClient::conversationEpoch)
+                .whenInvokedWith(anything())
+                .thenReturn(epoch)
         }
 
         fun withJoinConversationSuccessful() = apply {
