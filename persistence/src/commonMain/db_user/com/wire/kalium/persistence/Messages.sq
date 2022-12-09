@@ -531,6 +531,3 @@ markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
 WHERE conversation_id = :conversation_id;
-
-getConversationIdByUserIdAndClientId:
-SELECT * FROM Message WHERE sender_user_id = ? AND sender_client_id = ?;
