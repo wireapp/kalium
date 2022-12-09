@@ -275,7 +275,9 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
-                isDecryptionResolved = isDecryptionResolved ?: false
+                isDecryptionResolved = isDecryptionResolved ?: false,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(

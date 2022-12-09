@@ -666,7 +666,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     date = "2000-01-01T13:00:00.000Z",
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
-                    content = MessageEntityContent.FailedDecryption(null, false)
+                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, null)
                 )
             )
         )
