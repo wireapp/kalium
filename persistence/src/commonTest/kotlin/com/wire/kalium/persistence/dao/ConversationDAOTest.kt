@@ -812,6 +812,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenAConversation_whenUpdatingReceiptMode_itReturnsTheUpdatedValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED))
+
+        // when
+        conversationDAO.updateConversationReceiptMode(conversationEntity1.id, ConversationEntity.ReceiptMode.DISABLED)
+
+        // then
+        val conversation = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(ConversationEntity.ReceiptMode.DISABLED, conversation?.receiptMode)
+    }
+
+    @Test
     fun givenSelfUserIsNotMemberOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity3)

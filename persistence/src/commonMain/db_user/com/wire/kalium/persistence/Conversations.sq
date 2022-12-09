@@ -235,3 +235,8 @@ WHERE qualified_id = ?;
 
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
+
+updateConversationReceiptMode:
+UPDATE Conversation
+SET receipt_mode = ?
+WHERE qualified_id = ?;

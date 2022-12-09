@@ -185,6 +185,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
@@ -719,6 +721,9 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO, persistMessage
         )
 
+    private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
+        get() = ReceiptModeUpdateEventHandlerImpl(userStorage.database.conversationDAO, persistMessage)
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -728,7 +733,8 @@ class UserSessionScope internal constructor(
             memberLeaveHandler,
             memberChangeHandler,
             mlsWelcomeHandler,
-            renamedConversationHandler
+            renamedConversationHandler,
+            receiptModeUpdateEventHandler
         )
     }
 
