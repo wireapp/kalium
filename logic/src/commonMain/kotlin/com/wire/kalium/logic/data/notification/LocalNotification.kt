@@ -15,7 +15,12 @@ data class LocalNotificationConversation(
 )
 
 sealed class LocalNotificationMessage(open val author: LocalNotificationMessageAuthor, open val time: String) {
-    data class Text(override val author: LocalNotificationMessageAuthor, override val time: String, val text: String) :
+    data class Text(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String,
+        val text: String,
+        val isQuotingSelfUser: Boolean = false
+    ) :
         LocalNotificationMessage(author, time)
 
     // shared file, picture, reaction
@@ -40,5 +45,5 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)
 
 enum class LocalNotificationCommentType {
-    PICTURE, FILE, REACTION, MISSED_CALL, NOT_SUPPORTED_YET
+    PICTURE, FILE, REACTION, MISSED_CALL, KNOCK, NOT_SUPPORTED_YET
 }
