@@ -31,7 +31,7 @@ interface GetNotificationsUseCase {
  *
  * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
- * @param userRepository UserRepository for getting SelfUser data with [Ava]
+ * @param userRepository UserRepository for getting SelfUser data with [UserAvailabilityStatus]
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
  * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
