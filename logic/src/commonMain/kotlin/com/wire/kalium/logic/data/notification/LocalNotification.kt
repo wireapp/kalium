@@ -19,7 +19,8 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
         override val author: LocalNotificationMessageAuthor,
         override val time: String,
         val text: String,
-        val isQuotingSelfUser: Boolean = false
+        val isQuotingSelfUser: Boolean = false,
+        val isMentionedSelf: Boolean = false
     ) :
         LocalNotificationMessage(author, time)
 

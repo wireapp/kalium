@@ -6,14 +6,20 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
@@ -25,7 +31,7 @@ interface GetNotificationsUseCase {
  *
  * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
- * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
+ * @param userRepository UserRepository for getting SelfUser data with [Ava]
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
  * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
@@ -44,18 +50,36 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper(),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return merge(
+        return combine(merge(
             messageRepository.getNotificationMessage(),
             observeConnectionRequests(),
             ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
         )
-            .distinctUntilChanged()
+            .distinctUntilChanged(),
+            userRepository.observeSelfUser().map { it.availabilityStatus }.distinctUntilChanged()
+        ) { notifications, selfStatus ->
+            when (selfStatus) {
+                UserAvailabilityStatus.NONE -> notifications
+                UserAvailabilityStatus.AVAILABLE -> notifications
+                UserAvailabilityStatus.BUSY -> notifications.map { it.copy(messages = it.messages.filter {notification ->
+                    when(notification) {
+                        is LocalNotificationMessage.Comment -> false
+                        is LocalNotificationMessage.ConnectionRequest -> false
+                        is LocalNotificationMessage.ConversationDeleted -> false
+                        is LocalNotificationMessage.Text -> notification.isMentionedSelf || notification.isQuotingSelfUser
+                    }
+                }) }.filter { it.messages.isEmpty() }
+                UserAvailabilityStatus.AWAY -> emptyList()
+            }
+        }
             .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
+            .flowOn(dispatcher.io)
     }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {

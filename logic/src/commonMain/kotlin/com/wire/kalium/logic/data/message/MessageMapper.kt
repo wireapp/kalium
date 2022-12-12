@@ -175,7 +175,8 @@ class MessageMapperImpl(
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 time = message.date,
-                text = content.messageBody
+                text = content.messageBody,
+                isMentionedSelf = true,
             )
             is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
