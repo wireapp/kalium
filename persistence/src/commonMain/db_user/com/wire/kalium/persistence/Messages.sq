@@ -528,7 +528,14 @@ AND (expectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
+selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
+SELECT id FROM MessageDetailsView
+WHERE conversationId = ?
+AND senderUserId = ?
+AND senderClientId = ?
+AND contentType = 'FAILED_DECRYPTION';
+
 markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
-WHERE conversation_id = :conversation_id;
+WHERE message_id IN ?;

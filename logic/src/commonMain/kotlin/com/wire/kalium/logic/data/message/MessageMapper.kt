@@ -222,7 +222,12 @@ class MessageMapperImpl(
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
+            this.encodedData,
+            this.isDecryptionResolved,
+            idMapper.toDaoModel(this.senderUserId),
+            this.clientId?.value
+        )
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
@@ -288,7 +293,12 @@ class MessageMapperImpl(
         )
 
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
+        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
+            this.encodedData,
+            this.isDecryptionResolved,
+            idMapper.fromDaoModel(this.senderUserId),
+            ClientId(this.senderClientId.orEmpty())
+        )
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
