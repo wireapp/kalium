@@ -15,6 +15,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
@@ -29,15 +32,16 @@ internal class ResetSessionUseCaseImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionResetSender: SessionResetSender,
     private val messageRepository: MessageRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ResetSessionUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         syncManager.waitUntilLive()
-        return proteusClientProvider.getOrError().fold({
+        return@withContext proteusClientProvider.getOrError().fold({
             return@fold Either.Left(it)
         }, {
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
@@ -51,7 +55,13 @@ internal class ResetSessionUseCaseImpl internal constructor(
                 conversationId = conversationId,
                 userId = userId,
                 clientId = clientId
-            ).flatMap { messageRepository.markMessagesAsDecryptionResolved(conversationId, userId, clientId) }
+            ).flatMap {
+                messageRepository.markMessagesAsDecryptionResolved(
+                    conversationId,
+                    userId,
+                    clientId
+                )
+            }
         })
     }
 }
