@@ -32,6 +32,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
+import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -235,7 +237,9 @@ class MessageScope internal constructor(
             userPropertyRepository
         )
 
-    val resolveFailedDecryptedMessages: ResolveFailedDecryptedMessagesUseCase
-        get() = ResolveFailedDecryptedMessagesUseCaseImpl(messageRepository)
+    private val sessionResetSender: SessionResetSender
+        get() = SessionResetSender(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
 
+    val resetSession: ResetSessionUseCase
+        get() = ResetSessionUseCaseImpl(syncManager, proteusClientProvider, sessionResetSender, messageRepository)
 }
