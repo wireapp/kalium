@@ -1,24 +1,29 @@
 package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.kaliumLogger
 
-internal class DeleteForMeHandler internal constructor(
-    private val messageRepository: MessageRepository,
-    private val selfConversationIdProvider: SelfConversationIdProvider
-) {
-
+interface DeleteForMeHandler {
     suspend fun handle(
-        messageContent: MessageContent.DeleteForMe,
-        conversationId: ConversationId
+        message: Message.Signaling,
+        messageContent: MessageContent.DeleteForMe
+    )
+}
+
+internal class DeleteForMeHandlerImpl internal constructor(
+    private val messageRepository: MessageRepository,
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+) : DeleteForMeHandler {
+
+    override suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.DeleteForMe
     ) {
-        val isMessageReceivedFromSelfConversation: Boolean = selfConversationIdProvider().fold({ false }, { conversationId == it })
-        if (isMessageReceivedFromSelfConversation) {
+        if (isMessageSentInSelfConversation(message)) {
             messageRepository.deleteMessage(
                 messageUuid = messageContent.messageId,
                 conversationId = messageContent.conversationId

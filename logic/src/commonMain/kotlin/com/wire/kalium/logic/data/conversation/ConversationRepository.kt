@@ -56,7 +56,10 @@ import kotlinx.coroutines.flow.map
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
-    suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
+    suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
+
+    @DelicateKaliumApi("this function does not get values from cache")
+    suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
     suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
@@ -283,8 +286,12 @@ internal class ConversationDataSource internal constructor(
                 }
             }
 
-    override suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId> =
+    override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.PROTEUS) }
+            .map { idMapper.fromDaoModel(it) }
+
+    override suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId> =
+        wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
             .map { idMapper.fromDaoModel(it) }
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
