@@ -154,7 +154,6 @@ class MessageMapperImpl(
                     null
                 ), message.date, content.messageBody
             )
-            // TODO(notifications): Handle other message types
             is MessagePreviewEntityContent.Asset -> {
                 val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
@@ -167,7 +166,24 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-
+            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
+                LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                message.date,
+                LocalNotificationCommentType.KNOCK
+            )
+            is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
+                author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                time = message.date,
+                text = content.messageBody,
+                isMentionedSelf = true,
+            )
+            is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
+                author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
+                time = message.date,
+                text = content.messageBody,
+                isQuotingSelfUser = true
+            )
+            // TODO(notifications): Handle other message types
             else -> LocalNotificationMessage.Comment(
                 LocalNotificationMessageAuthor("", null),
                 message.date,
