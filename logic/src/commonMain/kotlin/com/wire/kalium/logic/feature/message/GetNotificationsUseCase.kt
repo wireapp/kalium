@@ -67,14 +67,16 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             when (selfStatus) {
                 UserAvailabilityStatus.NONE -> notifications
                 UserAvailabilityStatus.AVAILABLE -> notifications
-                UserAvailabilityStatus.BUSY -> notifications.map { it.copy(messages = it.messages.filter {notification ->
-                    when(notification) {
-                        is LocalNotificationMessage.Comment -> false
-                        is LocalNotificationMessage.ConnectionRequest -> false
-                        is LocalNotificationMessage.ConversationDeleted -> false
-                        is LocalNotificationMessage.Text -> notification.isMentionedSelf || notification.isQuotingSelfUser
-                    }
-                }) }.filter { it.messages.isEmpty() }
+                UserAvailabilityStatus.BUSY -> notifications.map {
+                    it.copy(messages = it.messages.filter { notification ->
+                        when (notification) {
+                            is LocalNotificationMessage.Comment -> false
+                            is LocalNotificationMessage.ConnectionRequest -> false
+                            is LocalNotificationMessage.ConversationDeleted -> false
+                            is LocalNotificationMessage.Text -> notification.isMentionedSelf || notification.isQuotingSelfUser
+                        }
+                    })
+                }.filter { it.messages.isEmpty() }
                 UserAvailabilityStatus.AWAY -> emptyList()
             }
         }
