@@ -85,6 +85,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
+        updatedConversationName: String?,
         conversationName: String?,
         mentionedUserId: QualifiedIDEntity?,
         isQuotingSelfUser: Boolean?,
@@ -133,6 +134,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
+        updatedConversationName: String?,
         conversationName: String?,
         mentionedUserId: QualifiedIDEntity?,
         isQuotingSelfUser: Boolean?,
@@ -346,7 +348,9 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
-                isDecryptionResolved = isDecryptionResolved ?: false
+                isDecryptionResolved = isDecryptionResolved ?: false,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(

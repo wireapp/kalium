@@ -77,7 +77,11 @@ interface MessageDAO {
 
     suspend fun resetAssetDownloadStatus()
 
-    suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity)
+    suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    )
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
