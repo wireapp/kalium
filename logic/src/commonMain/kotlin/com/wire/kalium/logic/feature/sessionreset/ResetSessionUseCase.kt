@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
  * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
  */
 interface ResetSessionUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
 }
 
 // TODO unit test in next PR
@@ -39,17 +39,17 @@ internal class ResetSessionUseCaseImpl internal constructor(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId
-    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    ): ResetSessionResult = withContext(dispatchers.io) {
         syncManager.waitUntilLive()
         return@withContext proteusClientProvider.getOrError().fold({
-            return@fold Either.Left(it)
-        }, {
+            return@fold ResetSessionResult.Failure(it)
+        }, { proteusClient ->
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
             val cryptoSessionId = CryptoSessionId(
                 userId = cryptoUserID,
                 cryptoClientId = CryptoClientId(clientId.value)
             )
-            it.deleteSession(cryptoSessionId)
+            proteusClient.deleteSession(cryptoSessionId)
             // TODO("Update device verified state to false once implemented")
             return@fold sessionResetSender(
                 conversationId = conversationId,
@@ -61,7 +61,16 @@ internal class ResetSessionUseCaseImpl internal constructor(
                     userId,
                     clientId
                 )
-            }
+            }.fold(
+                { ResetSessionResult.Failure(it) },
+                { ResetSessionResult.Success }
+            )
+
         })
     }
+}
+
+sealed class ResetSessionResult {
+    object Success : ResetSessionResult()
+    data class Failure(val coreFailure: CoreFailure) : ResetSessionResult()
 }
