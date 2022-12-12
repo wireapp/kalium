@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 
 class TeamScope internal constructor(
     private val userRepository: UserRepository,
@@ -23,4 +24,6 @@ class TeamScope internal constructor(
             teamRepository = teamRepository,
             conversationRepository = conversationRepository,
         )
+
+    val isSelfATeamMember: IsSelfATeamMemberUseCase get() = IsSelfATeamMemberUseCase(selfTeamIdProvider)
 }

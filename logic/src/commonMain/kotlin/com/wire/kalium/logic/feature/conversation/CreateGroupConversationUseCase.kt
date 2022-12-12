@@ -36,7 +36,7 @@ class CreateGroupConversationUseCase internal constructor(
         syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider()
         }.flatMap { clientId ->
-            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId.value))
+            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
         }.flatMap { conversation ->
             conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
                 .map { conversation }

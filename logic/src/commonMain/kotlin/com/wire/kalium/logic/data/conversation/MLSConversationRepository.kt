@@ -65,6 +65,7 @@ interface MLSConversationRepository {
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
+    suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
     suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
@@ -205,9 +206,22 @@ class MLSConversationDataSource(
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
+            }.onSuccess {
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    idMapper.toCryptoModel(groupID)
+                )
             }
+
         }
     }
+
+    override suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.conversationEpoch(idMapper.toCryptoModel(groupID)) < currentEpoch
+            }
+        }
 
     override suspend fun clearJoinViaExternalCommit(groupID: GroupID) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
