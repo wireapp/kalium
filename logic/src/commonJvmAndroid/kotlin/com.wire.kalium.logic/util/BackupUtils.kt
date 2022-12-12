@@ -13,6 +13,9 @@ import okio.buffer
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import java.util.Map.entry
+import java.util.zip.ZipFile
+
 
 @Suppress("TooGenericExceptionCaught")
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
@@ -60,6 +63,18 @@ actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, file
 } catch (e: Exception) {
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
 }
+
+actual fun checkIfCompressedFileContainsFileType(compressedFilePath: Path, expectedFileExtension: String): Either<CoreFailure, Boolean> =
+    try {
+        ZipFile(compressedFilePath.toFile()).let { zipFile ->
+            for (entry in zipFile.entries()) {
+                if (entry.name.endsWith(expectedFileExtension)) return Either.Right(true)
+            }
+        }
+        Either.Right(false)
+    } catch (e: Exception) {
+        Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
+    }
 
 private fun readCompressedEntry(
     zipInputStream: ZipInputStream,

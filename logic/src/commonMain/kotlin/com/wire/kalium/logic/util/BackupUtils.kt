@@ -9,3 +9,4 @@ import okio.Source
 
 expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long>
 expect fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Long>
+expect fun checkIfCompressedFileContainsFileType(compressedFilePath: Path, expectedFileExtension: String): Either<CoreFailure, Boolean>

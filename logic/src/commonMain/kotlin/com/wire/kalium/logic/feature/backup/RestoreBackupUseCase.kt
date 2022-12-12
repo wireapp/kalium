@@ -10,14 +10,16 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_UNENCRYPTED_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.InvalidUserId
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
@@ -36,11 +38,11 @@ interface RestoreBackupUseCase {
 
     /**
      * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.
-     * @param extractedBackupRootPath The absolute file system path to the backup file.
+     * @param backupFilePath The absolute file system path to the backup file.
      * @param password the password used to encrypt the original backup file. Null if the file was not encrypted.
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(extractedBackupRootPath: Path, password: String?): RestoreBackupResult
+    suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult
 }
 
 internal class RestoreBackupUseCaseImpl(
@@ -51,26 +53,53 @@ internal class RestoreBackupUseCaseImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RestoreBackupUseCase {
 
-    override suspend operator fun invoke(extractedBackupRootPath: Path, password: String?): RestoreBackupResult =
+    override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
         withContext(dispatchers.io) {
-            runSanityChecks(extractedBackupRootPath, password).fold({ error ->
-                return@withContext error
-            }, { (encryptedFilePath, isPasswordProtected) ->
-                if (isPasswordProtected) {
-                    decryptExtractAndImportBackup(encryptedFilePath, extractedBackupRootPath, password!!)
-                } else {
-                    getDbPathAndImport(extractedBackupRootPath)
+            extractCompressedBackup(backupFilePath)
+                .flatMap { extractedBackupRootPath ->
+                    runSanityChecks(extractedBackupRootPath, password)
+                        .map { (encryptedFilePath, isPasswordProtected) ->
+                            if (isPasswordProtected) {
+                                decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
+                            } else {
+                                getDbPathAndImport(extractedBackupRootPath)
+                            }
+                        }
                 }
-            })
+                .fold({ it }, { it })
         }
 
+    private fun createExtractedFilesRootPath(): Path {
+        val extractedFilesRootPath = kaliumFileSystem.tempFilePath(EXTRACTED_FILES_PATH)
+
+        // Delete any previously existing files in the extractedFilesRootPath
+        if (kaliumFileSystem.exists(extractedFilesRootPath)) {
+            kaliumFileSystem.deleteContents(extractedFilesRootPath)
+        }
+        kaliumFileSystem.createDirectory(extractedFilesRootPath)
+
+        return extractedFilesRootPath
+    }
+
+    private fun extractCompressedBackup(backupFilePath: Path): Either<Failure, Path> {
+        val tempCompressedFileSource = kaliumFileSystem.source(backupFilePath)
+        val extractedFilesRootPath = createExtractedFilesRootPath()
+        return extractFiles(tempCompressedFileSource, extractedFilesRootPath)
+            .fold({
+                kaliumLogger.e("Failed to extract backup files")
+                Either.Left(Failure(BackupIOFailure("Failed to extract backup files")))
+            }, {
+                Either.Right(extractedFilesRootPath)
+            })
+    }
+
     private suspend fun decryptExtractAndImportBackup(
-        encryptedFilePath: Path?,
+        encryptedFilePath: Path,
         extractedBackupRootPath: Path,
         password: String
     ): RestoreBackupResult {
-        val backupSource = kaliumFileSystem.source(encryptedFilePath!!)
-        val extractedBackupPath = extractedBackupRootPath / BACKUP_UNENCRYPTED_FILE_NAME
+        val backupSource = kaliumFileSystem.source(encryptedFilePath)
+        val extractedBackupPath = extractedBackupRootPath / BACKUP_FILE_NAME
         val backupSink = kaliumFileSystem.sink(extractedBackupPath)
         val userIdEntity = idMapper.toCryptoModel(userId)
         val (decodingError, backupSize) = decryptBackupFile(
@@ -105,7 +134,7 @@ internal class RestoreBackupUseCaseImpl(
     }
 
     private suspend fun runSanityChecks(extractedBackupPath: Path, password: String?): Either<Failure, Pair<Path?, Boolean>> =
-        if (password.isNullOrEmpty()) {
+        if (password == null) {
             // Backup is not encrypted so we don't need to return the path to the encrypted file
             checkIsValidAuthor(extractedBackupPath).fold({ Either.Left(it) }, { Either.Right(null to false) })
         } else {
@@ -165,3 +194,5 @@ sealed class RestoreBackupResult {
         data class DecryptionFailure(override val cause: String) : BackupRestoreFailure(cause)
     }
 }
+
+private const val EXTRACTED_FILES_PATH = "extractedFiles"
