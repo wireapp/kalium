@@ -258,6 +258,14 @@ class MessageDAOImpl(
             mapper::toEntityMessageFromView
         ).asFlow().mapToList()
 
+    override suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>> =
+        queries.getNotificationsMessages(
+            filteredContent,
+            mapper::toNotificationEntity
+        ).asFlow().mapToList()
+
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,

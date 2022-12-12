@@ -249,10 +249,10 @@ internal class ConversationMapperImpl(
         accessRole = options.accessRole?.map { toApiModel(it) },
         convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
         messageTimer = null,
-        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        receiptMode = options.readReceiptsEnabled?.let { if (it) ReceiptMode.ENABLED else ReceiptMode.DISABLED },
         conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
         protocol = toApiModel(options.protocol),
-        creatorClient = options.creatorClientId
+        creatorClient = options.creatorClientId?.value
     )
 
     override fun toApiModel(access: Conversation.Access): ConversationAccessDTO = when (access) {

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.mock
 import io.mockative.verify
@@ -23,6 +24,11 @@ class IncrementalSyncRecoveryHandlerTest {
         with(arrangement) {
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
+                .wasNotInvoked()
+
+            verify(slowSyncRepository)
+                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
+                .with(any())
                 .wasNotInvoked()
 
             verify(onIncrementalSyncRetryCallback)
@@ -46,6 +52,11 @@ class IncrementalSyncRecoveryHandlerTest {
         with(arrangement) {
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
+                .wasNotInvoked()
+
+            verify(slowSyncRepository)
+                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
+                .with(any())
                 .wasNotInvoked()
 
             verify(onIncrementalSyncRetryCallback)
