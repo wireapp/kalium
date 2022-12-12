@@ -780,7 +780,7 @@ class UserSessionScope internal constructor(
         )
 
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
-        get() = ReceiptModeUpdateEventHandlerImpl(userStorage.database.conversationDAO, persistMessage)
+        get() = ReceiptModeUpdateEventHandlerImpl(userStorage.database.conversationDAO)
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(

@@ -5,7 +5,6 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -19,7 +18,6 @@ interface ReceiptModeUpdateEventHandler {
 
 internal class ReceiptModeUpdateEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
-    private val persistMessage: PersistMessageUseCase,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ReceiptModeUpdateEventHandler {
