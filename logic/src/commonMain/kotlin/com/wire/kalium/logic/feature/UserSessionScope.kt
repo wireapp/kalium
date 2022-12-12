@@ -418,7 +418,8 @@ class UserSessionScope internal constructor(
             userId,
             client.observeCurrentClientId,
             kaliumFileSystem,
-            SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId)
+            SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
+            kaliumConfigs.shouldEncryptData
         )
 
     val isBackupEncryptedUseCase: IsBackupEncryptedUseCase

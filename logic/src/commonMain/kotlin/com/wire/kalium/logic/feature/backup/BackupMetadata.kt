@@ -18,7 +18,9 @@ data class BackupMetadata(
     @SerialName("client_id")
     val clientId: String,
     @SerialName("user_database_passphrase")
-    val userDBPassphrase: String
+    val userDBPassphrase: String,
+    @SerialName("is_user_db_sqlciphered")
+    val isUserDBSQLCiphered: Boolean
 ) {
     override fun toString(): String = Json.encodeToString(this)
 }

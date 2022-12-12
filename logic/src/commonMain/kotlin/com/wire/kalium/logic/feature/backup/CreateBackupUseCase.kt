@@ -18,10 +18,8 @@ import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
@@ -51,6 +49,7 @@ internal class CreateBackupUseCaseImpl(
     private val getCurrentClientId: ObserveCurrentClientIdUseCase,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userDBSecret: UserDBSecret,
+    private val isUserDBSQLCipher: Boolean,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
@@ -117,7 +116,8 @@ internal class CreateBackupUseCaseImpl(
                 userId.toString(),
                 creationTime,
                 clientId.toString(),
-                userDBSecret.value.encodeBase64()
+                userDBSecret.value.encodeBase64(),
+                isUserDBSQLCipher,
             )
                 .toString()
         val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)

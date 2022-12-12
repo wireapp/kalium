@@ -3,13 +3,14 @@ package com.wire.kalium.persistence.backup
 import app.cash.sqldelight.db.SqlDriver
 
 interface DatabaseImporter {
-    suspend fun importFromFile(filePath: String, isEncryptedDB: Boolean, userDBSecret: String)
+    suspend fun importFromFile(filePath: String, userDBSecret: String?)
 }
 
 class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter {
 
-    override suspend fun importFromFile(filePath: String, isEncryptedDB: Boolean, userDBSecret: String) {
-        if (isEncryptedDB) {
+    override suspend fun importFromFile(filePath: String, userDBSecret: String?) {
+        val isDBSQLCiphered = !userDBSecret.isNullOrEmpty()
+        if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY $userDBSecret""", 2) {
                 bindString(1, filePath)
                 bindString(2, userDBSecret)
