@@ -20,9 +20,11 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -48,7 +50,7 @@ internal class CreateBackupUseCaseImpl(
     private val userId: UserId,
     private val getCurrentClientId: ObserveCurrentClientIdUseCase,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val passphraseStorage: PassphraseStorage,
+    private val userDBSecret: UserDBSecret,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
@@ -105,14 +107,18 @@ internal class CreateBackupUseCaseImpl(
     private suspend fun encryptBackup(backupFileSource: Source, encryptedBackupSink: Sink, passphrase: Passphrase) =
         encryptBackupFile(backupFileSource, encryptedBackupSink, idMapper.toCryptoModel(userId), passphrase)
 
-    private suspend fun createMetadataFile(userId: UserId, passphraseStorage: PassphraseStorage): Path {
-        val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
-        val userDBAlias = "${USER_DB_PASSPHRASE_PREFIX}_$userId"
-        val userDBPassphrase = passphraseStorage.getPassphrase(userDBAlias) ?: ""
+    private suspend fun createMetadataFile(userId: UserId, userDBSecret: UserDBSecret): Path {
         val clientId = getCurrentClientId().first()
         val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
         val metadataJson =
-            BackupMetadata(clientPlatform, BackupCoder.version, userId.toString(), creationTime, clientId.toString(), userDBPassphrase)
+            BackupMetadata(
+                clientPlatform,
+                BackupCoder.version,
+                userId.toString(),
+                creationTime,
+                clientId.toString(),
+                userDBSecret.value.encodeBase64()
+            )
                 .toString()
         val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
@@ -123,7 +129,7 @@ internal class CreateBackupUseCaseImpl(
 
     private suspend fun createBackupFile(userId: UserId, backupFilePath: Path): Either<CoreFailure, Pair<Path, Long>> {
         val backupSink = kaliumFileSystem.sink(backupFilePath)
-        val backupMetadataPath = createMetadataFile(userId, passphraseStorage)
+        val backupMetadataPath = createMetadataFile(userId, userDBSecret)
         val userDBData = getUserDbDataPath()
 
         return createCompressedFile(
