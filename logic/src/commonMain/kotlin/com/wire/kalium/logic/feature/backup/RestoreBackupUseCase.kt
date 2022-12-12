@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
@@ -57,12 +58,15 @@ internal class RestoreBackupUseCaseImpl(
         withContext(dispatchers.io) {
             extractCompressedBackup(backupFilePath)
                 .flatMap { extractedBackupRootPath ->
+                    val userDBPassphrase = userDBPassphrase(extractedBackupRootPath) ?: return@flatMap Either.Left(
+                        Failure(IncompatibleBackup("Backup file does not contain a user database passphrase"))
+                    )
                     runSanityChecks(extractedBackupRootPath, password)
                         .map { (encryptedFilePath, isPasswordProtected) ->
                             if (isPasswordProtected) {
-                                decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
+                                decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!, userDBPassphrase)
                             } else {
-                                getDbPathAndImport(extractedBackupRootPath)
+                                getDbPathAndImport(extractedBackupRootPath, false, userDBPassphrase)
                             }
                         }
                 }
@@ -96,7 +100,8 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun decryptExtractAndImportBackup(
         encryptedFilePath: Path,
         extractedBackupRootPath: Path,
-        password: String
+        password: String,
+        userDBPassphrase: String
     ): RestoreBackupResult {
         val backupSource = kaliumFileSystem.source(encryptedFilePath)
         val extractedBackupPath = extractedBackupRootPath / BACKUP_FILE_NAME
@@ -120,7 +125,7 @@ internal class RestoreBackupUseCaseImpl(
                 Failure(BackupIOFailure("Failed to extract encrypted backup files"))
             }, {
                 kaliumFileSystem.delete(extractedBackupPath)
-                getDbPathAndImport(extractedBackupRootPath)
+                getDbPathAndImport(extractedBackupRootPath, true, userDBPassphrase)
             })
         } else {
             Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
@@ -143,9 +148,10 @@ internal class RestoreBackupUseCaseImpl(
         }
 
     private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<Failure, Pair<Path?, Boolean>> = with(kaliumFileSystem) {
-        val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull { it.name.contains(".cc20") } ?: return Either.Left(
-            Failure(DecryptionFailure("No encrypted backup file found"))
-        )
+        val encryptedFilePath =
+            listDirectories(extractedBackupPath).firstOrNull { it.name.contains(BACKUP_ENCRYPTED_EXTENSION) } ?: return Either.Left(
+                Failure(DecryptionFailure("No encrypted backup file found"))
+            )
         return Either.Right(encryptedFilePath to true)
     }
 
@@ -158,14 +164,18 @@ internal class RestoreBackupUseCaseImpl(
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
         extractCompressedFile(inputSource, extractedBackupRootPath, kaliumFileSystem)
 
-    private suspend fun getDbPathAndImport(extractedBackupRootPath: Path): RestoreBackupResult {
+    private suspend fun getDbPathAndImport(
+        extractedBackupRootPath: Path,
+        isEncryptedDB: Boolean,
+        userDBPassphrase: String
+    ): RestoreBackupResult {
         return getBackupDBPath(extractedBackupRootPath)?.let { dbPath ->
-            importDBFile(dbPath)
+            importDBFile(dbPath, isEncryptedDB, userDBPassphrase)
         } ?: Failure(BackupIOFailure("No valid db file found in the backup"))
     }
 
-    private suspend fun importDBFile(userDBPath: Path) = wrapStorageRequest {
-        databaseImporter.importFromFile(userDBPath.toString())
+    private suspend fun importDBFile(userDBPath: Path, isEncryptedDB: Boolean, userDBPassphrase: String) = wrapStorageRequest {
+        databaseImporter.importFromFile(userDBPath.toString(), isEncryptedDB, userDBPassphrase)
     }.fold({ Failure(BackupIOFailure("There was an error when importing the DB")) }, { RestoreBackupResult.Success })
 
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
@@ -179,6 +189,16 @@ internal class RestoreBackupUseCaseImpl(
                 Json.decodeFromString<BackupMetadata>(it.readUtf8()).userId == userId.toString()
             }
         } ?: false
+    }
+
+    private suspend fun userDBPassphrase(extractedBackupPath: Path): String? = with(kaliumFileSystem) {
+        listDirectories(extractedBackupPath).firstOrNull {
+            it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
+        }?.let { metadataFile ->
+            source(metadataFile).buffer().use {
+                Json.decodeFromString<BackupMetadata>(it.readUtf8()).userDBPassphrase
+            }
+        }
     }
 }
 

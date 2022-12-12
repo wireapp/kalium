@@ -14,11 +14,13 @@ interface IsBackupEncryptedUseCase {
     suspend operator fun invoke(compressedBackupFilePath: Path): IsBackupEncryptedResult
 }
 
-internal class IsBackupEncryptedUseCaseImpl() : IsBackupEncryptedUseCase {
+internal class IsBackupEncryptedUseCaseImpl : IsBackupEncryptedUseCase {
 
     override suspend operator fun invoke(compressedBackupFilePath: Path): IsBackupEncryptedResult =
-        checkIfCompressedFileContainsFileType(compressedBackupFilePath, ".cc20")
-            .fold({ onCheckError(it) }, { IsBackupEncryptedResult.Success(it) })
+        checkIfCompressedFileContainsFileType(
+            compressedBackupFilePath,
+            BackupConstants.BACKUP_ENCRYPTED_EXTENSION
+        ).fold({ onCheckError(it) }, { IsBackupEncryptedResult.Success(it) })
 
     private fun onCheckError(coreFailure: CoreFailure): IsBackupEncryptedResult =
         IsBackupEncryptedResult.Failure(coreFailure)
