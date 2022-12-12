@@ -144,6 +144,7 @@ class MessageMapperImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     override fun fromMessageToLocalNotificationMessage(
         message: NotificationMessageEntity
     ): LocalNotificationMessage =
