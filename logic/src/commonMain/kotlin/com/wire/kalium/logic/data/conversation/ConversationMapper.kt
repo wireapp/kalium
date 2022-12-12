@@ -80,7 +80,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() }
+        accessRole = apiModel.accessRole.map { it.toDAO() },
+        receiptMode = receiptFromApiToDaoModel(apiModel.receiptMode)
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -104,7 +105,8 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
-            creatorId = creatorId
+            creatorId = creatorId,
+            receiptMode = receiptToModel(receiptMode)
         )
     }
 
@@ -289,7 +291,8 @@ internal class ConversationMapperImpl(
             lastModifiedDate = "",
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
-            accessRole = conversation.accessRole.map { it.toDAO() }
+            accessRole = conversation.accessRole.map { it.toDAO() },
+            receiptMode = receiptToDaoModel(conversation.receiptMode)
         )
     }
 
@@ -305,6 +308,24 @@ internal class ConversationMapperImpl(
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
+    }
+
+    private fun receiptFromApiToDaoModel(receiptMode: ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
+        ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
+        ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
+        else -> ConversationEntity.ReceiptMode.DISABLED
+    }
+
+    private fun receiptToDaoModel(receiptMode: Conversation.ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
+        Conversation.ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
+        Conversation.ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
+        null -> ConversationEntity.ReceiptMode.DISABLED
+    }
+
+    private fun receiptToModel(receiptMode: ConversationEntity.ReceiptMode?): Conversation.ReceiptMode = when (receiptMode) {
+        ConversationEntity.ReceiptMode.DISABLED -> Conversation.ReceiptMode.DISABLED
+        ConversationEntity.ReceiptMode.ENABLED -> Conversation.ReceiptMode.ENABLED
+        null -> Conversation.ReceiptMode.DISABLED
     }
 
     private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {

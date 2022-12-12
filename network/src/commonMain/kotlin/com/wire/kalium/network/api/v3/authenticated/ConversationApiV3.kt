@@ -89,7 +89,8 @@ internal open class ConversationApiV3 internal constructor(
                 Clock.System.now().toString(),
                 response.mlsCipherSuiteTag,
                 response.access,
-                emptySet()
+                emptySet(),
+                response.receiptMode
             )
         }
     }
