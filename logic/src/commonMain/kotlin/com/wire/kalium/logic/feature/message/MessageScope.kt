@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -42,8 +43,9 @@ import kotlinx.coroutines.CoroutineScope
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
-    private val userId: QualifiedID,
+    private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -73,19 +75,19 @@ class MessageScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl(selfUserId = userId)
+        get() = ProtoContentMapperImpl(selfUserId = selfUserId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
             proteusClientProvider = proteusClientProvider,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
             mlsClientProvider = mlsClientProvider,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
 
@@ -113,15 +115,12 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(
-            messageRepository,
-            userId
-        )
+        get() = PersistMessageUseCaseImpl(messageRepository, userRepository)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             persistMessage,
-            userId,
+            selfUserId,
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
@@ -137,7 +136,7 @@ class MessageScope internal constructor(
             updateAssetMessageUploadStatus,
             currentClientIdProvider,
             assetRepository,
-            userId,
+            selfUserId,
             slowSyncRepository,
             messageSender,
             userPropertyRepository,
@@ -163,17 +162,18 @@ class MessageScope internal constructor(
     val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
             messageRepository,
-            userRepository,
-            currentClientIdProvider,
             assetRepository,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            selfUserId,
+            currentClientIdProvider,
+            selfConversationIdProvider
         )
 
     val toggleReaction: ToggleReactionUseCase
         get() = ToggleReactionUseCase(
             currentClientIdProvider,
-            userId,
+            selfUserId,
             slowSyncRepository,
             reactionRepository,
             messageSender
@@ -217,7 +217,7 @@ class MessageScope internal constructor(
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             timeParser = timeParser,
-            selfUserId = userId,
+            selfUserId = selfUserId,
             ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
@@ -229,7 +229,7 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             syncManager,
             messageSender,
-            userId,
+            selfUserId,
             conversationRepository,
             messageRepository,
             userPropertyRepository

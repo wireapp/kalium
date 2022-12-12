@@ -2,7 +2,10 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.DelicateKaliumApi
@@ -15,12 +18,16 @@ interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
+@OptIn(DelicateKaliumApi::class)
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val selfUser: UserId
+    private val userRepository: UserRepository
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val isMyMessage = message.senderUserId == selfUser
+        val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
+            message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
+        } ?: (false to false)
+
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
 
         @OptIn(DelicateKaliumApi::class)
@@ -29,9 +36,19 @@ internal class PersistMessageUseCaseImpl(
                 message = modifiedMessage,
                 updateConversationReadDate = isMyMessage,
                 updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate = isMyMessage
+                updateConversationNotificationsDate
             )
     }
+
+    private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
+        when (selfUser.availabilityStatus) {
+            UserAvailabilityStatus.AWAY -> true
+            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id)
+            // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
+            else -> this.isSelfTheSender(selfUser.id)
+        }
+
+    private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
 
     private suspend fun getExpectsReadConfirmationFromMessage(message: Message.Standalone) =
         if (message is Message.Regular) {
