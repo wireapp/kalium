@@ -181,6 +181,7 @@ class MessageDAOImpl(
         when (message.content) {
             is MessageEntityContent.MemberChange,
             is MessageEntityContent.ConversationRenamed -> message.content
+
             else -> null
         }
             ?.let {
@@ -198,10 +199,12 @@ class MessageDAOImpl(
                     .firstOrNull {
                         LocalId.check(it.id) && when (messageContent) {
                             is MessageEntityContent.MemberChange ->
-                                    messageContent.memberChangeType == it.memberChangeType &&
-                                    it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+                                messageContent.memberChangeType == it.memberChangeType &&
+                                        it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+
                             is MessageEntityContent.ConversationRenamed ->
-                                    it.conversationName == messageContent.conversationName
+                                it.conversationName == messageContent.conversationName
+
                             else -> false
                         }
                     }?.let {
@@ -253,6 +256,14 @@ class MessageDAOImpl(
             limit.toLong(),
             offset.toLong(),
             mapper::toEntityMessageFromView
+        ).asFlow().mapToList()
+
+    override suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>> =
+        queries.getNotificationsMessages(
+            filteredContent,
+            mapper::toNotificationEntity
         ).asFlow().mapToList()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
@@ -325,6 +336,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+    override suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    ) = queries.transaction {
+        val messages = queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
+        queries.markMessagesAsDecryptionResolved(messages)
+    }
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 
@@ -339,4 +358,5 @@ class MessageDAOImpl(
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
+
 }

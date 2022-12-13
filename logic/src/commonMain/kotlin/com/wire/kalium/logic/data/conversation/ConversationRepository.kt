@@ -35,9 +35,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -56,7 +56,10 @@ import kotlinx.coroutines.flow.map
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
-    suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
+    suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
+
+    @DelicateKaliumApi("this function does not get values from cache")
+    suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
     suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
@@ -283,8 +286,12 @@ internal class ConversationDataSource internal constructor(
                 }
             }
 
-    override suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId> =
+    override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.PROTEUS) }
+            .map { idMapper.fromDaoModel(it) }
+
+    override suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId> =
+        wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
             .map { idMapper.fromDaoModel(it) }
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
@@ -438,12 +445,12 @@ internal class ConversationDataSource internal constructor(
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit> =
-        ConversationAccessInfoDTO(
+        UpdateConversationAccessRequest(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
             accessRole.map { conversationMapper.toApiModel(it) }.toSet()
         ).let { updateConversationAccessRequest ->
             wrapApiRequest {
-                conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
+                conversationApi.updateAccess(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
             }
         }.flatMap { response ->
             when (response) {
