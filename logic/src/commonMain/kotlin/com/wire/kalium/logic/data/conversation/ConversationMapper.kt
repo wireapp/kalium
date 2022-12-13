@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
-import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
@@ -25,7 +24,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -35,7 +33,12 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
-    fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails
+    fun fromDaoModelToDetails(
+        daoModel: ConversationViewEntity,
+        lastMessage: MessagePreview?,
+        unreadEventCount: UnreadEventCount?
+    ): ConversationDetails
+
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -106,7 +109,11 @@ internal class ConversationMapperImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity, lastMessage: MessagePreview?): ConversationDetails =
+    override fun fromDaoModelToDetails(
+        daoModel: ConversationViewEntity,
+        lastMessage: MessagePreview?,
+        unreadEventCount: UnreadEventCount?
+    ): ConversationDetails =
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
@@ -136,9 +143,7 @@ internal class ConversationMapperImpl(
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        unreadRepliesCount = unreadRepliesCount,
-                        unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
+                        unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                     )
                 }
@@ -148,9 +153,7 @@ internal class ConversationMapperImpl(
                         conversation = fromDaoModel(daoModel),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         hasOngoingCall = callStatus != null, // todo: we can do better!
-                        unreadRepliesCount = unreadRepliesCount,
-                        unreadMentionsCount = unreadMentionsCount,
-                        unreadEventCount = unreadContentCountEntity.toUnreadEventCountModel(),
+                        unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,
                         isSelfUserMember = isMember,
                         isSelfUserCreator = isCreator == 1L,
@@ -241,13 +244,13 @@ internal class ConversationMapperImpl(
         } else emptyList(),
         name = name,
         access = options.access?.toList()?.map { toApiModel(it) },
-        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.map { toApiModel(it) },
         convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
         messageTimer = null,
-        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        receiptMode = options.readReceiptsEnabled?.let { if (it) ReceiptMode.ENABLED else ReceiptMode.DISABLED },
         conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
         protocol = toApiModel(options.protocol),
-        creatorClient = options.creatorClientId
+        creatorClient = options.creatorClientId?.value
     )
 
     override fun toApiModel(access: Conversation.Access): ConversationAccessDTO = when (access) {
@@ -389,26 +392,4 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
-}
-
-fun MessageEntity.ContentType.toUnreadEventTypeModel(): UnreadEventType = when (this) {
-    MessageEntity.ContentType.TEXT -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.KNOCK -> UnreadEventType.KNOCK
-    MessageEntity.ContentType.MEMBER_CHANGE -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.MISSED_CALL -> UnreadEventType.MISSED_CALL
-    MessageEntity.ContentType.RESTRICTED_ASSET -> UnreadEventType.MESSAGE
-    MessageEntity.ContentType.CONVERSATION_RENAMED -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.UNKNOWN -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.FAILED_DECRYPTION -> UnreadEventType.IGNORED
-    MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadEventType.IGNORED
-}
-
-fun Map<MessageEntity.ContentType, Int>.toUnreadEventCountModel(): UnreadEventCount {
-    val unreadContent = mutableMapOf<UnreadEventType, Int>()
-    forEach { contentEntity ->
-        val contentType = contentEntity.key.toUnreadEventTypeModel()
-        unreadContent[contentType] = unreadContent[contentType]?.let { it + contentEntity.value } ?: contentEntity.value
-    }
-    return unreadContent
 }

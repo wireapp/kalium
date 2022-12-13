@@ -16,7 +16,8 @@ fun newRegularMessageEntity(
     editStatus: MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
     date: String = "2022-03-30T15:36:00.000Z",
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
-    senderName: String = "senderName"
+    senderName: String = "senderName",
+    expectsReadConfirmation: Boolean = false,
 ) = MessageEntity.Regular(
     id = id,
     content = content,
@@ -27,7 +28,8 @@ fun newRegularMessageEntity(
     status = status,
     editStatus = editStatus,
     visibility = visibility,
-    senderName = senderName
+    senderName = senderName,
+    expectsReadConfirmation = expectsReadConfirmation
 )
 
 @Suppress("LongParameterList")

@@ -28,7 +28,6 @@ import kotlinx.datetime.Instant
 
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
-
     fun id(suffix: Int = 0) = ConversationId("valueConvo_$suffix", "domainConvo")
 
     val ONE_ON_ONE = Conversation(
@@ -127,7 +126,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
         protocolInfo = protocolInfo,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -141,8 +139,6 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf(),
-        unreadRepliesCount = 0L,
         selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 
@@ -252,7 +248,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMentionsCount = 0,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -266,8 +261,6 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        unreadContentCountEntity = mapOf(),
-        unreadRepliesCount = 0L,
         selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
     )
 

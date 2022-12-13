@@ -11,7 +11,7 @@ data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
-
+@Suppress("TooManyFunctions")
 interface ProteusClient {
 
     @Throws(ProteusException::class)
@@ -51,6 +51,9 @@ interface ProteusClient {
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
+
+    @Throws(ProteusException::class, CancellationException::class)
+    fun deleteSession(sessionId: CryptoSessionId)
 }
 
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {

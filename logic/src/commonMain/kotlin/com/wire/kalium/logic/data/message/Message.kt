@@ -54,7 +54,8 @@ sealed interface Message {
         override val isSelfMessage: Boolean = false,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
-        val reactions: Reactions = Reactions.EMPTY
+        val reactions: Reactions = Reactions.EMPTY,
+        val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -104,7 +105,8 @@ sealed interface Message {
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to "$editStatus"
+                "editStatus" to "$editStatus",
+                "expectsReadConfirmation" to "$expectsReadConfirmation"
             )
 
             properties.putAll(standardProperties)
@@ -134,6 +136,10 @@ sealed interface Message {
 
                 is MessageContent.Calling -> mutableMapOf(
                     typeKey to "calling"
+                )
+
+                is MessageContent.SessionReset -> mutableMapOf(
+                    typeKey to "sessionReset"
                 )
 
                 is MessageContent.DeleteMessage -> mutableMapOf(
@@ -324,9 +330,8 @@ enum class UnreadEventType(val priority: Int) {
     KNOCK(1),
     MISSED_CALL(2),
     MENTION(3),
-    MESSAGE(4), // text or asset
-
-    //     REPLY(5), TODO in development
+    REPLY(4),
+    MESSAGE(5), // text or asset
     IGNORED(10),
 }
 
@@ -337,8 +342,6 @@ data class MessagePreview(
     val date: String,
     val visibility: Message.Visibility,
     val isSelfMessage: Boolean
-
-    // TODO KBX toString
 )
 
 enum class AssetType {

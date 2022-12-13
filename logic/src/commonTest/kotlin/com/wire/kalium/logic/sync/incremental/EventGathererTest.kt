@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -342,7 +343,10 @@ class EventGathererTest {
         @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository)
+        @Mock
+        val slowSyncRepository = mock(SlowSyncRepository::class)
+
+        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository, slowSyncRepository)
 
         fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<Event>>>) = apply {
             given(eventRepository)

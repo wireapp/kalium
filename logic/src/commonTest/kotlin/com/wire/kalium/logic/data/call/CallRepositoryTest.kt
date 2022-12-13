@@ -201,7 +201,6 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             false,
-                            unreadRepliesCount = 0, // TODO KBX
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -269,7 +268,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadRepliesCount = 0, // TODO KBX
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -332,7 +330,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadRepliesCount = 0, // TODO KBX
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -404,7 +401,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadRepliesCount = 0, // TODO KBX
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -462,7 +458,6 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadRepliesCount = 0, // TODO KBX
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -1317,7 +1312,6 @@ class CallRepositoryTest {
             otherUser = TestUser.OTHER,
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
-            unreadRepliesCount = 0, // TODO KBX
             lastMessage = null,
             unreadEventCount = emptyMap()
         )

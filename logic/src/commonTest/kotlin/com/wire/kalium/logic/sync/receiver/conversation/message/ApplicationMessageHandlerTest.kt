@@ -2,12 +2,9 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -15,13 +12,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
@@ -54,7 +47,7 @@ class ApplicationMessageHandlerTest {
                 Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent)
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
         val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -82,7 +75,6 @@ class ApplicationMessageHandlerTest {
             )
             .wasInvoked()
     }
-
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -94,16 +86,7 @@ class ApplicationMessageHandlerTest {
         val assetRepository = mock(classOf<AssetRepository>())
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
         private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        private val receiptRepository = mock(classOf<ReceiptRepository>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
@@ -114,6 +97,21 @@ class ApplicationMessageHandlerTest {
         @Mock
         val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
 
+        @Mock
+        val messageTextEditHandler = mock(classOf<MessageTextEditHandler>())
+
+        @Mock
+        val lastReadContentHandler = mock(classOf<LastReadContentHandler>())
+
+        @Mock
+        val clearConversationContentHandler = mock(classOf<ClearConversationContentHandler>())
+
+        @Mock
+        val deleteForMeHandler = mock(classOf<DeleteForMeHandler>())
+
+        @Mock
+        val receiptMessageHandler = mock(classOf<ReceiptMessageHandler>())
+
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
             assetRepository,
@@ -122,27 +120,12 @@ class ApplicationMessageHandlerTest {
             lazyOf(callManager),
             persistMessage,
             persistReactionsUseCase,
-            // TODO(Refactor): Test smaller handlers on their own Test class
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(
-                conversationRepository = conversationRepository,
-                selfUserId = TestUser.USER_ID,
-                selfConversationIdProvider = selfConversationIdProvider
-            ),
-            ClearConversationContentHandler(
-                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-                selfUserId = TestUser.USER_ID,
-                selfConversationIdProvider = selfConversationIdProvider
-            ),
-            DeleteForMeHandler(
-                messageRepository = messageRepository,
-                selfConversationIdProvider = selfConversationIdProvider
-            ),
+            messageTextEditHandler,
+            lastReadContentHandler,
+            clearConversationContentHandler,
+            deleteForMeHandler,
             MessageContentEncoder(),
-            ReceiptMessageHandler(
-                selfUserId = TestUser.USER_ID,
-                receiptRepository = receiptRepository
-            )
+            receiptMessageHandler
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
@@ -173,21 +156,8 @@ class ApplicationMessageHandlerTest {
                 .thenReturn(Either.Left(coreFailure))
         }
 
-        fun withConversationUpdateConversationReadDate(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationReadDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
-        }
-
-        fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationById)
-                .whenInvokedWith(any())
-                .thenReturn(conversation)
-        }
-
         fun arrange() = this to applicationMessageHandler
 
     }
+
 }

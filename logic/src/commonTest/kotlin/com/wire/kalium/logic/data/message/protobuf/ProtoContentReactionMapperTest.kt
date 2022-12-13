@@ -142,7 +142,8 @@ class ProtoContentReactionMapperTest {
         val emojiSet = setOf("      ")
         val protoContent = ProtoContent.Readable(
             "Whatever",
-            MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet)
+            MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet),
+            false
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)
@@ -156,7 +157,8 @@ class ProtoContentReactionMapperTest {
         val emojiSet = setOf("      ", "", Char(0x00a0).toString())
         val protoContent = ProtoContent.Readable(
             "Whatever",
-            MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet)
+            MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet),
+            false
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)
@@ -170,7 +172,8 @@ class ProtoContentReactionMapperTest {
         val referencedMessageId = "referencedMessageID"
         val protoContent = ProtoContent.Readable(
             "messageId",
-            MessageContent.Reaction(referencedMessageId, emojiSet = setOf())
+            MessageContent.Reaction(referencedMessageId, emojiSet = setOf()),
+            false
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)

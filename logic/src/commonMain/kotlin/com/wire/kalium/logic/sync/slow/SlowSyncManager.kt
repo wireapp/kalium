@@ -39,21 +39,27 @@ internal class SlowSyncManager(
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val slowSyncWorker: SlowSyncWorker,
+    private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    private val coroutineExceptionHandler = SyncExceptionHandler({
-        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
-    }, {
-        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(it))
-        scope.launch {
-            delay(RETRY_DELAY)
-            startMonitoring()
+    private val coroutineExceptionHandler = SyncExceptionHandler(
+        onCancellation = {
+            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+        },
+        onFailure = { failure ->
+            scope.launch {
+                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
+                slowSyncRecoveryHandler.recover(failure) {
+                    delay(RETRY_DELAY)
+                    startMonitoring()
+                }
+            }
         }
-    })
+    )
 
     init {
         startMonitoring()
