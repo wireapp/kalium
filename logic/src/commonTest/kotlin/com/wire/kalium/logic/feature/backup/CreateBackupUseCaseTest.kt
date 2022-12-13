@@ -4,6 +4,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
@@ -119,7 +120,7 @@ class CreateBackupUseCaseTest {
             createDirectory(extractedFilesPath)
             extractCompressedFile(source(result.backupFilePath), extractedFilesPath, fakeFileSystem)
 
-            assertTrue(listDirectories(extractedFilesPath).firstOrNull { it.name == BACKUP_METADATA_FILE_NAME } != null)
+            assertTrue(listDirectories(extractedFilesPath).firstOrNull { it.name == BACKUP_ENCRYPTED_FILE_NAME } != null)
         }
     }
 
