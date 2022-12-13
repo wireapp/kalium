@@ -207,7 +207,17 @@ class ProtoContentMapperImpl(
 
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji
-        val emojiSet = emoji?.split(',')?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+        val emojiSet = emoji?.split(',')
+            ?.map {
+                it.trim().let { trimmedReaction ->
+                    if (trimmedReaction == "❤️") {
+                        "❤"
+                    } else trimmedReaction
+                }
+            }
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
         return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
     }
 
