@@ -1,3 +1,4 @@
+# initial setup/bootstrap related targets
 SHELL := /bin/bash
 CRYPTOBOX_C_VERSION := "v1.1.3"
 CRYPTOBOX4J_VERSION := "1.1.1"

@@ -1,3 +1,4 @@
+# dev related targets, ie: sql migrations, detekt, etc.
 # sql delight
 db/verify-global-migration:
 	./gradlew :persistence:verifyCommonMainGlobalDatabaseMigration
