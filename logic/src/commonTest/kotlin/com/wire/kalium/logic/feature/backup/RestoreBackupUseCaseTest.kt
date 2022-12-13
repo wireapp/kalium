@@ -7,8 +7,13 @@ import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseTest
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
+import com.wire.kalium.persistence.db.UserDBSecret
+import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -47,7 +52,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result is RestoreBackupResult.Success)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()), eq(null))
             .wasInvoked(once)
     }
 
@@ -69,7 +74,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()), eq(null))
             .wasNotInvoked()
     }
 
@@ -95,7 +100,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()), eq(null))
             .wasNotInvoked()
     }
 
@@ -117,7 +122,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -139,7 +144,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()), any())
             .wasNotInvoked()
     }
 
@@ -161,7 +166,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()))
+            .with(eq((extractedBackupPath / arrangement.fakeDBFileName).toString()), any())
             .wasNotInvoked()
     }
 
@@ -183,7 +188,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -200,8 +205,18 @@ class RestoreBackupUseCaseTest {
 
         private fun createMetadataFile(userId: UserId): Path {
             val clientId = "dummy-client-id"
+            val userDBSecret = UserDBSecret("dummy-user-db-secret".decodeBase64Bytes())
             val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
-            val metadataJson = BackupMetadata(clientPlatform, BackupCoder.version, userId.toString(), creationTime, clientId).toString()
+            val metadataJson =
+                BackupMetadata(
+                    clientPlatform,
+                    BackupCoder.version,
+                    userId.toString(),
+                    creationTime,
+                    clientId,
+                    userDBSecret.value.encodeBase64(),
+                    true
+                ).toString()
             val metadataFilePath = fakeFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME)
             fakeFileSystem.sink(metadataFilePath).buffer().use {
                 it.write(metadataJson.encodeToByteArray())
@@ -236,7 +251,15 @@ class RestoreBackupUseCaseTest {
 
         fun withUnencryptedBackup(unencryptedDBPath: Path, userId: UserId, withWrongMetadataFile: Boolean = false) = apply {
             val metadataJson =
-                BackupMetadata(clientPlatform, BackupCoder.version, userId.toString(), "7-12-2022:14:00:00", "some-client-id").toString()
+                BackupMetadata(
+                    clientPlatform,
+                    BackupCoder.version,
+                    userId.toString(),
+                    "7-12-2022:14:00:00",
+                    "some-client-id",
+                    "some-user-db-secret",
+                    true
+                ).toString()
             val metadataFilePath = if (withWrongMetadataFile) "wrong-metadata.json" else BackupConstants.BACKUP_METADATA_FILE_NAME
             fakeFileSystem.createDirectory(unencryptedDBPath)
             fakeFileSystem.sink(unencryptedDBPath / fakeDBFileName).buffer().use {
@@ -260,14 +283,14 @@ class RestoreBackupUseCaseTest {
         fun withCorrectDbImportAction() = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
         }
 
         fun withIncorrectDbImportAction() = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), any())
                 .thenThrow(RuntimeException("DB import failed"))
         }
 
@@ -283,5 +306,4 @@ class RestoreBackupUseCaseTest {
         var fakeFileSystem = FakeKaliumFileSystem()
         val currentTestUserId = UserId("some-user-id", "some-domain")
     }
-
 }

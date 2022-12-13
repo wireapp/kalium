@@ -195,8 +195,9 @@ internal class RestoreBackupUseCaseImpl(
             it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
         }?.let { metadataFile ->
             source(metadataFile).buffer().use {
-                Json.decodeFromString<BackupMetadata>(it.readUtf8()).userDBPassphrase
-                    .let { if (it.isEmpty()) null else UserDBSecret(it.decodeBase64Bytes()) }
+                Json.decodeFromString<BackupMetadata>(it.readUtf8()).userDBPassphrase?.let { dbPassphrase ->
+                    if (dbPassphrase.isEmpty()) null else UserDBSecret(dbPassphrase.decodeBase64Bytes())
+                }
             }
         }
     }
