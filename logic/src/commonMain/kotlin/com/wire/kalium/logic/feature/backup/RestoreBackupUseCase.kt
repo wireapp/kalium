@@ -65,7 +65,7 @@ internal class RestoreBackupUseCaseImpl(
                             if (isPasswordProtected) {
                                 decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
                             } else {
-                                val userDBSecret = userDBSecret(extractedBackupRootPath)
+                                val userDBSecret: UserDBSecret? = userDBSecret(extractedBackupRootPath)
                                 getDbPathAndImport(extractedBackupRootPath, userDBSecret)
                             }
                         }
@@ -139,7 +139,7 @@ internal class RestoreBackupUseCaseImpl(
     }
 
     private suspend fun runSanityChecks(extractedBackupPath: Path, password: String?): Either<Failure, Pair<Path?, Boolean>> =
-        if (password == null) {
+        if (password.isNullOrEmpty()) {
             // Backup is not encrypted so we don't need to return the path to the encrypted file
             checkIsValidAuthor(extractedBackupPath).fold({ Either.Left(it) }, { Either.Right(null to false) })
         } else {
@@ -180,27 +180,22 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
 
-    private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean = with(kaliumFileSystem) {
-        listDirectories(extractedBackupPath).firstOrNull {
-            it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
-        }?.let { metadataFile ->
-            source(metadataFile).buffer().use {
-                Json.decodeFromString<BackupMetadata>(it.readUtf8()).userId == userId.toString()
+    private suspend fun backupMetadata(extractedBackupPath: Path): BackupMetadata? = with(kaliumFileSystem) {
+        listDirectories(extractedBackupPath)
+            .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
+            ?.let { metadataFile ->
+                source(metadataFile).buffer()
+                    .use { Json.decodeFromString<BackupMetadata>(it.readUtf8()) }
             }
-        } ?: false
     }
 
-    private suspend fun userDBSecret(extractedBackupPath: Path): UserDBSecret? = with(kaliumFileSystem) {
-        listDirectories(extractedBackupPath).firstOrNull {
-            it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
-        }?.let { metadataFile ->
-            source(metadataFile).buffer().use {
-                Json.decodeFromString<BackupMetadata>(it.readUtf8()).userDBPassphrase?.let { dbPassphrase ->
-                    if (dbPassphrase.isEmpty()) null else UserDBSecret(dbPassphrase.decodeBase64Bytes())
-                }
-            }
+    private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean =
+        backupMetadata(extractedBackupPath)?.userId == userId.toString()
+
+    private suspend fun userDBSecret(extractedBackupPath: Path): UserDBSecret? =
+        backupMetadata(extractedBackupPath)?.userDBPassphrase?.let { dbPassphrase ->
+            if (dbPassphrase.isEmpty()) null else UserDBSecret(dbPassphrase.decodeBase64Bytes())
         }
-    }
 }
 
 sealed class RestoreBackupResult {
