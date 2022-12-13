@@ -33,6 +33,9 @@ kotlin {
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
 
+                // KTX
+                implementation(libs.ktxDateTime)
+
                 // Okio
                 implementation(libs.okio.core)
                 implementation(libs.okio.test)
