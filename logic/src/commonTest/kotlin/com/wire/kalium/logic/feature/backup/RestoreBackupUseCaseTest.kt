@@ -117,7 +117,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
+            .with(any(), eq(null))
             .wasInvoked(once)
     }
 
@@ -139,7 +139,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
+            .with(any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -161,7 +161,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
+            .with(any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -183,7 +183,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
+            .with(any(), eq(null))
             .wasInvoked(once)
     }
 
@@ -279,7 +279,7 @@ class RestoreBackupUseCaseTest {
         fun withIncorrectDbImportAction() = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), eq(null))
                 .thenThrow(RuntimeException("DB import failed"))
         }
 
