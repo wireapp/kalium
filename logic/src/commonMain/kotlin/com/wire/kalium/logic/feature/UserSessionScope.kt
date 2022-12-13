@@ -87,10 +87,10 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCaseImpl
-import com.wire.kalium.logic.feature.backup.IsBackupEncryptedUseCase
-import com.wire.kalium.logic.feature.backup.IsBackupEncryptedUseCaseImpl
+import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.VerifyBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -422,8 +422,8 @@ class UserSessionScope internal constructor(
             kaliumConfigs.shouldEncryptData
         )
 
-    val isBackupEncryptedUseCase: IsBackupEncryptedUseCase
-        get() = IsBackupEncryptedUseCaseImpl()
+    val verifyBackupUseCase: VerifyBackupUseCase
+        get() = VerifyBackupUseCaseImpl(kaliumFileSystem)
 
     val restoreBackup: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(

@@ -64,14 +64,24 @@ actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, file
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
 }
 
-actual fun checkIfCompressedFileContainsFileType(compressedFilePath: Path, expectedFileExtension: String): Either<CoreFailure, Boolean> =
+actual fun checkIfCompressedFileContainsFileTypes(
+    compressedFilePath: Path,
+    fileSystem: KaliumFileSystem,
+    expectedFileExtensions: List<String>
+): Either<CoreFailure, Map<String, Boolean>> =
     try {
-        ZipFile(compressedFilePath.toFile()).let { zipFile ->
-            for (entry in zipFile.entries()) {
-                if (entry.name.endsWith(expectedFileExtension)) return Either.Right(true)
+        val resultMap = expectedFileExtensions.associateWith { false }.toMutableMap()
+        val inputSource = fileSystem.source(compressedFilePath)
+        ZipInputStream(inputSource.buffer().inputStream()).use { zipInputStream ->
+            var entry: ZipEntry? = zipInputStream.nextEntry
+            while (entry != null) {
+                val entryExtension = entry.name.substringAfterLast('.', "")
+                if (resultMap.containsKey(entryExtension))
+                    resultMap[entryExtension] = true
+                entry = zipInputStream.nextEntry
             }
         }
-        Either.Right(false)
+        Either.Right(resultMap)
     } catch (e: Exception) {
         Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
     }

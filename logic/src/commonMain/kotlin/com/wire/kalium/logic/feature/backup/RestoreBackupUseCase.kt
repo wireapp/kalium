@@ -148,11 +148,11 @@ internal class RestoreBackupUseCaseImpl(
         }
 
     private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<Failure, Pair<Path?, Boolean>> = with(kaliumFileSystem) {
-        val encryptedFilePath =
-            listDirectories(extractedBackupPath).firstOrNull { it.name.contains(BACKUP_ENCRYPTED_EXTENSION) } ?: return Either.Left(
-                Failure(DecryptionFailure("No encrypted backup file found"))
-            )
-        return Either.Right(encryptedFilePath to true)
+        val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull {
+            it.name.substringAfterLast('.', "") == BACKUP_ENCRYPTED_EXTENSION
+        }
+        return if (encryptedFilePath == null) return Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
+        else Either.Right(encryptedFilePath to true)
     }
 
     private suspend fun checkIsValidAuthor(extractedBackupRootPath: Path): Either<Failure, Unit> {
@@ -182,7 +182,7 @@ internal class RestoreBackupUseCaseImpl(
 
     private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean = with(kaliumFileSystem) {
         listDirectories(extractedBackupPath).firstOrNull {
-            it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
+            it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
         }?.let { metadataFile ->
             source(metadataFile).buffer().use {
                 Json.decodeFromString<BackupMetadata>(it.readUtf8()).userId == userId.toString()
@@ -192,7 +192,7 @@ internal class RestoreBackupUseCaseImpl(
 
     private suspend fun userDBSecret(extractedBackupPath: Path): UserDBSecret? = with(kaliumFileSystem) {
         listDirectories(extractedBackupPath).firstOrNull {
-            it.name.contains(BackupConstants.BACKUP_METADATA_FILE_NAME)
+            it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
         }?.let { metadataFile ->
             source(metadataFile).buffer().use {
                 Json.decodeFromString<BackupMetadata>(it.readUtf8()).userDBPassphrase
