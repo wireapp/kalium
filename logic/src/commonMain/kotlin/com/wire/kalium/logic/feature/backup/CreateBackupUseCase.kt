@@ -18,6 +18,7 @@ import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.KaliumDispatcher
@@ -28,6 +29,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import okio.FileNotFoundException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
@@ -56,9 +58,8 @@ internal class CreateBackupUseCaseImpl(
 
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
         val backupFilePath = kaliumFileSystem.tempFilePath(BACKUP_FILE_NAME)
-        // Delete any previously existing temporary backup file
-        if (kaliumFileSystem.exists(backupFilePath))
-            kaliumFileSystem.delete(backupFilePath)
+        deletePreviousBackupFiles(backupFilePath)
+
         createBackupFile(userId, backupFilePath).fold(
             { error -> CreateBackupResult.Failure(error) },
             { (backupFilePath, backupSize) ->
@@ -97,6 +98,11 @@ internal class CreateBackupUseCaseImpl(
         })
     }
 
+    private fun deletePreviousBackupFiles(backupFilePath: Path) {
+        if (kaliumFileSystem.exists(backupFilePath))
+            kaliumFileSystem.delete(backupFilePath)
+    }
+
     private fun deleteTempFiles(backupFilePath: Path, encryptedBackupFilePath: Path) {
         kaliumFileSystem.delete(backupFilePath)
         kaliumFileSystem.delete(encryptedBackupFilePath)
@@ -109,17 +115,16 @@ internal class CreateBackupUseCaseImpl(
     private suspend fun createMetadataFile(userId: UserId, userDBSecret: UserDBSecret): Path {
         val clientId = getCurrentClientId().first()
         val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
-        val metadataJson =
-            BackupMetadata(
-                clientPlatform,
-                BackupCoder.version,
-                userId.toString(),
-                creationTime,
-                clientId.toString(),
-                userDBSecret.value.encodeBase64(),
-                isUserDBSQLCipher,
-            )
-                .toString()
+        val metadataJson = BackupMetadata(
+            clientPlatform,
+            BackupCoder.version,
+            userId.toString(),
+            creationTime,
+            clientId.toString(),
+            userDBSecret.value.encodeBase64(),
+            isUserDBSQLCipher,
+        ).toString()
+
         val metadataFilePath = kaliumFileSystem.tempFilePath(BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
             it.write(metadataJson.encodeToByteArray())
@@ -128,17 +133,21 @@ internal class CreateBackupUseCaseImpl(
     }
 
     private suspend fun createBackupFile(userId: UserId, backupFilePath: Path): Either<CoreFailure, Pair<Path, Long>> {
-        val backupSink = kaliumFileSystem.sink(backupFilePath)
-        val backupMetadataPath = createMetadataFile(userId, userDBSecret)
-        val userDBData = getUserDbDataPath()
-
-        return createCompressedFile(
-            listOf(
+        return try {
+            val backupSink = kaliumFileSystem.sink(backupFilePath)
+            val backupMetadataPath = createMetadataFile(userId, userDBSecret)
+            val userDBData = getUserDbDataPath()
+            val filesList = listOf(
                 kaliumFileSystem.source(backupMetadataPath) to BACKUP_METADATA_FILE_NAME,
                 kaliumFileSystem.source(userDBData) to BACKUP_USER_DB_NAME
-            ), backupSink
-        ).flatMap { compressedFileSize ->
-            Either.Right(backupFilePath to compressedFileSize)
+            )
+
+            createCompressedFile(filesList, backupSink).flatMap { compressedFileSize ->
+                Either.Right(backupFilePath to compressedFileSize)
+            }
+        } catch (e: FileNotFoundException) {
+            kaliumLogger.e("There was an error when fetching the user db data path", e)
+            Either.Left(StorageFailure.DataNotFound)
         }
     }
 
