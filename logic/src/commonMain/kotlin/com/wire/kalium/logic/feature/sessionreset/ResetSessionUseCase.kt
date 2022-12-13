@@ -24,10 +24,7 @@ import kotlinx.coroutines.withContext
 interface ResetSessionUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
 }
-
-// TODO unit test in next PR
 internal class ResetSessionUseCaseImpl internal constructor(
-    private val syncManager: SyncManager,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionResetSender: SessionResetSender,
     private val messageRepository: MessageRepository,
@@ -39,7 +36,6 @@ internal class ResetSessionUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId
     ): ResetSessionResult = withContext(dispatchers.io) {
-        syncManager.waitUntilLive()
         return@withContext proteusClientProvider.getOrError().fold({
             return@fold ResetSessionResult.Failure(it)
         }, { proteusClient ->
