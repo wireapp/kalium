@@ -30,6 +30,9 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 
+    private val fakeFileSystem = FakeKaliumFileSystem()
+    private val dispatcher = TestKaliumDispatcher
+
     @Test
     fun givenSomeValidData_whenCreatingNonEncryptedBackup_thenTheFinalBackupFileIsCreatedCorrectly() = runTest(dispatcher.default) {
         // Given
@@ -120,7 +123,7 @@ class CreateBackupUseCaseTest {
         }
     }
 
-    private class Arrangement {
+    private inner class Arrangement {
         private var userId = UserId("some-user-id", "some-user-domain")
         private var userDBSecret = UserDBSecret("some-user-db-secret".decodeBase64Bytes())
         private var isUserDBSQLCiphered = false
@@ -150,8 +153,4 @@ class CreateBackupUseCaseTest {
 
     }
 
-    private companion object {
-        private val fakeFileSystem = FakeKaliumFileSystem()
-        private val dispatcher = TestKaliumDispatcher
-    }
 }
