@@ -23,6 +23,16 @@ CREATE TABLE Message (
       PRIMARY KEY (id, conversation_id)
 );
 
+-- update the lastMessageNotified date for a conversation that is
+-- ALL_MUTED after inserting a new message related to that conversation
+CREATE TRIGGER updateMutedConversationNotificationDateAfterNewMessage
+AFTER INSERT
+ON Message
+BEGIN
+ UPDATE Conversation SET last_notified_message_date = new.date
+ WHERE qualified_id = new.conversation_id AND muted_status = 'ALL_MUTED';
+END;
+
 -- Allows optimized querying of messages sorting by date.
 CREATE INDEX message_date_index ON Message(date);
 
@@ -292,22 +302,26 @@ SelfUser.id AS selfUserId,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 MemberChangeContent.member_change_list AS memberChangeList,
 MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS conversationName,
-Mention.user_id AS mentionedUserId,
+ConversationNameChangedContent.conversation_name AS updateConversationName,
+Conversation.name AS conversationName,
+(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
+IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_notified_message_date)), FALSE) AS shouldNotify,
+Conversation.muted_status AS mutedStatus,
+Conversation.type AS conversationType
 FROM Message
+LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
-LEFT JOIN SelfUser;
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
@@ -495,6 +509,14 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
+getNotificationsMessages:
+SELECT * FROM MessagePreview AS message
+WHERE shouldNotify == 1
+AND isSelfMessage == 0
+AND visibility = 'VISIBLE'
+AND (mutedStatus == 'ALL_ALLOWED' OR (mutedStatus == 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' AND (isQuotingSelfUser OR isMentioningSelfUser)))
+AND contentType IN ?;
+
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 
@@ -516,7 +538,14 @@ AND (expectsReadConfirmation = 1)
 AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
 ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
+selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
+SELECT id FROM MessageDetailsView
+WHERE conversationId = ?
+AND senderUserId = ?
+AND senderClientId = ?
+AND contentType = 'FAILED_DECRYPTION';
+
 markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
-WHERE conversation_id = :conversation_id;
+WHERE message_id IN ?;

@@ -2,6 +2,10 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
+import com.wire.kalium.logic.cache.MLSSelfConversationIdProviderImpl
+import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
+import com.wire.kalium.logic.cache.ProteusSelfConversationIdProviderImpl
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProviderImpl
 import com.wire.kalium.logic.configuration.ClientConfig
@@ -49,6 +53,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -101,8 +107,14 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
+import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
@@ -194,11 +206,11 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpack
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -268,7 +280,24 @@ class UserSessionScope internal constructor(
         )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
+    private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
+        MLSSelfConversationIdProviderImpl(
+            conversationRepository
+        )
+    }
+    private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider by lazy {
+        ProteusSelfConversationIdProviderImpl(
+            conversationRepository
+        )
+    }
+    private val selfConversationIdProvider: SelfConversationIdProvider by
+    lazy {
+        SelfConversationIdProviderImpl(
+            clientRepository,
+            mlsSelfConversationIdProvider,
+            proteusSelfConversationIdProvider
+        )
+    }
 
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
@@ -407,7 +436,7 @@ class UserSessionScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId)
+        get() = PersistMessageUseCaseImpl(messageRepository, userRepository)
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
@@ -502,13 +531,30 @@ class UserSessionScope internal constructor(
             userRepository = userRepository, teamRepository = teamRepository
         )
 
-    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCaseImpl(
+    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
+        get() = JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
             mlsConversationRepository
+        )
+
+    private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
+        get() = RecoverMLSConversationsUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            conversationRepository,
+            mlsConversationRepository,
+            joinExistingMLSConversationUseCase
+        )
+
+    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
+        get() = JoinExistingMLSConversationsUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            conversationRepository,
+            joinExistingMLSConversationUseCase
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
@@ -532,6 +578,15 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             slowSyncWorker,
             slowSyncRecoveryHandler
+        )
+    }
+    private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
+        MLSConversationsRecoveryManagerImpl(
+            featureSupport,
+            incrementalSyncRepository,
+            clientRepository,
+            recoverMLSConversationsUseCase,
+            slowSyncRepository
         )
     }
 
@@ -660,10 +715,13 @@ class UserSessionScope internal constructor(
     private val messageEncoder get() = MessageContentEncoder()
 
     private val receiptMessageHandler
-        get() = ReceiptMessageHandler(
+        get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
             receiptRepository = receiptRepository
         )
+
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+        get() = IsMessageSentInSelfConversationUseCaseImpl(selfConversationIdProvider)
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
@@ -674,14 +732,14 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
-            ClearConversationContentHandler(
+            MessageTextEditHandlerImpl(messageRepository),
+            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            ClearConversationContentHandlerImpl(
                 ClearConversationContentImpl(conversationRepository, assetRepository),
                 userId,
-                selfConversationIdProvider,
+                isMessageSentInSelfConversation,
             ),
-            DeleteForMeHandler(messageRepository, selfConversationIdProvider),
+            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             messageEncoder,
             receiptMessageHandler
         )
@@ -826,6 +884,7 @@ class UserSessionScope internal constructor(
             connectionRepository,
             userId,
             clientIdProvider,
+            selfConversationIdProvider,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -952,6 +1011,10 @@ class UserSessionScope internal constructor(
         launch {
             val pushTokenUpdater = createPushTokenUpdater()
             pushTokenUpdater.monitorTokenChanges()
+        }
+
+        launch {
+            mlsConversationsRecoveryManager.invoke()
         }
     }
 

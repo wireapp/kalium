@@ -93,4 +93,14 @@ class SlowSyncRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun givenMLSRecoveryStatusIsUpdated_whenGettingStatus_thenTheStateMatches() = runTest(testDispatcher) {
+        val newStatus = true
+        slowSyncRepository.setNeedsToRecoverMLSGroups(newStatus)
+
+        val currentState = slowSyncRepository.needsToRecoverMLSGroups()
+
+        assertEquals(newStatus, currentState)
+    }
 }

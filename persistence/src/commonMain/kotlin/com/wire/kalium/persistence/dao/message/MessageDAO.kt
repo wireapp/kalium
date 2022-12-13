@@ -45,6 +45,10 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
+    suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>>
+
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
@@ -73,7 +77,11 @@ interface MessageDAO {
 
     suspend fun resetAssetDownloadStatus()
 
-    suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity)
+    suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    )
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,

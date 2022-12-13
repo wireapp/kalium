@@ -267,6 +267,14 @@ class MessageDAOImpl(
             mapper::toEntityMessageFromView
         ).asFlow().mapToList()
 
+    override suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>> =
+        queries.getNotificationsMessages(
+            filteredContent,
+            mapper::toNotificationEntity
+        ).asFlow().mapToList()
+
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
@@ -337,8 +345,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
-    override suspend fun markMessagesAsDecryptionResolved(conversationId: QualifiedIDEntity) =
-        queries.markMessagesAsDecryptionResolved(conversationId)
+    override suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    ) = queries.transaction {
+        val messages = queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
+        queries.markMessagesAsDecryptionResolved(messages)
+    }
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 
@@ -353,4 +367,5 @@ class MessageDAOImpl(
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
+
 }

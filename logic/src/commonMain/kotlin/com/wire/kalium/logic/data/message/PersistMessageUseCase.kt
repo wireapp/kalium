@@ -1,9 +1,13 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DelicateKaliumApi
+
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
@@ -12,21 +16,33 @@ interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
+@OptIn(DelicateKaliumApi::class)
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val selfUser: UserId
+    private val userRepository: UserRepository
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val isMyMessage = message.senderUserId == selfUser
-        @OptIn(DelicateKaliumApi::class)
+        val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
+            message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
+        } ?: (false to false)
         return messageRepository
             .persistMessage(
                 message = message,
                 updateConversationReadDate = isMyMessage,
                 updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate = isMyMessage
+                updateConversationNotificationsDate
             )
     }
+
+    private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
+        when (selfUser.availabilityStatus) {
+            UserAvailabilityStatus.AWAY -> true
+            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id)
+            // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
+            else -> this.isSelfTheSender(selfUser.id)
+        }
+
+    private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
@@ -52,5 +68,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationRenamed -> true
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.Receipt -> false
+            is MessageContent.SessionReset -> false
         }
 }

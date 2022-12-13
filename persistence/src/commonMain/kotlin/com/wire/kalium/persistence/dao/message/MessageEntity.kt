@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName
@@ -216,7 +217,12 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
-    data class FailedDecryption(val encodedData: ByteArray? = null, val isDecryptionResolved: Boolean) : Regular()
+    data class FailedDecryption(
+        val encodedData: ByteArray? = null,
+        val isDecryptionResolved: Boolean,
+        val senderUserId: QualifiedIDEntity,
+        val senderClientId: String?,
+    ) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
@@ -248,15 +254,24 @@ data class MessagePreviewEntity(
     val isSelfMessage: Boolean
 )
 
+data class NotificationMessageEntity(
+    val id: String,
+    val content: MessagePreviewEntityContent,
+    val conversationId: QualifiedIDEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type?,
+    val date: String
+)
+
 sealed class MessagePreviewEntityContent {
 
     data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
 
-    data class MentionedSelf(val senderName: String?) : MessagePreviewEntityContent()
+    data class MentionedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
-    data class QuotedSelf(val senderName: String?) : MessagePreviewEntityContent()
+    data class QuotedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
 

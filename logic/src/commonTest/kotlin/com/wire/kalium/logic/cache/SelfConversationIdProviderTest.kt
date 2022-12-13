@@ -1,14 +1,15 @@
 package com.wire.kalium.logic.cache
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -20,27 +21,50 @@ import kotlin.test.assertIs
 class SelfConversationIdProviderTest {
 
     @Test
-    fun givenFirstTimeSelfConversationIdProviderIsCalled_thenValueIsFetchedFromDB() = runTest {
-        val expected = Either.Right(SELF_CONVERSATION_ID)
-        val (arrangment, selfConversationIdProvider) = Arrangement()
-            .withSelfConversationId(expected)
+    fun givenMLSClientHasBeenRegistered_thenMLSAndProteusSelfConversationAreReturned() = runTest {
+        val (arrangement, selfConversationIdProvider) = Arrangement()
+            .withHasRegisteredMLSClient((Either.Right(true)))
+            .withMLSSelfConversationId(Either.Right(Arrangement.MLS_SELF_CONVERSATION_ID))
+            .withProteusSelfConversationId(Either.Right(Arrangement.PROTEUS_SELF_CONVERSATION_ID))
             .arrange()
 
         selfConversationIdProvider().also {
-            assertIs<Either.Right<ConversationId>>(it)
-            assertEquals(expected.value, it.value)
+            assertIs<Either.Right<List<ConversationId>>>(it)
+            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID, Arrangement.MLS_SELF_CONVERSATION_ID), it.value)
         }
 
-        verify(arrangment.conversationRepository)
-            .suspendFunction(arrangment.conversationRepository::getSelfConversationId)
+        verify(arrangement.proteusSelfConversationIdProvider)
+            .suspendFunction(arrangement.proteusSelfConversationIdProvider::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsSelfConversationIdProvider)
+            .suspendFunction(arrangement.mlsSelfConversationIdProvider::invoke)
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenFirstTimeSelfConversationIdProviderIsCalled_whenGetSelfConversationIdFail_thenErrorIsProbated() = runTest {
+    fun givenMLSClientHasNotBeenRegistered_thenProteusSelfConversationIsReturned() = runTest {
+        val (arrangement, selfConversationIdProvider) = Arrangement()
+            .withHasRegisteredMLSClient((Either.Right(false)))
+            .withProteusSelfConversationId(Either.Right(Arrangement.PROTEUS_SELF_CONVERSATION_ID))
+            .arrange()
+
+        selfConversationIdProvider().also {
+            assertIs<Either.Right<List<ConversationId>>>(it)
+            assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID), it.value)
+        }
+
+        verify(arrangement.proteusSelfConversationIdProvider)
+            .suspendFunction(arrangement.proteusSelfConversationIdProvider::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenFailure_thenErrorIsPropagated() = runTest {
         val expected = Either.Left(StorageFailure.DataNotFound)
         val (arrangement, selfConversationIdProvider) = Arrangement()
-            .withSelfConversationId(expected)
+            .withHasRegisteredMLSClient((Either.Right(false)))
+            .withProteusSelfConversationId(expected)
             .arrange()
 
         selfConversationIdProvider().also {
@@ -48,49 +72,54 @@ class SelfConversationIdProviderTest {
             assertEquals(expected.value, it.value)
         }
 
-        selfConversationIdProvider().also {
-            assertIs<Either.Left<StorageFailure>>(it)
-            assertEquals(expected.value, it.value)
-        }
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::getSelfConversationId)
-            .wasInvoked(exactly = twice)
-    }
-
-    @Test
-    fun whenInvokingMultipleTimes_thenOnlyTheFirstInvokeWillFetchDataFromDB() = runTest {
-        val expected = Either.Right(SELF_CONVERSATION_ID)
-        val (arrangment, selfConversationIdProvider) = Arrangement()
-            .withSelfConversationId(expected)
-            .arrange()
-
-        for (i in 0..5) {
-            selfConversationIdProvider().also {
-                assertIs<Either.Right<ConversationId>>(it)
-                assertEquals(expected.value, it.value)
-            }
-        }
-        verify(arrangment.conversationRepository)
-            .suspendFunction(arrangment.conversationRepository::getSelfConversationId)
+        verify(arrangement.proteusSelfConversationIdProvider)
+            .suspendFunction(arrangement.proteusSelfConversationIdProvider::invoke)
             .wasInvoked(exactly = once)
-    }
-
-    private companion object {
-        val SELF_CONVERSATION_ID = ConversationId("self_conv_id", "conv_domain")
     }
 
     private class Arrangement {
 
         @Mock
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        val clientRepository = mock(classOf<ClientRepository>())
 
-        val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(conversationRepository)
+        @Mock
+        val proteusSelfConversationIdProvider = mock(classOf<ProteusSelfConversationIdProvider>())
 
-        suspend fun withSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
-            given(conversationRepository).coroutine { getSelfConversationId() }.then { result }
+        @Mock
+        val mlsSelfConversationIdProvider = mock(classOf<MLSSelfConversationIdProvider>())
+
+        val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(
+            clientRepository,
+            mlsSelfConversationIdProvider,
+            proteusSelfConversationIdProvider
+        )
+
+        fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>): Arrangement = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withProteusSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
+            given(proteusSelfConversationIdProvider)
+                .suspendFunction(proteusSelfConversationIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withMLSSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
+            given(mlsSelfConversationIdProvider)
+                .suspendFunction(mlsSelfConversationIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         fun arrange() = this to selfConversationIdProvider
+
+        companion object {
+            val MLS_SELF_CONVERSATION_ID = ConversationId("mls_self", "conv_domain")
+            val PROTEUS_SELF_CONVERSATION_ID = ConversationId("proteus_self", "conv_domain")
+        }
     }
 }
