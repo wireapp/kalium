@@ -14,7 +14,7 @@ kaliumLibrary {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.10")
+    implementation(libs.kotlin.nativeUtils)
 }
 
 sqldelight {
@@ -82,8 +82,8 @@ kotlin {
                 implementation(libs.securityCrypto)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.paging3)
-                implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
-                implementation("androidx.sqlite:sqlite:2.0.1")
+                implementation(libs.sqlite.androidx)
+                implementation(libs.sql.android.cipher)
             }
         }
         val androidAndroidTest by getting {

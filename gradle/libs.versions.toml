@@ -21,12 +21,14 @@ android-test-rules = "1.4.0"
 android-test-core = "1.4.0"
 androidx-arch = "2.1.0"
 androidx-orchestrator = "1.1.0"
+androidx-sqlite = "2.0.1"
 benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
 multiplatform-settings = "0.9" #TODO: Upgrade to 1.0.0-RC - Breaking changes
 android-security = "1.1.0-alpha03"
 sqldelight = "2.0.0-alpha04"
+sqlcipher-android = "4.5.2"
 pbandk = "0.14.2"
 turbine = "0.12.1"
 avs = "8.2.16"
@@ -63,6 +65,7 @@ detekt-core = ["detekt-api"]
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 
+kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 
@@ -124,6 +127,8 @@ okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
 okio-test = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
 # sql dependencies
+sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite"}
+sql-android-cipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher-android"}
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
