@@ -269,17 +269,17 @@ class RestoreBackupUseCaseTest {
             }
         }
 
-        fun withCorrectDbImportAction() = apply {
+        fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), eq(userDBSecret))
                 .thenReturn(Unit)
         }
 
-        fun withIncorrectDbImportAction() = apply {
+        fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), eq(null))
+                .whenInvokedWith(any(), eq(userDBSecret))
                 .thenThrow(RuntimeException("DB import failed"))
         }
 
