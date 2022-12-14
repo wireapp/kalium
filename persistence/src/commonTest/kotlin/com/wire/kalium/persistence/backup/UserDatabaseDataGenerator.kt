@@ -190,7 +190,6 @@ class UserDatabaseDataGenerator(
                     MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
                 else visibility
 
-
             messages.add(
                 MessageEntity.System(
                     id = "${messagePrefix}messageId",
