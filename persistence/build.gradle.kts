@@ -1,4 +1,3 @@
-import app.cash.sqldelight.gradle.VerifyMigrationTask
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
