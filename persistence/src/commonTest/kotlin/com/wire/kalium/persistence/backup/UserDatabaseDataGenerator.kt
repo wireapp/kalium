@@ -47,6 +47,13 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.insertUser(senderUser)
 
+            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+
+            val sanitizedVisibility =
+                if (visibility == MessageEntity.Visibility.DELETED)
+                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                else visibility
+
             messages.add(
                 MessageEntity.Regular(
                     id = "${messagePrefix}messageId",
@@ -59,7 +66,7 @@ class UserDatabaseDataGenerator(
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE_STRING),
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName"
                 )
             )
@@ -84,6 +91,13 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.insertUser(senderUser)
 
+            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+
+            val sanitizedVisibility =
+                if (visibility == MessageEntity.Visibility.DELETED)
+                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                else visibility
+
             messages.add(
                 MessageEntity.Regular(
                     id = "${messagePrefix}messageId",
@@ -96,7 +110,7 @@ class UserDatabaseDataGenerator(
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE_STRING),
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName"
                 )
             )
@@ -111,7 +125,7 @@ class UserDatabaseDataGenerator(
     private fun generateMessageAssetContent(
         assetUploadStatus: MessageEntity.UploadStatus,
         assetDownloadStatus: MessageEntity.DownloadStatus
-    ): MessageEntityContent.Regular {
+    ): MessageEntityContent.Asset {
         val messageAssetContentPrefix = "${databasePrefix}MessageAssetContent${generatedAssetsCount}"
 
         return MessageEntityContent.Asset(
@@ -169,6 +183,14 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.insertUser(senderUser)
 
+            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+
+            val sanitizedVisibility =
+                if (visibility == MessageEntity.Visibility.DELETED)
+                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                else visibility
+
+
             messages.add(
                 MessageEntity.System(
                     id = "${messagePrefix}messageId",
@@ -177,7 +199,7 @@ class UserDatabaseDataGenerator(
                     date = DEFAULT_DATE_STRING,
                     senderUserId = senderUser.id,
                     status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
-                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size],
+                    visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName"
                 )
             )
