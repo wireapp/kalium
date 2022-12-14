@@ -94,7 +94,6 @@ class ResetSessionUseCaseTest {
 
         val result = resetSessionUseCase(CONVERSATION_ID, USER_ID, CLIENT_ID)
 
-
         verify(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
             .with(anything())

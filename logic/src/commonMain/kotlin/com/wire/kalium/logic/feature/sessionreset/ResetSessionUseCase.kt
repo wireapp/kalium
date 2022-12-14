@@ -13,7 +13,6 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
