@@ -422,4 +422,8 @@ class ConversationDAOImpl(
         return memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
     }
 
+    override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) {
+        conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
+    }
+
 }

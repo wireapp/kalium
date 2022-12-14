@@ -4,6 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -126,6 +128,10 @@ interface MessageRepository {
     suspend fun resetAssetProgressStatus()
     suspend fun markMessagesAsDecryptionResolved(conversationId: ConversationId): Either<CoreFailure, Unit>
 
+    suspend fun getReceiptModeFromGroupConversationByQualifiedID(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Conversation.ReceiptMode?>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -141,6 +147,7 @@ class MessageDataSource(
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, idMapper, messageMapper)
@@ -387,4 +394,12 @@ class MessageDataSource(
         messageDAO.markMessagesAsDecryptionResolved(idMapper.toDaoModel(conversationId))
     }
 
+    override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
+        messageDAO.getReceiptModeFromGroupConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            .let {
+                receiptModeMapper.fromEntityToModel(it)
+            }
+    }
 }

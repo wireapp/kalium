@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
@@ -84,6 +85,8 @@ interface MessageDAO {
         date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): List<MessageEntity>
+
+    suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 
     val platformExtensions: MessageExtensions
 }
