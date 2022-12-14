@@ -65,11 +65,12 @@ class MetadataDAOTest : BaseDatabaseTest() {
 
     @Test
     fun giveExistingKey_whenOtherValueHasBeenModified_thenDoNotReEmitTheSameValue() = runTest(dispatcher) {
-        metadataDAO.insertValue(value1, key1)
+        metadataDAO.insertValue(value = value1, key = key1)
         metadataDAO.valueByKeyFlow(key1).test {
-            assertEquals(value1, this.awaitItem())
-            metadataDAO.insertValue(value2, key2)
-            this.expectNoEvents()
+            assertEquals(value1, awaitItem())
+            metadataDAO.insertValue(value = value2, key = key2)
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 }
