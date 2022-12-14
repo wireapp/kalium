@@ -234,7 +234,6 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 conversationAmount = backupConversationAmount,
                 membersGenerate = { overlappingBackupMembers }
             )
-            val userDBSecret = UserDBSecret("userDBSecret".encodeToByteArray())
 
             val uniqueUserMembers = backupDatabaseDataGenerator.generateMembers(2)
             val userConversationAmount = 5
@@ -246,7 +245,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             )
 
             // when
-            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), userDBSecret)
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), null)
 
             // then
             val restoredConversations = userDatabaseBuilder.conversationDAO.getAllConversations().first()
