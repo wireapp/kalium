@@ -50,7 +50,7 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertTrue(result is CreateBackupResult.Success)
-        assertEquals(result.backupFilePath.name, BACKUP_FILE_NAME)// db and metadata file
+        assertEquals(result.backupFilePath.name, BACKUP_FILE_NAME)
         verify(arrangement.observeClientId)
             .suspendFunction(arrangement.observeClientId::invoke)
             .wasInvoked(once)
@@ -124,6 +124,7 @@ class CreateBackupUseCaseTest {
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private inner class Arrangement {
         private var userId = UserId("some-user-id", "some-user-domain")
         private var userDBSecret = UserDBSecret("some-user-db-secret".decodeBase64Bytes())
@@ -142,9 +143,7 @@ class CreateBackupUseCaseTest {
         fun withProvidedDB(dbData: ByteArray?) = apply {
             with(fakeFileSystem) {
                 dbData?.let { rawData ->
-                    sink(rootDBPath).buffer().use {
-                        it.write(rawData)
-                    }
+                    sink(rootDBPath).buffer().use { it.write(rawData) }
                 }
             }
         }

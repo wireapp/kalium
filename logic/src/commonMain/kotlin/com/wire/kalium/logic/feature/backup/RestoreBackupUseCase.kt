@@ -48,6 +48,7 @@ interface RestoreBackupUseCase {
     suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult
 }
 
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class RestoreBackupUseCaseImpl(
     private val databaseImporter: DatabaseImporter,
     private val kaliumFileSystem: KaliumFileSystem,

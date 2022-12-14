@@ -239,17 +239,18 @@ class RestoreBackupUseCaseTest {
             password: String,
             withWrongMetadataFile: Boolean = false,
             userDBSecret: UserDBSecret? = null,
-            ): Path =
-            with(fakeFileSystem) {
-                val compressedBackupFilePath = fakeFileSystem.tempFilePath("backup.zip")
-                createCompressedBackup(compressedBackupFilePath, userId, withWrongMetadataFile, userDBSecret)
-                val cryptoUserId = idMapper.toCryptoModel(userId)
-                val coder = BackupCoder(cryptoUserId, Passphrase(password))
-                val inputSource = source(compressedBackupFilePath)
-                val outputSink = sink(encryptedBackupPath)
-                encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
-                return encryptedBackupPath
-            }
+        ): Path = with(fakeFileSystem) {
+            val compressedBackupFilePath = fakeFileSystem.tempFilePath("backup.zip")
+            createCompressedBackup(compressedBackupFilePath, userId, withWrongMetadataFile, userDBSecret)
+
+            val cryptoUserId = idMapper.toCryptoModel(userId)
+            val coder = BackupCoder(cryptoUserId, Passphrase(password))
+            val inputSource = source(compressedBackupFilePath)
+            val outputSink = sink(encryptedBackupPath)
+
+            encryptBackupFile(inputSource, outputSink, cryptoUserId, coder.passphrase)
+            return encryptedBackupPath
+        }
 
         fun withUnencryptedBackup(
             path: Path,

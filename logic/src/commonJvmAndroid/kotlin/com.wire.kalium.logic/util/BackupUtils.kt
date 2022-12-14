@@ -11,7 +11,6 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
@@ -62,6 +61,7 @@ actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, file
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
 }
 
+@Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
 actual fun checkIfCompressedFileContainsFileTypes(
     compressedFilePath: Path,
     fileSystem: KaliumFileSystem,
