@@ -9,6 +9,7 @@ def documentedSubprojects = [
         "logger",
         "logic",
         "network",
+        "persistence",
         "protobuf"
 ]
 
