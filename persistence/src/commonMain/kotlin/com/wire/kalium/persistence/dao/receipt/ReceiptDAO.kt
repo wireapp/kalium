@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.dao.receipt
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.ReceiptsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity

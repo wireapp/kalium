@@ -32,11 +32,7 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)

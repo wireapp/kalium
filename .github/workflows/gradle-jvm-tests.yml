@@ -35,15 +35,9 @@ jobs:
         run: |
             ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
 
-        # Verify migrations BEFORE checking if all schemas are included,
-        # to prevent the generation from overwriting the committed .db file
       - name: Verify DB Migrations
         run: |
             make db/verify-all-migrations
-
-      - name: Verify DB schemas are all present
-        run: |
-          make db/verify-all-schemas
 
       - name: Test with Gradle
         run: |

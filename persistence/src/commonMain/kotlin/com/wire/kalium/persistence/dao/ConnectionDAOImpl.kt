@@ -1,9 +1,9 @@
 package com.wire.kalium.persistence.dao
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,6 +20,7 @@ private class ConnectionMapper {
         toId = state.to_id,
         shouldNotify = state.should_notify
     )
+
     @Suppress("FunctionParameterNaming", "LongParameterList")
     fun toModel(
         from_id: String,

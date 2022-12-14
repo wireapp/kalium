@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -43,7 +42,7 @@ class SlowSyncRepositoryTest {
     }
 
     // TODO: Re-enable once we can update Turbine to 0.11.0+ (Requires Kotlin 1.6.21+)
-    @Ignore
+//     @Ignore
     @Test
     fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest(testDispatcher) {
         val firstInstant = Clock.System.now()
