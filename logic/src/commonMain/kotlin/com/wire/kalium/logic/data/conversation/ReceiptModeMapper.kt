@@ -18,7 +18,7 @@ class ReceiptModeMapperImpl(
     override fun fromApiToDaoModel(receiptMode: ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
         ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED
         ReceiptMode.ENABLED -> ConversationEntity.ReceiptMode.ENABLED
-        else -> ConversationEntity.ReceiptMode.DISABLED
+        null -> ConversationEntity.ReceiptMode.DISABLED
     }
 
     override fun toDaoModel(receiptMode: Conversation.ReceiptMode?): ConversationEntity.ReceiptMode = when (receiptMode) {
