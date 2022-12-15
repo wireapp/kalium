@@ -3,13 +3,11 @@ package com.wire.kalium.logic.feature.sessionreset
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.SessionResetSender
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -67,7 +65,7 @@ class ResetSessionUseCaseTest {
             .whenInvoked()
             .thenReturn(Either.Left(failure))
 
-        val result = resetSessionUseCase(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(proteusClientProvider)
             .suspendFunction(proteusClientProvider::getOrError)
@@ -84,15 +82,15 @@ class ResetSessionUseCaseTest {
 
         given(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
-            .whenInvokedWith(eq(USER_ID))
+            .whenInvokedWith(eq(TestClient.USER_ID))
             .thenReturn(CRYPTO_USER_ID)
 
         given(sessionResetSender)
             .suspendFunction(sessionResetSender::invoke)
-            .whenInvokedWith(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .whenInvokedWith(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .thenReturn(Either.Left(failure))
 
-        val result = resetSessionUseCase(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
@@ -106,7 +104,7 @@ class ResetSessionUseCaseTest {
 
         verify(sessionResetSender)
             .function(sessionResetSender::invoke)
-            .with(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .with(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .wasInvoked(exactly = once)
 
         assertEquals(ResetSessionResult.Failure(failure), result)
@@ -121,20 +119,20 @@ class ResetSessionUseCaseTest {
 
         given(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
-            .whenInvokedWith(eq(USER_ID))
+            .whenInvokedWith(eq(TestClient.USER_ID))
             .thenReturn(CRYPTO_USER_ID)
 
         given(sessionResetSender)
             .suspendFunction(sessionResetSender::invoke)
-            .whenInvokedWith(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .whenInvokedWith(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .thenReturn(Either.Right(Unit))
 
         given(messageRepository)
             .suspendFunction(messageRepository::markMessagesAsDecryptionResolved)
-            .whenInvokedWith(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .whenInvokedWith(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .thenReturn(Either.Left(failure))
 
-        val result = resetSessionUseCase(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
@@ -148,7 +146,7 @@ class ResetSessionUseCaseTest {
 
         verify(messageRepository)
             .function(messageRepository::markMessagesAsDecryptionResolved)
-            .with(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .with(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .wasInvoked(exactly = once)
 
         assertEquals(ResetSessionResult.Failure(failure), result)
@@ -163,20 +161,20 @@ class ResetSessionUseCaseTest {
 
         given(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
-            .whenInvokedWith(eq(USER_ID))
+            .whenInvokedWith(eq(TestClient.USER_ID))
             .thenReturn(CRYPTO_USER_ID)
 
         given(sessionResetSender)
             .suspendFunction(sessionResetSender::invoke)
-            .whenInvokedWith(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .whenInvokedWith(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .thenReturn(Either.Right(Unit))
 
         given(messageRepository)
             .suspendFunction(messageRepository::markMessagesAsDecryptionResolved)
-            .whenInvokedWith(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .whenInvokedWith(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .thenReturn(Either.Right(Unit))
 
-        val result = resetSessionUseCase(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = resetSessionUseCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(idMapper)
             .function(idMapper::toCryptoQualifiedIDId)
@@ -190,7 +188,7 @@ class ResetSessionUseCaseTest {
 
         verify(messageRepository)
             .function(messageRepository::markMessagesAsDecryptionResolved)
-            .with(eq(CONVERSATION_ID), eq(USER_ID), eq(CLIENT_ID))
+            .with(eq(TestClient.CONVERSATION_ID), eq(TestClient.USER_ID), eq(TestClient.CLIENT_ID))
             .wasInvoked(exactly = once)
 
         assertEquals(ResetSessionResult.Success, result)
@@ -198,9 +196,6 @@ class ResetSessionUseCaseTest {
     }
 
     companion object {
-        val CONVERSATION_ID = ConversationId("conversation-id", "domain")
-        val CLIENT_ID = ClientId("client-id")
-        val USER_ID = UserId("client-id", "domain")
         val CRYPTO_USER_ID = CryptoUserID("client-id", "domain")
         val failure = CoreFailure.Unknown(null)
     }

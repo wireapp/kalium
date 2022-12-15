@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -47,7 +45,7 @@ class SessionResetSenderTest {
     fun setup() {
         sessionResetSender = SessionResetSenderImpl(
             slowSyncRepository,
-            SELF_USER_ID,
+            TestClient.SELF_USER_ID,
             provideClientId,
             messageSender,
             testDispatchers
@@ -68,7 +66,7 @@ class SessionResetSenderTest {
             .whenInvoked()
             .thenReturn(Either.Left(failure))
 
-        val result = sessionResetSender(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(provideClientId)
             .suspendFunction(provideClientId::invoke)
@@ -84,14 +82,14 @@ class SessionResetSenderTest {
         given(provideClientId)
             .suspendFunction(provideClientId::invoke)
             .whenInvoked()
-            .thenReturn(Either.Right(CLIENT_ID))
+            .thenReturn(Either.Right(TestClient.CLIENT_ID))
 
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Left(failure))
 
-        val result = sessionResetSender(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(provideClientId)
             .suspendFunction(provideClientId::invoke)
@@ -111,14 +109,14 @@ class SessionResetSenderTest {
         given(provideClientId)
             .suspendFunction(provideClientId::invoke)
             .whenInvoked()
-            .thenReturn(Either.Right(CLIENT_ID))
+            .thenReturn(Either.Right(TestClient.CLIENT_ID))
 
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
-        val result = sessionResetSender(CONVERSATION_ID, USER_ID, CLIENT_ID)
+        val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
         verify(provideClientId)
             .suspendFunction(provideClientId::invoke)
@@ -133,10 +131,6 @@ class SessionResetSenderTest {
     }
 
     companion object {
-        val SELF_USER_ID = UserId("self-user-id", "domain")
-        val CONVERSATION_ID = ConversationId("conversation-id", "domain")
-        val CLIENT_ID = ClientId("client-id")
-        val USER_ID = UserId("client-id", "domain")
         val failure = CoreFailure.Unknown(null)
     }
 }
