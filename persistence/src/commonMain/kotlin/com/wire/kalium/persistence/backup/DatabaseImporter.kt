@@ -13,12 +13,12 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
-                bindString(1, filePath)
-                bindBytes(2, userDBSecret!!.value)
+                bindString(0, filePath)
+                bindBytes(1, userDBSecret!!.value)
             }
         } else {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
-                bindString(1, filePath)
+                bindString(0, filePath)
             }
         }
         sqlDriver.execute("""BEGIN""")
