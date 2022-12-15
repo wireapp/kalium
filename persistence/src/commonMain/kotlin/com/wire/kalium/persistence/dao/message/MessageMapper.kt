@@ -24,7 +24,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?
@@ -34,8 +34,13 @@ object MessageMapper {
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
-            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
-            (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
+            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                senderName = senderName,
+                messageBody = text.requireField("text")
+            )
+            (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                senderName = senderName, messageBody = text.requireField("text")
+            )
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
@@ -56,7 +61,8 @@ object MessageMapper {
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
             adminName = senderName,
             count = memberChangeList.requireField("memberChangeList").size,
-            type = memberChangeType.requireField("memberChangeType"))
+            type = memberChangeType.requireField("memberChangeType")
+        )
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
@@ -64,7 +70,8 @@ object MessageMapper {
             type = AssetTypeEntity.ASSET
         )
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
-            adminName = senderName)
+            adminName = senderName
+        )
 
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
@@ -85,8 +92,9 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
+        updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -102,7 +110,7 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType
@@ -133,8 +141,9 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
+        updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -150,7 +159,7 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType
@@ -346,7 +355,9 @@ object MessageMapper {
 
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
-                isDecryptionResolved = isDecryptionResolved ?: false
+                isDecryptionResolved = isDecryptionResolved ?: false,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId
             )
 
             MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(

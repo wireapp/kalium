@@ -144,6 +144,7 @@ class MessageMapperImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     override fun fromMessageToLocalNotificationMessage(
         message: NotificationMessageEntity
     ): LocalNotificationMessage =
@@ -154,7 +155,6 @@ class MessageMapperImpl(
                     null
                 ), message.date, content.messageBody
             )
-            // TODO(notifications): Handle other message types
             is MessagePreviewEntityContent.Asset -> {
                 val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
@@ -167,7 +167,24 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-
+            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
+                LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                message.date,
+                LocalNotificationCommentType.KNOCK
+            )
+            is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
+                author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                time = message.date,
+                text = content.messageBody,
+                isMentionedSelf = true,
+            )
+            is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
+                author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
+                time = message.date,
+                text = content.messageBody,
+                isQuotingSelfUser = true
+            )
+            // TODO(notifications): Handle other message types
             else -> LocalNotificationMessage.Comment(
                 LocalNotificationMessageAuthor("", null),
                 message.date,
@@ -222,7 +239,12 @@ class MessageMapperImpl(
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
+            this.encodedData,
+            this.isDecryptionResolved,
+            idMapper.toDaoModel(this.senderUserId),
+            this.clientId?.value
+        )
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
@@ -288,7 +310,12 @@ class MessageMapperImpl(
         )
 
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData, this.isDecryptionResolved)
+        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
+            this.encodedData,
+            this.isDecryptionResolved,
+            idMapper.fromDaoModel(this.senderUserId),
+            ClientId(this.senderClientId.orEmpty())
+        )
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {

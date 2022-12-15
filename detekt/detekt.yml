@@ -325,7 +325,7 @@ formatting:
 
 naming:
     active: true
-    excludes: [ '**/generated/pbandk/**', '**/build/generated/**' ]
+    excludes: [ '**/generated/pbandk/**', '**/build/generated/**', '**build/**/*.Mockative.kt']
     ClassNaming:
         active: true
         excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]

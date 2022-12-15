@@ -6,8 +6,6 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -66,16 +64,13 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             )
         )
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            userDAO.observeUsersNotInConversation(conversationId).test {
-                val result = awaitItem()
-                // then
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
-                cancelAndIgnoreRemainingEvents()
-            }
+        // when
+        userDAO.observeUsersNotInConversation(conversationId).test {
+            val result = awaitItem()
+            // then
+            assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+            cancelAndIgnoreRemainingEvents()
         }
-
     }
 
     @Test
@@ -97,13 +92,12 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         // when
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            userDAO.observeUsersNotInConversation(conversationId).test {
-                // then
-                val result = awaitItem()
-                assertTrue { result.isEmpty() }
-                cancelAndIgnoreRemainingEvents()
-            }
+
+        userDAO.observeUsersNotInConversation(conversationId).test {
+            // then
+            val result = awaitItem()
+            assertTrue { result.isEmpty() }
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -116,16 +110,13 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(conversationId, emptyList())
 
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            // when
-            userDAO.observeUsersNotInConversation(conversationId).test {
-                // then
-                val result = awaitItem()
-                assertTrue { result == listOf(user1, user2) }
-                cancelAndIgnoreRemainingEvents()
-            }
+        // when
+        userDAO.observeUsersNotInConversation(conversationId).test {
+            // then
+            val result = awaitItem()
+            assertTrue { result == listOf(user1, user2) }
+            cancelAndIgnoreRemainingEvents()
         }
-
     }
 
     @Test
@@ -154,15 +145,14 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         // when
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            userDAO.getUsersNotInConversationByHandle(conversationId, "handleMatch")
-                .test {
-                    // then
-                    val result = awaitItem()
-                    assertTrue { result == (allUsers - userThatIsPartOfConversation) }
-                    cancelAndIgnoreRemainingEvents()
-                }
-        }
+
+        userDAO.getUsersNotInConversationByHandle(conversationId, "handleMatch")
+            .test {
+                // then
+                val result = awaitItem()
+                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                cancelAndIgnoreRemainingEvents()
+            }
     }
 
     @Test
@@ -191,15 +181,14 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         // when
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "emailMatch")
-                .test {
-                    // then
-                    val result = awaitItem()
-                    assertTrue { result == (allUsers - userThatIsPartOfConversation) }
-                    cancelAndIgnoreRemainingEvents()
-                }
-        }
+
+        userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "emailMatch")
+            .test {
+                // then
+                val result = awaitItem()
+                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                cancelAndIgnoreRemainingEvents()
+            }
     }
 
     @Test
@@ -228,15 +217,14 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         // when
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "nameMatch")
-                .test {
-                    // then
-                    val result = awaitItem()
-                    assertTrue { result == (allUsers - userThatIsPartOfConversation) }
-                    cancelAndIgnoreRemainingEvents()
-                }
-        }
+
+        userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "nameMatch")
+            .test {
+                // then
+                val result = awaitItem()
+                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                cancelAndIgnoreRemainingEvents()
+            }
     }
 
     private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<Member>) {

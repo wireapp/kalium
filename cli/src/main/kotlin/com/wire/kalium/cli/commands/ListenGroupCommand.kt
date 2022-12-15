@@ -22,8 +22,8 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                 for (message in it) {
                     when (val content = message.content) {
                         is MessageContent.Text -> echo("> ${content.value}")
-                        is MessageContent.Unknown -> { /* do nothing */
-                        }
+                        is MessageContent.Unknown -> { /* do nothing */ }
+                        else -> { /* Do Nothing */ }
                     }
                 }
             }

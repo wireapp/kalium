@@ -20,11 +20,7 @@ kotlin {
                 api(project(":logger"))
 
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 // ktor
                 api(libs.ktor.core)
@@ -36,6 +32,9 @@ kotlin {
                 implementation(libs.ktor.webSocket)
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
+
+                // KTX
+                implementation(libs.ktxDateTime)
 
                 // Okio
                 implementation(libs.okio.core)

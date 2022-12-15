@@ -52,6 +52,7 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 
+    @Throws(ProteusException::class, CancellationException::class)
     fun deleteSession(sessionId: CryptoSessionId)
 }
 
