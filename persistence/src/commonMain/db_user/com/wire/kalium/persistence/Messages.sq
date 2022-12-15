@@ -536,3 +536,6 @@ resetAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
+
+selectMessageVisibility:
+SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;

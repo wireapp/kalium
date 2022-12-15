@@ -65,6 +65,7 @@ interface MessageDAO {
     suspend fun resetAssetUploadStatus()
 
     suspend fun resetAssetDownloadStatus()
+    suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility>
 
     val platformExtensions: MessageExtensions
 }

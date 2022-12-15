@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -55,6 +56,11 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Flow<MessageEntity.Visibility>
 
     suspend fun updateAssetMessageUploadStatus(
         uploadStatus: Message.UploadStatus,
@@ -204,6 +210,13 @@ class MessageDataSource(
         wrapStorageRequest {
             messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
         }
+
+    override suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Flow<MessageEntity.Visibility> {
+        return messageDAO.observeMessageVisibility(messageUuid, idMapper.toDaoModel(conversationId))
+    }
 
     override suspend fun updateAssetMessageUploadStatus(
         uploadStatus: Message.UploadStatus,

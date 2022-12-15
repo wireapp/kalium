@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOne
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
@@ -182,6 +183,7 @@ class MessageDAOImpl(
         when (message.content) {
             is MessageEntityContent.MemberChange,
             is MessageEntityContent.ConversationRenamed -> message.content
+
             else -> null
         }
             ?.let {
@@ -199,10 +201,12 @@ class MessageDAOImpl(
                     .firstOrNull {
                         LocalId.check(it.id) && when (messageContent) {
                             is MessageEntityContent.MemberChange ->
-                                    messageContent.memberChangeType == it.memberChangeType &&
-                                    it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+                                messageContent.memberChangeType == it.memberChangeType &&
+                                        it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+
                             is MessageEntityContent.ConversationRenamed ->
-                                    it.conversationName == messageContent.conversationName
+                                it.conversationName == messageContent.conversationName
+
                             else -> false
                         }
                     }?.let {
@@ -339,6 +343,15 @@ class MessageDAOImpl(
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+    override suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: QualifiedIDEntity
+    ): Flow<MessageEntity.Visibility> {
+        return queries.selectMessageVisibility(messageUuid, conversationId)
+            .asFlow()
+            .mapToOne()
+            .distinctUntilChanged()
+    }
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 
