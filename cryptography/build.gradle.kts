@@ -41,6 +41,9 @@ kotlin {
                 implementation(libs.coroutines.core)
                 api(libs.ktor.core)
 
+                // KTX
+                implementation(libs.ktxDateTime)
+
                 // Okio
                 implementation(libs.okio.core)
 
