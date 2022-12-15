@@ -24,10 +24,10 @@ import org.junit.Test
 
 class MessageRepositoryExtensionsTest {
 
-    private val fakePagingSource = object : PagingSource<Long, MessageEntity>() {
-        override fun getRefreshKey(state: PagingState<Long, MessageEntity>): Long? = null
+    private val fakePagingSource = object : PagingSource<Int, MessageEntity>() {
+        override fun getRefreshKey(state: PagingState<Int, MessageEntity>): Int? = null
 
-        override suspend fun load(params: LoadParams<Long>): LoadResult<Long, MessageEntity> =
+        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MessageEntity> =
             LoadResult.Error(NotImplementedError("STUB for tests. Not implemented."))
     }
 

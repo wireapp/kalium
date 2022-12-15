@@ -47,7 +47,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
         assertEquals(MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
         // No items before the first page
@@ -73,9 +73,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
-        assertEquals(PAGE_SIZE.toLong(), result.nextKey)
+        assertEquals(PAGE_SIZE, result.nextKey)
     }
 
     @Test
@@ -83,9 +83,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         populateMessageData()
 
         val pagingSource = getPager().pagingSource
-        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE.toLong())
+        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(secondPageResult)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
 
         secondPageResult.data.forEachIndexed { index, message ->
             assertEquals((index + PAGE_SIZE).toString(), message.id)
@@ -98,11 +98,11 @@ class MessageExtensionsTest : BaseDatabaseTest() {
             pagingConfig = PagingConfig(PAGE_SIZE)
         )
 
-    private suspend fun PagingSource<Long, MessageEntity>.refresh() = load(
+    private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(
         PagingSource.LoadParams.Refresh(null, PAGE_SIZE, true)
     )
 
-    private suspend fun PagingSource<Long, MessageEntity>.nextPageForOffset(key: Long) = load(
+    private suspend fun PagingSource<Int, MessageEntity>.nextPageForOffset(key: Int) = load(
         PagingSource.LoadParams.Append(key, PAGE_SIZE, true)
     )
 
