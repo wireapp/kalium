@@ -91,6 +91,12 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
+import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
+import com.wire.kalium.logic.feature.backup.CreateBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
+import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
+import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.VerifyBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -221,6 +227,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
@@ -435,6 +442,25 @@ class UserSessionScope internal constructor(
             userStorage.database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userSearchApiWrapper
+        )
+
+    val createBackup: CreateBackupUseCase
+        get() = CreateBackupUseCaseImpl(
+            userId,
+            client.observeCurrentClientId,
+            kaliumFileSystem,
+            SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
+            kaliumConfigs.shouldEncryptData
+        )
+
+    val verifyBackupUseCase: VerifyBackupUseCase
+        get() = VerifyBackupUseCaseImpl(kaliumFileSystem)
+
+    val restoreBackup: RestoreBackupUseCase
+        get() = RestoreBackupUseCaseImpl(
+            userStorage.database.databaseImporter,
+            kaliumFileSystem,
+            userId
         )
 
     val persistMessage: PersistMessageUseCase

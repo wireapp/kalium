@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
+import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
@@ -32,7 +33,8 @@ internal actual class UserSessionScopeProviderImpl(
         val rootStoragePath = "$rootAccountPath/storage"
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
-        val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
+        val dbPath = DBFolder("$rootAccountPath/database")
+        val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         val sessionManager = SessionManagerImpl(
             globalScope.sessionRepository, userId,
             tokenStorage = globalPreferences.authTokenStorage
