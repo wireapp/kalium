@@ -2,14 +2,12 @@ package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
-import okio.BufferedSink
 import okio.HashingSink
 import okio.Sink
 import okio.Source
 import okio.blackholeSink
 import okio.buffer
 import java.security.MessageDigest
-import kotlin.io.use
 
 actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     val md = MessageDigest.getInstance("MD5")

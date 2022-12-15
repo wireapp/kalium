@@ -40,6 +40,7 @@ detekt = "1.19.0"
 agp = "7.2.2" #TODO: Upgrade to 7.3.1 - Small breaking changes with Manifest file
 dokka = "1.7.20"
 carthage = "0.0.1"
+libsodiumBindings = "0.8.5"
 protobufCodegen = "0.9.1"
 
 [plugins]
@@ -103,6 +104,7 @@ cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "javax-crypto" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
+libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
 
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
