@@ -176,6 +176,10 @@ class MessageDAOImpl(
                     //       When migrating to Kotlin 1.7, when branches must be exhaustive!
                     kaliumLogger.w("TeamMemberRemoved message insertion not handled")
                 }
+
+                is MessageEntityContent.CryptoSessionReset -> {
+                    // NOTHING TO DO
+                }
             }
         }
     }
