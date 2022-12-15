@@ -134,7 +134,7 @@ sql-android-cipher = { module = "net.zetetic:android-database-sqlcipher", versio
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
-sqldelight-androidPaging = { module = "app.cash.sqldelight:android-paging3-extensions", version.ref = "sqldelight" }
+sqldelight-androidxPaging = { module = "app.cash.sqldelight:androidx-paging3-extensions", version.ref = "sqldelight" }
 sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-jsDriver = { module = "app.cash.sqldelight:sqljs-driver", version.ref = "sqldelight" }
