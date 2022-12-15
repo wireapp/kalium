@@ -30,11 +30,11 @@ internal open class ConversationApiV2 internal constructor(
         }
 
     override suspend fun addMember(
-        request: AddConversationMembersRequest,
+        addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
     ): NetworkResponse<ConversationMemberAddedResponse> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
-            setBody(request)
+            setBody(addParticipantRequest)
         }.let { response ->
             when (response.status) {
                 HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { response }

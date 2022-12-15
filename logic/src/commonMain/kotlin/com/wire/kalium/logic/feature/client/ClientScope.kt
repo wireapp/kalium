@@ -18,9 +18,10 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
-class ClientScope(
+class ClientScope @OptIn(DelicateKaliumApi::class) constructor(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
@@ -35,6 +36,7 @@ class ClientScope(
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider
 ) {
+    @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
             isAllowedToRegisterMLSClient,

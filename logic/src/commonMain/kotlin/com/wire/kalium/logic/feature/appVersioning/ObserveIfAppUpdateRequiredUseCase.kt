@@ -12,6 +12,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +41,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val timeParser: TimeParser = TimeParserImpl()
 ) : ObserveIfAppUpdateRequiredUseCase {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = timeParser.currentTimeStamp()
         val dateForChecking = timeParser.dateMinusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
