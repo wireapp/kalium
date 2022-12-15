@@ -13,7 +13,6 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -24,10 +23,7 @@ import kotlinx.coroutines.withContext
 interface ResetSessionUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
 }
-
-// TODO unit test in next PR
 internal class ResetSessionUseCaseImpl internal constructor(
-    private val syncManager: SyncManager,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionResetSender: SessionResetSender,
     private val messageRepository: MessageRepository,
@@ -39,7 +35,6 @@ internal class ResetSessionUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId
     ): ResetSessionResult = withContext(dispatchers.io) {
-        syncManager.waitUntilLive()
         return@withContext proteusClientProvider.getOrError().fold({
             return@fold ResetSessionResult.Failure(it)
         }, { proteusClient ->
