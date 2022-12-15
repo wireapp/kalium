@@ -80,7 +80,7 @@ class ProtoContentMapperImpl(
 
             is MessageContent.Receipt -> packReceipt(readableContent)
 
-            is MessageContent.SessionReset -> GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
+            is MessageContent.ClientAction -> packClientAction()
 
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
 
@@ -146,7 +146,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
-            is GenericMessage.Content.ClientAction -> MessageContent.SessionReset
+            is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
@@ -204,6 +204,8 @@ class ProtoContentMapperImpl(
             messageId = readableContent.messageId
         )
         )
+
+    private fun packClientAction() = GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
 
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji

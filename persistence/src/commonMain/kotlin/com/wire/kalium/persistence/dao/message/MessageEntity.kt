@@ -119,7 +119,7 @@ sealed class MessageEntity(
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM
+        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET
     }
 
     enum class MemberChangeType {
@@ -145,6 +145,7 @@ sealed class MessageEntityContent {
     sealed class Regular : MessageEntityContent()
 
     sealed class System : MessageEntityContent()
+    sealed class Signaling : MessageEntityContent()
 
     data class Text(
         val messageBody: String,
@@ -236,6 +237,7 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     object MissedCall : System()
+    object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
 }
@@ -287,6 +289,7 @@ sealed class MessagePreviewEntityContent {
 
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
 
+    object CryptoSessionReset : MessagePreviewEntityContent()
     object Unknown : MessagePreviewEntityContent()
 
 }

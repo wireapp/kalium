@@ -56,7 +56,8 @@ object MessageMapper {
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
             adminName = senderName,
             count = memberChangeList.requireField("memberChangeList").size,
-            type = memberChangeType.requireField("memberChangeType"))
+            type = memberChangeType.requireField("memberChangeType")
+        )
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
@@ -64,11 +65,13 @@ object MessageMapper {
             type = AssetTypeEntity.ASSET
         )
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
-            adminName = senderName)
+            adminName = senderName
+        )
 
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+        MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
     }
 
     @Suppress("ComplexMethod")
@@ -361,6 +364,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
         }
 
         return createMessageEntity(

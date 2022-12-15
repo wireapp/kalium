@@ -17,6 +17,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions")
@@ -333,6 +334,7 @@ class MessageDAOImpl(
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
+        is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()

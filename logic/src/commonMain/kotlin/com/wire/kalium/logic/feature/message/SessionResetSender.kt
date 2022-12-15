@@ -40,7 +40,7 @@ class SessionResetSender internal constructor(
         provideClientId().flatMap { selfClientId ->
             val message = Message.Signaling(
                 id = generatedMessageUuid,
-                content = MessageContent.SessionReset,
+                content = MessageContent.ClientAction,
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,

@@ -161,6 +161,22 @@ internal class ApplicationMessageHandlerImpl(
                 logger.i(message = "Availability status update received: ${content.status}")
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
+            is MessageContent.ClientAction -> {
+                logger.i(message = "ClientAction status update received: ")
+
+                val message = Message.System(
+                    id = signaling.id,
+                    content = MessageContent.CryptoSessionReset,
+                    conversationId = signaling.conversationId,
+                    date = signaling.date,
+                    senderUserId = signaling.senderUserId,
+                    status = signaling.status,
+                    senderUserName = signaling.senderUserName
+                )
+
+                logger.i(message = "Persisting crypto session reset system message..")
+                persistMessage(message)
+            }
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)

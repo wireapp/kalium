@@ -140,6 +140,7 @@ class MessageMapperImpl(
             is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
             is MessagePreviewEntityContent.TeamMemberRemoved -> null
             is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
+            is MessagePreviewEntityContent.CryptoSessionReset -> null
             MessagePreviewEntityContent.Unknown -> null
         }
     }
@@ -249,6 +250,7 @@ class MessageMapperImpl(
             }
         }
 
+        is MessageContent.CryptoSessionReset -> MessageEntityContent.CryptoSessionReset
         is MessageContent.MissedCall -> MessageEntityContent.MissedCall
         is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
@@ -329,6 +331,7 @@ class MessageMapperImpl(
         is MessageEntityContent.MissedCall -> MessageContent.MissedCall
         is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
         is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
+        is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
     }
 }
 
@@ -358,6 +361,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
     is MessagePreviewEntityContent.TeamMemberRemoved -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
+    is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
 }
 
