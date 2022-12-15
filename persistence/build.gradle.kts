@@ -82,6 +82,7 @@ kotlin {
             dependencies {
                 implementation(libs.securityCrypto)
                 implementation(libs.sqldelight.androidDriver)
+                implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
