@@ -68,7 +68,7 @@ internal open class AssetApiV0 internal constructor(
         val channel = httpResponse.body<ByteReadChannel>()
         tempFileSink.use { sink ->
             while (!channel.isClosedForRead) {
-                val packet = channel.readRemaining(BUFFER_SIZE, 0)
+                val packet = channel.readRemaining(BUFFER_SIZE)
                 while (packet.isNotEmpty) {
                     val (bytes, size) = packet.readBytes().let { byteArray ->
                         Buffer().write(byteArray) to byteArray.size.toLong()
