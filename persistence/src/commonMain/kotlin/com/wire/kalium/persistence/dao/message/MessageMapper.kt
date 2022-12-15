@@ -24,7 +24,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?
@@ -34,8 +34,13 @@ object MessageMapper {
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
-            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
-            (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
+            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                senderName = senderName,
+                messageBody = text.requireField("text")
+            )
+            (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                senderName = senderName, messageBody = text.requireField("text")
+            )
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
@@ -90,7 +95,7 @@ object MessageMapper {
         memberChangeType: MessageEntity.MemberChangeType?,
         updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -106,7 +111,7 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType
@@ -139,7 +144,7 @@ object MessageMapper {
         memberChangeType: MessageEntity.MemberChangeType?,
         updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -155,7 +160,7 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType

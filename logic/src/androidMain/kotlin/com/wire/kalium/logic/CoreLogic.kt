@@ -67,3 +67,6 @@ actual class CoreLogic(
         )
     }
 }
+
+@Suppress("MayBeConst")
+actual val clientPlatform: String = "android"

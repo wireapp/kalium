@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
  * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
  */
 class KaliumPager<EntityType : Any>(
-    private val pager: Pager<Long, EntityType>,
-    internal val pagingSource: PagingSource<Long, EntityType>
+    private val pager: Pager<Int, EntityType>,
+    internal val pagingSource: PagingSource<Int, EntityType>
 ) {
     val pagingDataFlow: Flow<PagingData<EntityType>>
         get() = pager.flow

@@ -23,7 +23,7 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class CurrentSessionFlowUseCaseTest {
     @Mock
-    val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(classOf<SessionRepository>())
 
     lateinit var currentSessionFlowUseCase: CurrentSessionFlowUseCase
 

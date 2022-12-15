@@ -271,9 +271,9 @@ sealed class MessagePreviewEntityContent {
 
     data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
 
-    data class MentionedSelf(val senderName: String?) : MessagePreviewEntityContent()
+    data class MentionedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
-    data class QuotedSelf(val senderName: String?) : MessagePreviewEntityContent()
+    data class QuotedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
 

@@ -7,6 +7,11 @@ import kotlinx.coroutines.test.TestDispatcher
 expect open class BaseDatabaseTest() {
 
     protected val dispatcher: TestDispatcher
+
+    fun databasePath(
+        userId: UserIDEntity = DefaultDatabaseTestValues.userId
+    ): String
+
     fun deleteDatabase(
         userId: UserIDEntity = DefaultDatabaseTestValues.userId
     )

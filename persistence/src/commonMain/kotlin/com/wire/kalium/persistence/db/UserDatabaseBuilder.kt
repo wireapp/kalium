@@ -2,6 +2,8 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.backup.DatabaseImporter
+import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -101,6 +103,9 @@ class UserDatabaseBuilder internal constructor(
 
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    val databaseImporter: DatabaseImporter
+        get() = DatabaseImporterImpl(sqlDriver)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries)

@@ -5,5 +5,5 @@ import com.wire.kalium.logic.util.SecurityHelper
 
 actual class PlatformUserStorageProperties internal constructor(
     val applicationContext: Context,
-    val securityHelper: SecurityHelper
+    internal val securityHelper: SecurityHelper
 )

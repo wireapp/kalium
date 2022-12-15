@@ -193,6 +193,9 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
+            MessageContent.SessionReset -> {
+                logger.w("SessionReset message was NOT implemented before Kotlin 1.7 upgrade")
+            }
         }
     }
 

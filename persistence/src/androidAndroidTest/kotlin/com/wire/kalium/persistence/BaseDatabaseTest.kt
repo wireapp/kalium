@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -21,10 +21,17 @@ actual open class BaseDatabaseTest actual constructor() {
 
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
         return userDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            userId,
-            UserDBSecret("db_secret".toByteArray()),
+            context = ApplicationProvider.getApplicationContext(),
+            userId = userId,
+            encrypt = false,
+            passphrase = UserDBSecret("db_secret".toByteArray()),
             dispatcher = dispatcher
         )
     }
+
+    actual fun databasePath(userId: UserIDEntity): String {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
+    }
+
 }

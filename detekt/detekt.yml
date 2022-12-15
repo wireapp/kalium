@@ -33,7 +33,7 @@ console-reports:
 
 comments:
     active: true
-    excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+    excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/protobuf/**' ]
     AbsentOrWrongFileLicense:
         active: false
         licenseTemplateFile: 'license.template'
@@ -57,7 +57,7 @@ comments:
 
 complexity:
     active: true
-    excludes: [ '**/generated/pbandk/**', '**/build/generated/**' ]
+    excludes: [ '**/generated/pbandk/**', '**/build/generated/**', '**/protobuf/**' ]
     ComplexCondition:
         active: true
         threshold: 4
@@ -159,12 +159,12 @@ empty-blocks:
 
 exceptions:
     active: true
+    excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/protobuf/**' ]
     ExceptionRaisedInUnexpectedLocation:
         active: false
         methodNames: [ toString, hashCode, equals, finalize ]
     InstanceOfCheckForException:
         active: false
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
     NotImplementedDeclaration:
         active: false
     PrintStackTrace:
@@ -196,7 +196,6 @@ exceptions:
         active: false
     TooGenericExceptionCaught:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         exceptionNames:
             - ArrayIndexOutOfBoundsException
             - Error
@@ -209,7 +208,6 @@ exceptions:
         allowedExceptionNameRegex: '_|(ignore|expected).*'
     TooGenericExceptionThrown:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         exceptionNames:
             - Error
             - Exception
@@ -325,7 +323,7 @@ formatting:
 
 naming:
     active: true
-    excludes: [ '**/generated/pbandk/**', '**/build/generated/**' ]
+    excludes: [ '**/generated/pbandk/**', '**/build/generated/**', '**build/**/*.Mockative.kt', '**/build/**' ]
     ClassNaming:
         active: true
         excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]

@@ -32,11 +32,7 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
@@ -61,13 +57,20 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
+
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+
         val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)

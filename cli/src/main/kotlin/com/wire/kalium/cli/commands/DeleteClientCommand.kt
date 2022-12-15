@@ -35,6 +35,7 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
             DeleteClientResult.Failure.InvalidCredentials -> throw PrintMessage("Invalid credentials")
             DeleteClientResult.Success -> echo("Client successfully deleted")
+            DeleteClientResult.Failure.PasswordAuthRequired -> throw PrintMessage("Missing Password")
         }
     }
 }

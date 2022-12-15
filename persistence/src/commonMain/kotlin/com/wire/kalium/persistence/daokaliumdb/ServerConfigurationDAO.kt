@@ -1,12 +1,12 @@
 package com.wire.kalium.persistence.daokaliumdb
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("FunctionParameterNaming", "LongParameterList")

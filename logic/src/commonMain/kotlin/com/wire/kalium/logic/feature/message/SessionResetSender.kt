@@ -20,14 +20,18 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
-class SessionResetSender internal constructor(
+interface SessionResetSender {
+    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
+}
+
+class SessionResetSenderImpl internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) {
-    suspend operator fun invoke(
+) : SessionResetSender {
+    override suspend operator fun invoke(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId,

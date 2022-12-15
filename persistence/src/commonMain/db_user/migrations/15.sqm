@@ -111,3 +111,23 @@ LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id 
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;
+
+DROP VIEW ReceiptDetails;
+CREATE VIEW IF NOT EXISTS ReceiptDetails
+AS SELECT
+	Receipt.type,
+	Receipt.date,
+	Receipt.message_id AS messageId,
+	Receipt.conversation_id AS conversationId,
+	User.qualified_id AS userId,
+	User.name AS userName,
+	User.handle AS userHandle,
+	User.preview_asset_id AS previewAssetId,
+	User.user_type AS userType,
+	User.deleted AS isUserDeleted,
+	User.connection_status AS connectionStatus,
+	User.user_availability_status AS userAvailabilityStatus
+FROM
+	Receipt
+INNER JOIN User ON User.qualified_id = Receipt.user_id
+ORDER BY User.name;

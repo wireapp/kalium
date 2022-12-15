@@ -17,4 +17,10 @@ actual open class BaseDatabaseTest actual constructor() {
         TODO("Not yet implemented")
     }
 
+    actual fun databasePath(
+        userId: UserIDEntity
+    ): String {
+        TODO("Not yet implemented")
+    }
+
 }
