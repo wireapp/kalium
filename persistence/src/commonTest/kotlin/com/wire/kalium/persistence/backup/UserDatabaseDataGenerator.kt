@@ -26,6 +26,7 @@ class UserDatabaseDataGenerator(
 ) {
     companion object {
         const val DEFAULT_DATE_STRING = "2000-01-01T12:00:00.000Z"
+        val DEFAULT_RECEIPT_MODE = ConversationEntity.ReceiptMode.DISABLED
     }
 
     private var generatedUsersCount = 0
@@ -245,7 +246,8 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    receiptMode = DEFAULT_RECEIPT_MODE
                 )
             )
 
@@ -318,7 +320,8 @@ class UserDatabaseDataGenerator(
                 lastModifiedDate = DEFAULT_DATE_STRING,
                 lastReadDate = DEFAULT_DATE_STRING,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                receiptMode = DEFAULT_RECEIPT_MODE
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -380,7 +383,8 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    receiptMode = DEFAULT_RECEIPT_MODE
                 )
             )
 
@@ -420,7 +424,8 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    receiptMode = DEFAULT_RECEIPT_MODE
                 )
             )
 
@@ -529,7 +534,8 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    receiptMode = DEFAULT_RECEIPT_MODE
                 )
             )
 
