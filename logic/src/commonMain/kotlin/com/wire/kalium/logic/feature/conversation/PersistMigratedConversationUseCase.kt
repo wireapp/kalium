@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
@@ -27,7 +28,7 @@ fun interface PersistMigratedConversationUseCase {
 
 internal class PersistMigratedConversationUseCaseImpl(
     private val migrationDAO: MigrationDAO,
-    private val conversationMapper: ConversationMapper
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : PersistMigratedConversationUseCase {
 
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
