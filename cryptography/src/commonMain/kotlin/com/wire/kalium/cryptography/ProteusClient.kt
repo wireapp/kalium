@@ -12,6 +12,9 @@ data class PreKeyCrypto(
     val encodedData: String
 )
 @Suppress("TooManyFunctions")
+/**
+ * @sample com.wire.kalium.cryptography.basicEncryption
+ */
 interface ProteusClient {
 
     @Throws(ProteusException::class)

@@ -1,3 +1,5 @@
+import com.wire.kalium.plugins.commonDokkaConfig
+
 plugins {
     kotlin("jvm")
     application
@@ -23,6 +25,8 @@ tasks.jar {
     from(dependencies)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
+
+commonDokkaConfig()
 
 dependencies {
     implementation(project(":network"))

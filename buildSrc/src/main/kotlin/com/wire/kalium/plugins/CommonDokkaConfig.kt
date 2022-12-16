@@ -4,7 +4,6 @@ import org.gradle.api.Project
 import org.jetbrains.dokka.gradle.DokkaTask
 
 val documentedSubprojects = listOf(
-    "app",
     "calling",
     "cli",
     "cryptography",
@@ -23,12 +22,11 @@ fun Project.commonDokkaConfig() {
     tasks.withType(DokkaTask::class.java).configureEach {
         outputDirectory.set(file("build/dokka"))
 
-        dokkaSourceSets.create("common") {
+        val targetSourceSet = dokkaSourceSets.findByName("commonMain") ?: dokkaSourceSets.findByName("main")
+        targetSourceSet?.run {
             includes.from(rootProject.file("dokka/moduledoc.md").path)
+            samples.from(rootProject.file("samples/src/main/kotlin/com/wire/kalium"))
             includeNonPublic.set(true)
-            val samplesPath = project.file("src/samples/kotlin/com/wire/kalium").path
-            println("SAMPLES PATH = $samplesPath")
-            samples.from(samplesPath)
         }
     }
 }
