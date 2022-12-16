@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DelicateKaliumApi
 
 /**
@@ -25,13 +26,12 @@ internal class PersistMessageUseCaseImpl(
         val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
             message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
         } ?: (false to false)
-        return messageRepository
-            .persistMessage(
-                message = message,
-                updateConversationReadDate = isMyMessage,
-                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate
-            )
+        return messageRepository.persistMessage(
+            message = message,
+            updateConversationReadDate = isMyMessage,
+            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
+            updateConversationNotificationsDate
+        )
     }
 
     private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =

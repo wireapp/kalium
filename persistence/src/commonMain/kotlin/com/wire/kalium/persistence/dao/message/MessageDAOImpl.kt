@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.Asset
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -75,17 +76,20 @@ class MessageDAOImpl(
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            queries.insertOrIgnoreMessage(
-                id = message.id,
-                conversation_id = message.conversationId,
-                date = message.date,
-                sender_user_id = message.senderUserId,
-                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-                visibility = message.visibility,
-                status = message.status,
-                content_type = contentTypeOf(message.content),
-                expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
-            )
+            if (isAssetMessageUpdate(message)) {
+                updateAssetMessage(message)
+            } else
+                queries.insertOrIgnoreMessage(
+                    id = message.id,
+                    conversation_id = message.conversationId,
+                    date = message.date,
+                    sender_user_id = message.senderUserId,
+                    sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+                    visibility = message.visibility,
+                    status = message.status,
+                    content_type = contentTypeOf(message.content),
+                    expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
+                )
             when (val content = message.content) {
                 is MessageEntityContent.Text -> {
                     queries.insertMessageTextContent(
@@ -114,25 +118,27 @@ class MessageDAOImpl(
                     asset_name = content.assetName
                 )
 
-                is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName,
-                    asset_mime_type = content.assetMimeType,
-                    asset_upload_status = content.assetUploadStatus,
-                    asset_download_status = content.assetDownloadStatus,
-                    asset_otr_key = content.assetOtrKey,
-                    asset_sha256 = content.assetSha256Key,
-                    asset_id = content.assetId,
-                    asset_token = content.assetToken,
-                    asset_domain = content.assetDomain,
-                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
-                    asset_width = content.assetWidth,
-                    asset_height = content.assetHeight,
-                    asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness
-                )
+                is MessageEntityContent.Asset -> {
+                    queries.insertMessageAssetContent(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        asset_size = content.assetSizeInBytes,
+                        asset_name = content.assetName,
+                        asset_mime_type = content.assetMimeType,
+                        asset_upload_status = content.assetUploadStatus,
+                        asset_download_status = content.assetDownloadStatus,
+                        asset_otr_key = content.assetOtrKey,
+                        asset_sha256 = content.assetSha256Key,
+                        asset_id = content.assetId,
+                        asset_token = content.assetToken,
+                        asset_domain = content.assetDomain,
+                        asset_encryption_algorithm = content.assetEncryptionAlgorithm,
+                        asset_width = content.assetWidth,
+                        asset_height = content.assetHeight,
+                        asset_duration_ms = content.assetDurationMs,
+                        asset_normalized_loudness = content.assetNormalizedLoudness
+                    )
+                }
 
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
                     message_id = message.id,
@@ -179,6 +185,31 @@ class MessageDAOImpl(
         }
     }
 
+    private fun updateAssetMessage(message: MessageEntity) {
+        val assetMessageContent = message.content as MessageEntityContent.Asset
+        queries.updateAssetKeys(
+            assetId = assetMessageContent.assetId,
+            assetOtrKey = assetMessageContent.assetOtrKey,
+            assetSha256 = assetMessageContent.assetSha256Key,
+            visibility = message.visibility
+        )
+    }
+
+    /**
+     * Returns true if the [message] is an asset message that is already in the DB and any of its decryption keys are null/empty. This means
+     * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
+     * separated messages). Therefore it still needs to be updated with the valid keys in order to be displayed.
+     */
+    private fun isAssetMessageUpdate(message: MessageEntity): Boolean {
+        return if (message is MessageEntity.Regular && message.content is MessageEntityContent.Asset) {
+            queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
+                if (it.assetId.isNullOrEmpty() || it.assetOtrKey == null || it.assetSha256 == null) {
+                    return true
+                } else false
+            } ?: return false
+        } else false
+    }
+
     /*
         When the user leaves a group, the app generates MemberChangeType.REMOVED and saves it locally because the socket doesn't send such
         message for the author of the change, so it's generated by the app and stored with local id, but the REST request to get all events
@@ -188,40 +219,36 @@ class MessageDAOImpl(
          */
     private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
-            is MessageEntityContent.MemberChange,
-            is MessageEntityContent.ConversationRenamed -> message.content
-
+            is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed -> message.content
             else -> null
-        }
-            ?.let {
-                if (message.senderUserId == selfUserId) it else null
-            }
-            ?.let { messageContent ->
-                // Check if the message with given time and type already exists in the local DB.
-                queries.selectByConversationIdAndSenderIdAndTimeAndType(
-                    message.conversationId,
-                    message.senderUserId,
-                    message.date,
-                    contentTypeOf(messageContent)
-                )
-                    .executeAsList()
-                    .firstOrNull {
-                        LocalId.check(it.id) && when (messageContent) {
-                            is MessageEntityContent.MemberChange ->
-                                messageContent.memberChangeType == it.memberChangeType &&
-                                        it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+        }?.let {
+            if (message.senderUserId == selfUserId) it else null
+        }?.let { messageContent ->
+            // Check if the message with given time and type already exists in the local DB.
+            queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                message.conversationId,
+                message.senderUserId,
+                message.date,
+                contentTypeOf(messageContent)
+            )
+                .executeAsList()
+                .firstOrNull {
+                    LocalId.check(it.id) && when (messageContent) {
+                        is MessageEntityContent.MemberChange ->
+                            messageContent.memberChangeType == it.memberChangeType &&
+                                    it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
 
-                            is MessageEntityContent.ConversationRenamed ->
-                                it.conversationName == messageContent.conversationName
+                        is MessageEntityContent.ConversationRenamed ->
+                            it.conversationName == messageContent.conversationName
 
-                            else -> false
-                        }
-                    }?.let {
-                        // The message already exists in the local DB, if its id is different then just update id.
-                        if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
-                        true
+                        else -> false
                     }
-            } ?: false
+                }?.let {
+                    // The message already exists in the local DB, if its id is different then just update id.
+                    if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                    true
+                }
+        } ?: false
 
     override suspend fun updateAssetUploadStatus(
         uploadStatus: MessageEntity.UploadStatus,

@@ -463,6 +463,11 @@ UPDATE MessageAssetContent
 SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
+updateAssetKeys:
+UPDATE MessageDetailsView
+SET assetId = :assetId, assetOtrKey = :assetOtrKey, assetSha256 = :assetSha256, visibility = :visibility
+WHERE id = ? AND conversationId = ?;
+
 updateMessageDate:
 UPDATE Message
 SET date = ?
