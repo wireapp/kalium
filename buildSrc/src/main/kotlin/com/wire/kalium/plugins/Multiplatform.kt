@@ -1,7 +1,6 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 fun Project.configureDefaultMultiplatform(
