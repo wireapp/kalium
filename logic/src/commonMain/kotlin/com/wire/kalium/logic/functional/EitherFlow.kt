@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.wire.kalium.logic.functional
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
@@ -46,6 +49,7 @@ fun <L, R> Flow<Either<L, R>>.mapToRightOr(value: R): Flow<R> = map { it.getOrEl
  *       getUserId().flatMapRightWithEither { id -> getFriendsFroUser(id).mapRight { MeWithFriends(id, it) }}
  *
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 fun <L, R, T> Flow<Either<L, R>>.flatMapRightWithEither(block: suspend (R) -> Flow<Either<L, T>>): Flow<Either<L, T>> =
     flatMapLatest { it.fold({ l -> flowOf(Either.Left(l)) }) { r -> block(r) } }
 

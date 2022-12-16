@@ -19,20 +19,20 @@ internal object CallMapper {
         conversationType = dbEntry.conversation_type
     )
 
-    @Suppress("FunctionParameterNaming", "LongParameterList")
+    @Suppress("FunctionParameterNaming", "LongParameterList", "UNUSED_PARAMETER")
     fun fromCalls(
-        conversation_id: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
         id: String,
         status: CallEntity.Status,
-        caller_id: String,
-        conversation_type: ConversationEntity.Type,
-        created_at: String,
+        callerId: String,
+        conversationType: ConversationEntity.Type,
+        createdAt: String,
     ): CallEntity = CallEntity(
-        conversationId = conversation_id,
+        conversationId = conversationId,
         id = id,
         status = status,
-        callerId = caller_id,
-        conversationType = conversation_type
+        callerId = callerId,
+        conversationType = conversationType
     )
 }
 

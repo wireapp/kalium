@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -195,6 +196,7 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())
     }
 
+    @OptIn(FlowPreview::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->

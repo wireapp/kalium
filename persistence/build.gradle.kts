@@ -1,4 +1,3 @@
-
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.android.library.get().pluginId)
@@ -86,13 +85,6 @@ kotlin {
                 implementation(libs.paging3)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
-            }
-        }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.core)
             }
         }
 

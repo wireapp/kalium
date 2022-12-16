@@ -14,6 +14,7 @@ actual class FlowManagerServiceImpl(
     private val dispatcher: CoroutineDispatcher
 ) : FlowManagerService {
 
+    @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val flowManager: FlowManager = FlowManager(
         appContext
     ) { manager, path, method, ctype, content, ctx ->
@@ -33,9 +34,9 @@ actual class FlowManagerServiceImpl(
         })
     }
 
-    override suspend fun setVideoPreview(conversationId: ConversationId, platformView: PlatformView) {
+    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         withContext(dispatcher) {
-            flowManager.setVideoPreview(conversationId.toString(), platformView.view)
+            flowManager.setVideoPreview(conversationId.toString(), view.view)
         }
     }
 

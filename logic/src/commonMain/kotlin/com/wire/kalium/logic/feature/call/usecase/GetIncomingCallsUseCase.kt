@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -52,6 +53,7 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
             }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
         userRepository.observeSelfUser()
             .flatMapLatest {

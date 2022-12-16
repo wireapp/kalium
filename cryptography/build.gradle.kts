@@ -86,11 +86,5 @@ kotlin {
                 implementation(libs.coreCryptoAndroid)
             }
         }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-            }
-        }
     }
 }
