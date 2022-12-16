@@ -196,6 +196,10 @@ class MessageDataSource(
             }
         }
 
+    @DelicateKaliumApi(
+        message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
+        replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
+    )
     override suspend fun persistMessage(
         message: Message.Standalone,
         updateConversationReadDate: Boolean,

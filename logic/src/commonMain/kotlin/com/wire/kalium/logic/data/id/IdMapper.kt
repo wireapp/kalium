@@ -22,7 +22,7 @@ internal typealias PersistenceQualifiedId = QualifiedIDEntity
 interface IdMapper {
     fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
-    fun fromClient(clientResponse: Client): ClientId
+    fun fromClient(client: Client): ClientId
     fun fromDaoModel(persistenceId: PersistenceQualifiedId): QualifiedID
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
