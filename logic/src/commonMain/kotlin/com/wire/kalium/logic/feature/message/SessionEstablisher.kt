@@ -109,7 +109,7 @@ internal class SessionEstablisherImpl internal constructor(
 
 internal interface CryptoSessionMapper {
     fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(
-        preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+        preKeyInfoMap: Map<String, Map<String, Map<String, PreKeyDTO?>>>
     ): FilteredRecipient
 }
 

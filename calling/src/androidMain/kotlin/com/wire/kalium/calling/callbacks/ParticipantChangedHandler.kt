@@ -17,5 +17,5 @@ interface ParticipantChangedHandler : Callback {
              }
          ]
    }**/
-    fun onParticipantChanged(conversationId: String, data: String, arg: Pointer?)
+    fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?)
 }

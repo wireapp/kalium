@@ -36,4 +36,13 @@ fun Project.configureDefaultMultiplatform(
         .configure<com.android.build.gradle.LibraryExtension>("android") {
             commonAndroidLibConfig(includeNativeInterop)
         }
+
+    // Add common runner and rules to Android Instrumented Tests
+    kotlinExtension.sourceSets.getByName("androidAndroidTest") {
+        dependencies {
+            implementation(library("androidtest.core"))
+            implementation(library("androidtest.runner"))
+            implementation(library("androidtest.rules"))
+        }
+    }
 }

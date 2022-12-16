@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
@@ -110,6 +111,7 @@ internal class UserSearchApiWrapperImpl(
     // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository and SearchUserReopsitory what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
+    @OptIn(FlowPreview::class)
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()

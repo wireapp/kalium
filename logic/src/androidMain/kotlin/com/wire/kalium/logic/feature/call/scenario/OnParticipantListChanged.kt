@@ -24,13 +24,13 @@ class OnParticipantListChanged internal constructor(
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
-    override fun onParticipantChanged(remoteConversationIdString: String, data: String, arg: Pointer?) {
+    override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
 
         callingScope.launch {
             val participants = mutableListOf<Participant>()
-            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
@@ -51,7 +51,7 @@ class OnParticipantListChanged internal constructor(
             )
             callingLogger.i(
                 "[onParticipantsChanged] - Total Participants: ${participants.size}" +
-                        " | ConversationId: ${remoteConversationIdString.obfuscateId()}"
+                        " | ConversationId: ${remoteConversationId.obfuscateId()}"
             )
         }
     }
