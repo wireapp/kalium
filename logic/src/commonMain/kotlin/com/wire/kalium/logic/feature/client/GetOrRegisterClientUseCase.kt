@@ -21,7 +21,7 @@ class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        val result: RegisterClientResult? = clientRepository.retainedClientId()
+        val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(
                 {
                     if (it is CoreFailure.MissingClientRegistration) null
@@ -37,14 +37,14 @@ class GetOrRegisterClientUseCaseImpl(
                         }
                     }
                 }
-            )
+            ) ?: registerClient(registerClientParam)
 
-        return (result ?: registerClient(registerClientParam)).also { result ->
-            if (result is RegisterClientResult.Success) {
-                upgradeCurrentSessionUseCase(result.client.id).flatMap {
-                    clientRepository.persistClientId(result.client.id)
-                }
+        if (result is RegisterClientResult.Success) {
+            upgradeCurrentSessionUseCase(result.client.id).flatMap {
+                clientRepository.persistClientId(result.client.id)
             }
         }
+
+        return result
     }
 }

@@ -29,7 +29,6 @@ class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusM
             MutedConversationStatus.AllAllowed -> ConversationEntity.MutedStatus.ALL_ALLOWED
             MutedConversationStatus.OnlyMentionsAndRepliesAllowed -> ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
             MutedConversationStatus.AllMuted -> ConversationEntity.MutedStatus.ALL_MUTED
-            else -> ConversationEntity.MutedStatus.ALL_ALLOWED
         }
     }
 

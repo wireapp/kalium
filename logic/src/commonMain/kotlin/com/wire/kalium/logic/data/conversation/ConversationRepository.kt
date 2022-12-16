@@ -55,10 +55,10 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 interface ConversationRepository {
-    @DelicateKaliumApi("this function does not get values from cache")
+    @DelicateKaliumApi("This function does not get values from cache")
     suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
 
-    @DelicateKaliumApi("this function does not get values from cache")
+    @DelicateKaliumApi("This function does not get values from cache")
     suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
     suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>
@@ -286,10 +286,12 @@ internal class ConversationDataSource internal constructor(
                 }
             }
 
+    @DelicateKaliumApi("This function does not get values from cache")
     override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.PROTEUS) }
             .map { idMapper.fromDaoModel(it) }
 
+    @DelicateKaliumApi("This function does not get values from cache")
     override suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId> =
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
             .map { idMapper.fromDaoModel(it) }

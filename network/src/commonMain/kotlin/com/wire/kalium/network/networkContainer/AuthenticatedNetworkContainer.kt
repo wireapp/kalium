@@ -101,7 +101,7 @@ interface AuthenticatedNetworkContainer {
                     sessionManager
                 )
 
-                else -> throw error("Unsupported version: $version")
+                else -> error("Unsupported version: $version")
             }
         }
     }
