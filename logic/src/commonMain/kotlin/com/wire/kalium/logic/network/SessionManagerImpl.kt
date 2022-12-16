@@ -64,7 +64,7 @@ class SessionManagerImpl internal constructor(
     override fun serverConfig(): ServerConfigDTO = serverConfig.get() ?: run {
         serverConfig.set(sessionRepository.fullAccountInfo(userId)
             .map { serverConfigMapper.toDTO(it.serverConfig) }
-            .fold({ throw error("use serverConfig is missing or an error while reading local storage") }, { it })
+            .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
         )
         serverConfig.get()!!
     }

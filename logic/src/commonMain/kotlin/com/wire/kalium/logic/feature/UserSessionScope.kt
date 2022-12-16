@@ -269,8 +269,8 @@ class UserSessionScope internal constructor(
         userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
     )
 
-    // TODO: extract client id provider to it's own class and test it
     private var _clientId: ClientId? = null
+    @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
     private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
         clientRepository.currentClientId().onSuccess {
             _clientId = it
@@ -850,6 +850,7 @@ class UserSessionScope internal constructor(
     val setConnectionPolicy: SetConnectionPolicyUseCase
         get() = SetConnectionPolicyUseCase(incrementalSyncRepository)
 
+    @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
             clientRepository,

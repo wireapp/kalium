@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -7,6 +8,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(MutedStatus::class)
 class MutedStatusSerializer : KSerializer<MutedStatus?> {
     override val descriptor = PrimitiveSerialDescriptor("otr_muted_status", PrimitiveKind.INT)

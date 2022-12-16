@@ -17,12 +17,12 @@ class OnEstablishedCall(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : EstablishedCallHandler {
 
-    override fun onEstablishedCall(remoteConversationIdString: String, userId: String, clientId: String, arg: Pointer?) {
+    override fun onEstablishedCall(remoteConversationId: String, userId: String, clientId: String, arg: Pointer?) {
         callingLogger.i(
-            "[OnEstablishedCall] -> ConversationId: ${remoteConversationIdString.obfuscateId()}" +
+            "[OnEstablishedCall] -> ConversationId: ${remoteConversationId.obfuscateId()}" +
                     " | UserId: $userId | ClientId: $clientId"
         )
-        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
         scope.launch {
             callRepository.updateCallStatusById(

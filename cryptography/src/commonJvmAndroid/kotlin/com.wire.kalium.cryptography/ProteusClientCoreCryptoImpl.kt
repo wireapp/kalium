@@ -168,6 +168,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
+    @OptIn(ExperimentalUnsignedTypes::class)
     private companion object {
 
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()

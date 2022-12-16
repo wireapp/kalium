@@ -46,7 +46,7 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials
                 )
 
-                else -> throw error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
+                else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.base.authenticated.featureConfigs
 
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -74,6 +75,7 @@ data class SelfDeletingMessagesConfigDTO(
     val enforcedTimeoutSeconds: Int
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @JsonClassDiscriminator("name")
 @Serializable
 sealed class FeatureConfigData {

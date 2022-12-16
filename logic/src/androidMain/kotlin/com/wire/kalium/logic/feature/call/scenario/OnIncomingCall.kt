@@ -21,7 +21,7 @@ class OnIncomingCall(
     private val scope: CoroutineScope
 ) : IncomingCallHandler {
     override fun onIncomingCall(
-        conversationIdString: String,
+        conversationId: String,
         messageTime: Uint32_t,
         userId: String,
         clientId: String,
@@ -31,7 +31,7 @@ class OnIncomingCall(
         arg: Pointer?
     ) {
         callingLogger.i(
-            "[OnIncomingCall] -> ConversationId: ${conversationIdString.obfuscateId()}" +
+            "[OnIncomingCall] -> ConversationId: ${conversationId.obfuscateId()}" +
                     " | UserId: ${userId.obfuscateId()} | shouldRing: $shouldRing"
         )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
@@ -39,7 +39,7 @@ class OnIncomingCall(
         val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
         scope.launch {
             callRepository.createCall(
-                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString),
+                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId),
                 status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
