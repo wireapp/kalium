@@ -4,6 +4,7 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
@@ -27,18 +28,22 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import okio.Path
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 fun interface ScheduleNewAssetMessageUseCase {
     /**
@@ -82,6 +87,39 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val dispatcher: KaliumDispatcher
 ) : ScheduleNewAssetMessageUseCase {
 
+    internal class SyncExceptionHandler(
+        private val onCancellation: () -> Unit,
+        private val onFailure: (exception: CoreFailure) -> Unit
+    ) : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
+        private val logger = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC)
+
+        override fun handleException(context: CoroutineContext, exception: Throwable) {
+            when (exception) {
+                is CancellationException -> {
+                    logger.w("Sync job was cancelled", exception)
+                    onCancellation()
+                }
+
+                is KaliumSyncException -> {
+                    logger.i("SyncException during events processing", exception)
+                    onFailure(exception.coreFailureCause)
+                }
+
+                else -> {
+                    logger.i("Sync job failed due to unknown reason", exception)
+                    onFailure(CoreFailure.Unknown(exception))
+                }
+            }
+        }
+    }
+
+    private val test = SyncExceptionHandler(
+        onCancellation = {},
+        onFailure = {}
+    )
+
+    val coroutineScope = CoroutineScope(dispatcher.io)
+
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -95,56 +133,73 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             it is SlowSyncStatus.Complete
         }
 
-        return withContext(dispatcher.io) {
-            val generatedMessageId = uuid4().toString()
+        val generatedMessageId = uuid4().toString()
 
-            currentClientIdProvider().map { currentClientId ->
-                val otrKey = generateOtrKey()
+        return currentClientIdProvider().map { currentClientId ->
+            val otrKey = generateOtrKey()
 
-                val assetMessageMetaData = AssetMessageMetadata(
-                    conversationId = conversationId,
-                    mimeType = assetMimeType,
-                    assetDataPath = assetDataPath,
-                    assetDataSize = assetDataSize,
-                    assetName = assetName,
-                    assetWidth = assetWidth,
-                    assetHeight = assetHeight,
-                    otrKey = otrKey,
-                    // Sha256 will be replaced with right values after asset upload
-                    sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)),
-                    // Asset ID will be replaced with right value after asset upload
-                    assetId = UploadedAssetId("", ""),
-                )
+            val assetMessageMetaData = AssetMessageMetadata(
+                conversationId = conversationId,
+                mimeType = assetMimeType,
+                assetDataPath = assetDataPath,
+                assetDataSize = assetDataSize,
+                assetName = assetName,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                otrKey = otrKey,
+                // Sha256 will be replaced with right values after asset upload
+                sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)),
+                // Asset ID will be replaced with right value after asset upload
+                assetId = UploadedAssetId("", ""),
+            )
 
-                val message = Message.Regular(
-                    id = generatedMessageId,
-                    content = MessageContent.Asset(
-                        provideAssetMessageContent(
-                            assetMessageMetaData,
-                            // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                            Message.UploadStatus.UPLOAD_IN_PROGRESS
-                        )
-                    ),
-                    conversationId = conversationId,
-                    date = Clock.System.now().toString(),
-                    senderUserId = userId,
-                    senderClientId = currentClientId,
-                    status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited
-                )
+            val message = Message.Regular(
+                id = generatedMessageId,
+                content = MessageContent.Asset(
+                    provideAssetMessageContent(
+                        assetMessageMetaData,
+                        // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                        Message.UploadStatus.UPLOAD_IN_PROGRESS
+                    )
+                ),
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = userId,
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING,
+                editStatus = Message.EditStatus.NotEdited
+            )
 
-                message to assetMessageMetaData
-            }.flatMap { (message, assetMessageMetaData) ->
-                // We persist the asset message right away so that it can be displayed on the conversation screen loading
-                persistMessage(message).flatMap { uploadAssetAndUpdateMessage(message, conversationId, assetMessageMetaData) }
-            }.fold({ coreFailure ->
-                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
-
-                ScheduleNewAssetMessageResult.Failure(coreFailure)
-            }, {
-                ScheduleNewAssetMessageResult.Success(generatedMessageId)
-            })
-        }
+            message to assetMessageMetaData
+        }.flatMap { (message, assetMessageMetaData) ->
+            // We persist the asset message right away so that it can be displayed on the conversation screen loading
+            persistMessage(message).flatMap {
+                // start upload
+                // when deleted
+                // cancel the upload
+                // We update the asset message upload status to UPLOAD_IN_PROGRESS so that we can track the progress of the asset upload
+                try {
+                    uploadAssetAndUpdateMessage(
+                        message,
+                        conversationId,
+                        assetMessageMetaData
+                    )
+                } catch (cancellationException: CancellationException) {
+                    println(cancellationException)
+                    Either.Left(CoreFailure.Unknown(cancellationException))
+                }
+            }
+        }.fold({ coreFailure ->
+            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                .d("Failed to schedule asset message: $coreFailure")
+            ScheduleNewAssetMessageResult.Failure(coreFailure)
+        }, {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
+                "Asset message scheduled for upload"
+            )
+            ScheduleNewAssetMessageResult.Success(generatedMessageId)
+        })
     }
 
     // Generate the otr asymmetric key that will be used to encrypt the data
@@ -157,16 +212,31 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         conversationId: ConversationId,
         assetMessageMetaData: AssetMessageMetadata
     ): Either<CoreFailure, Unit> {
-        // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
-        val deferredUploadAssetResult = scope.async {
+        return withContext(scope.coroutineContext + dispatcher.io) {
+            launch {
+                messageRepository.observeMessageVisibility(message.id, conversationId)
+                    .cancellable()
+                    .collect { messageVisibility ->
+                        if (messageVisibility == MessageEntity.Visibility.DELETED) {
+                            throw CancellationException("Message was deleted")
+                        }
+                    }
+            }
+
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
             assetDataSource.uploadAndPersistPrivateAsset(
                 assetMessageMetaData.mimeType,
                 assetMessageMetaData.assetDataPath,
                 assetMessageMetaData.otrKey,
                 assetMessageMetaData.assetName.fileExtension()
             ).onFailure {
-                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                    .d("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
+                // updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
             }.flatMap { (assetId, sha256) ->
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                    .d("Successfully uploaded asset with id: $assetId")
                 // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
                 // and persist and update the message on the DB layer to display the changes on the Conversation screen
                 val updatedMessage = message.copy(
@@ -178,52 +248,61 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         )
                     )
                 )
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                    .d("Updating asset message with id: ${updatedMessage.id} with assetId: $assetId")
                 persistMessage(updatedMessage).onFailure {
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                        .d("Failed to persist message with id: ${updatedMessage.id}")
                     // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
                     kaliumLogger.e(
                         "There was an error when trying to persist the updated asset message with the information returned by the backend "
                     )
                 }.onSuccess {
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                        .d("Successfully persisted message with id: ${updatedMessage.id}")
                     // Finally we try to send the Asset Message to the recipients of the given conversation
                     prepareAndSendAssetMessage(message, conversationId)
                 }
             }
         }
-
-        val observeMessageVisibilityJob = scope.launch {
-            messageRepository.observeMessageVisibility(message.id, conversationId).cancellable()
-                .collect { messageVisibility ->
-                    if (messageVisibility == MessageEntity.Visibility.DELETED) {
-                        deferredUploadAssetResult.cancel()
-                    }
-                }
-        }
-
-        deferredUploadAssetResult.invokeOnCompletion {
-            observeMessageVisibilityJob.cancel()
-        }
-
-        return deferredUploadAssetResult.await()
     }
 
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
         message: Message.Regular,
         conversationId: ConversationId
-    ): Either<CoreFailure, Message.Regular> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
+    ): Either<CoreFailure, Message.Regular> {
+        return messageSender.sendPendingMessage(conversationId, message.id).onFailure {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
+                "Failed to send message with id: ${message.id}"
+            )
             kaliumLogger.e("There was an error when trying to send the asset on the conversation")
-        }.flatMap { Either.Right(message) }
+        }.flatMap {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
+                "Successfully sent message with id: ${message.id}"
+            )
+            Either.Right(message)
+        }
+    }
 
     @Suppress("LongParameterList")
-    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata, uploadStatus: Message.UploadStatus): AssetContent {
+    private fun provideAssetMessageContent(
+        assetMessageMetadata: AssetMessageMetadata,
+        uploadStatus: Message.UploadStatus
+    ): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
                 sizeInBytes = assetDataSize,
                 name = assetName,
                 mimeType = mimeType,
                 metadata = when {
-                    isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
+                    isDisplayableImageMimeType(mimeType) && (
+                            assetHeight.isGreaterThan(0) && (
+                                    assetWidth.isGreaterThan(
+                                        0
+                                    )
+                                    )
+                            ) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
 

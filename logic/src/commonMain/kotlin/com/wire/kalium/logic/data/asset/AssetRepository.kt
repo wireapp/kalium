@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.StorageFailure
@@ -27,6 +28,7 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
+import kotlin.coroutines.cancellation.CancellationException
 import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
@@ -122,26 +124,28 @@ internal class AssetDataSource(
         otrKey: AES256Key,
         extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
-
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading private asset")
         val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
         val assetDataSource = kaliumFileSystem.source(assetDataPath)
         val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
-
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encrypting asset")
         // Encrypt the data on the provided temp path
         val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
         val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
-
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Calculating SHA256")
         // Calculate the SHA of the encrypted data
         val sha256 = calcFileSHA256(encryptedDataSource)
         assetDataSink.close()
         encryptedDataSource.close()
-
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
         val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
-
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encryption succeeded: $encryptionSucceeded")
         return if (encryptionSucceeded) {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
             val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
             uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
         } else {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encryption failed")
             kaliumLogger.e("Something went wrong when encrypting the Asset Message")
             Either.Left(EncryptionFailure.GenericEncryptionError)
         }
@@ -153,7 +157,9 @@ internal class AssetDataSource(
         extension: String?
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset")
             wrapApiRequest {
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset wrapped")
                 val dataSource = {
                     kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
                 }
@@ -162,20 +168,30 @@ internal class AssetDataSource(
                 assetApi.uploadAsset(metaData, dataSource, uploadAssetData.dataSize)
             }
         }.flatMap { assetResponse ->
+
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset flatmapped")
             // After successful upload, we persist the asset to a persistent path
             val persistentAssetDataPath =
                 kaliumFileSystem.providePersistentAssetPath(assetName = buildFileName(assetResponse.key, extension))
 
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset flatmapped 2")
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
             kaliumFileSystem.delete(decodedDataPath)
             kaliumFileSystem.delete(uploadAssetData.tempEncryptedDataPath)
 
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset flatmapped 3")
             assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse).let { assetEntity ->
+
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading asset flatmapped 4")
                 // We need to update the persistent asset path with the decoded one
                 val decodedAssetEntity = assetEntity.copy(dataPath = persistentAssetDataPath.toString())
-
-                wrapStorageRequest { assetDao.insertAsset(decodedAssetEntity) }
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Persisting asset")
+                wrapStorageRequest {
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Persisting asset wrapped")
+                    assetDao.insertAsset(decodedAssetEntity)
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Asset persisted")
+                }
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
 
