@@ -68,7 +68,6 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val androidTest by getting
         val iosX64Main by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)

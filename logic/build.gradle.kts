@@ -76,13 +76,6 @@ kotlin {
                 implementation(libs.work)
             }
         }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.orchestratorRunner)
-            }
-        }
     }
 }
 
@@ -92,7 +85,7 @@ dependencies {
         .forEach {
             add(it.name, libs.mockative.processor)
         }
-    androidTestUtil(libs.androidtest.orchestratorUtil)
+    androidTestUtil(libs.androidtest.orchestrator)
 }
 
 ksp {
