@@ -34,7 +34,7 @@ internal class PersistMigratedConversationUseCaseImpl(
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
 
     override suspend fun invoke(conversations: List<Conversation>): Boolean {
-        return conversations.map { conversationMapper.toDaoModel(it) }.let {
+        return conversations.map { conversationMapper.fromMigrationModel(it) }.let {
             wrapStorageRequest { migrationDAO.insertConversation(it) }.fold({
                 logger.e("Error while persisting migrated conversations $it")
                 false

@@ -48,7 +48,8 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-    fun toDaoModel(conversation: Conversation): ConversationEntity
+
+    fun fromMigrationModel(conversation: Conversation): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -274,7 +275,7 @@ internal class ConversationMapperImpl(
         ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
     }
 
-    override fun toDaoModel(conversation: Conversation): ConversationEntity = with(conversation) {
+    override fun fromMigrationModel(conversation: Conversation): ConversationEntity = with(conversation) {
         ConversationEntity(
             id = idMapper.toDaoModel(conversation.id),
             name = name,
