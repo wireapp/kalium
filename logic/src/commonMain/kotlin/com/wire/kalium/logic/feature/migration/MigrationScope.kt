@@ -4,7 +4,7 @@ import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUse
 import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUseCaseImpl
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
-internal class MigrationScope(
+class MigrationScope(
     private val userDatabase: UserDatabaseBuilder
 ) {
 
