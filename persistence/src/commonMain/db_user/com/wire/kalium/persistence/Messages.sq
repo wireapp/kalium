@@ -331,7 +331,7 @@ ORDER BY message.date ASC;
 
 getUnreadMessages:
 SELECT * FROM MessagePreview AS message
-WHERE isUnread
+WHERE isUnread AND isSelfMessage = 0
 AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 deleteAllMessages:
