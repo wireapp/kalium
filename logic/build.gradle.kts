@@ -13,11 +13,6 @@ kaliumLibrary {
         enableJs.set(false)
     }
 }
-android {
-    testOptions {
-        execution = "ANDROIDX_TEST_ORCHESTRATOR"
-    }
-}
 
 kotlin {
     sourceSets {
@@ -76,13 +71,6 @@ kotlin {
                 implementation(libs.work)
             }
         }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.orchestratorRunner)
-            }
-        }
     }
 }
 
@@ -92,7 +80,6 @@ dependencies {
         .forEach {
             add(it.name, libs.mockative.processor)
         }
-    androidTestUtil(libs.androidtest.orchestratorUtil)
 }
 
 ksp {

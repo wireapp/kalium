@@ -72,7 +72,6 @@ internal class LoginUseCaseImpl internal constructor(
                     is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
                     is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                     is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-                    else -> AuthenticationResult.Failure.Generic(it)
                 }
             }, {
                 it

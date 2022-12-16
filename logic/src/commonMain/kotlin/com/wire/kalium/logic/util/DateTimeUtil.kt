@@ -5,6 +5,6 @@ import java.util.Date
 
 private val serverDateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 
-fun String.toTimeInMillis(): Long = serverDateTimeFormat.parse(this).time
+fun String.toTimeInMillis(): Long = serverDateTimeFormat.parse(this)!!.time
 
-fun Long.toStringDate() : String = serverDateTimeFormat.format(Date(this))
+fun Long.toStringDate(): String = serverDateTimeFormat.format(Date(this))

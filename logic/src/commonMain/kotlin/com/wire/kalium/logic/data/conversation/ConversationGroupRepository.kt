@@ -152,9 +152,8 @@ internal class ConversationGroupRepositoryImpl(
 
                 is Conversation.ProtocolInfo.MLS -> {
                     if (userId == selfUserId) {
-                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap { result ->
+                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
                             mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
-                                .map { result }
                         }
                     } else {
                         // when removing a member from an MLS group, don't need to call the api

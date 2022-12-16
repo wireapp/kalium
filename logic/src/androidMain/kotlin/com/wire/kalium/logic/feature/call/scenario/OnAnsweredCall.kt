@@ -15,9 +15,9 @@ class OnAnsweredCall(
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : AnsweredCallHandler {
-    override fun onAnsweredCall(remoteConversationIdString: String, arg: Pointer?) {
-        callingLogger.i("[OnAnsweredCall] -> ConversationId: $remoteConversationIdString")
-        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+    override fun onAnsweredCall(conversationId: String, arg: Pointer?) {
+        callingLogger.i("[OnAnsweredCall] -> ConversationId: $conversationId")
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
             callRepository.updateCallStatusById(

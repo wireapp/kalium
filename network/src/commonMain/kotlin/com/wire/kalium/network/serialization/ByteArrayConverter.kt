@@ -14,16 +14,15 @@ import io.ktor.utils.io.charsets.Charset
  * A ContentConverter which does nothing, it simply passes byte arrays through as they are. This is useful
  * if you want to register your own custom binary content type with the ContentNegotiation plugin.
  */
-class ByteArrayConverter: ContentConverter {
+class ByteArrayConverter : ContentConverter {
 
     override suspend fun deserialize(charset: Charset, typeInfo: TypeInfo, content: ByteReadChannel): Any? {
         return content.toByteArray()
     }
 
-    override suspend fun serialize(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any): OutgoingContent? {
+    override suspend fun serializeNullable(contentType: ContentType, charset: Charset, typeInfo: TypeInfo, value: Any?): OutgoingContent? {
         return ByteArrayContent(value as ByteArray, contentType)
     }
-
 }
 
 public val ContentType.Message.Mls: ContentType

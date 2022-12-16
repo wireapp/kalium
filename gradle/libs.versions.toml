@@ -16,11 +16,11 @@ okio = "3.2.0"
 ok-http = "4.9.3"
 mockative = "1.2.6"
 android-work = "2.7.1"
-android-test-tunner = "1.4.0"
+android-test-runner = "1.5.0"
 android-test-rules = "1.4.0"
 android-test-core = "1.4.0"
 androidx-arch = "2.1.0"
-androidx-orchestrator = "1.1.0"
+androidx-test-orchestrator = "1.4.2"
 androidx-sqlite = "2.0.1"
 benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
@@ -40,7 +40,7 @@ detekt = "1.19.0"
 agp = "7.3.1"
 dokka = "1.7.20"
 carthage = "0.0.1"
-libsodiumBindings = "0.8.5"
+libsodiumBindings = "0.8.7"
 protobufCodegen = "0.9.1"
 
 [plugins]
@@ -87,12 +87,11 @@ settings-kmp = { module = "com.russhwolf:multiplatform-settings", version.ref = 
 settings-kmpTest = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
 
 # android testing
-androidtest-runner = { module = "androidx.test:runner", version.ref = "android-test-tunner" }
+androidtest-runner = { module = "androidx.test:runner", version.ref = "android-test-runner" }
 androidtest-rules = { module = "androidx.test:rules", version.ref = "android-test-rules" }
 androidtest-core = { module = "androidx.test:core", version.ref = "android-test-core" }
 androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
-androidtest-orchestratorRunner = { module = "androidx.test:runner", version.ref = "androidx-orchestrator" }
-androidtest-orchestratorUtil = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
+androidtest-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
 
 # coroutines
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
