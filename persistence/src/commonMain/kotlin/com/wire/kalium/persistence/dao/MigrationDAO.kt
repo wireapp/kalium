@@ -8,7 +8,7 @@ interface MigrationDAO {
 
 internal class MigrationDAOImpl(
     private val conversationsQueries: ConversationsQueries
-): MigrationDAO {
+) : MigrationDAO {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
         conversationsQueries.transaction {
             conversationList.forEach {
