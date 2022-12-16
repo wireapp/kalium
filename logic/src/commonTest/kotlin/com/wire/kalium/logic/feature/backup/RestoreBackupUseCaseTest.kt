@@ -27,13 +27,19 @@ import kotlinx.datetime.toLocalDateTime
 import okio.Path
 import okio.buffer
 import okio.use
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreBackupUseCaseTest {
 
-    private val fakeFileSystem = FakeKaliumFileSystem()
+    private lateinit var fakeFileSystem: FakeKaliumFileSystem
+
+    @BeforeTest
+    fun setup() {
+        fakeFileSystem =  FakeKaliumFileSystem()
+    }
 
     @Test
     fun givenACorrectNonEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredSuccessfully() = runTest {
