@@ -20,7 +20,6 @@ object MessageMapper {
     private fun toMessagePreviewEntityContent(
         contentType: MessageEntity.ContentType,
         senderName: String?,
-        selfUserId: QualifiedIDEntity?,
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -55,7 +54,8 @@ object MessageMapper {
                     it.contains("audio/") -> AssetTypeEntity.AUDIO
                     else -> AssetTypeEntity.FILE
                 }
-            } ?: AssetTypeEntity.FILE)
+            } ?: AssetTypeEntity.FILE
+        )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
@@ -76,9 +76,10 @@ object MessageMapper {
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+        MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "UNUSED_PARAMETER")
     fun toPreviewEntity(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -106,7 +107,6 @@ object MessageMapper {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
             senderName = senderName,
-            selfUserId = selfUserId,
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
@@ -127,7 +127,7 @@ object MessageMapper {
 
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "UNUSED_PARAMETER")
     fun toNotificationEntity(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -155,7 +155,6 @@ object MessageMapper {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
             senderName = senderName,
-            selfUserId = selfUserId,
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
@@ -228,7 +227,7 @@ object MessageMapper {
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-    @Suppress("LongMethod", "ComplexMethod")
+    @Suppress("LongMethod", "ComplexMethod", "UNUSED_PARAMETER")
     fun toEntityMessageFromView(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -368,6 +367,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
         }
 
         return createMessageEntity(

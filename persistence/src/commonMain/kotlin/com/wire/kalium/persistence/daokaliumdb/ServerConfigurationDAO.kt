@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Suppress("FunctionParameterNaming", "LongParameterList")
 internal object ServerConfigMapper {
 
+    @Suppress("UNUSED_PARAMETER")
     fun fromServerConfiguration(
         id: String,
         title: String,
