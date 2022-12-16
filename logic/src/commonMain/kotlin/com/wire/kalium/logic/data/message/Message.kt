@@ -138,8 +138,8 @@ sealed interface Message {
                     typeKey to "calling"
                 )
 
-                is MessageContent.SessionReset -> mutableMapOf(
-                    typeKey to "sessionReset"
+                is MessageContent.ClientAction -> mutableMapOf(
+                    typeKey to "clientAction"
                 )
 
                 is MessageContent.DeleteMessage -> mutableMapOf(
@@ -230,6 +230,9 @@ sealed interface Message {
 
                 is MessageContent.TeamMemberRemoved -> mutableMapOf(
                     typeKey to "teamMemberRemoved"
+                )
+                is MessageContent.CryptoSessionReset -> mutableMapOf(
+                    typeKey to "cryptoSessionReset"
                 )
             }
 

@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
@@ -175,6 +176,10 @@ class MessageDAOImpl(
                     // TODO: What needs to be done here?
                     //       When migrating to Kotlin 1.7, when branches must be exhaustive!
                     kaliumLogger.w("TeamMemberRemoved message insertion not handled")
+                }
+
+                is MessageEntityContent.CryptoSessionReset -> {
+                    // NOTHING TO DO
                 }
             }
         }
@@ -343,6 +348,7 @@ class MessageDAOImpl(
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
+        is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
