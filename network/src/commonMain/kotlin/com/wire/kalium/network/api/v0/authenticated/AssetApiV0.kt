@@ -16,6 +16,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -41,34 +42,12 @@ internal open class AssetApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> =
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> = runCatching {
         httpClient.prepareGet(buildAssetsPath(assetId)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
-                try {
-                    val channel = httpResponse.body<ByteReadChannel>()
-                    tempFileSink.use { sink ->
-                        while (!channel.isClosedForRead) {
-                            val packet = channel.readRemaining(BUFFER_SIZE)
-                            while (packet.isNotEmpty) {
-                                val (bytes, size) = packet.readBytes().let { byteArray ->
-                                    Buffer().write(byteArray) to byteArray.size.toLong()
-                                }
-                                sink.write(bytes, size).also {
-                                    bytes.clear()
-                                    sink.flush()
-                                }
-                            }
-                        }
-                        channel.cancel()
-                        sink.close()
-                    }
-                    NetworkResponse.Success(Unit, httpResponse)
-                } catch (e: Exception) {
-                    NetworkResponse.Error(KaliumException.GenericError(e))
-                }
+                handleAssetContentDownload(httpResponse, tempFileSink)
             } else {
                 handleUnsuccessfulResponse(httpResponse).also {
                     if (it.kException is KaliumException.InvalidRequestError &&
@@ -79,6 +58,34 @@ internal open class AssetApiV0 internal constructor(
                 }
             }
         }
+    }.getOrElse { unhandledException ->
+        // since we are handling manually our network exceptions for this endpoint, handle ie: no host exception
+        NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+    }
+
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
+    private suspend fun handleAssetContentDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {
+        val channel = httpResponse.body<ByteReadChannel>()
+        tempFileSink.use { sink ->
+            while (!channel.isClosedForRead) {
+                val packet = channel.readRemaining(BUFFER_SIZE)
+                while (packet.isNotEmpty) {
+                    val (bytes, size) = packet.readBytes().let { byteArray ->
+                        Buffer().write(byteArray) to byteArray.size.toLong()
+                    }
+                    sink.write(bytes, size).also {
+                        bytes.clear()
+                        sink.flush()
+                    }
+                }
+            }
+            channel.cancel()
+            sink.close()
+        }
+        NetworkResponse.Success(Unit, httpResponse)
+    } catch (e: Exception) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
 
     /**
      * Build path for assets endpoint download.
