@@ -76,6 +76,7 @@ object MessageMapper {
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+        MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -366,6 +367,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
         }
 
         return createMessageEntity(

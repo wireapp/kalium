@@ -47,7 +47,7 @@ sealed class MessageContent {
      *
      * Examples: [Receipt], [Reaction], [DeleteMessage],
      * [DeleteForMe], [TextEdited], [UserAvailabilityStatus],
-     * [Calling], crypto session reset, etc.
+     * [Calling], [ClientAction] etc.
      */
     sealed class Signaling : FromProto()
 
@@ -193,7 +193,9 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
-    object SessionReset : Signaling()
+    object ClientAction : Signaling()
+
+    object CryptoSessionReset : System()
 }
 
 sealed class MessagePreviewContent {
@@ -227,6 +229,8 @@ sealed class MessagePreviewContent {
         data class MissedCall(override val username: String?) : WithUser(username)
 
     }
+
+    object CryptoSessionReset : MessagePreviewContent()
 
     object Unknown : MessagePreviewContent()
 
