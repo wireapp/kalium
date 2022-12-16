@@ -51,6 +51,10 @@ last_read_date = last_read_date,
 mls_last_keying_material_update  = excluded.mls_last_keying_material_update,
 mls_cipher_suite = excluded.mls_cipher_suite;
 
+insertMigrationOnly:
+INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);
+
 updateConversation:
 UPDATE Conversation
 SET name = ?, type = ?, team_id = ?

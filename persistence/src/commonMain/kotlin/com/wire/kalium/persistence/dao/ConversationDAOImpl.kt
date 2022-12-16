@@ -133,9 +133,9 @@ class MemberMapper {
     }
 }
 
-private const val MLS_DEFAULT_EPOCH = 0L
-private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
-private val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+internal const val MLS_DEFAULT_EPOCH = 0L
+internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
 // TODO: Refactor. We can split this into smaller DAOs.
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
