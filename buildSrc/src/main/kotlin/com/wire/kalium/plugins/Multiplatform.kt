@@ -45,4 +45,6 @@ fun Project.configureDefaultMultiplatform(
             implementation(library("androidtest.rules"))
         }
     }
+
+    commonDokkaConfig()
 }

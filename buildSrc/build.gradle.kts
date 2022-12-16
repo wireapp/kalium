@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation(libs.kotlin.plugin)
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
     implementation("com.android.tools.build:gradle:${libs.versions.agp.get()}")
 }
 

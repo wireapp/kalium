@@ -29,8 +29,7 @@ repositories {
 }
 
 plugins {
-    val dokkaVersion = "1.7.20"
-    id("org.jetbrains.dokka") version dokkaVersion
+    id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
 }
@@ -99,4 +98,3 @@ tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
 tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
 
 apply(from = "$rootDir/gradle/detekt.gradle")
-apply(from = "$rootDir/gradle/dokka.gradle")
