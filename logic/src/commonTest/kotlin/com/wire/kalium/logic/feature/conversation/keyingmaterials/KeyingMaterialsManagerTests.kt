@@ -55,6 +55,7 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
                 .withTimestampKeyCheck(false)
                 .arrange()
