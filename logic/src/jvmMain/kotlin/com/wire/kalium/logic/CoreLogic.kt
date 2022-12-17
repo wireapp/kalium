@@ -14,7 +14,7 @@ import kotlinx.coroutines.cancel
 import java.io.File
 
 /**
- * @sample com.wire.kalium.logic.loginSample
+ * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
 actual class CoreLogic(
     clientLabel: String,

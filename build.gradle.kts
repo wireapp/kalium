@@ -1,4 +1,3 @@
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
@@ -89,12 +88,8 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
 }
 
-tasks.create("dokkaClean") {
-    group = "documentation"
-    project.delete(file("build/dokka"))
+tasks.dokkaHtmlMultiModule.configure {
+    outputDirectory.set(buildDir.resolve("dokka"))
 }
-
-tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
-tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
 
 apply(from = "$rootDir/gradle/detekt.gradle")

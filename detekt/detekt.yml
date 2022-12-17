@@ -519,7 +519,7 @@ style:
         maxJumpCount: 1
     MagicNumber:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' , '**/samples/src/**']
         ignoreNumbers: [ '-1', '0', '1', '2' ]
         ignoreAnnotated: [ 'Compose', 'Stable', 'Composable' ]
         ignoreHashCodeFunction: true

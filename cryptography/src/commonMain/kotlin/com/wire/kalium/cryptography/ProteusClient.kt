@@ -13,7 +13,7 @@ data class PreKeyCrypto(
 )
 @Suppress("TooManyFunctions")
 /**
- * @sample com.wire.kalium.cryptography.basicEncryption
+ * @sample samples.cryptography.ProteusClient.basicEncryption
  */
 interface ProteusClient {
 

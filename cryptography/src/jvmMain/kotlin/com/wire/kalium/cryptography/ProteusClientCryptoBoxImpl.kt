@@ -7,6 +7,9 @@ import java.io.File
 import java.util.Base64
 
 @Suppress("TooManyFunctions")
+/**
+ *
+ */
 class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String

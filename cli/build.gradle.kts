@@ -6,11 +6,11 @@ plugins {
 }
 val mainFunctionClassName = "com.wire.kalium.cli.CLIApplicationKt"
 
-application{
+application {
     mainClass.set(mainFunctionClassName)
 }
 
-tasks.named("run", JavaExec::class){
+tasks.named("run", JavaExec::class) {
     isIgnoreExitValue = true
     standardInput = System.`in`
     standardOutput = System.out
