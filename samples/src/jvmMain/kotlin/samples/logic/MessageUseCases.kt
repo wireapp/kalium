@@ -11,6 +11,7 @@ object MessageUseCases {
         sendTextMessageUseCase: SendTextMessageUseCase,
         conversationId: ConversationId
     ) {
+        // Sending a simple text message
         sendTextMessageUseCase.invoke(
             conversationId = conversationId,
             text = "Hello"
@@ -22,10 +23,16 @@ object MessageUseCases {
         conversationId: ConversationId,
         johnUserId: UserId
     ) {
-        val johnMention = MessageMention(8, 5, johnUserId)
+        // Sending a text message with mention
+        val text = "Hello, @John"
+        val johnMention = MessageMention(
+            start = 8, // The index of the @ in the text above
+            length = 5, // The length of the mention (including the @)
+            userId = johnUserId // ID of the user being mentioned
+        )
         sendTextMessageUseCase.invoke(
             conversationId = conversationId,
-            text = "Hello, @John",
+            text = text,
             mentions = listOf(johnMention)
         )
     }
