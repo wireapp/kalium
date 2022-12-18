@@ -462,6 +462,7 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            messageDAO = userStorage.database.messageDAO,
             kaliumFileSystem = kaliumFileSystem
         )
 
@@ -944,8 +945,8 @@ class UserSessionScope internal constructor(
         private val logger = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC)
 
         override fun handleException(context: CoroutineContext, exception: Throwable) {
-                    logger.w("Sync job was cancelled", exception)
-            }
+            logger.w("Sync job was cancelled", exception)
+        }
     }
 
     val test = SyncExceptionHandler()

@@ -13,6 +13,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import okio.Source
+import kotlin.coroutines.coroutineContext
 
 internal open class AssetApiV2 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -29,7 +30,7 @@ internal open class AssetApiV2 internal constructor(
         wrapKaliumResponse {
             httpClient.post(PATH_ASSETS) {
                 contentType(ContentType.MultiPart.Mixed)
-                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
+                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource, coroutineContext))
             }
         }
 

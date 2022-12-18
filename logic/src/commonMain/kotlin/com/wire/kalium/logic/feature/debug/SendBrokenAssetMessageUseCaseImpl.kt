@@ -1,4 +1,5 @@
 @file:Suppress("MaximumLineLength")
+
 package com.wire.kalium.logic.feature.debug
 
 import com.benasher44.uuid.uuid4
@@ -127,10 +128,10 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
-            currentAssetMessageContent.mimeType,
-            currentAssetMessageContent.assetDataPath,
-            currentAssetMessageContent.otrKey,
-            currentAssetMessageContent.assetName.fileExtension()
+            mimeType = currentAssetMessageContent.mimeType,
+            assetDataPath = currentAssetMessageContent.assetDataPath,
+            otrKey = currentAssetMessageContent.otrKey,
+            extension = currentAssetMessageContent.assetName.fileExtension()
         ).flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)

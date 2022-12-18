@@ -9,7 +9,9 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.di.MapperProvider
@@ -23,7 +25,16 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
@@ -54,6 +65,8 @@ interface AssetRepository {
      * the encrypted asset if successful
      */
     suspend fun uploadAndPersistPrivateAsset(
+        message: String? = null,
+        conversationId: ConversationId? = null,
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
@@ -104,6 +117,7 @@ interface AssetRepository {
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
+    private val messageDAO: MessageDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val kaliumFileSystem: KaliumFileSystem,
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -118,35 +132,74 @@ internal class AssetDataSource(
         return uploadAndPersistAsset(uploadAssetData, assetDataPath, null)
     }
 
+    val test = CoroutineExceptionHandler { coroutineContext, throwable ->
+        println("test")
+    }
+
     override suspend fun uploadAndPersistPrivateAsset(
+        message: String?,
+        conversationId: ConversationId?,
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
         extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading private asset")
-        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
-        val assetDataSource = kaliumFileSystem.source(assetDataPath)
-        val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encrypting asset")
-        // Encrypt the data on the provided temp path
-        val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
-        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Calculating SHA256")
-        // Calculate the SHA of the encrypted data
-        val sha256 = calcFileSHA256(encryptedDataSource)
-        assetDataSink.close()
-        encryptedDataSource.close()
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
-        val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encryption succeeded: $encryptionSucceeded")
-        return if (encryptionSucceeded) {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
-            val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
-            uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
+        return if (message != null && conversationId != null) {
+            try {
+                supervisorScope {
+                    val parentJob = Job()
+
+                    launch(parentJob + test) {
+                        try {
+                            messageDAO.observeMessageVisibility(message, idMapper.toDaoModel(conversationId))
+                                .collect { messageVisibility ->
+                                    currentCoroutineContext().ensureActive()
+                                    if (messageVisibility == MessageEntity.Visibility.DELETED) {
+                                        if (parentJob.isActive) {
+                                            parentJob.cancel()
+                                        }
+                                    }
+                                }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            println(e)
+                        }
+                    }
+
+                    withContext(parentJob) {
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading private asset")
+                        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
+                        val assetDataSource = kaliumFileSystem.source(assetDataPath)
+                        val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encrypting asset")
+                        // Encrypt the data on the provided temp path
+                        val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
+                        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Calculating SHA256")
+                        // Calculate the SHA of the encrypted data
+                        val sha256 = calcFileSHA256(encryptedDataSource)
+                        assetDataSink.close()
+                        encryptedDataSource.close()
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
+                        val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                            .d("Encryption succeeded: $encryptionSucceeded")
+                        if (encryptionSucceeded) {
+                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Uploading encrypted asset")
+                            val uploadAssetData =
+                                UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
+                            uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
+                        } else {
+                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encryption failed")
+                            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
+                            Either.Left(EncryptionFailure.GenericEncryptionError)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                println(e)
+                Either.Left(EncryptionFailure.GenericEncryptionError)
+            }
         } else {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d("Encryption failed")
-            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
             Either.Left(EncryptionFailure.GenericEncryptionError)
         }
     }

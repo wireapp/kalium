@@ -75,14 +75,17 @@ class DeleteMessageUseCase internal constructor(
 
     private suspend fun deleteMessageAsset(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-
-            assetRepository.deleteAsset(
-                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
-                assetToRemove.assetToken
-            )
-                .onFailure {
-                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                }
+            try {
+                assetRepository.deleteAsset(
+                    AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                    assetToRemove.assetToken
+                )
+                    .onFailure {
+                        kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                    }
+            } catch (e: Exception) {
+                kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $e")
+            }
         }
     }
 }

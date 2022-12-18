@@ -201,19 +201,19 @@ public class KaliumKtorCustomLogging private constructor(
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
-
-        val charset = content.contentType?.charset() ?: Charsets.UTF_8
-
-        val channel = ByteChannel()
-        GlobalScope.launch(Dispatchers.Unconfined) {
-            val text = channel.tryReadText(charset) ?: "\"request body omitted\""
-            kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
-        }
-
-        return content.observe(channel)
-    }
+//     @OptIn(DelicateCoroutinesApi::class)
+//     private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
+//
+//         val charset = content.contentType?.charset() ?: Charsets.UTF_8
+//
+//         val channel = ByteChannel()
+//         GlobalScope.launch(Dispatchers.Unconfined) {
+//             val text = channel.tryReadText(charset) ?: "\"request body omitted\""
+//             kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
+//         }
+//
+//         return content.observe(channel)
+//     }
 
     public companion object : HttpClientPlugin<Config, KaliumKtorCustomLogging> {
         override val key: AttributeKey<KaliumKtorCustomLogging> = AttributeKey("ClientLogging")

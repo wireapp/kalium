@@ -30,10 +30,21 @@ import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.writeStringUtf8
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import okio.Buffer
+import okio.IOException
 import okio.Sink
 import okio.Source
 import okio.use
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 internal open class AssetApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -93,13 +104,14 @@ internal open class AssetApiV0 internal constructor(
         metadata: AssetMetadataRequest,
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long
-    ): NetworkResponse<AssetResponse> =
-        wrapKaliumResponse {
+    ): NetworkResponse<AssetResponse> {
+        return wrapKaliumResponse {
             httpClient.post(PATH_PUBLIC_ASSETS_V3) {
                 contentType(ContentType.MultiPart.Mixed)
-                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
+                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource, coroutineContext))
             }
         }
+    }
 
     override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Unit> =
         wrapKaliumResponse {
@@ -119,7 +131,17 @@ internal class StreamAssetContent internal constructor(
     private val metadata: AssetMetadataRequest,
     private val encryptedDataSize: Long,
     private val fileContentStream: () -> Source,
-) : OutgoingContent.WriteChannelContent() {
+    callContext: CoroutineContext,
+) : OutgoingContent.WriteChannelContent(), CoroutineScope {
+
+
+    private val test = CoroutineExceptionHandler() { _, throwable ->
+        println("test")
+    }
+
+    private val producerJob = Job(callContext[Job])
+    override val coroutineContext: CoroutineContext = callContext + producerJob + test
+
     private val openingData: String by lazy {
         val body = StringBuilder()
 
@@ -151,17 +173,37 @@ internal class StreamAssetContent internal constructor(
     private val closingArray = "\r\n--frontier--\r\n"
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        channel.writeStringUtf8(openingData)
-        val contentBuffer = Buffer()
-        val fileContentStream = fileContentStream()
-        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
-            contentBuffer.readByteArray().let { content ->
-                channel.writePacket(ByteReadPacket(content))
+        coroutineScope {
+            launch {
+                println("Is job active ?  $coroutineContext.job.isActive")
+                coroutineContext.job.invokeOnCompletion {
+                    println("Is job active ?  ")
+                }
+                while (!channel.isClosedForWrite && producerJob.isActive) {
+                    try {
+                        channel.writeStringUtf8(openingData)
+                        val contentBuffer = Buffer()
+                        val fileContentStream = fileContentStream()
+                        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
+                            contentBuffer.readByteArray().let { content ->
+                                channel.writePacket(ByteReadPacket(content))
+                            }
+                        }
+                        channel.writeStringUtf8(closingArray)
+                        channel.flush()
+                        channel.close()
+                    } catch (e: Exception) {
+                        channel.flush()
+                        channel.close()
+                        producerJob.completeExceptionally(e)
+                        throw IOException(e.message)
+                        e.printStackTrace()
+                    } finally {
+                        producerJob.complete()
+                    }
+                }
             }
         }
-        channel.writeStringUtf8(closingArray)
-        channel.flush()
-        channel.close()
     }
 }
 
