@@ -115,6 +115,24 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
     }
 
+    // TODO REMOVE ME AFTER TRYING NEW TEST REPORTER
+    @Test
+    fun givenBobSendsHi_whenAliceReceivesIt_thenItShouldReadHi() = runTest {
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        aliceClient.openOrCreate()
+
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        bobClient.openOrCreate()
+
+        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val originalMessage = "Hi"
+        val encryptedMessage1 = bobClient.encryptWithPreKey(originalMessage.encodeToByteArray(), aliceKey, aliceSessionId)
+        val resultData = aliceClient.decrypt(encryptedMessage1, bobSessionId)
+        val result = resultData.decodeToString()
+
+        assertEquals("Hello", result)
+    }
+
     companion object {
         val PROTEUS_DB_SECRET = ProteusDBSecret("secret")
     }
