@@ -12,6 +12,9 @@ data class PreKeyCrypto(
     val encodedData: String
 )
 @Suppress("TooManyFunctions")
+/**
+ * @sample samples.cryptography.ProteusClient.basicEncryption
+ */
 interface ProteusClient {
 
     @Throws(ProteusException::class)

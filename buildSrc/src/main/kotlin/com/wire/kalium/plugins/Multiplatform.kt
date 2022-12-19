@@ -3,6 +3,14 @@ package com.wire.kalium.plugins
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
+/**
+ * Applies the base configurations for a multiplatform module, including:
+ * - Toggling of target platforms
+ * - Basic Android settings, with SDK versions and Instrumentation Testing
+ * - Dokka settings for documentation
+ *
+ * @see commonDokkaConfig
+ */
 fun Project.configureDefaultMultiplatform(
     enableiOS: Boolean,
     enableJs: Boolean,
@@ -45,4 +53,6 @@ fun Project.configureDefaultMultiplatform(
             implementation(library("androidtest.rules"))
         }
     }
+
+    commonDokkaConfig()
 }
