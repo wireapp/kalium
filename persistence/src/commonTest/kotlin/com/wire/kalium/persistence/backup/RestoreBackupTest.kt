@@ -554,7 +554,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 lastModifiedDate = lastModifiedDate ?: "",
                 lastReadDate = lastReadDate,
                 access = accessList,
-                accessRole = accessRoleList
+                accessRole = accessRoleList,
+                receiptMode = receiptMode
             )
         }
     }
@@ -587,7 +588,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
                 lastReadDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                receiptMode = ConversationEntity.ReceiptMode.DISABLED
             )
 
             conversationAdded.add(overlappingConversation)

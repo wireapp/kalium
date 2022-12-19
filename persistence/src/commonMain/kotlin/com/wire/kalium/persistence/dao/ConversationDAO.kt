@@ -21,7 +21,8 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val receiptMode: ReceiptMode
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -32,6 +33,7 @@ data class ConversationEntity(
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
     enum class Protocol { PROTEUS, MLS }
+    enum class ReceiptMode { DISABLED, ENABLED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
@@ -96,7 +98,8 @@ data class ConversationViewEntity(
     val mlsProposalTimer: String?,
     val mutedTime: Long,
     val creatorId: String,
-    val removedBy: UserIDEntity? = null, // TODO how to calculate?
+    val removedBy: UserIDEntity? = null, // TODO how to calculate?,
+    val receiptMode: ConversationEntity.ReceiptMode
 ) {
     val isMember: Boolean get() = selfRole != null
 }
@@ -176,5 +179,6 @@ interface ConversationDAO {
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
+    suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
 
 }
