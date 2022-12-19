@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
@@ -15,7 +15,6 @@ interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
-@OptIn(DelicateKaliumApi::class)
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository
@@ -27,7 +26,6 @@ internal class PersistMessageUseCaseImpl(
 
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
 
-        @OptIn(DelicateKaliumApi::class)
         return messageRepository
             .persistMessage(
                 message = modifiedMessage,
