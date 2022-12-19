@@ -53,7 +53,7 @@ class MessageDAOImpl(
 
             insertInDB(message)
 
-            if (queries.needsToBeNotified(message.id).executeAsOne() == 0L) {
+            if (queries.needsToBeNotified(message.id, message.conversationId).executeAsOne() == 0L) {
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
             }
 

@@ -318,7 +318,7 @@ WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, isOne
 SELECT isSelfMessage,
  IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
 	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
-	 (conversationType == 'ONE_ON_ONE') AS isOneOnOne, mutedStatus  FROM MessagePreview WHERE id = ?)
+	 (conversationType == 'ONE_ON_ONE') AS isOneOnOne, mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
 SELECT (
     CASE mutedStatus
     WHEN 'ALL_MUTED' THEN 0
