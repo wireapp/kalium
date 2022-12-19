@@ -1,8 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -10,6 +8,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
@@ -22,7 +21,6 @@ import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
@@ -46,8 +44,7 @@ class MessageDAOImpl(
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
-        updateConversationModifiedDate: Boolean,
-        updateConversationNotificationsDate: Boolean
+        updateConversationModifiedDate: Boolean
     ) {
         queries.transaction {
             if (updateConversationReadDate) {
@@ -56,11 +53,12 @@ class MessageDAOImpl(
 
             insertInDB(message)
 
+            if (queries.needsToBeNotified(message.id, message.conversationId).executeAsOne() == 0L) {
+                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+            }
+
             if (updateConversationModifiedDate) {
                 conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
-            }
-            if (updateConversationNotificationsDate) {
-                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
             }
         }
     }
