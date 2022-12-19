@@ -78,10 +78,10 @@ jobs:
                   path: ./**/build/reports/tests/**
 
             - name: Publish Unit Test Results
-              uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
+              uses: mikepenz/action-junit-report@v3
               if: always()
               with:
-                  files: |
+                  report_paths: |
                       **/build/test-results/**/*.xml
                       **/build/outputs/androidTest-results/**/*.xml
 
