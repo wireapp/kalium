@@ -4,7 +4,6 @@ import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.OkHttpClient
 import java.net.Authenticator
 import java.net.InetSocketAddress
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?
-): HttpClientEngine = OkHttp.create {
+): HttpClientEngine = KaliumHttpEngine.create {
     // OkHttp doesn't support configuring ping intervals dynamically,
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
