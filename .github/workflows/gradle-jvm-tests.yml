@@ -68,6 +68,9 @@ jobs:
         if: always()
         with:
           report_paths: '**/build/test-results/**/*.xml'
+        env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Test Report
         uses: codecov/codecov-action@v2
