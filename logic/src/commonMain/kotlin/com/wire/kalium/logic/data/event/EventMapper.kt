@@ -7,10 +7,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -28,7 +29,7 @@ class EventMapper(
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
     private val roleMapper: ConversationRoleMapper,
-    private val userTypeMapper: DomainUserTypeMapper,
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) {
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -63,7 +64,19 @@ class EventMapper(
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
         }
+
+    private fun conversationReceiptModeUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ReceiptModeUpdate,
+        transient: Boolean
+    ): Event = Event.Conversation.ConversationReceiptMode(
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        transient = transient,
+        receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode)
+    )
 
     private fun updateUserProperties(
         id: String,

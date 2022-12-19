@@ -263,7 +263,6 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun handleAssetMessage(message: Message.Regular, messageContent: MessageContent.Asset) {
-        logger.d("Asset message received")
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                 processNonRestrictedAssetMessage(message)

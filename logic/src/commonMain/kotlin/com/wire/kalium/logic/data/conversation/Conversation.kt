@@ -29,7 +29,8 @@ data class Conversation(
     val lastReadDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
-    val creatorId: String?
+    val creatorId: String?,
+    val receiptMode: ReceiptMode,
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -69,6 +70,8 @@ data class Conversation(
         LINK,
         CODE;
     }
+
+    enum class ReceiptMode { DISABLED, ENABLED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
@@ -184,7 +187,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole,
-            creatorId = null
+            creatorId = null,
+            receiptMode = Conversation.ReceiptMode.DISABLED
         )
     )
 }

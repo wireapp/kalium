@@ -13,6 +13,9 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
 import java.io.File
 
+/**
+ * @sample samples.logic.CoreLogicSamples.versionedAuthScope
+ */
 actual class CoreLogic(
     clientLabel: String,
     rootPath: String,

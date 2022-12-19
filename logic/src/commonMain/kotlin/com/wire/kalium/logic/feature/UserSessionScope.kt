@@ -93,9 +93,9 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCaseImpl
-import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.backup.VerifyBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
@@ -140,6 +140,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -203,6 +204,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
@@ -215,8 +218,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -462,7 +465,7 @@ class UserSessionScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userRepository)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
@@ -803,6 +806,9 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO, persistMessage
         )
 
+    private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
+        get() = ReceiptModeUpdateEventHandlerImpl(userStorage.database.conversationDAO)
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -812,7 +818,8 @@ class UserSessionScope internal constructor(
             memberLeaveHandler,
             memberChangeHandler,
             mlsWelcomeHandler,
-            renamedConversationHandler
+            renamedConversationHandler,
+            receiptModeUpdateEventHandler
         )
     }
 
@@ -886,6 +893,8 @@ class UserSessionScope internal constructor(
             selfTeamId,
             messages.sendConfirmation
         )
+
+    val migration get() = MigrationScope(userStorage.database)
     val debug: DebugScope
         get() = DebugScope(
             messageRepository,
