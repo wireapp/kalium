@@ -11,6 +11,8 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
+import com.wire.kalium.persistence.dao.MigrationDAO
+import com.wire.kalium.persistence.dao.MigrationDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -127,6 +129,8 @@ class UserDatabaseBuilder internal constructor(
 
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries)
+
+    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
 
     /**
      * drops DB connection and delete the DB file
