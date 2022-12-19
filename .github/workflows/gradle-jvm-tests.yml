@@ -55,23 +55,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-            name: test-reports
+            name: jvm-js-test-reports
             path: ./**/build/reports/tests/**
-
-      - name: Install Pip for test result publishing
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-
-      - name: Publish Unit Test Results
-        uses: mikepenz/action-junit-report@v3
-        if: always()
-        with:
-          report_paths: '**/build/test-results/**/*.xml'
-          detailed_summary: true
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            retention-days: 1
 
       - name: Upload Test Report
         uses: codecov/codecov-action@v2
@@ -83,6 +69,7 @@ jobs:
         with:
             name: kover-report
             path: build/reports/kover/report.xml
+            retention-days: 1
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
@@ -90,3 +77,32 @@ jobs:
         run: |
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
+
+---
+name: "Report - JVM & JS Tests"
+on:
+  workflow_run:
+    workflows: [JVM & JS Tests]
+    types: [completed]
+    
+permissions:
+  checks: write
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Report
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: jvm-js-test-reports
+          workflow: ${{ github.event.workflow.id }}
+          run_id: ${{ github.event.workflow_run.id }}
+
+      - name: Publish Unit Test Results
+        uses: mikepenz/action-junit-report@v3
+        if: always()
+        with:
+          commit: ${{github.event.workflow_run.head_sha}}
+          report_paths: '**/build/test-results/**/*.xml'
+          detailed_summary: true
