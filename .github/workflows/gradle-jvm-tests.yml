@@ -1,90 +1,13 @@
-name: "JVM & JS Tests"
-
-on:
-  pull_request:
-    types: [ opened, synchronize ] # Don't rerun on `edited` to save time
-  push:
-    branches: # Runs on develop to have the coverage diff on every PR
-        - 'develop'
-
-concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-    cancel-in-progress: true
-
-jobs:
-  gradle-run-tests:
-    runs-on: ubuntu-22.04
-    container: wirebot/cryptobox:1.1.1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Build the CLI App
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
-
-      - name: Build the samples
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-            ./gradlew :samples:compileKotlinJvm
-
-      - name: Build the testservice
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-            ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
-
-      - name: Verify DB Migrations
-        run: |
-            make db/verify-all-migrations
-
-      - name: Test with Gradle
-        run: |
-          ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew jsTest
-
-      - name: Archive Test Reports
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-            name: jvm-js-test-reports
-            path: ./**/build/reports/tests/**
-            retention-days: 1
-
-      - name: Upload Test Report
-        uses: codecov/codecov-action@v2
-        with:
-            files: "build/reports/kover/report.xml"
-
-      - name: Archive Kover report
-        uses: actions/upload-artifact@v3
-        with:
-            name: kover-report
-            path: build/reports/kover/report.xml
-            retention-days: 1
-
-      - name: Cleanup Gradle Cache
-        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-        run: |
-          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-          rm -f ~/.gradle/caches/modules-2/gc.properties
-
----
 name: "Report - JVM & JS Tests"
 on:
   workflow_run:
     workflows: [JVM & JS Tests]
     types: [completed]
-    
+
+concurrency:
+    group: ${{ github.event.workflow }}-${{ github.event.workflow_run.id || github.ref }}
+    cancel-in-progress: true  
+
 permissions:
   checks: write
 
