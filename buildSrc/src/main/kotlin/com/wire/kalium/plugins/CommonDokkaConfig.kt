@@ -2,7 +2,7 @@ package com.wire.kalium.plugins
 
 import org.gradle.api.Project
 import org.jetbrains.dokka.DokkaConfiguration.Visibility
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.jetbrains.dokka.gradle.AbstractDokkaLeafTask
 
 val documentedSubprojects = listOf(
     "calling",
@@ -26,9 +26,7 @@ fun Project.commonDokkaConfig() {
 
     plugins.apply("org.jetbrains.dokka")
     val rootProject = rootProject
-    tasks.withType(DokkaTaskPartial::class.java).configureEach {
-        outputDirectory.set(file("build/dokka"))
-
+    tasks.withType(AbstractDokkaLeafTask::class.java).configureEach {
         dokkaSourceSets.configureEach {
             file("module.md").takeIf { it.exists() }?.let {
                 includes.from(it)

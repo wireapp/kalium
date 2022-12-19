@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationP
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -1111,7 +1112,8 @@ class ConversationRepositoryTest {
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
             ),
-            mlsCipherSuiteTag = null
+            mlsCipherSuiteTag = null,
+            receiptMode = ReceiptMode.DISABLED
         )
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(

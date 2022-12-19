@@ -5,6 +5,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -49,7 +51,6 @@ interface MessageRepository {
         message: Message.Standalone,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
-        updateConversationNotificationsDate: Boolean = false
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -131,6 +132,10 @@ interface MessageRepository {
         clientId: ClientId,
     ): Either<CoreFailure, Unit>
 
+    suspend fun getReceiptModeFromGroupConversationByQualifiedID(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Conversation.ReceiptMode?>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -146,6 +151,7 @@ class MessageDataSource(
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, idMapper, messageMapper)
@@ -197,13 +203,11 @@ class MessageDataSource(
         message: Message.Standalone,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
-        updateConversationNotificationsDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
-            updateConversationModifiedDate,
-            updateConversationNotificationsDate
+            updateConversationModifiedDate
         )
     }
 
@@ -403,5 +407,14 @@ class MessageDataSource(
             userId = idMapper.toDaoModel(userId),
             clientId = clientId.value
         )
+    }
+
+    override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
+        messageDAO.getReceiptModeFromGroupConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            .let {
+                receiptModeMapper.fromEntityToModel(it)
+            }
     }
 }

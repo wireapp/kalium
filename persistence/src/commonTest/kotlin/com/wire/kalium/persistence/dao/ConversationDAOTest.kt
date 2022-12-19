@@ -812,6 +812,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenAConversation_whenUpdatingReceiptMode_itReturnsTheUpdatedValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED))
+
+        // when
+        conversationDAO.updateConversationReceiptMode(conversationEntity1.id, ConversationEntity.ReceiptMode.DISABLED)
+
+        // then
+        val conversation = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(ConversationEntity.ReceiptMode.DISABLED, conversation?.receiptMode)
+    }
+
+    @Test
     fun givenSelfUserIsNotMemberOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity3)
@@ -902,7 +915,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsProposalTimer = null,
             mutedTime = mutedTime,
             creatorId = creatorId,
-            selfRole = Member.Role.Member
+            selfRole = Member.Role.Member,
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
         )
     }
 
@@ -927,7 +941,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -947,7 +962,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -970,7 +986,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -993,7 +1010,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)

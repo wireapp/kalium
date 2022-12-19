@@ -52,7 +52,8 @@ internal object TableMapper {
         muted_statusAdapter = EnumColumnAdapter(),
         access_listAdapter = ConversationAccessListAdapter(),
         access_role_listAdapter = ConversationAccessRoleListAdapter(),
-        mls_cipher_suiteAdapter = EnumColumnAdapter()
+        mls_cipher_suiteAdapter = EnumColumnAdapter(),
+        receipt_modeAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,

@@ -25,7 +25,7 @@ androidx-sqlite = "2.0.1"
 benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
-multiplatform-settings = "0.9" #TODO: Upgrade to 1.0.0-RC - Breaking changes
+multiplatform-settings = "1.0.0-RC"
 android-security = "1.1.0-alpha03"
 sqldelight = "2.0.0-alpha04"
 sqlcipher-android = "4.5.2"

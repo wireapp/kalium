@@ -17,6 +17,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -43,7 +44,8 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -59,7 +61,8 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -75,7 +78,8 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -91,7 +95,8 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
@@ -105,7 +110,8 @@ object TestConversation {
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -139,7 +145,8 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -155,7 +162,8 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -190,7 +198,8 @@ object TestConversation {
             ConversationAccessRoleDTO.TEAM_MEMBER,
             ConversationAccessRoleDTO.NON_TEAM_MEMBER
         ),
-        mlsCipherSuiteTag = null
+        mlsCipherSuiteTag = null,
+        receiptMode = ReceiptMode.DISABLED,
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
@@ -228,7 +237,8 @@ object TestConversation {
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
     )
     val VIEW_ENTITY = ConversationViewEntity(
         ENTITY_ID,
@@ -261,7 +271,8 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member
+        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED
     )
 
     val CONVERSATION = Conversation(
@@ -277,7 +288,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -299,6 +311,7 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
-        creatorId = null
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED
     )
 }
