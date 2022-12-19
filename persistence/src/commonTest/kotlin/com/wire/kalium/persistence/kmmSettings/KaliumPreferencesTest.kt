@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.kmmSettings
 
-import com.russhwolf.settings.MockSettings
+import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -13,7 +13,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class KaliumPreferencesTest {
-    private val mockSettings: Settings = MockSettings()
+    private val mockSettings: Settings = MapSettings()
 
     private val kaliumPreferences = KaliumPreferencesSettings(mockSettings)
 
