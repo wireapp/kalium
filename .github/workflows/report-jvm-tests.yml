@@ -3,7 +3,7 @@ on:
   workflow_run:
     workflows: [JVM & JS Tests]
     types: [completed]
-    
+
 permissions:
   checks: write
 
@@ -17,10 +17,10 @@ jobs:
           name: jvm-js-test-reports
           workflow: ${{ github.event.workflow.id }}
           run_id: ${{ github.event.workflow_run.id }}
-  - name: Publish Unit Test Results
-    uses: mikepenz/action-junit-report@v3
-    if: always()
-    with:
-      commit: ${{github.event.workflow_run.head_sha}}
-      report_paths: '**/build/test-results/**/*.xml'
-      detailed_summary: true
+      - name: Publish Unit Test Results
+        uses: mikepenz/action-junit-report@v3
+        if: always()
+        with:
+          commit: ${{github.event.workflow_run.head_sha}}
+          report_paths: '**/build/test-results/**/*.xml'
+          detailed_summary: true
