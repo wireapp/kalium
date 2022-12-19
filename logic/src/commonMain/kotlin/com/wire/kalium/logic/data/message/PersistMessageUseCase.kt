@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
@@ -22,25 +20,16 @@ internal class PersistMessageUseCaseImpl(
     private val userRepository: UserRepository
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
-            message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
-        } ?: (false to false)
+        val isMyMessage = userRepository.getSelfUser()?.let {
+            message.isSelfTheSender(it.id)
+        } ?: (false)
         return messageRepository
             .persistMessage(
                 message = message,
                 updateConversationReadDate = isMyMessage,
-                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate
+                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
             )
     }
-
-    private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
-        when (selfUser.availabilityStatus) {
-            UserAvailabilityStatus.AWAY -> true
-            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id)
-            // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
-            else -> this.isSelfTheSender(selfUser.id)
-        }
 
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
 

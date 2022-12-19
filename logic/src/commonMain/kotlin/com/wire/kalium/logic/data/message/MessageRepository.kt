@@ -49,7 +49,6 @@ interface MessageRepository {
         message: Message.Standalone,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
-        updateConversationNotificationsDate: Boolean = false
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -197,13 +196,11 @@ class MessageDataSource(
         message: Message.Standalone,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
-        updateConversationNotificationsDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
-            updateConversationModifiedDate,
-            updateConversationNotificationsDate
+            updateConversationModifiedDate
         )
     }
 
