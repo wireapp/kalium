@@ -88,8 +88,6 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
 }
 
-tasks.dokkaHtmlMultiModule.configure {
-    outputDirectory.set(buildDir.resolve("dokka"))
-}
+tasks.dokkaHtmlMultiModule.configure {}
 
 apply(from = "$rootDir/gradle/detekt.gradle")
