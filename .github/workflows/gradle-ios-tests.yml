@@ -52,16 +52,6 @@ jobs:
             name: test-reports
             path: ./**/build/reports/tests/**
 
-      - name: Publish Unit Test Results
-        uses: mikepenz/action-junit-report@v3
-        if: always()
-        with:
-          report_paths: ['**/build/test-results/testDebugUnitTest/**/*.xml',  '**/build/test-results/**/*.xml']
-          detailed_summary: true
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
