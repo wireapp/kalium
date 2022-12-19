@@ -119,12 +119,12 @@ internal suspend fun OkHttpClient.execute(
 
 @Suppress("KDocMissingDocumentation")
 @OptIn(InternalAPI::class, DelicateCoroutinesApi::class)
-public class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEngineBase("ktor-okhttp") {
+public class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEngineBase("kalium-ktor-okhttp") {
 
     public override val dispatcher: CoroutineDispatcher by lazy {
         Dispatchers.clientDispatcher(
             config.threadsCount,
-            "ktor-okhttp-dispatcher"
+            "kalium-ktor-okhttp-dispatcher"
         )
     }
 
@@ -247,8 +247,6 @@ public class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEng
         Protocol.QUIC -> HttpProtocolVersion.QUIC
     }
 
-
-
      companion object {
         /**
          * It's an artificial prototype object to be used to create actual clients and eliminate the following issue:
@@ -300,7 +298,6 @@ private fun HttpRequestData.convertToOkHttpRequest(callContext: CoroutineContext
 
     return builder.build()
 }
-
 
 @OptIn(DelicateCoroutinesApi::class)
 internal fun OutgoingContent.convertToOkHttpBody(callContext: CoroutineContext): RequestBody = when (this) {

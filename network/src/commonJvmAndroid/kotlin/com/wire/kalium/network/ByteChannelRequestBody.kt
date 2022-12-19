@@ -26,10 +26,9 @@ class ByteChannelRequestBody(
     private val producerJob = Job(callContext[Job])
 
     override fun contentType(): MediaType? = null
-
     override fun writeTo(sink: BufferedSink) {
         withJob(producerJob) {
-            while (producerJob.isActive) {
+            if (producerJob.isActive) {
                 block().toInputStream().source().use {
                     sink.writeAll(it)
                 }
@@ -48,6 +47,7 @@ class ByteChannelRequestBody(
         try {
             return block()
         } catch (ex: Exception) {
+            println("Exception in withJob: $ex")
             job.completeExceptionally(ex)
             // wrap all exceptions thrown from inside `okhttp3.RequestBody#writeTo(..)` as an IOException
             // see https://github.com/awslabs/aws-sdk-kotlin/issues/733

@@ -33,6 +33,7 @@ import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
 import okio.Buffer
 import okio.IOException
@@ -167,7 +168,7 @@ internal class StreamAssetContent internal constructor(
     @OptIn(ExperimentalStdlibApi::class)
     override suspend fun writeTo(channel: ByteWriteChannel) {
         try {
-            supervisorScope {
+            coroutineScope {
                 if (!channel.isClosedForWrite && producerJob.isActive) {
 
                     channel.writeStringUtf8(openingData)

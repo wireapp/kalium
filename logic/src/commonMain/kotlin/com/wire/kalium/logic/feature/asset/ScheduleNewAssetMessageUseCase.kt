@@ -36,9 +36,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import okio.Path
 
@@ -172,78 +174,78 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             .e("Error while uploading asset", throwable)
     }
 
-//     private val coroutineScope = CoroutineScope()
-
     private suspend fun uploadAssetAndUpdateMessage(
         message: Message.Regular,
         conversationId: ConversationId,
         assetMessageMetaData: AssetMessageMetadata
     ): Either<CoreFailure, Unit> =
-        coroutineScope {
-            try {
-                val parentJob = coroutineContext[Job]
+        try {
+            val parentJob = Job()
 
-                launch {
-                    messageRepository.observeMessageVisibility(message.id, conversationId)
-                        .collect { messageVisibility ->
-                            if (messageVisibility == MessageEntity.Visibility.DELETED) {
-                                if (parentJob!!.isActive) {
-                                    parentJob.cancel()
+            supervisorScope {
+                withContext(scope.coroutineContext + parentJob) {
+                    launch {
+                        messageRepository.observeMessageVisibility(message.id, conversationId)
+                            .collect { messageVisibility ->
+                                if (messageVisibility == MessageEntity.Visibility.DELETED) {
+                                    if (parentJob.isActive) {
+                                        parentJob.cancel()
+                                    }
                                 }
                             }
-                        }
-                }
+                    }
 
-                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                    .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                        .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
 
-                assetDataSource.uploadAndPersistPrivateAsset(
-                    assetMessageMetaData.mimeType,
-                    assetMessageMetaData.assetDataPath,
-                    assetMessageMetaData.otrKey,
-                    assetMessageMetaData.assetName.fileExtension()
-                ).onFailure {
-                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                        .d("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
-                    updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
-                }.flatMap { (assetId, sha256) ->
-                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                        .d("Successfully uploaded asset with id: $assetId")
-                    // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
-                    // and persist and update the message on the DB layer to display the changes on the Conversation screen
-                    val updatedMessage = message.copy(
-                        // We update the upload status to UPLOADED as the upload succeeded
-                        content = MessageContent.Asset(
-                            provideAssetMessageContent(
-                                assetMessageMetaData.copy(sha256Key = sha256, assetId = assetId),
-                                Message.UploadStatus.UPLOADED
+                    assetDataSource.uploadAndPersistPrivateAsset(
+                        assetMessageMetaData.mimeType,
+                        assetMessageMetaData.assetDataPath,
+                        assetMessageMetaData.otrKey,
+                        assetMessageMetaData.assetName.fileExtension()
+                    ).onFailure {
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                            .d("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
+                        updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+                    }.flatMap { (assetId, sha256) ->
+                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                            .d("Successfully uploaded asset with id: $assetId")
+                        // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
+                        // and persist and update the message on the DB layer to display the changes on the Conversation screen
+                        val updatedMessage = message.copy(
+                            // We update the upload status to UPLOADED as the upload succeeded
+                            content = MessageContent.Asset(
+                                provideAssetMessageContent(
+                                    assetMessageMetaData.copy(sha256Key = sha256, assetId = assetId),
+                                    Message.UploadStatus.UPLOADED
+                                )
                             )
                         )
-                    )
-                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                        .d("Updating asset message with id: ${updatedMessage.id} with assetId: $assetId")
-                    persistMessage(updatedMessage).onFailure {
                         kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                            .d("Failed to persist message with id: ${updatedMessage.id}")
-                        // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
-                        kaliumLogger.e(
-                            "There was an error when trying to persist the updated asset message with the information returned by the backend "
-                        )
-                    }.onSuccess {
-                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                            .d("Successfully persisted message with id: ${updatedMessage.id}")
-                        // Finally we try to send the Asset Message to the recipients of the given conversation
-                        prepareAndSendAssetMessage(message, conversationId)
+                            .d("Updating asset message with id: ${updatedMessage.id} with assetId: $assetId")
+                        persistMessage(updatedMessage).onFailure {
+                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                                .d("Failed to persist message with id: ${updatedMessage.id}")
+                            // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
+                            kaliumLogger.e(
+                                "There was an error when trying to persist the updated asset message with the information returned by the backend "
+                            )
+                        }.onSuccess {
+                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                                .d("Successfully persisted message with id: ${updatedMessage.id}")
+                            // Finally we try to send the Asset Message to the recipients of the given conversation
+                            prepareAndSendAssetMessage(message, conversationId)
+                        }
                     }
                 }
-            } catch (e: Exception) {
-                print("Exception thrown")
-                if (e is CancellationException) {
-                    // It is okay if we cancel anything here, we do not need to inform the user or react to it in any way
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(CoreFailure.Unknown(e))
-                }
+            }
+        } catch (e: Exception) {
+            print("Exception thrown")
+            if (e is CancellationException) {
+                // It is okay if we cancel anything here, we do not need to inform the user or react to it in any way
+                Either.Right(Unit)
+            } else {
+                Either.Left(CoreFailure.Unknown(e))
             }
         }
 
