@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.kmmSettings
 
-import com.russhwolf.settings.JvmPropertiesSettings
+import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.Settings
 import java.io.File
 import java.io.FileInputStream
@@ -36,7 +36,7 @@ internal actual fun encryptedSettingsBuilder(
     val file: File = File(Paths.get(param.rootPath, options.fileName).toString())
     val properties = createOrLoad(param.rootPath, file)
 
-    return JvmPropertiesSettings(properties) { onModify(it, file) }
+    return PropertiesSettings(properties) { onModify(it, file) }
 }
 
 internal actual class EncryptedSettingsPlatformParam(val rootPath: String)
