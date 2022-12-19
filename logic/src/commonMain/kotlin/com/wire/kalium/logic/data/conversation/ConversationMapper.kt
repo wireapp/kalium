@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
@@ -60,7 +61,8 @@ internal class ConversationMapperImpl(
     private val userAvailabilityStatusMapper: AvailabilityStatusMapper,
     private val domainUserTypeMapper: DomainUserTypeMapper,
     private val connectionStatusMapper: ConnectionStatusMapper,
-    private val conversationRoleMapper: ConversationRoleMapper
+    private val conversationRoleMapper: ConversationRoleMapper,
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -81,7 +83,8 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole.map { it.toDAO() }
+        accessRole = apiModel.accessRole.map { it.toDAO() },
+        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -105,7 +108,8 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
-            creatorId = creatorId
+            creatorId = creatorId,
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
         )
     }
 
@@ -290,7 +294,8 @@ internal class ConversationMapperImpl(
             lastModifiedDate = "",
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
-            accessRole = conversation.accessRole.map { it.toDAO() }
+            accessRole = conversation.accessRole.map { it.toDAO() },
+            receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)
         )
     }
 
