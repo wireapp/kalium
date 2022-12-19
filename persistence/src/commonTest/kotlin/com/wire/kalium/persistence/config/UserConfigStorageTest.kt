@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.config
 
-import com.russhwolf.settings.MockSettings
+import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class UserConfigStorageTest {
-    private val settings: Settings = MockSettings()
+    private val settings: Settings = MapSettings()
 
     private val kaliumPreferences: KaliumPreferences = KaliumPreferencesSettings(settings)
     private lateinit var userConfigStorage: UserConfigStorage
