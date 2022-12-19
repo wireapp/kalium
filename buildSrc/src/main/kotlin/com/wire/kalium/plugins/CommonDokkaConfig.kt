@@ -27,8 +27,6 @@ fun Project.commonDokkaConfig() {
     plugins.apply("org.jetbrains.dokka")
     val rootProject = rootProject
     tasks.withType(AbstractDokkaLeafTask::class.java).configureEach {
-        outputDirectory.set(file("build/dokka"))
-
         dokkaSourceSets.configureEach {
             file("module.md").takeIf { it.exists() }?.let {
                 includes.from(it)
