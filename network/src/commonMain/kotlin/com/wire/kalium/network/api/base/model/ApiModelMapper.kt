@@ -54,6 +54,7 @@ internal class ApiModelMapperImpl : ApiModelMapper {
             response.lastEventTime,
             response.mlsCipherSuiteTag,
             response.access,
-            response.accessRole
+            response.accessRole,
+            response.receiptMode
         )
 }
