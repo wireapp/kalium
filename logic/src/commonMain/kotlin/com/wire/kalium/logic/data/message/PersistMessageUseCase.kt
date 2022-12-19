@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 
@@ -17,19 +16,15 @@ interface PersistMessageUseCase {
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository
+    private val selfUserId: UserId
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val isMyMessage = userRepository.getSelfUser()?.let {
-            message.isSelfTheSender(it.id)
-        } ?: (false)
-
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
 
         return messageRepository
             .persistMessage(
                 message = modifiedMessage,
-                updateConversationReadDate = isMyMessage,
+                updateConversationReadDate = message.isSelfTheSender(selfUserId),
                 updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
             )
     }
