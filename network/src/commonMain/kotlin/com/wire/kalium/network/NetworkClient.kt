@@ -10,7 +10,6 @@ import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.Charsets
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -18,7 +17,6 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.charsets.Charsets
 
 /**
  * Provides a [HttpClient] that has all the
@@ -110,9 +108,6 @@ internal fun provideBaseHttpClient(
     installCompression: Boolean = true,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-    Charsets {
-        register(Charsets.UTF_8)
-    }
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
