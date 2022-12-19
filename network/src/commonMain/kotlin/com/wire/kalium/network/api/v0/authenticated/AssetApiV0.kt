@@ -30,14 +30,17 @@ import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.writeStringUtf8
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import okio.Buffer
 import okio.IOException
 import okio.Sink
@@ -134,13 +137,9 @@ internal class StreamAssetContent internal constructor(
     callContext: CoroutineContext,
 ) : OutgoingContent.WriteChannelContent(), CoroutineScope {
 
-
-    private val test = CoroutineExceptionHandler() { _, throwable ->
-        println("test")
-    }
-
     private val producerJob = Job(callContext[Job])
-    override val coroutineContext: CoroutineContext = callContext + producerJob + test
+
+    override val coroutineContext: CoroutineContext = callContext + producerJob
 
     private val openingData: String by lazy {
         val body = StringBuilder()
@@ -172,37 +171,33 @@ internal class StreamAssetContent internal constructor(
 
     private val closingArray = "\r\n--frontier--\r\n"
 
+    @OptIn(ExperimentalStdlibApi::class)
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        coroutineScope {
-            launch {
-                println("Is job active ?  $coroutineContext.job.isActive")
-                coroutineContext.job.invokeOnCompletion {
-                    println("Is job active ?  ")
-                }
-                while (!channel.isClosedForWrite && producerJob.isActive) {
-                    try {
-                        channel.writeStringUtf8(openingData)
-                        val contentBuffer = Buffer()
-                        val fileContentStream = fileContentStream()
-                        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
-                            contentBuffer.readByteArray().let { content ->
-                                channel.writePacket(ByteReadPacket(content))
-                            }
+        try {
+            supervisorScope {
+                if (!channel.isClosedForWrite && producerJob.isActive) {
+
+                    channel.writeStringUtf8(openingData)
+                    val contentBuffer = Buffer()
+                    val fileContentStream = fileContentStream()
+                    while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
+                        contentBuffer.readByteArray().let { content ->
+                            channel.writePacket(ByteReadPacket(content))
                         }
-                        channel.writeStringUtf8(closingArray)
-                        channel.flush()
-                        channel.close()
-                    } catch (e: Exception) {
-                        channel.flush()
-                        channel.close()
-                        producerJob.completeExceptionally(e)
-                        throw IOException(e.message)
-                        e.printStackTrace()
-                    } finally {
-                        producerJob.complete()
                     }
+                    channel.writeStringUtf8(closingArray)
+                    channel.flush()
+                    channel.close()
                 }
             }
+        } catch (e: Exception) {
+            channel.flush()
+            channel.close()
+            producerJob.completeExceptionally(e)
+
+            throw IOException(e.message)
+        } finally {
+            producerJob.complete()
         }
     }
 }

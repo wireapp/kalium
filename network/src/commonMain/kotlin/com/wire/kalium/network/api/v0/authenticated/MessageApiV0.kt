@@ -106,9 +106,13 @@ internal open class MessageApiV0 internal constructor(
             )
         )
     }) {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
-            setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
-            contentType(ContentType.Application.XProtoBuf)
+        try {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
+                setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
+                contentType(ContentType.Application.XProtoBuf)
+            }
+        }catch (e: Exception){
+            throw e
         }
     }
 

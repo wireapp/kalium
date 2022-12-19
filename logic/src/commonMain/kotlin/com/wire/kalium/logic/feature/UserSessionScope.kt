@@ -462,7 +462,6 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
-            messageDAO = userStorage.database.messageDAO,
             kaliumFileSystem = kaliumFileSystem
         )
 

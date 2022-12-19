@@ -28,7 +28,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -37,20 +36,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import okio.Path
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 
 fun interface ScheduleNewAssetMessageUseCase {
     /**
@@ -152,15 +144,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 // when deleted
                 // cancel the upload
                 // We update the asset message upload status to UPLOAD_IN_PROGRESS so that we can track the progress of the asset upload
-                try {
-                    uploadAssetAndUpdateMessage(
-                        message,
-                        conversationId,
-                        assetMessageMetaData
-                    )
-                } catch (cancellationException: CancellationException) {
-                    Either.Left(CoreFailure.Unknown(cancellationException))
-                }
+
+                uploadAssetAndUpdateMessage(
+                    message,
+                    conversationId,
+                    assetMessageMetaData
+                )
             }
         }.fold({ coreFailure ->
             updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
@@ -180,42 +169,36 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         return generateRandomAES256Key()
     }
 
-    val test = CoroutineExceptionHandler { coroutineContext, throwable ->
-        println("test")
+    val test = CoroutineExceptionHandler() { _, throwable ->
+        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+            .e("Error while uploading asset", throwable)
     }
 
     private suspend fun uploadAssetAndUpdateMessage(
         message: Message.Regular,
         conversationId: ConversationId,
         assetMessageMetaData: AssetMessageMetadata
-    ): Either<CoreFailure, Unit> {
-        return try {
-            supervisorScope {
-                val parentJob = Job()
+    ): Either<CoreFailure, Unit> =
+        try {
+            val parentJob = Job()
 
-                launch(parentJob + test) {
-                    try {
+            supervisorScope {
+                withContext(scope.coroutineContext + parentJob) {
+                    launch {
                         messageRepository.observeMessageVisibility(message.id, conversationId)
                             .collect { messageVisibility ->
-                                currentCoroutineContext().ensureActive()
                                 if (messageVisibility == MessageEntity.Visibility.DELETED) {
                                     if (parentJob.isActive) {
                                         parentJob.cancel()
                                     }
                                 }
                             }
-                    } catch (e: CancellationException) {
-                        println(e)
                     }
-                }
 
-                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                    .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
+                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
+                        .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
 
-                withContext(parentJob + dispatcher.io) {
                     assetDataSource.uploadAndPersistPrivateAsset(
-                        message.id,
-                        conversationId,
                         assetMessageMetaData.mimeType,
                         assetMessageMetaData.assetDataPath,
                         assetMessageMetaData.otrKey,
@@ -223,7 +206,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     ).onFailure {
                         kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
                             .d("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
-                        // updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+                        updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
                     }.flatMap { (assetId, sha256) ->
                         kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
                             .d("Successfully uploaded asset with id: $assetId")
@@ -257,10 +240,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 }
             }
         } catch (e: Exception) {
-            println(e)
-            Either.Right(Unit)
+            print("Exception thrown")
+            if (e is CancellationException) {
+                // It is okay if we cancel anything here, we do not need to inform the user or react to it in any way
+                Either.Right(Unit)
+            } else {
+                Either.Left(CoreFailure.Unknown(e))
+            }
         }
-    }
 
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
