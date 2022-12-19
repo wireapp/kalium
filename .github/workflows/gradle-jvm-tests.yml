@@ -67,8 +67,7 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         if: always()
         with:
-          report_paths: |
-            **/build/test-results/**/*.xml
+          report_paths: '**/build/test-results/**/*.xml'
 
       - name: Upload Test Report
         uses: codecov/codecov-action@v2
