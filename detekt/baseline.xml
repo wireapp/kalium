@@ -12,7 +12,6 @@
     <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnSFTRequest.kt:18</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:28</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:29</ID>
-    <ID>CommentSpacing:com.wire.kalium.logic.util.TimeParser.kt:10</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>DocumentedPublicUseCases:AddAuthenticatedUserUseCase.kt$AddAuthenticatedUserUseCase</ID>
     <ID>DocumentedPublicUseCases:AddMemberToConversationUseCase.kt$AddMemberToConversationUseCase</ID>

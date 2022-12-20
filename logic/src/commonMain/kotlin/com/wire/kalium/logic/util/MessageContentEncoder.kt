@@ -3,6 +3,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
@@ -12,13 +13,13 @@ class MessageContentEncoder {
         return when (messageContent) {
             is MessageContent.Asset ->
                 encodeMessageAsset(
-                    messageTimeStampInMillis = messageDate.toTimeInMillis(),
+                    messageTimeStampInMillis = messageDate.toEpochMillis(),
                     assetId = messageContent.value.remoteData.assetId
                 )
 
             is MessageContent.Text ->
                 encodeMessageTextBody(
-                    messageTimeStampInMillis = messageDate.toTimeInMillis(),
+                    messageTimeStampInMillis = messageDate.toEpochMillis(),
                     messageTextBody = messageContent.value
                 )
 

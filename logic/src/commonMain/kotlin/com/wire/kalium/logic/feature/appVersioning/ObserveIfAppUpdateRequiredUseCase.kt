@@ -10,8 +10,7 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.TimeParser
-import com.wire.kalium.logic.util.TimeParserImpl
+import com.wire.kalium.logic.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -37,14 +36,13 @@ interface ObserveIfAppUpdateRequiredUseCase {
 class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val timeParser: TimeParser = TimeParserImpl()
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : ObserveIfAppUpdateRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
-        val currentDate = timeParser.currentTimeStamp()
-        val dateForChecking = timeParser.dateMinusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
+        val currentDate = DateTimeUtil.currentIsoDateTimeString()
+        val dateForChecking = DateTimeUtil.minusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
 
         return intervalFlow(CHECK_APP_VERSION_FREQUENCY_MS)
             .flatMapLatest {

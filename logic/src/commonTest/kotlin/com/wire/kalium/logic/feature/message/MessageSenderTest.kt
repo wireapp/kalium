@@ -18,7 +18,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -361,7 +360,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = "1234",
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
@@ -411,7 +410,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = "1234",
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
@@ -473,9 +472,6 @@ class MessageSenderTest {
         @Mock
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
 
-        @Mock
-        val timeParser = mock(TimeParser::class)
-
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -493,7 +489,6 @@ class MessageSenderTest {
             sessionEstablisher = sessionEstablisher,
             messageEnvelopeCreator = messageEnvelopeCreator,
             mlsMessageCreator = mlsMessageCreator,
-            timeParser = timeParser,
             messageSendingScheduler = messageSendingScheduler,
             messageSendingInterceptor = messageSendingInterceptor,
             scope = testScope
@@ -555,7 +550,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right("date")) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -594,13 +589,6 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
 
-        fun withCalculateMillisDifferenceSuccessful() = apply {
-            given(timeParser)
-                .function(timeParser::calculateMillisDifference)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(20L)
-        }
-
         fun withWaitUntilLiveOrFailure(failing: Boolean = false) = apply {
             given(syncManager)
                 .suspendFunction(syncManager::waitUntilLiveOrFailure)
@@ -629,7 +617,6 @@ class MessageSenderTest {
                 withUpdateMessageStatus(updateMessageStatusFailing)
                 withUpdateMessageDate(updateMessageDateFailing)
                 withUpdatePendingMessagesAddMillisToDate(updatePendingMessagesAddMillisToDateFailing)
-                withCalculateMillisDifferenceSuccessful()
 
             }
 
@@ -643,7 +630,6 @@ class MessageSenderTest {
             withUpdateMessageStatus()
             withUpdateMessageDate()
             withUpdatePendingMessagesAddMillisToDate()
-            withCalculateMillisDifferenceSuccessful()
         }
 
         companion object {
