@@ -1,8 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -77,7 +75,7 @@ class MessageDAOImpl(
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            if (isAssetMessageUpdate(message)) {
+            if (isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
             } else {
                 queries.insertOrIgnoreMessage(
@@ -194,6 +192,8 @@ class MessageDAOImpl(
     private fun updateAssetMessage(message: MessageEntity) {
         val assetMessageContent = message.content as MessageEntityContent.Asset
         queries.updateAssetKeys(
+            messageId = message.id,
+            conversationId = message.conversationId,
             assetId = assetMessageContent.assetId,
             assetOtrKey = assetMessageContent.assetOtrKey,
             assetSha256 = assetMessageContent.assetSha256Key,
@@ -204,15 +204,19 @@ class MessageDAOImpl(
     /**
      * Returns true if the [message] is an asset message that is already in the DB and any of its decryption keys are null/empty. This means
      * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
-     * separated messages). Therefore it still needs to be updated with the valid keys in order to be displayed.
+     * separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.
      */
-    private fun isAssetMessageUpdate(message: MessageEntity): Boolean {
-        val isAssetMessage = message is MessageEntity.Regular && message.content is MessageEntityContent.Asset
-        val currentMessageHasMissingAssetInformation = if (isAssetMessage) {
-            queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
-                it.assetId.isNullOrEmpty() || it.assetOtrKey == null || it.assetSha256 == null
+    private fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
+        if (message !is MessageEntity.Regular) return false
+        // If asset has no valid keys, no need to query the DB
+        val hasValidKeys = message.content is MessageEntityContent.Asset && message.content.hasValidRemoteData()
+        val currentMessageHasMissingAssetInformation =
+            hasValidKeys && queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
+                val isFromSameSender = message.senderUserId == it.senderUserId
+                        && message.senderClientId == it.senderClientId
+                        && message.senderName == it.senderName
+                (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
             } ?: false
-        } else false
         return currentMessageHasMissingAssetInformation
     }
 
@@ -222,7 +226,7 @@ class MessageDAOImpl(
         the user missed when offline still returns this event, so in order to avoid duplicates and to have a valid remote id, the app needs
         to check and replace the id of the already existing system message instead of adding another one.
         This behavior is similar for all requests which generate events, for now member-join ,member-leave and rename are handled.
-         */
+    */
     private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
             is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed -> message.content
@@ -407,4 +411,8 @@ class MessageDAOImpl(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 
+    private fun MessageEntityContent.Asset.hasValidRemoteData() =
+        assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
 }
+
+internal fun ByteArray?.isNullOrEmpty() = this?.isEmpty() ?: true
