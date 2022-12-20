@@ -68,8 +68,6 @@ $(NATIVE_LIBS):
 $(NATIVE_TARBALLS):
 	mkdir -p "$@"
 
-
-
 $(CRYPTOBOX_C_TAR_GZ): $(NATIVE)
 	curl -L "$(CRYPTOBOX_C_URL)" --output "$@"
 
@@ -80,10 +78,10 @@ $(CRYPTOBOX_C_CODE): $(CRYPTOBOX_C_TAR_GZ)
 
 $(CRYPTOBOX_C_ARTIFACT): install-rust $(CRYPTOBOX_C_CODE)
 	make -C $(CRYPTOBOX_C_CODE) compile-release
-	cp "$(CRYPTOBOX_C_CODE)/target/release/${LIBCRYPTOBOX_ARTIFACT_FILE}" "$@"
+	cp "$(CRYPTOBOX_C_CODE)/target/release/$(LIBCRYPTOBOX_ARTIFACT_FILE)" "$@"
 
 
-${LIBSODIUM_TAR_GZ}: $(NATIVE)
+$(LIBSODIUM_TAR_GZ): $(NATIVE)
 	curl -L "$(LIBSODIUM_URL)" --output "$@"
 
 $(LIBSODIUM_CODE): $(LIBSODIUM_TAR_GZ)
@@ -95,11 +93,10 @@ $(LIBSODIUM_CODE): $(LIBSODIUM_TAR_GZ)
 $(LIBSODIUM_ARTIFACT): $(LIBSODIUM_CODE)
 	cd $(LIBSODIUM_CODE) && ./configure
 	make -C $(LIBSODIUM_CODE)
-	cp  "$(LIBSODIUM_CODE)/src/libsodium/.libs/${LIBSODIUM_ARTIFACT_FILE}" "$@"
+	cp  "$(LIBSODIUM_CODE)/src/libsodium/.libs/$(LIBSODIUM_ARTIFACT_FILE)" "$@"
 
 
-
-${CRYPTOBOX4J_TAR_GZ}: $(NATIVE)
+$(CRYPTOBOX4J_TAR_GZ): $(NATIVE)
 	curl -L "$(CRYPTOBOX4J_URL)" --output "$@"
 
 $(CRYPTOBOX4J_CODE): $(CRYPTOBOX4J_TAR_GZ)
@@ -109,8 +106,8 @@ $(CRYPTOBOX4J_CODE): $(CRYPTOBOX4J_TAR_GZ)
 
 $(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE) $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT)
 	cc -std=c99 -g -Wall $(CRYPTOBOX4J_CODE)/src/cryptobox-jni.c \
-		-I"${JAVA_HOME}/include" \
-		-I"${JAVA_HOME}/include/${OS}" \
+		-I"$(JAVA_HOME)/include" \
+		-I"$(JAVA_HOME)/include/$(OS)" \
 		-I"$(CRYPTOBOX4J_CODE)/build/include" \
 		-I"$(CRYPTOBOX_C_CODE)/src" \
 		-L"$(NATIVE_LIBS)" \
@@ -118,13 +115,11 @@ $(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE) $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM
 		-lsodium \
 		-shared \
 		-fPIC \
-		-Wl,${LIBNAME_FLAG},${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} \
+		-Wl,$(LIBNAME_FLAG),$(LIBCRYPTOBOX_JNI_ARTIFACT_FILE) \
 		-o "$@"
 
-
-${AVS_FRAMEWORK_ZIP}: $(NATIVE)
+$(AVS_FRAMEWORK_ZIP): $(NATIVE)
 	curl -L "$(AVS_FRAMEWORK_URL)" --output "$@"
-
 
 $(AVS_FRAMEWORK_UNZIP): $(AVS_FRAMEWORK_ZIP)
 	unzip "$<" -d "$@"
@@ -133,4 +128,3 @@ $(AVS_FRAMEWORK_SRC): $(AVS_FRAMEWORK_UNZIP)
 	
 $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_SRC)
 	cp -r "$<" "$@"
-
