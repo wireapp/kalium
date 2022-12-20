@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -21,6 +22,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
@@ -678,6 +680,75 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
+    }
+
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromTheSameUser_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+
+        val message1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val message2 = message1.copy(content = MessageEntityContent.Text("new message content", emptyList()))
+        messageDAO.insertOrIgnoreMessages(
+            listOf(message1, message2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(message1, it)
+        }
+    }
+
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromDifferentUsers_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+        userDAO.insertUser(userEntity2)
+
+        val messageFromUser1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val messageFromUser2 = messageFromUser1.copy(senderName = userEntity2.name!!, senderUserId = userEntity2.id, content = MessageEntityContent.Text("new message content", emptyList()))
+        messageDAO.insertOrIgnoreMessages(
+            listOf(messageFromUser1, messageFromUser2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(messageFromUser1, it)
+        }
     }
 
     private suspend fun insertInitialData() {
