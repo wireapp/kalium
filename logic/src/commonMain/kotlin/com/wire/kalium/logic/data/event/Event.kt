@@ -4,7 +4,9 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -253,6 +255,24 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                     "conversationName" to conversationName,
                     "timestampIso" to timestampIso,
                 )
+                return "${properties.toJsonElement()}"
+            }
+        }
+
+        data class ConversationReceiptMode(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val receiptMode: ReceiptMode
+        ) : Conversation(id, transient, conversationId) {
+
+            override fun toString(): String {
+                val properties = mapOf(
+                    "id" to id.obfuscateId(),
+                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                    "receiptMode" to receiptMode.name
+                )
+
                 return "${properties.toJsonElement()}"
             }
         }

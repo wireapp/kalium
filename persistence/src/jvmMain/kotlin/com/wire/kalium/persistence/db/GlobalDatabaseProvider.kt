@@ -15,8 +15,8 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
-import java.util.Properties
 
+// TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(private val storePath: File) {
 
     private val dbName = FileNameUtil.globalDBName()
@@ -29,9 +29,7 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
         // Make sure all intermediate directories exist
         storePath.mkdirs()
 
-        val driver: SqlDriver = JdbcSqliteDriver(
-            "jdbc:sqlite:${databasePath.absolutePath}",
-            Properties(1).apply { put("foreign_keys", "true") })
+        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
 
         if (!databaseExists) {
             GlobalDatabase.Schema.create(driver)
@@ -51,6 +49,8 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
                 user_idAdapter = QualifiedIDAdapter
             )
         )
+
+        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

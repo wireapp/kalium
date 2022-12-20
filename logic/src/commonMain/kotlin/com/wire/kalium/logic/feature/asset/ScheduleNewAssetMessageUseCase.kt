@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -80,6 +81,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
+    private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val messageRepository: MessageRepository,
     private val scope: CoroutineScope,
@@ -133,7 +135,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
             )
 
             message to assetMessageMetaData

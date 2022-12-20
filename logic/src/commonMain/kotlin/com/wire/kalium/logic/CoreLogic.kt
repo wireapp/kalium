@@ -68,3 +68,5 @@ abstract class CoreLogicCommon internal constructor(
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 }
+
+expect val clientPlatform: String

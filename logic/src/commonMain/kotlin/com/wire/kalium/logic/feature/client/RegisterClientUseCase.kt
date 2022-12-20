@@ -60,7 +60,7 @@ interface RegisterClientUseCase {
     }
 }
 
-class RegisterClientUseCaseImpl(
+class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -76,13 +76,12 @@ class RegisterClientUseCaseImpl(
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
-                    .flatMap { client ->
-                        val client = if (isAllowedToRegisterMLSClient()) {
-                            createMLSClient(client)
+                    .flatMap { registeredClient ->
+                        if (isAllowedToRegisterMLSClient()) {
+                            createMLSClient(registeredClient)
                         } else {
-                            Either.Right(client)
-                        }
-                        client.map { it to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                            Either.Right(registeredClient)
+                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
                     }.flatMap { (client, otrLastKeyId) ->
                         otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
                         Either.Right(client)

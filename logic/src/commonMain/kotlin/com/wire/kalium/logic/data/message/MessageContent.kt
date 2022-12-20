@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -46,7 +47,7 @@ sealed class MessageContent {
      *
      * Examples: [Receipt], [Reaction], [DeleteMessage],
      * [DeleteForMe], [TextEdited], [UserAvailabilityStatus],
-     * [Calling], crypto session reset, etc.
+     * [Calling], [ClientAction] etc.
      */
     sealed class Signaling : FromProto()
 
@@ -185,7 +186,16 @@ sealed class MessageContent {
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
-    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
+    data class FailedDecryption(
+        val encodedData: ByteArray? = null,
+        val isDecryptionResolved: Boolean,
+        val senderUserId: UserId,
+        val clientId: ClientId? = null
+    ) : Regular()
+
+    object ClientAction : Signaling()
+
+    object CryptoSessionReset : System()
 }
 
 sealed class MessagePreviewContent {
@@ -219,6 +229,8 @@ sealed class MessagePreviewContent {
         data class MissedCall(override val username: String?) : WithUser(username)
 
     }
+
+    object CryptoSessionReset : MessagePreviewContent()
 
     object Unknown : MessagePreviewContent()
 

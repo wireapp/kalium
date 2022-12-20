@@ -20,6 +20,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
@@ -42,7 +43,8 @@ class ConversationScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
-    private val selfTeamIdProvider: SelfTeamIdProvider
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val sendConfirmation: SendConfirmationUseCase
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -71,8 +73,6 @@ class ConversationScope internal constructor(
 
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
-    val persistMigratedConversation: PersistMigratedConversationUseCase
-        get() = PersistMigratedConversationUseCaseImpl(conversationRepository)
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
@@ -111,6 +111,7 @@ class ConversationScope internal constructor(
             currentClientIdProvider,
             selfUserId,
             selfConversationIdProvider,
+            sendConfirmation
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -134,9 +135,9 @@ class ConversationScope internal constructor(
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-            currentClientIdProvider,
             messageSender,
             selfUserId,
+            currentClientIdProvider,
             selfConversationIdProvider
         )
 }

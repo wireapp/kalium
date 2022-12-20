@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.logic.functional.fold
+
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
@@ -14,19 +16,37 @@ interface PersistMessageUseCase {
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val selfUser: UserId
+    private val selfUserId: UserId
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val isMyMessage = message.senderUserId == selfUser
-        @OptIn(DelicateKaliumApi::class)
+        val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
+
         return messageRepository
             .persistMessage(
-                message = message,
-                updateConversationReadDate = isMyMessage,
-                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate = isMyMessage
+                message = modifiedMessage,
+                updateConversationReadDate = message.isSelfTheSender(selfUserId),
+                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
             )
     }
+
+    private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
+
+    private suspend fun getExpectsReadConfirmationFromMessage(message: Message.Standalone) =
+        if (message is Message.Regular) {
+            val expectsReadConfirmation: Boolean = messageRepository
+                .getReceiptModeFromGroupConversationByQualifiedID(message.conversationId)
+                .fold({
+                    message.expectsReadConfirmation
+                }, { receiptMode ->
+                    receiptMode == Conversation.ReceiptMode.ENABLED
+                })
+
+            message.copy(
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+        } else {
+            message
+        }
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
@@ -52,5 +72,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationRenamed -> true
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.Receipt -> false
+            is MessageContent.ClientAction -> false
+            is MessageContent.CryptoSessionReset -> false
         }
 }

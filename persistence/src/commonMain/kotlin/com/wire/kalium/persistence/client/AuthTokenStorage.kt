@@ -48,7 +48,7 @@ class AuthTokenStorage internal constructor(
                 accessToken = accessToken,
                 tokenType = tokenType
             )
-        }) ?: throw error("No token found for user")
+        }) ?: error("No token found for user")
 
         kaliumPreferences.putSerializable(
             key,

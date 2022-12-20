@@ -2,6 +2,7 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
@@ -80,6 +81,13 @@ object TestEvent {
         "newName",
         TestUser.USER_ID,
         "2022-03-30T15:36:00.000Z"
+    )
+
+    fun receiptModeUpdate(eventId: String = "eventId") = Event.Conversation.ConversationReceiptMode(
+        eventId,
+        TestConversation.ID,
+        false,
+        receiptMode = Conversation.ReceiptMode.ENABLED
     )
 
     fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(

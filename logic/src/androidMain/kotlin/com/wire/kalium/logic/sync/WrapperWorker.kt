@@ -42,6 +42,7 @@ class WrapperWorker(
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(applicationContext, createNotificationChannel().id)
         } else {
+            @Suppress("DEPRECATION")
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
             .setSmallIcon(foregroundNotificationDetailsProvider.getSmallIconResId())

@@ -22,7 +22,7 @@ actual fun defaultHttpEngine(
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
     if (isProxyRequired(serverConfigDTOApiProxy)) {
         if (serverConfigDTOApiProxy?.needsAuthentication == true) {
-            if (proxyCredentials == null) throw error("Credentials does not exist")
+            if (proxyCredentials == null) error("Credentials does not exist")
             with(proxyCredentials) {
                 Authenticator.setDefault(object : Authenticator() {
                     override fun getPasswordAuthentication(): PasswordAuthentication {

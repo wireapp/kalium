@@ -64,7 +64,7 @@ data class AssetContent(
         override fun hashCode(): Int {
             var result = otrKey.contentHashCode()
             result = 31 * result + sha256.contentHashCode()
-            result = 31 * result + (assetId?.hashCode() ?: 0)
+            result = 31 * result + assetId.hashCode()
             result = 31 * result + (assetToken?.hashCode() ?: 0)
             result = 31 * result + (assetDomain?.hashCode() ?: 0)
             result = 31 * result + (encryptionAlgorithm?.hashCode() ?: 0)

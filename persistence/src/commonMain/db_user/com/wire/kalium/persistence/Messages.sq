@@ -2,8 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
-import kotlin.Int;
 import kotlin.Boolean;
+import kotlin.Int;
 import kotlin.collections.List;
 
 CREATE TABLE Message (
@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -116,6 +117,7 @@ CREATE TABLE MessageFailedToDecryptContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       unknown_encoded_data BLOB,
+      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -175,6 +177,7 @@ Message.sender_client_id AS senderClientId,
 Message.status AS status,
 Message.last_edit_timestamp AS lastEditTimestamp,
 Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -214,6 +217,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
@@ -288,25 +292,59 @@ SelfUser.id AS selfUserId,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 MemberChangeContent.member_change_list AS memberChangeList,
 MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS conversationName,
-Mention.user_id AS mentionedUserId,
+ConversationNameChangedContent.conversation_name AS updateConversationName,
+Conversation.name AS conversationName,
+(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
+IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ',IFNULL(  Conversation.last_notified_message_date, '1970-01-01T00:00:00.000Z' ))), FALSE) AS shouldNotify,
+Conversation.muted_status AS mutedStatus,
+Conversation.type AS conversationType
 FROM Message
+LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
-LEFT JOIN SelfUser;
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
-getMessagePreviews:
-SELECT * FROM MessagePreview;
+needsToBeNotified:
+WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, isOneOnOne, mutedStatus) AS (
+SELECT isSelfMessage,
+ IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
+	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
+	 (conversationType == 'ONE_ON_ONE') AS isOneOnOne, mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
+SELECT (
+    CASE mutedStatus
+    WHEN 'ALL_MUTED' THEN 0
+    WHEN 'ALL_ALLOWED' THEN (
+        SELECT CASE (SELECT User.user_availability_status FROM SelfUser LEFT JOIN User ON SelfUser.id = User.qualified_id)
+            WHEN 'BUSY' THEN (SELECT
+                isSelfMessage == 0
+                AND isMentioningSelfUser == 1
+                OR  isQuotingSelfUser == 1
+                OR isOneOnOne == 1 FROM targetMessage)
+            WHEN 'AWAY' THEN 0
+            WHEN 'NONE' THEN  (SELECT isSelfMessage == 0 FROM targetMessage)
+            WHEN 'AVAILABLE' THEN (SELECT isSelfMessage == 0 FROM targetMessage)
+            ELSE (SELECT isSelfMessage == 0 FROM targetMessage)  END
+        )
+    WHEN 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN (
+        SELECT CASE (SELECT User.user_availability_status FROM SelfUser LEFT JOIN User ON SelfUser.id = User.qualified_id)
+            WHEN 'AWAY' THEN 0
+            ELSE  (SELECT isSelfMessage == 0
+                  AND isMentioningSelfUser == 1
+                  OR isQuotingSelfUser== 1
+									FROM targetMessage)
+            END
+        )
+    ELSE (SELECT isSelfMessage == 0 FROM targetMessage) END)
+     AS needsToBeNotified FROM targetMessage;
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
@@ -316,7 +354,7 @@ ORDER BY message.date ASC;
 
 getUnreadMessages:
 SELECT * FROM MessagePreview AS message
-WHERE isUnread
+WHERE isUnread AND isSelfMessage = 0
 AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 deleteAllMessages:
@@ -350,17 +388,9 @@ UPDATE Message
 SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
-insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(id, conversation_id) DO UPDATE SET
-id = excluded.id,
-content_type = excluded.content_type,
-date = excluded.date,
-sender_user_id = excluded.sender_user_id,
-sender_client_id = excluded.sender_client_id,
-status = excluded.status,
-visibility = excluded.visibility;
+insertOrIgnoreMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
@@ -502,30 +532,14 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
--- TODO remove
-getLastUnreadMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-ORDER BY message.date ASC
-LIMIT  1;
-
-getConversationLastMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id
-ORDER BY message.date ASC
-LIMIT  1;
+getNotificationsMessages:
+SELECT * FROM MessagePreview AS message
+WHERE shouldNotify == 1
+AND visibility = 'VISIBLE'
+AND contentType IN ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
-
-getUnreadMentionsCount:
-SELECT COUNT(DISTINCT message.id) FROM Message AS message
-WHERE message.conversation_id IS :conversation_id
-AND (strftime('%Y-%m-%d %H:%M:%f', message.date) > (SELECT strftime('%Y-%m-%d %H:%M:%f', last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent
@@ -539,3 +553,23 @@ WHERE asset_download_status = 'IN_PROGRESS';
 
 selectMessageVisibility:
 SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
+
+selectPendingMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = ?
+AND visibility IN ?
+AND (expectsReadConfirmation = 1)
+AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+
+selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
+SELECT id FROM MessageDetailsView
+WHERE conversationId = ?
+AND senderUserId = ?
+AND senderClientId = ?
+AND contentType = 'FAILED_DECRYPTION';
+
+markMessagesAsDecryptionResolved:
+UPDATE MessageFailedToDecryptContent
+SET is_decryption_resolved = 1
+WHERE message_id IN ?;

@@ -12,6 +12,9 @@ data class PreKeyCrypto(
     val encodedData: String
 )
 @Suppress("TooManyFunctions")
+/**
+ * @sample samples.cryptography.ProteusClient.basicEncryption
+ */
 interface ProteusClient {
 
     @Throws(ProteusException::class)
@@ -52,6 +55,7 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 
+    @Throws(ProteusException::class, CancellationException::class)
     fun deleteSession(sessionId: CryptoSessionId)
 }
 

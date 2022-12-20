@@ -3,8 +3,8 @@ package com.wire.kalium.persistence.kmmSettings
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
+import com.russhwolf.settings.SharedPreferencesSettings
 
 private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.AppSettings -> "_app_settings_master_key_"
@@ -23,7 +23,7 @@ private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.
 internal actual fun encryptedSettingsBuilder(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = AndroidSettings(
+): Settings = SharedPreferencesSettings(
     if (options.shouldEncryptData) {
         EncryptedSharedPreferences.create(
             param.appContext,

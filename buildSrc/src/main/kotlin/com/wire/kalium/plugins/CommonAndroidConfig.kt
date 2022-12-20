@@ -23,6 +23,7 @@ fun LibraryExtension.commonAndroidLibConfig(includeNativeInterop: Boolean) {
     }
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
+        jniLibs.pickFirsts.add("**/libsodium.so")
     }
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))

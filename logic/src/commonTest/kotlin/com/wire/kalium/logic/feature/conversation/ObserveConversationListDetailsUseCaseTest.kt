@@ -30,8 +30,8 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@Ignore
 @Suppress("LongMethod")
+@Ignore // TODO
 class ObserveConversationListDetailsUseCaseTest {
 
     @Test
@@ -56,7 +56,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When
@@ -92,7 +91,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When
@@ -150,7 +148,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversations)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, groupConversationUpdates)
             .withConversationsDetailsChannelUpdates(oneOnOneConversation, oneOnOneDetailsChannel)
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -194,7 +191,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
             .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -229,7 +225,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -261,7 +256,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(conversationListUpdates)
             .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -282,7 +276,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .withConversationsList(listOf(successConversation, failureConversation))
             .withSuccessfulConversationsDetailsListUpdates(successConversation, listOf(successConversationDetails))
             .withErrorConversationsDetailsListUpdates(failureConversation)
-            .withUnreadConversationCount(0L)
             .arrange()
 
         // When, Then
@@ -296,13 +289,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
         @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-        fun withUnreadConversationCount(count: Long) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getUnreadConversationCount)
-                .whenInvoked()
-                .thenReturn(Either.Right(count))
-        }
 
         fun withConversationsDetailsChannelUpdates(
             conversation: Conversation,

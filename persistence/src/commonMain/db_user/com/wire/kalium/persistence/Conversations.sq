@@ -21,7 +21,8 @@ CREATE TABLE Conversation (
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
     mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL,
-    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL
+    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
 );
 
 deleteAllConversations:
@@ -31,8 +32,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite, receipt_mode)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -49,7 +50,12 @@ last_modified_date = last_modified_date,
 last_notified_message_date = last_notified_message_date,
 last_read_date = last_read_date,
 mls_last_keying_material_update  = excluded.mls_last_keying_material_update,
-mls_cipher_suite = excluded.mls_cipher_suite;
+mls_cipher_suite = excluded.mls_cipher_suite,
+receipt_mode = excluded.receipt_mode;
+
+insertMigrationOnly:
+INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 updateConversation:
 UPDATE Conversation
@@ -69,9 +75,8 @@ WHERE qualified_id = ?;
 updateAllUnNotifiedConversationsNotificationsDate:
 UPDATE Conversation
 SET last_notified_message_date = ?
-WHERE muted_status != 'ALL_MUTED'
-AND (last_notified_message_date ISNULL
-OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date));
+WHERE last_notified_message_date ISNULL
+OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date);
 
 updateConversationModifiedDate:
 UPDATE Conversation
@@ -149,7 +154,8 @@ Conversation.team_id,
 Conversation.mls_proposal_timer,
 Conversation.muted_time,
 Conversation.creator_id,
-Conversation.last_modified_date
+Conversation.last_modified_date,
+Conversation.receipt_mode
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
@@ -179,6 +185,9 @@ SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER B
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
+selectReceiptModeFromGroupConversationByQualifiedId:
+SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
+
 selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
@@ -196,10 +205,6 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-getUnreadConversationCount:
-SELECT COUNT() FROM Conversation AS conversation
- WHERE strftime('%Y-%m-%d %H:%M:%f', conversation.last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', conversation.last_read_date)
-AND conversation.type IS NOT "SELF";
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
@@ -236,3 +241,8 @@ WHERE qualified_id = ?;
 
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
+
+updateConversationReceiptMode:
+UPDATE Conversation
+SET receipt_mode = ?
+WHERE qualified_id = ?;

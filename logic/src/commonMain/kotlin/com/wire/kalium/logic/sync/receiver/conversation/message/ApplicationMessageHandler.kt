@@ -104,7 +104,8 @@ internal class ApplicationMessageHandlerImpl(
                     senderClientId = senderClientId,
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
-                    visibility = visibility
+                    visibility = visibility,
+                    expectsReadConfirmation = content.expectsReadConfirmation
                 )
                 processMessage(message)
             }
@@ -160,10 +161,26 @@ internal class ApplicationMessageHandlerImpl(
                 logger.i(message = "Availability status update received: ${content.status}")
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
+            is MessageContent.ClientAction -> {
+                logger.i(message = "ClientAction status update received: ")
+
+                val message = Message.System(
+                    id = signaling.id,
+                    content = MessageContent.CryptoSessionReset,
+                    conversationId = signaling.conversationId,
+                    date = signaling.date,
+                    senderUserId = signaling.senderUserId,
+                    status = signaling.status,
+                    senderUserName = signaling.senderUserName
+                )
+
+                logger.i(message = "Persisting crypto session reset system message..")
+                persistMessage(message)
+            }
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
-            is MessageContent.DeleteForMe -> deleteForMeHandler.handle(content, signaling.conversationId)
+            is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
                 logger.d("MessageContent.Calling")
                 callManagerImpl.value.onCallingMessageReceived(
@@ -191,8 +208,8 @@ internal class ApplicationMessageHandlerImpl(
                 persistMessage(message)
             }
 
-            is MessageContent.Knock -> persistMessage(message)
-            is MessageContent.Asset -> handleAssetMessage(message)
+            is MessageContent.Knock -> handleKnock(message)
+            is MessageContent.Asset -> handleAssetMessage(message, content)
 
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
@@ -201,6 +218,10 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.RestrictedAsset -> TODO()
         }
+    }
+
+    private suspend fun handleKnock(message: Message.Regular) {
+        persistMessage(message)
     }
 
     private suspend fun handleTextMessage(
@@ -213,7 +234,9 @@ internal class ApplicationMessageHandlerImpl(
         } else {
             messageContent.quotedMessageReference
         }
-        val adjustedMessage = message.copy(content = messageContent.copy(quotedMessageReference = adjustedQuoteReference))
+        val adjustedMessage = message.copy(
+            content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
+        )
         persistMessage(adjustedMessage)
     }
 
@@ -241,15 +264,14 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    private suspend fun handleAssetMessage(message: Message.Regular) {
-        val content = message.content as MessageContent.Asset
+    private suspend fun handleAssetMessage(message: Message.Regular, messageContent: MessageContent.Asset) {
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                 processNonRestrictedAssetMessage(message)
             } else {
                 val newMessage = message.copy(
                     content = MessageContent.RestrictedAsset(
-                        content.value.mimeType, content.value.sizeInBytes, content.value.name ?: ""
+                        messageContent.value.mimeType, messageContent.value.sizeInBytes, messageContent.value.name ?: ""
                     )
                 )
                 persistMessage(newMessage)

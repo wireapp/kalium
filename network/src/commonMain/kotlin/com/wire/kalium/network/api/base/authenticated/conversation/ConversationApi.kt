@@ -1,8 +1,6 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.TeamId
@@ -44,9 +42,9 @@ interface ConversationApi {
         conversationId: ConversationId
     ): NetworkResponse<Unit>
 
-    suspend fun updateAccessRole(
+    suspend fun updateAccess(
         conversationId: ConversationId,
-        conversationAccessInfoDTO: ConversationAccessInfoDTO
+        updateConversationAccessRequest: UpdateConversationAccessRequest
     ): NetworkResponse<UpdateConversationAccessResponse>
 
     suspend fun updateConversationMemberRole(

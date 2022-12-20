@@ -35,7 +35,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenSyncFails_whenCreatingGroupConversation_thenShouldReturnSyncFailure() = runTest {
         val name = "Conv Name"
-        val creatorClientId = "ClientId"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
@@ -54,7 +54,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenParametersAndEverythingSucceeds_whenCreatingGroupConversation_thenShouldReturnSuccessWithCreatedConversation() = runTest {
         val name = "Conv Name"
-        val creatorClientId = "ClientId"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
@@ -75,7 +75,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
         val name = "Conv Name"
-        val creatorClientId = "ClientId"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
@@ -97,7 +97,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenSyncSucceedsAndCreationFails_whenCreatingGroupConversation_thenShouldReturnUnknownWithRootCause() = runTest {
         val name = "Conv Name"
-        val creatorClientId = "ClientId"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
@@ -118,7 +118,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
         val name = "Conv Name"
-        val creatorClientId = "ClientId"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
@@ -181,11 +181,11 @@ class CreateGroupConversationUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withCurrentClientIdReturning(clientId: String) = apply {
+        fun withCurrentClientIdReturning(clientId: ClientId) = apply {
             given(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
-                .thenReturn(Either.Right(ClientId(clientId)))
+                .thenReturn(Either.Right(clientId))
         }
 
         fun withUpdateConversationModifiedDateSucceeding() = apply {

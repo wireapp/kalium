@@ -83,9 +83,9 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun provideAuthScope(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthenticationScope =
         when (val result = coreLogic.versionedAuthenticationScope(backendLinks).invoke()) {
-            is AutoVersionAuthScopeUseCase.Result.Failure.Generic -> throw error("Generic failure")
-            AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion -> throw error("Too new version")
-            AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion -> throw error("Unknown server version")
+            is AutoVersionAuthScopeUseCase.Result.Failure.Generic -> error("Generic failure")
+            AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion -> error("Too new version")
+            AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion -> error("Unknown server version")
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
@@ -94,8 +94,11 @@ class MainActivity : ComponentActivity() {
             .login("jacob.persson+summer1@wire.com", "hepphepp", false)
 
         if (result !is AuthenticationResult.Success) {
-            throw RuntimeException(
-                "There was an error on the login :(" + "Check the credentials and the internet connection and try again"
+            error(
+                """
+                There was an error on the login :(
+                Check the credentials and the internet connection and try again
+                """.trimIndent()
             )
         }
 

@@ -17,11 +17,7 @@ kotlin {
                 implementation(project(":persistence"))
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
                 implementation(libs.coroutines.test)
                 implementation(libs.settings.kmpTest)
             }
