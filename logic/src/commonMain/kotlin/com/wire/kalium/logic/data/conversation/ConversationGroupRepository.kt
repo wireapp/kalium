@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
 
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
@@ -68,7 +69,10 @@ internal class ConversationGroupRepositoryImpl(
             .flatMap { conversationResponse ->
                 val teamId = selfUser.teamId
                 val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                    conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
+                    conversationResponse,
+                    mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
+                    teamId,
+                    Clock.System.now().toString()
                 )
                 val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 

@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -253,6 +254,7 @@ internal class ConversationDataSource internal constructor(
                         )
                     },
                     selfTeamIdProvider().getOrNull(),
+                    lastNotificationDate = Clock.System.now().toString()
                 )
             }
         conversationDAO.insertConversations(conversationEntities)

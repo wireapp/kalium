@@ -46,6 +46,7 @@ import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
@@ -226,7 +227,7 @@ internal class ConnectionDataSource(
                         teamId = null,
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
-                        lastNotificationDate = null,
+                        lastNotificationDate = Clock.System.now().toString(),
                         lastModifiedDate = connection.lastUpdate,
                         lastReadDate = connection.lastUpdate,
                         access = emptyList(),

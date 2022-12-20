@@ -31,7 +31,13 @@ import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
-    fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
+    fun fromApiModelToDaoModel(
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?,
+        lastNotificationDate: String?
+    ): ConversationEntity
+
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModelToDetails(
@@ -68,7 +74,8 @@ internal class ConversationMapperImpl(
     override fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
-        selfUserTeamId: TeamId?
+        selfUserTeamId: TeamId?,
+        lastNotificationDate: String
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,
@@ -80,7 +87,7 @@ internal class ConversationMapperImpl(
         removedBy = null,
         creatorId = apiModel.creator,
         lastReadDate = EPOCH_FIRST_DAY,
-        lastNotificationDate = null,
+        lastNotificationDate = lastNotificationDate,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
