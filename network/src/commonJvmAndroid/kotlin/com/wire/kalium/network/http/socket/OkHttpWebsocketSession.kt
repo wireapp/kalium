@@ -1,14 +1,32 @@
 package com.wire.kalium.network.http.socket
 
-import io.ktor.client.plugins.websocket.*
-import io.ktor.util.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import okhttp3.*
-import okio.*
+import io.ktor.client.plugins.websocket.WebSocketException
+import io.ktor.util.InternalAPI
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.DefaultWebSocketSession
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketExtension
+import io.ktor.websocket.readReason
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CopyableThrowable
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.channels.trySendBlocking
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
 import okio.ByteString.Companion.toByteString
-import kotlin.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 internal class OkHttpWebsocketSession(
     private val engine: OkHttpClient,
@@ -139,7 +157,7 @@ internal class OkHttpWebsocketSession(
     /**
      * Creates a new web socket and starts the session.
      */
-    public fun start() {
+    fun start() {
         self.complete(this)
     }
 
@@ -148,6 +166,7 @@ internal class OkHttpWebsocketSession(
         ReplaceWith("cancel()", "kotlinx.coroutines.cancel"),
         DeprecationLevel.ERROR
     )
+
     override fun terminate() {
         coroutineContext.cancel()
     }
