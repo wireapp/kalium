@@ -77,6 +77,7 @@ class MessageDAOImpl(
         if (!updateIdIfAlreadyExists(message)) {
             if (isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
+                return
             } else {
                 queries.insertOrIgnoreMessage(
                     id = message.id,
@@ -214,7 +215,6 @@ class MessageDAOImpl(
             hasValidKeys && queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
                 val isFromSameSender = message.senderUserId == it.senderUserId
                         && message.senderClientId == it.senderClientId
-                        && message.senderName == it.senderName
                 (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
             } ?: false
         return currentMessageHasMissingAssetInformation
