@@ -740,7 +740,11 @@ class MessageDAOTest : BaseDatabaseTest() {
             content = MessageEntityContent.Text("hello, world!", emptyList())
         )
 
-        val messageFromUser2 = messageFromUser1.copy(senderName = userEntity2.name!!, senderUserId = userEntity2.id, content = MessageEntityContent.Text("new message content", emptyList()))
+        val messageFromUser2 = messageFromUser1.copy(
+            senderName = userEntity2.name!!,
+            senderUserId = userEntity2.id,
+            content = MessageEntityContent.Text("new message content", emptyList())
+        )
         messageDAO.insertOrIgnoreMessages(
             listOf(messageFromUser1, messageFromUser2)
         )
