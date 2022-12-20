@@ -1,5 +1,6 @@
-package com.wire.kalium.network
+package com.wire.kalium.network.http.socket
 
+import com.wire.kalium.network.kaliumLogger
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response

@@ -1,6 +1,8 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.http.engine.KaliumHttpEngine
+import com.wire.kalium.network.http.socket.KaliumWebSocketFactory
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
