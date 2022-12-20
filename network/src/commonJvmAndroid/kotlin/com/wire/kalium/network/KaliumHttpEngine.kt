@@ -79,7 +79,6 @@ private class OkHttpCallback(
     }
 }
 
-
 private fun mapOkHttpException(
     requestData: HttpRequestData,
     origin: IOException
@@ -94,7 +93,6 @@ private fun mapOkHttpException(
     else -> cause
 }
 
-
 private fun IOException.isConnectException() =
     message?.contains("connect", ignoreCase = true) == true
 
@@ -102,7 +100,6 @@ private fun IOException.unwrapSuppressed(): Throwable {
     if (suppressed.isNotEmpty()) return suppressed[0]
     return this
 }
-
 
 internal suspend fun OkHttpClient.execute(
     request: Request,
@@ -247,7 +244,7 @@ public class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEng
         Protocol.QUIC -> HttpProtocolVersion.QUIC
     }
 
-     companion object {
+    companion object {
         /**
          * It's an artificial prototype object to be used to create actual clients and eliminate the following issue:
          * https://github.com/square/okhttp/issues/3372.
@@ -256,10 +253,10 @@ public class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEng
             OkHttpClient.Builder().build()
         }
 
-         fun create(block: OkHttpConfig.() -> Unit): HttpClientEngine =
-             KaliumHttpEngine(OkHttpConfig().apply(block))
+        fun create(block: OkHttpConfig.() -> Unit): HttpClientEngine =
+            KaliumHttpEngine(OkHttpConfig().apply(block))
 
-     }
+    }
 
     private fun createOkHttpClient(timeoutExtension: HttpTimeout.HttpTimeoutCapabilityConfiguration?): OkHttpClient {
         val builder = (config.preconfigured ?: okHttpClientPrototype).newBuilder()
@@ -307,7 +304,12 @@ internal fun OutgoingContent.convertToOkHttpBody(callContext: CoroutineContext):
 
     is OutgoingContent.ReadChannelContent -> ByteChannelRequestBody(contentLength, callContext) { readFrom() }
     is OutgoingContent.WriteChannelContent -> {
-        ByteChannelRequestBody(contentLength, callContext) { GlobalScope.writer(callContext) { writeTo(channel) }.channel }
+        try {
+            ByteChannelRequestBody(contentLength, callContext) { GlobalScope.writer(callContext) { writeTo(channel) }.channel }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
     }
 
     is OutgoingContent.NoContent -> ByteArray(0).toRequestBody(null, 0, 0)
