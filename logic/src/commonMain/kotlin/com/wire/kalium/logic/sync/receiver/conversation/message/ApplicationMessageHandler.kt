@@ -83,9 +83,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
-                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN
-                    else Message.Visibility.VISIBLE
-
+                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
