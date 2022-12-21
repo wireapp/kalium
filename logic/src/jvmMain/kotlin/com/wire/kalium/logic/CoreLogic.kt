@@ -53,7 +53,8 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            userStorageProvider
+            userStorageProvider,
+            clientLabel
         )
     }
 }

@@ -416,7 +416,9 @@ class ClientRepositoryTest {
         @Mock
         val clientConfigImpl: ClientConfig = mock(classOf<ClientConfig>())
 
-        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
+        val clientLabel: String = "device label"
+
+        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl, clientLabel)
 
         fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>): Arrangement {
             given(clientApi)

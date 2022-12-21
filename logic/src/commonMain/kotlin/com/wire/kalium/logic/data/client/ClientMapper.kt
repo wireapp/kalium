@@ -23,7 +23,8 @@ class ClientMapper(
 
     fun toRegisterClientRequest(
         clientConfig: ClientConfig,
-        param: RegisterClientParam
+        param: RegisterClientParam,
+        cookieLabel: String
     ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
@@ -33,6 +34,7 @@ class ClientMapper(
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
+        cookieLabel = cookieLabel
     )
 
     fun fromClientResponse(response: ClientResponse): Client = Client(

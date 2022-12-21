@@ -25,6 +25,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
+    private val deviceLabel: String
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -63,7 +64,8 @@ internal actual class UserSessionScopeProviderImpl(
             kaliumConfigs,
             featureSupport,
             userStorageProvider,
-            this
+            this,
+            deviceLabel
         )
     }
 }

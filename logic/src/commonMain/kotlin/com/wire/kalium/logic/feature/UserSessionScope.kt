@@ -265,6 +265,7 @@ class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
+    private val deviceLabel: String,
     platformUserStorageProperties: PlatformUserStorageProperties
 ) : CoroutineScope {
 
@@ -273,6 +274,7 @@ class UserSessionScope internal constructor(
     )
 
     private var _clientId: ClientId? = null
+
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
     private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
         clientRepository.currentClientId().onSuccess {
@@ -482,7 +484,7 @@ class UserSessionScope internal constructor(
     }
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
+        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig, deviceLabel)
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
