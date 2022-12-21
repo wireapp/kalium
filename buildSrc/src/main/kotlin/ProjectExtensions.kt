@@ -1,5 +1,5 @@
+import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import org.gradle.api.Project
-import java.io.File
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -31,36 +31,8 @@ internal fun <T> getLocalProperty(propertyName: String, defaultValue: T, project
 /**
  * Run command and return the output
  */
-fun String.runCommand(workingDir: File = File("./")): String? = try {
-    val proc = processCommand(workingDir)
-    proc!!.inputStream.bufferedReader().readText().trim()
-} catch (e: Exception) {
-    println("Error running command: $this")
-    e.printStackTrace()
-    null
+fun String.execute(): Process = ProcessGroovyMethods.execute(this).also {
+    it.waitFor(30, TimeUnit.SECONDS)
 }
 
-/**
- * Run command and return the exit code
- */
-fun String.runCommandWithExitCode(workingDir: File = File("./")): Int = try {
-    val proc = processCommand(workingDir)
-    proc!!.exitValue()
-} catch (e: Exception) {
-    println("Error running command: $this")
-    e.printStackTrace()
-    999
-}
-
-private fun String.processCommand(workingDir: File): Process? {
-    val parts = this.split("\\s".toRegex())
-    val proc = ProcessBuilder(*parts.toTypedArray())
-        .directory(workingDir)
-        .redirectOutput(ProcessBuilder.Redirect.PIPE)
-        .redirectError(ProcessBuilder.Redirect.PIPE)
-        .start()
-
-    proc.waitFor(1, TimeUnit.MINUTES)
-    proc.inputStream.bufferedReader().readText().trim()
-    return proc
-}
+fun Process.text(): String = ProcessGroovyMethods.getText(this)

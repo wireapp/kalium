@@ -90,8 +90,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
         )
 
         val anySettingsFileChanged = globalBuildSettingsFiles.any { relativePath ->
-            val command = "bash -c 'git diff --quiet origin/develop -- ${project.rootDir}/$relativePath ; echo $'"
-            command.runCommandWithExitCode() != 0
+            val exitCode = "git diff --quiet origin/develop -- ${project.rootDir}/$relativePath".execute().exitValue()
+            exitCode != 0
         }
         if (anySettingsFileChanged) {
             println("\uD83D\uDD27 Running all tests because there are changes at the root level")
