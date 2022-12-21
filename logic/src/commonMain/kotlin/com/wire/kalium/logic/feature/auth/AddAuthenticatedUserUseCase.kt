@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.onSuccess
 
 /**
  * Adds an authenticated user to the session
+ * In case of the new session having a different server configurations, the new session should not be added
  */
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
@@ -56,6 +57,7 @@ class AddAuthenticatedUserUseCase internal constructor(
                 { Result.Success(authTokens.userId) }
             )
 
+    // In case of the new session have a different server configurations the new session should not be added
     private suspend fun onUserExist(
         newServerConfigId: String,
         ssoId: SsoId?,
@@ -66,7 +68,6 @@ class AddAuthenticatedUserUseCase internal constructor(
         when (replace) {
             true -> {
                 sessionRepository.fullAccountInfo(newAuthTokens.userId).fold(
-                    // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) },
                     { oldSession ->
                         val newServerConfig =
