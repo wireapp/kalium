@@ -17,7 +17,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
+/**
+ * Get notifications for the current user
+ */
 interface GetNotificationsUseCase {
+    /**
+     * Operation to get all notifications, the Flow emits everytime when the list is changed
+     * @return [Flow] of [List] of [LocalNotificationConversation] with the List that should be shown to the user.
+     */
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
 }
 
@@ -30,9 +37,6 @@ interface GetNotificationsUseCase {
  * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
  * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
- *
- * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
- * That Flow emits everytime when the list is changed
  */
 @Suppress("LongParameterList")
 internal class GetNotificationsUseCaseImpl internal constructor(
