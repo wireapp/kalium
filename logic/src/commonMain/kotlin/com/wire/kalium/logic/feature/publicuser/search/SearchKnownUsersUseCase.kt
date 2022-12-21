@@ -12,7 +12,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
+/**
+ * Searches for users that are; contacts or in federated backends
+ */
 interface SearchKnownUsersUseCase {
+    /**
+     * @param searchQuery the query to search for if the search includes a "@" the domain is used to search in federated backends
+     * @param searchUsersOptions @see [SearchUsersOptions]
+     * @return the [Flow] of [List] of [SearchUsersResult] if successful
+     */
     suspend operator fun invoke(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
