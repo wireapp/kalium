@@ -13,5 +13,5 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
-        instant.toString() // TODO:"Implement own iOS method"
+        instant.toString() // TODO:"Implement own JS method"
 }
