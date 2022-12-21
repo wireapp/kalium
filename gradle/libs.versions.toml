@@ -42,6 +42,7 @@ dokka = "1.7.20"
 carthage = "0.0.1"
 libsodiumBindings = "0.8.5"
 protobufCodegen = "0.9.1"
+annotation = "1.2.0"
 
 [plugins]
 # Home-made convention plugins
@@ -81,6 +82,7 @@ ktor = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-paging3" }
 securityCrypto = { module = "androidx.security:security-crypto", version.ref = "android-security" }
 desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
+annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 
 # kmp Settings (shared pref)
 settings-kmp = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }

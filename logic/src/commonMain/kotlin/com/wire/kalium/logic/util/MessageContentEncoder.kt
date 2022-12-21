@@ -3,7 +3,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.DateTimeUtil.toEpochMillis
+import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray

@@ -21,7 +21,7 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi

@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -730,7 +731,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(member3.user),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = Clock.System.now().toString(),
+            date = DateTimeUtil.currentIsoDateTimeString(),
             conversationId = conversationEntity1.id
         )
         messageDAO.insertOrIgnoreMessage(removalMessage)

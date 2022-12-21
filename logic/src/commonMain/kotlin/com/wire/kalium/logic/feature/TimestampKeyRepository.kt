@@ -5,6 +5,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -31,7 +32,7 @@ class TimestampKeyRepositoryImpl(
 
     override suspend fun update(key: TimestampKeys, timestamp: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            metadataDAO.insertValue(timestamp.toString(), key.name)
+            metadataDAO.insertValue(timestamp.toIsoDateTimeString(), key.name)
         }
 }
 

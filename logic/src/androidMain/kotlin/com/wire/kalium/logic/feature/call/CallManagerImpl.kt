@@ -45,7 +45,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.util.DateTimeUtil.toEpochMillis
+import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

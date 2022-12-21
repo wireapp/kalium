@@ -15,6 +15,7 @@ import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -115,7 +116,7 @@ class ReceiptMessageHandlerTest {
                 id = "signalingId",
                 content = content,
                 conversationId = CONVERSATION_ID,
-                date = date.toString(),
+                date = date.toIsoDateTimeString(),
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
                 status = Message.Status.SENT,

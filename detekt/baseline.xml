@@ -281,7 +281,7 @@
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:24</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:25</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.session.SessionResult.kt:7</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.logic.util.DateTimeUtil.kt:10</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.util.DateTimeUtil.kt:10</ID>
     <ID>SpacingAroundColon:com.wire.kalium.network.serialization.ByteArrayConverter.kt:17</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.QualifiedIDAdapter.kt:5</ID>

@@ -20,10 +20,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.Times
@@ -39,7 +40,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -642,7 +642,7 @@ class MessageSenderTest {
                 recipients = listOf(),
                 dataBlob = null
             )
-            val MESSAGE_SENT_TIME = Clock.System.now().toString()
+            val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             val GROUP_ID = GroupID("groupId")

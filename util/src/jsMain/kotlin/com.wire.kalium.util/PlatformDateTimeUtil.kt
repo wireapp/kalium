@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.util
+package com.wire.kalium.util
 
 import kotlinx.datetime.Instant
 

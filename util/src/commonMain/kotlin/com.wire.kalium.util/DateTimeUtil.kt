@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.util
+package com.wire.kalium.util
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -80,4 +80,11 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun Long.toIsoDateTimeString(): String = fromEpochMillisToIsoDateTimeString(this)
+
+    /**
+     * Parse instant date-time into string date-time in ISO-8601 format
+     * @receiver instant date-time as [kotlinx.datetime.Instant]
+     * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
+     */
+    fun Instant.toIsoDateTimeString(): String = fromInstantToIsoDateTimeString(this)
 }

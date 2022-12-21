@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Clock
 
 internal interface ClearConversationContent {
@@ -79,7 +80,7 @@ internal class ClearConversationContentUseCaseImpl(
                             ),
                             // sending the message to clear this conversation
                             conversationId = selfConversationId,
-                            date = Clock.System.now().toString(),
+                            date = DateTimeUtil.currentIsoDateTimeString(),
                             senderUserId = selfUserId,
                             senderClientId = currentClientId,
                             status = Message.Status.PENDING

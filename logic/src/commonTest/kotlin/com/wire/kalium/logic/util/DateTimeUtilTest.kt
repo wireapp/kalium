@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 import org.junit.Test
 import kotlin.test.assertEquals

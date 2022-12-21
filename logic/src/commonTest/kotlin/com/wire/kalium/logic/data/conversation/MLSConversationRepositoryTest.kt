@@ -38,6 +38,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -56,7 +57,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
@@ -923,7 +923,7 @@ class MLSConversationRepositoryTest {
         internal companion object {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
-            val TIME = Clock.System.now().toString()
+            val TIME = DateTimeUtil.currentIsoDateTimeString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
             val CONVERSATION_ID = ConversationId("ConvId", "Domain")
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))

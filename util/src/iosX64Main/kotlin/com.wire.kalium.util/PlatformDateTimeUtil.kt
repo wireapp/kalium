@@ -1,11 +1,8 @@
-package com.wire.kalium.logic.util
+package com.wire.kalium.util
 
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
-import java.time.format.DateTimeFormatter
 
 actual open class PlatformDateTimeUtil actual constructor() {
-    private val isoDateTimeFormatter = DateTimeFormatter.ofPattern(DateTimeUtil.pattern)
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
@@ -16,5 +13,5 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
-            isoDateTimeFormatter.format(instant.toJavaInstant())
+        TODO("Implement own iOS method")
 }
