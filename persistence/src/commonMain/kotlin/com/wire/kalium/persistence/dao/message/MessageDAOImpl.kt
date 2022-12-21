@@ -72,7 +72,6 @@ class MessageDAOImpl(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
             if (isValidAssetMessageUpdate(message)) {
@@ -99,6 +98,7 @@ class MessageDAOImpl(
         )
     }
 
+    @Suppress("LongMethod")
     private fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
