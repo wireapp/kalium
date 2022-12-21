@@ -29,10 +29,13 @@ internal fun <T> getLocalProperty(propertyName: String, defaultValue: T, project
 }
 
 /**
- * Run command and return the output
+ * Run command and return the [Process]
  */
 fun String.execute(): Process = ProcessGroovyMethods.execute(this).also {
     it.waitFor(30, TimeUnit.SECONDS)
 }
 
+/**
+ * Run command and return the output as text
+ */
 fun Process.text(): String = ProcessGroovyMethods.getText(this)
