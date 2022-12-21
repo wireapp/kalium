@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -681,6 +682,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAValidUpdateAssetMessage_ThenTheKeysAndVisibilityShouldBeCorrect() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -736,6 +738,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateWithWrongKey_ThenTheMessageVisibilityShouldBeHidden() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -789,6 +792,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateFromDifferentSender_ThenTheMessageVisibilityShouldBeHidden() =
         runTest {
             // given
