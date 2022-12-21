@@ -40,7 +40,7 @@ detekt = "1.19.0"
 agp = "7.3.1"
 dokka = "1.7.20"
 carthage = "0.0.1"
-libsodiumBindings = "0.8.5"
+libsodiumBindings = "0.8.6"
 protobufCodegen = "0.9.1"
 
 [plugins]
