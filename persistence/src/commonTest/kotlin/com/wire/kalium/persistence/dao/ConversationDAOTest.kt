@@ -936,7 +936,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             teamId,
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
-            lastNotificationDate = "2022-04-04T16:11:28.388Z",
+            lastNotificationDate = "2020-04-04T16:11:28.388Z",
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
@@ -957,7 +957,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
-            lastNotificationDate = "2022-04-04T16:11:28.388Z",
+            lastNotificationDate = "2020-04-04T16:11:28.388Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
