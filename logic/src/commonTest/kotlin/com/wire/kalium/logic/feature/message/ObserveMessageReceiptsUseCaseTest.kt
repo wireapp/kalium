@@ -13,10 +13,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.stub.ReceiptRepositoryStub
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -78,7 +78,7 @@ class ObserveMessageReceiptsUseCaseTest {
 
     private companion object {
         const val MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
-        val receiptDate = Clock.System.now()
+        val receiptDate = DateTimeUtil.currentInstant()
         val CONVERSATION_ID = TestConversation.ID
         val RECEIPT_TYPE = ReceiptType.READ
         val USER_ID = QualifiedID(

@@ -1,7 +1,6 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -11,11 +10,11 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -673,7 +672,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
 
-        val firstRemovalDate = Clock.System.now()
+        val firstRemovalDate = DateTimeUtil.currentInstant()
         val secondRemovalDate = firstRemovalDate.plus(1.seconds)
 
         val message1 = newSystemMessageEntity(

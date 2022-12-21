@@ -73,7 +73,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -264,7 +263,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationApi)
@@ -287,7 +286,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationDAO)

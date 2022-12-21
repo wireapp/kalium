@@ -45,11 +45,19 @@ object DateTimeUtil : PlatformDateTimeUtil() {
         fromInstantToIsoDateTimeString(Instant.parse(isoDateTime).minus(millis, DateTimeUnit.MILLISECOND))
 
     /**
-     * Return the current date-time
+     * Return the current date-time as string
      * @return current date-time in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun currentIsoDateTimeString(): String =
         fromInstantToIsoDateTimeString(Clock.System.now())
+
+    /**
+     * Return the current date-time as [kotlinx.datetime.Instant].
+     * It's parsed to string and back to ensure that it has the same proper accuracy (three decimal places - milliseconds)
+     * @return current date-time as [kotlinx.datetime.Instant]
+     */
+    fun currentInstant(): Instant =
+        Instant.parse(currentIsoDateTimeString())
 
     /**
      * Parse epoch timestamp in milliseconds into date-time in ISO-8601 format

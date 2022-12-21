@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 interface UpdateConversationMutedStatusUseCase {
     /**
@@ -20,7 +20,7 @@ interface UpdateConversationMutedStatusUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long = Clock.System.now().toEpochMilliseconds()
+        mutedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
     ): ConversationUpdateStatusResult
 }
 
