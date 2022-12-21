@@ -34,7 +34,6 @@ jobs:
               uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
             - name: Build the samples
-              if: ${{ false }}
               env:
                   GITHUB_USER: ${{ github.actor }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
