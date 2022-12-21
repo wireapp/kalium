@@ -84,7 +84,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
      */
     private fun hasToRunAllTests(): Boolean {
         val globalBuildSettingsFiles = listOf(
-            "gradle/libs.version.toml",
+            "gradle/libs.versions.toml",
             "build.gradle.kts",
             "settings.gradle.kts",
         )
