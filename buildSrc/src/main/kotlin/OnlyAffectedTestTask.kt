@@ -80,19 +80,23 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     /**
-     * Check if we have to run all tests, by looking at changes on libs versions
+     * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].
      */
     private fun hasToRunAllTests(): Boolean {
-        val isVersionsFileChanged =
-            "bash -c 'git diff --quiet origin/develop -- ${project.rootDir}/gradle/libs.versions.toml ; echo $?'".runCommandWithExitCode()
-        val isRootBuildFileChanged =
-            "bash -c 'git diff --quiet origin/develop -- ${project.rootDir}/build.gradle.kts ; echo $?'".runCommandWithExitCode()
+        val globalBuildSettingsFiles = listOf(
+            "gradle/libs.version.toml",
+            "build.gradle.kts",
+            "settings.gradle.kts",
+        )
 
-        return (isVersionsFileChanged != 0 || isRootBuildFileChanged != 0).also {
-            if (it) {
-                println("\uD83D\uDD27 Running all tests because there are changes at the root level")
-            }
+        val anySettingsFileChanged = globalBuildSettingsFiles.any { relativePath ->
+            val command = "bash -c 'git diff --quiet origin/develop -- ${project.rootDir}/$relativePath ; echo $'"
+            command.runCommandWithExitCode() != 0
         }
+        if (anySettingsFileChanged) {
+            println("\uD83D\uDD27 Running all tests because there are changes at the root level")
+        }
+        return anySettingsFileChanged
     }
 
     /**
