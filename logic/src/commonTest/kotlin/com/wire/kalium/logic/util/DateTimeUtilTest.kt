@@ -55,7 +55,7 @@ class DateTimeUtilTest {
 
     @Test
     fun givenAnIsoDateTimeStringMillisEqualTo0_whenSubtractingMillis_thenValueShouldBeValid() {
-        val expected = "2022-12-20T17:29:59.000Z"
+        val expected = isoDateTimeStringWith0MillisMinus1s
         val result = DateTimeUtil.minusMilliseconds(isoDateTimeStringWith0Millis, 1000)
         assertEquals(expected, result)
     }
@@ -74,8 +74,14 @@ class DateTimeUtilTest {
     }
 
     @Test
-    fun givenTwoSameValidIsoDateTimeStrings_whenCalculatingDifference_thenValueShouldBe0() {
-        val result = DateTimeUtil.calculateMillisDifference(isoDateTimeStringWith0Millis, isoDateTimeStringWith0MillisMinus1s)
+    fun givenTwoSameValidIsoDateTimeStrings_whenCalculatingDifference_thenValueShouldBeValid() {
+        val result = DateTimeUtil.calculateMillisDifference(isoDateTimeStringWith0MillisMinus1s, isoDateTimeStringWith0Millis)
         assertEquals(1000, result)
+    }
+
+    @Test
+    fun givenTwoSameValidIsoDateTimeStrings_whenCalculatingDifference_thenValueShouldBe0() {
+        val result = DateTimeUtil.calculateMillisDifference(isoDateTimeStringWith0Millis, isoDateTimeStringWith0Millis)
+        assertEquals(0, result)
     }
 }
