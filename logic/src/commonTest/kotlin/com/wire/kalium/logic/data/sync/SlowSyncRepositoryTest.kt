@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -29,7 +30,10 @@ class SlowSyncRepositoryTest {
         val instant = Clock.System.now()
 
         slowSyncRepository.setLastSlowSyncCompletionInstant(instant)
-        assertEquals(instant, slowSyncRepository.observeLastSlowSyncCompletionInstant().first())
+        assertEquals(
+            instant.toIsoDateTimeString(),
+            slowSyncRepository.observeLastSlowSyncCompletionInstant().first()?.toIsoDateTimeString()
+        )
     }
 
     @Test
@@ -49,11 +53,11 @@ class SlowSyncRepositoryTest {
         slowSyncRepository.observeLastSlowSyncCompletionInstant().test {
             awaitItem() // Ignore first item
             slowSyncRepository.setLastSlowSyncCompletionInstant(firstInstant)
-            assertEquals(firstInstant, awaitItem())
+            assertEquals(firstInstant.toIsoDateTimeString(), awaitItem()?.toIsoDateTimeString())
 
             val secondInstant = firstInstant.plus(10.seconds)
             slowSyncRepository.setLastSlowSyncCompletionInstant(secondInstant)
-            assertEquals(secondInstant, awaitItem())
+            assertEquals(secondInstant.toIsoDateTimeString(), awaitItem()?.toIsoDateTimeString())
 
             cancelAndIgnoreRemainingEvents()
         }
