@@ -842,6 +842,79 @@ class MessageDAOTest : BaseDatabaseTest() {
             assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
         }
 
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromTheSameUser_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+
+        val message1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val message2 = message1.copy(content = MessageEntityContent.Text("new message content", emptyList()))
+        messageDAO.insertOrIgnoreMessages(
+            listOf(message1, message2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(message1, it)
+        }
+    }
+
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromDifferentUsers_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+        userDAO.insertUser(userEntity2)
+
+        val messageFromUser1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val messageFromUser2 = messageFromUser1.copy(
+            senderName = userEntity2.name!!,
+            senderUserId = userEntity2.id,
+            content = MessageEntityContent.Text("new message content", emptyList())
+        )
+        messageDAO.insertOrIgnoreMessages(
+            listOf(messageFromUser1, messageFromUser2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(messageFromUser1, it)
+        }
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)
