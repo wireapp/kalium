@@ -12,11 +12,19 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 
+/**
+ * Logs out the user from the current session
+ */
 interface LogoutUseCase {
+    /**
+     * @param reason the reason for the logout performed
+     * @see  [LogoutReason]
+
+     */
     suspend operator fun invoke(reason: LogoutReason)
 }
 
-class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
+internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val clientRepository: ClientRepository,
@@ -42,6 +50,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 clearClientDataUseCase()
                 clearUserDataUseCase() // this clears also current client id
             }
+
             LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
                 // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
                 delay(CLEAR_DATA_DELAY)
@@ -49,6 +58,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 clientRepository.clearCurrentClientId()
                 clientRepository.clearHasRegisteredMLSClient()
             }
+
             LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
                 clientRepository.clearCurrentClientId()
             }
