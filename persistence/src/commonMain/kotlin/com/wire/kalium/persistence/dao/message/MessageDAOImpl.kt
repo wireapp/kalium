@@ -79,127 +79,123 @@ class MessageDAOImpl(
                 updateAssetMessage(message)
                 return
             } else {
-                queries.insertOrIgnoreMessage(
-                    id = message.id,
-                    conversation_id = message.conversationId,
-                    date = message.date,
-                    sender_user_id = message.senderUserId,
-                    sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-                    visibility = message.visibility,
-                    status = message.status,
-                    content_type = contentTypeOf(message.content),
-                    expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
-                )
-            }
-            when (val content = message.content) {
-                is MessageEntityContent.Text -> {
-                    queries.insertMessageTextContent(
-                        message_id = message.id,
-                        conversation_id = message.conversationId,
-                        text_body = content.messageBody,
-                        quoted_message_id = content.quotedMessageId,
-                        is_quote_verified = content.isQuoteVerified
-                    )
-                    content.mentions.forEach {
-                        queries.insertMessageMention(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            start = it.start,
-                            length = it.length,
-                            user_id = it.userId
-                        )
-                    }
-                }
-
-                is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    asset_mime_type = content.mimeType,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName
-                )
-
-                is MessageEntityContent.Asset -> {
-                    queries.insertMessageAssetContent(
-                        message_id = message.id,
-                        conversation_id = message.conversationId,
-                        asset_size = content.assetSizeInBytes,
-                        asset_name = content.assetName,
-                        asset_mime_type = content.assetMimeType,
-                        asset_upload_status = content.assetUploadStatus,
-                        asset_download_status = content.assetDownloadStatus,
-                        asset_otr_key = content.assetOtrKey,
-                        asset_sha256 = content.assetSha256Key,
-                        asset_id = content.assetId,
-                        asset_token = content.assetToken,
-                        asset_domain = content.assetDomain,
-                        asset_encryption_algorithm = content.assetEncryptionAlgorithm,
-                        asset_width = content.assetWidth,
-                        asset_height = content.assetHeight,
-                        asset_duration_ms = content.assetDurationMs,
-                        asset_normalized_loudness = content.assetNormalizedLoudness
-                    )
-                }
-
-                is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                    unknown_type_name = content.typeName
-                )
-
-                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                )
-
-                is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    member_change_list = content.memberUserIdList,
-                    member_change_type = content.memberChangeType
-                )
-
-                is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    caller_id = message.senderUserId
-                )
-
-                is MessageEntityContent.Knock -> {
-                    /** NO-OP. No need to insert any content for Knock messages */
-                }
-
-                is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    conversation_name = content.conversationName
-                )
-
-                is MessageEntityContent.TeamMemberRemoved -> {
-                    // TODO: What needs to be done here?
-                    //       When migrating to Kotlin 1.7, when branches must be exhaustive!
-                    kaliumLogger.w("TeamMemberRemoved message insertion not handled")
-                }
-
-                is MessageEntityContent.CryptoSessionReset -> {
-                    // NOTHING TO DO
-                }
+                insertBaseMessage(message)
+                insertMessageContent(message)
             }
         }
     }
 
-    private fun updateAssetMessage(message: MessageEntity) {
-        val assetMessageContent = message.content as MessageEntityContent.Asset
-        queries.updateAssetKeys(
-            messageId = message.id,
-            conversationId = message.conversationId,
-            assetId = assetMessageContent.assetId,
-            assetOtrKey = assetMessageContent.assetOtrKey,
-            assetSha256 = assetMessageContent.assetSha256Key,
-            visibility = message.visibility
+    private fun insertBaseMessage(message: MessageEntity) {
+        queries.insertOrIgnoreMessage(
+            id = message.id,
+            conversation_id = message.conversationId,
+            date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+            visibility = message.visibility,
+            status = message.status,
+            content_type = contentTypeOf(message.content),
+            expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
         )
+    }
+
+    private fun insertMessageContent(message: MessageEntity) {
+        when (val content = message.content) {
+            is MessageEntityContent.Text -> {
+                queries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified
+                )
+                content.mentions.forEach {
+                    queries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
+                    )
+                }
+            }
+
+            is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                asset_mime_type = content.mimeType,
+                asset_size = content.assetSizeInBytes,
+                asset_name = content.assetName
+            )
+
+            is MessageEntityContent.Asset -> {
+                queries.insertMessageAssetContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    asset_size = content.assetSizeInBytes,
+                    asset_name = content.assetName,
+                    asset_mime_type = content.assetMimeType,
+                    asset_upload_status = content.assetUploadStatus,
+                    asset_download_status = content.assetDownloadStatus,
+                    asset_otr_key = content.assetOtrKey,
+                    asset_sha256 = content.assetSha256Key,
+                    asset_id = content.assetId,
+                    asset_token = content.assetToken,
+                    asset_domain = content.assetDomain,
+                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
+                    asset_width = content.assetWidth,
+                    asset_height = content.assetHeight,
+                    asset_duration_ms = content.assetDurationMs,
+                    asset_normalized_loudness = content.assetNormalizedLoudness
+                )
+            }
+
+            is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+                unknown_type_name = content.typeName
+            )
+
+            is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+            )
+
+            is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                member_change_list = content.memberUserIdList,
+                member_change_type = content.memberChangeType
+            )
+
+            is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                caller_id = message.senderUserId
+            )
+
+            is MessageEntityContent.Knock -> {
+                /** NO-OP. No need to insert any content for Knock messages */
+            }
+
+            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                conversation_name = content.conversationName
+            )
+
+            is MessageEntityContent.TeamMemberRemoved -> {
+                // TODO: What needs to be done here?
+                //       When migrating to Kotlin 1.7, when branches must be exhaustive!
+                kaliumLogger.w("TeamMemberRemoved message insertion not handled")
+            }
+
+            is MessageEntityContent.CryptoSessionReset -> {
+                // NOTHING TO DO
+            }
+        }
     }
 
     /**
@@ -218,6 +214,18 @@ class MessageDAOImpl(
                 (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
             } ?: false
         return currentMessageHasMissingAssetInformation
+    }
+
+    private fun updateAssetMessage(message: MessageEntity) {
+        val assetMessageContent = message.content as MessageEntityContent.Asset
+        queries.updateAssetKeys(
+            messageId = message.id,
+            conversationId = message.conversationId,
+            assetId = assetMessageContent.assetId,
+            assetOtrKey = assetMessageContent.assetOtrKey,
+            assetSha256 = assetMessageContent.assetSha256Key,
+            visibility = message.visibility
+        )
     }
 
     /*
