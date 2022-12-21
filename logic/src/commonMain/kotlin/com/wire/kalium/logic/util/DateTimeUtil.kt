@@ -24,6 +24,7 @@ expect open class PlatformDateTimeUtil() {
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
 object DateTimeUtil : PlatformDateTimeUtil() {
     const val pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+    const val regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d(([+-]\\d\\d:\\d\\d)|Z)?\$"
 
     /**
      * Calculate the difference between two date-times provided to it
@@ -41,7 +42,7 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return date-time in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ) decreased by the given milliseconds
      */
     fun minusMilliseconds(isoDateTime: String, millis: Long): String =
-        Instant.parse(isoDateTime).minus(millis, DateTimeUnit.MILLISECOND).toString()
+        fromInstantToIsoDateTimeString(Instant.parse(isoDateTime).minus(millis, DateTimeUnit.MILLISECOND))
 
     /**
      * Return the current date-time
