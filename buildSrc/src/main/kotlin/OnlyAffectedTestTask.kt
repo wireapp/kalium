@@ -83,9 +83,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
      * Check if we have to run all tests, by looking at changes on libs versions or buildSrc
      */
     private fun hasToRunAllTests(): Boolean {
-        val isBuildSrcDirty = "git diff --quiet ${project.rootDir}/buildSrc ; echo \$?".runCommandWithExitCode()
         val isVersionsFileChanged = "git diff --quiet ${project.rootDir}/gradle/libs.versions.toml ; echo $?".runCommandWithExitCode()
-        return (isBuildSrcDirty != 0 || isVersionsFileChanged != 0).also {
+        return (isVersionsFileChanged != 0).also {
             if (it) {
                 println("\uD83D\uDD27 Running all tests because there are changes at the root level")
             }
