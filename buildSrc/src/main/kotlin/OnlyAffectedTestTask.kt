@@ -40,7 +40,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 .toSet()
         }
 
-        if (affectedModules.isEmpty() || affectedModules.first().isEmpty()) {
+        if (!hasToRunAllTests() && (affectedModules.isEmpty() || affectedModules.first().isEmpty())) {
             println("\uD83E\uDD8B It is not necessary to run any test, ending here to free up some resources.")
             return
         }
@@ -83,7 +83,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
      * Check if we have to run all tests, by looking at changes on libs versions or buildSrc
      */
     private fun hasToRunAllTests(): Boolean {
-        val isVersionsFileChanged = "bash -c 'git diff --quiet ${project.rootDir}/gradle/libs.versions.toml ; echo $?'".runCommandWithExitCode()
+        val isVersionsFileChanged =
+            "bash -c 'git diff --quiet ${project.rootDir}/gradle/libs.versions.toml ; echo $?'".runCommandWithExitCode()
         return (isVersionsFileChanged != 0).also {
             if (it) {
                 println("\uD83D\uDD27 Running all tests because there are changes at the root level")
