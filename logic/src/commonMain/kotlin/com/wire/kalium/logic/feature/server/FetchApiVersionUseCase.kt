@@ -6,7 +6,14 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Fetches the server api version, for the given server backend.
+ */
 interface FetchApiVersionUseCase {
+    /**
+     * @param serverLinks the server backend links to fetch the api version from
+     * @return the [FetchApiVersionResult] the server configuration version if successful, otherwise a mapped failure.
+     */
     suspend operator fun invoke(serverLinks: ServerConfig.Links): FetchApiVersionResult
 }
 

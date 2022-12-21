@@ -5,11 +5,21 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Marks the messages of a conversation as notified, using the date as a reference.
+ */
 interface MarkMessagesAsNotifiedUseCase {
+    /**
+     * @param conversationId the id of the conversation
+     * @param date the date of the last message to mark as notified
+     * @return the [Result] whether the operation was successful or not
+     */
     suspend operator fun invoke(conversationId: ConversationId?, date: String): Result
 }
 
-class MarkMessagesAsNotifiedUseCaseImpl(private val conversationRepository: ConversationRepository) : MarkMessagesAsNotifiedUseCase {
+internal class MarkMessagesAsNotifiedUseCaseImpl(
+    private val conversationRepository: ConversationRepository
+) : MarkMessagesAsNotifiedUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId?, date: String): Result {
         return if (conversationId == null) {

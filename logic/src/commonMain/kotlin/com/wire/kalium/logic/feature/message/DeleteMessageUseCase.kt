@@ -15,16 +15,14 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.*
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
+/**
+ * Deletes a message from the conversation
+ */
 @Suppress("LongParameterList")
 class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
@@ -36,6 +34,14 @@ class DeleteMessageUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) {
 
+    /**
+     * Operation to delete a message from the conversation
+     *
+     * @param conversationId the id of the conversation the message belongs to
+     * @param messageId the id of the message to delete
+     * @param deleteForEveryone either delete the message for everyone or just for the current user
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete

@@ -17,6 +17,9 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
+/**
+ * Sending a ping/knock message to a conversation
+ */
 class SendKnockUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
@@ -25,6 +28,13 @@ class SendKnockUseCase internal constructor(
     private val messageSender: MessageSender
 ) {
 
+    /**
+     * Operation to send a ping or knock message to a conversation
+     *
+     * @param conversationId the id of the conversation to send the ping to
+     * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete

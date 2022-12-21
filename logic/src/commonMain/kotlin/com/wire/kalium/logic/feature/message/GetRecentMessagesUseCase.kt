@@ -8,11 +8,21 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
+/**
+ * Gets the recent messages from the conversation
+ */
 class GetRecentMessagesUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val slowSyncRepository: SlowSyncRepository
 ) {
 
+    /**
+     * @param conversationId the id of the conversation
+     * @param limit the number of messages to return for pagination
+     * @param offset the offset of the messages to return for pagination
+     * @param visibility the visibility of the messages to return @see [Message.Visibility]
+     * @return the [Flow] of [List] of [Message] if successful
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         limit: Int = 100,
