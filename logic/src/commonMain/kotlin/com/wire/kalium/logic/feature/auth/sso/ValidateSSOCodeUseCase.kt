@@ -20,14 +20,17 @@ interface ValidateSSOCodeUseCase {
 
 internal class ValidateSSOCodeUseCaseImpl : ValidateSSOCodeUseCase {
     override fun invoke(ssoCode: String): ValidateSSOCodeResult =
-        if(!ssoCode.startsWith(SSO_CODE_WIRE_PREFIX)) ValidateSSOCodeResult.Invalid
+        if (!ssoCode.startsWith(SSO_CODE_WIRE_PREFIX)) ValidateSSOCodeResult.Invalid
         else ssoCode.removePrefix(SSO_CODE_WIRE_PREFIX).let { uuid ->
-            try { uuidFrom(uuid).let { ValidateSSOCodeResult.Valid(uuid) } }
-            catch (e: IllegalArgumentException) { ValidateSSOCodeResult.Invalid }
+            try {
+                uuidFrom(uuid).let { ValidateSSOCodeResult.Valid(uuid) }
+            } catch (e: IllegalArgumentException) {
+                ValidateSSOCodeResult.Invalid
+            }
         }
 }
 
 sealed class ValidateSSOCodeResult {
-    data class Valid(val uuid: String): ValidateSSOCodeResult()
-    object Invalid: ValidateSSOCodeResult()
+    data class Valid(val uuid: String) : ValidateSSOCodeResult()
+    object Invalid : ValidateSSOCodeResult()
 }
