@@ -20,7 +20,7 @@ expect open class PlatformDateTimeUtil() {
     fun fromInstantToIsoDateTimeString(instant: Instant): String
 }
 
-//TODO(qol): we need to think if it should return an either or should we catch the exception,
+// TODO(qol): we need to think if it should return an either or should we catch the exception,
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
 object DateTimeUtil : PlatformDateTimeUtil() {
     const val pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
@@ -81,4 +81,3 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      */
     fun Long.toIsoDateTimeString(): String = fromEpochMillisToIsoDateTimeString(this)
 }
-

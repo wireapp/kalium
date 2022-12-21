@@ -9,7 +9,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
-    val TEST_DATE = "2000-01-01T12:00:00.000Z"
+    const val TEST_DATE = "2000-01-01T12:00:00.000Z"
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
