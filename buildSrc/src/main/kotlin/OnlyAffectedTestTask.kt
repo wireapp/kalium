@@ -50,8 +50,9 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     private fun executeTask(affectedModules: Set<String>) {
         val tasksName = mutableListOf<String>()
+        val hasToRunAllTests = hasToRunAllTests()
         project.childProjects.values
-            .filter { affectedModules.contains(it.name) && !ignoredModules.contains(it.name) }
+            .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
                     .filter { it.name.equals(targetTestTask, true) }
@@ -67,6 +68,27 @@ open class OnlyAffectedTestTask : DefaultTask() {
         project.exec {
             args(targetTask)
             executable("./gradlew")
+        }
+    }
+
+    /**
+     * Get the predicate to compute if the module should be included or not in the test
+     */
+    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = when {
+        allTests == true -> true
+        else -> modulesPredicate
+    }
+
+    /**
+     * Check if we have to run all tests, by looking at changes on libs versions or buildSrc
+     */
+    private fun hasToRunAllTests(): Boolean {
+        val isBuildSrcDirty = "git diff --quiet ${project.rootDir}/buildSrc ; echo \$?".runCommandWithExitCode()
+        val isVersionsFileChanged = "git diff --quiet ${project.rootDir}/gradle/libs.versions.toml ; echo $?".runCommandWithExitCode()
+        return (isBuildSrcDirty != 0 || isVersionsFileChanged != 0).also {
+            if (it) {
+                println("\uD83D\uDD27 Running all tests because there are changes at the root level")
+            }
         }
     }
 
