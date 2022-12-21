@@ -25,7 +25,7 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val removedBy: UserId?,
-    val lastNotificationDate: String,
+    val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
     val access: List<Access>,

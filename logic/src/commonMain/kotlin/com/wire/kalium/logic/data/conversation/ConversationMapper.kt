@@ -75,7 +75,7 @@ internal class ConversationMapperImpl(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?,
-        lastNotificationDate: String
+        lastNotificationDate: String?
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,

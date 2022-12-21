@@ -16,7 +16,7 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val removedBy: UserIDEntity? = null,
     val creatorId: String,
-    val lastNotificationDate: String,
+    val lastNotificationDate: String?,
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
