@@ -72,49 +72,64 @@ class MessageDAOImpl(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         if (!updateIdIfAlreadyExists(message)) {
-            queries.insertOrIgnoreMessage(
-                id = message.id,
-                conversation_id = message.conversationId,
-                date = message.date,
-                sender_user_id = message.senderUserId,
-                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-                visibility = message.visibility,
-                status = message.status,
-                content_type = contentTypeOf(message.content),
-                expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
-            )
-            when (val content = message.content) {
-                is MessageEntityContent.Text -> {
-                    queries.insertMessageTextContent(
-                        message_id = message.id,
-                        conversation_id = message.conversationId,
-                        text_body = content.messageBody,
-                        quoted_message_id = content.quotedMessageId,
-                        is_quote_verified = content.isQuoteVerified
-                    )
-                    content.mentions.forEach {
-                        queries.insertMessageMention(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            start = it.start,
-                            length = it.length,
-                            user_id = it.userId
-                        )
-                    }
-                }
+            if (isValidAssetMessageUpdate(message)) {
+                updateAssetMessage(message)
+                return
+            } else {
+                insertBaseMessage(message)
+                insertMessageContent(message)
+            }
+        }
+    }
 
-                is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+    private fun insertBaseMessage(message: MessageEntity) {
+        queries.insertOrIgnoreMessage(
+            id = message.id,
+            conversation_id = message.conversationId,
+            date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+            visibility = message.visibility,
+            status = message.status,
+            content_type = contentTypeOf(message.content),
+            expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
+        )
+    }
+
+    @Suppress("LongMethod")
+    private fun insertMessageContent(message: MessageEntity) {
+        when (val content = message.content) {
+            is MessageEntityContent.Text -> {
+                queries.insertMessageTextContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
-                    asset_mime_type = content.mimeType,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified
                 )
+                content.mentions.forEach {
+                    queries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
+                    )
+                }
+            }
 
-                is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
+            is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                asset_mime_type = content.mimeType,
+                asset_size = content.assetSizeInBytes,
+                asset_name = content.assetName
+            )
+
+            is MessageEntityContent.Asset -> {
+                queries.insertMessageAssetContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     asset_size = content.assetSizeInBytes,
@@ -133,54 +148,84 @@ class MessageDAOImpl(
                     asset_duration_ms = content.assetDurationMs,
                     asset_normalized_loudness = content.assetNormalizedLoudness
                 )
+            }
 
-                is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                    unknown_type_name = content.typeName
-                )
+            is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+                unknown_type_name = content.typeName
+            )
 
-                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                )
+            is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+            )
 
-                is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    member_change_list = content.memberUserIdList,
-                    member_change_type = content.memberChangeType
-                )
+            is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                member_change_list = content.memberUserIdList,
+                member_change_type = content.memberChangeType
+            )
 
-                is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    caller_id = message.senderUserId
-                )
+            is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                caller_id = message.senderUserId
+            )
 
-                is MessageEntityContent.Knock -> {
-                    /** NO-OP. No need to insert any content for Knock messages */
-                }
+            is MessageEntityContent.Knock -> {
+                /** NO-OP. No need to insert any content for Knock messages */
+            }
 
-                is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    conversation_name = content.conversationName
-                )
+            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                conversation_name = content.conversationName
+            )
 
-                is MessageEntityContent.TeamMemberRemoved -> {
-                    // TODO: What needs to be done here?
-                    //       When migrating to Kotlin 1.7, when branches must be exhaustive!
-                    kaliumLogger.w("TeamMemberRemoved message insertion not handled")
-                }
+            is MessageEntityContent.TeamMemberRemoved -> {
+                // TODO: What needs to be done here?
+                //       When migrating to Kotlin 1.7, when branches must be exhaustive!
+                kaliumLogger.w("TeamMemberRemoved message insertion not handled")
+            }
 
-                is MessageEntityContent.CryptoSessionReset -> {
-                    // NOTHING TO DO
-                }
+            is MessageEntityContent.CryptoSessionReset -> {
+                // NOTHING TO DO
             }
         }
+    }
+
+    /**
+     * Returns true if the [message] is an asset message that is already in the DB and any of its decryption keys are null/empty. This means
+     * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
+     * separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.
+     */
+    private fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
+        if (message !is MessageEntity.Regular) return false
+        // If asset has no valid keys, no need to query the DB
+        val hasValidKeys = message.content is MessageEntityContent.Asset && message.content.hasValidRemoteData()
+        val currentMessageHasMissingAssetInformation =
+            hasValidKeys && queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
+                val isFromSameSender = message.senderUserId == it.senderUserId
+                        && message.senderClientId == it.senderClientId
+                (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
+            } ?: false
+        return currentMessageHasMissingAssetInformation
+    }
+
+    private fun updateAssetMessage(message: MessageEntity) {
+        val assetMessageContent = message.content as MessageEntityContent.Asset
+        queries.updateAssetKeys(
+            messageId = message.id,
+            conversationId = message.conversationId,
+            assetId = assetMessageContent.assetId,
+            assetOtrKey = assetMessageContent.assetOtrKey,
+            assetSha256 = assetMessageContent.assetSha256Key,
+            visibility = message.visibility
+        )
     }
 
     /*
@@ -189,43 +234,39 @@ class MessageDAOImpl(
         the user missed when offline still returns this event, so in order to avoid duplicates and to have a valid remote id, the app needs
         to check and replace the id of the already existing system message instead of adding another one.
         This behavior is similar for all requests which generate events, for now member-join ,member-leave and rename are handled.
-         */
+    */
     private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
-            is MessageEntityContent.MemberChange,
-            is MessageEntityContent.ConversationRenamed -> message.content
-
+            is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed -> message.content
             else -> null
-        }
-            ?.let {
-                if (message.senderUserId == selfUserId) it else null
-            }
-            ?.let { messageContent ->
-                // Check if the message with given time and type already exists in the local DB.
-                queries.selectByConversationIdAndSenderIdAndTimeAndType(
-                    message.conversationId,
-                    message.senderUserId,
-                    message.date,
-                    contentTypeOf(messageContent)
-                )
-                    .executeAsList()
-                    .firstOrNull {
-                        LocalId.check(it.id) && when (messageContent) {
-                            is MessageEntityContent.MemberChange ->
-                                messageContent.memberChangeType == it.memberChangeType &&
-                                        it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
+        }?.let {
+            if (message.senderUserId == selfUserId) it else null
+        }?.let { messageContent ->
+            // Check if the message with given time and type already exists in the local DB.
+            queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                message.conversationId,
+                message.senderUserId,
+                message.date,
+                contentTypeOf(messageContent)
+            )
+                .executeAsList()
+                .firstOrNull {
+                    LocalId.check(it.id) && when (messageContent) {
+                        is MessageEntityContent.MemberChange ->
+                            messageContent.memberChangeType == it.memberChangeType &&
+                                    it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
 
-                            is MessageEntityContent.ConversationRenamed ->
-                                it.conversationName == messageContent.conversationName
+                        is MessageEntityContent.ConversationRenamed ->
+                            it.conversationName == messageContent.conversationName
 
-                            else -> false
-                        }
-                    }?.let {
-                        // The message already exists in the local DB, if its id is different then just update id.
-                        if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
-                        true
+                        else -> false
                     }
-            } ?: false
+                }?.let {
+                    // The message already exists in the local DB, if its id is different then just update id.
+                    if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                    true
+                }
+        } ?: false
 
     override suspend fun updateAssetUploadStatus(
         uploadStatus: MessageEntity.UploadStatus,
@@ -378,4 +419,8 @@ class MessageDAOImpl(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 
+    private fun MessageEntityContent.Asset.hasValidRemoteData() =
+        assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
 }
+
+internal fun ByteArray?.isNullOrEmpty() = this?.isEmpty() ?: true
