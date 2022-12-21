@@ -33,7 +33,20 @@ jobs:
             - name: Validate Gradle wrapper
               uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
+            # Checks for changes in the top-level gradle settings or buildSrc
+            - name: Identify build configuration changes
+              id: identify-build-configuration-changes
+              uses: tj-actions/changed-files@v35
+              with:
+                  files: |
+                      /*.gradle.*
+                      /gradle/*.gradle.*
+                      buildSrc/src/**
+                      *.versions.toml
+
+            # TODO: RE-ENABLE AFTER TESTING CI SETUP
             - name: Build the samples
+              if: ${{ false }}
               env:
                   GITHUB_USER: ${{ github.actor }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,7 +73,22 @@ jobs:
                   disable-animations: false
                   script: echo "Generated AVD snapshot for caching."
 
-            - name: Android Instrumentation Tests
+            # If any Gradle file was modified, run tests on ALL modules
+            - name: Android Tests (All Modules)
+              id: test-all-modules
+              if: steps.identify-build-configuration-changes.outputs.any_modified == 'true'
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: ${{ matrix.api-level }}
+                  target: google_apis
+                  script: ./gradlew connectedDebugAndroidTest
+              env:
+                  GITHUB_USER: ${{ github.actor }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            # Only run this if the previous step was skipped
+            - name: Android Tests (Affected Modules)
+              if: steps.test-all-modules.outcome == 'skipped'
               uses: reactivecircus/android-emulator-runner@v2
               with:
                   api-level: ${{ matrix.api-level }}
