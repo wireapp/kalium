@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 class MessageNotificationsTest : BaseMessageTest() {
 
     @Test
-    fun givenNewMessageInserted_whenConversationInAllMutedState_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenNewMessageInserted_whenConvInAllMutedState_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
         val userStatus = UserAvailabilityStatusEntity.BUSY // Doesn't matter in this case
         val messageNeedsToBeNotified = false
@@ -21,7 +21,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenSelfMessageInserted_whenConversationInAllMutedState_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenSelfMessageInserted_whenConvInAllMutedState_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
         val userStatus = UserAvailabilityStatusEntity.BUSY // Doesn't matter in this case
         val messageNeedsToBeNotified = false
@@ -30,7 +30,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenSelfMessageInserted_whenConversationInAllAllowedState_AndUserInBusyMode_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenSelfMessageInserted_whenConvInAllAllowedState_AndUserInBusyMode_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.BUSY
         val messageNeedsToBeNotified = false
@@ -39,7 +39,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenOtherMentioningOthersMessageInserted_whenConversationInAllAllowedState_AndUserInBusyMode_thenTheMessageNeedsToBeNotifyIsFalse() =
+    fun givenOtherMentionsOthersMessageInserted_whenConvInAllAllowedState_AndUserInBusyMode_thenNeedsToBeNotifyIsFalse() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.BUSY
@@ -49,7 +49,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherMentioningSelfMessageInserted_whenConversationInAllAllowedState_AndUserInBusyMode_thenTheMessageNeedsToBeNotifyIsTrue() =
+    fun givenOtherMentioningSelfMessageInserted_whenConvInAllAllowedState_AndUserInBusyMode_thenNeedsToBeNotifyIsTrue() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.BUSY
@@ -59,7 +59,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherQuotingOthersMessageInserted_whenConversationInAllAllowedState_AndUserInBusyMode_thenTheMessageNeedsToBeNotifyIsFalse() =
+    fun givenOtherQuotingOthersMessageInserted_whenConvInAllAllowedState_AndUserInBusyMode_thenNeedsToBeNotifyIsFalse() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.BUSY
@@ -69,7 +69,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherQuotingSelfMessageInserted_whenConversationInAllAllowedState_AndUserInBusyMode_thenTheMessageNeedsToBeNotifyIsTrue() =
+    fun givenOtherQuotingSelfMessageInserted_whenConvInAllAllowedState_AndUserInBusyMode_thenNeedsToBeNotifyIsTrue() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.BUSY
@@ -79,7 +79,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenNewMessageInserted_whenConversationInAllAllowedState_AndUserInAwayMode_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenNewMessageInserted_whenConvInAllAllowedState_AndUserInAwayMode_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.AWAY
         val messageNeedsToBeNotified = false
@@ -88,7 +88,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenSelfMessageInserted_whenConversationInAllAllowedState_AndUserInNoneMode_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenSelfMessageInserted_whenConvInAllAllowedState_AndUserInNoneMode_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.NONE
         val messageNeedsToBeNotified = false
@@ -97,7 +97,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenNewMessageInserted_whenConversationInAllAllowedState_AndUserInNoneMode_thenTheMessageNeedsToBeNotifyIsTrue() = runTest {
+    fun givenNewMessageInserted_whenConvInAllAllowedState_AndUserInNoneMode_thenNeedsToBeNotifyIsTrue() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.NONE
         val messageNeedsToBeNotified = true
@@ -111,7 +111,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenSelfMessageInserted_whenConversationInAllAllowedState_AndUserInAvailableMode_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenSelfMessageInserted_whenConvInAllAllowedState_AndUserInAvailableMode_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.AVAILABLE
         val messageNeedsToBeNotified = false
@@ -125,7 +125,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenNewMessageInserted_whenConversationInAllAllowedState_AndUserInAvailableMode_thenTheMessageNeedsToBeNotifyIsTrue() = runTest {
+    fun givenNewMessageInserted_whenConvInAllAllowedState_AndUserInAvailableMode_thenNeedsToBeNotifyIsTrue() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.AVAILABLE
         val messageNeedsToBeNotified = true
@@ -134,7 +134,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenNewMessageInserted_whenConversationInOnlyMentionsAndRepliesState_AndUserInAwayMode_thenTheMessageNeedsToBeNotifyIsFalse() =
+    fun givenNewMessageInserted_whenConvInOnlyMentionsAndRepliesState_AndUserInAwayMode_thenNeedsToBeNotifyIsFalse() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.AWAY
@@ -144,7 +144,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenSelfMessageInserted_whenConversationInOnlyMentionsAndRepliesState_thenTheMessageNeedsToBeNotifyIsFalse() = runTest {
+    fun givenSelfMessageInserted_whenConvInOnlyMentionsAndRepliesState_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.AVAILABLE // must be other than away!
         val messageNeedsToBeNotified = false
@@ -153,7 +153,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
-    fun givenOtherMentioningOthersMessageInserted_whenConversationInOnlyMentionsAndRepliesState_thenTheMessageNeedsToBeNotifyIsFalse() =
+    fun givenOtherMentioningOthersMessageInserted_whenConvInOnlyMentionsAndRepliesState_thenNeedsToBeNotifyIsFalse() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.AVAILABLE // must be other than away!
@@ -163,7 +163,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherMentioningSelfMessageInserted_whenConversationInOnlyMentionsAndRepliesState_thenTheMessageNeedsToBeNotifyIsTrue() =
+    fun givenOtherMentioningSelfMessageInserted_whenConvInOnlyMentionsAndRepliesState_thenNeedsToBeNotifyIsTrue() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.AVAILABLE // must be other than away!
@@ -173,7 +173,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherQuotingOthersMessageInserted_whenConversationInOnlyMentionsAndRepliesState_thenTheMessageNeedsToBeNotifyIsFalse() =
+    fun givenOtherQuotingOthersMessageInserted_whenConvInOnlyMentionsAndRepliesState_thenNeedsToBeNotifyIsFalse() =
         runTest {
             val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
             val userStatus = UserAvailabilityStatusEntity.BUSY
@@ -183,14 +183,13 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
 
     @Test
-    fun givenOtherQuotingSelfMessageInserted_whenConversationInOnlyMentionsAndRepliesState_thenTheMessageNeedsToBeNotifyIsTrue() = runTest {
+    fun givenOtherQuotingSelfMessageInserted_whenConvInOnlyMentionsAndRepliesState_thenNeedsToBeNotifyIsTrue() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED
         val userStatus = UserAvailabilityStatusEntity.BUSY
         val messageNeedsToBeNotified = true
         val message = OTHER_QUOTING_SELF
         doTheTest(conversationMutedStatus, userStatus, messageNeedsToBeNotified, message, SELF_MESSAGE)
     }
-
 
     private suspend fun doTheTest(
         mutedStatus: ConversationEntity.MutedStatus,
