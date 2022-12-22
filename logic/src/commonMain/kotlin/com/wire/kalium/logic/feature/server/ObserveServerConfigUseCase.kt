@@ -9,6 +9,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Observes for changes and returns the list of [ServerConfig] stored locally.
+ */
 class ObserveServerConfigUseCase internal constructor(
     private val serverConfigRepository: ServerConfigRepository
 ) {
@@ -20,6 +23,9 @@ class ObserveServerConfigUseCase internal constructor(
     }
 
 
+    /**
+     * @return the [Result] with the [Flow] list of [ServerConfig] if successful, otherwise a mapped failure.
+     */
     suspend operator fun invoke(): Result {
         serverConfigRepository.configList().map { configList ->
             configList.isNullOrEmpty()
@@ -41,6 +47,7 @@ class ObserveServerConfigUseCase internal constructor(
             Result.Success(it)
         })
     }
+
     private fun handleError(coreFailure: CoreFailure): Result.Failure {
         return Result.Failure.Generic(coreFailure)
     }
