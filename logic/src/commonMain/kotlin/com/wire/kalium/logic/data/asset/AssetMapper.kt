@@ -19,7 +19,7 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 import okio.Path
 import pbandk.ByteArr
 
@@ -60,7 +60,7 @@ class AssetMapperImpl(
             domain = uploadedAssetResponse.domain,
             dataPath = uploadAssetData.tempEncryptedDataPath.toString(),
             dataSize = uploadAssetData.dataSize,
-            downloadedDate = Clock.System.now().toEpochMilliseconds()
+            downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
     }
 
@@ -70,7 +70,7 @@ class AssetMapperImpl(
             domain = assetId.domain,
             dataPath = dataPath.toString(),
             dataSize = dataSize,
-            downloadedDate = Clock.System.now().toEpochMilliseconds()
+            downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
     }
 

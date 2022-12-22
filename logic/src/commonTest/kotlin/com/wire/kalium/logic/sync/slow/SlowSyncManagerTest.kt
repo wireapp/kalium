@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anyInstanceOf
@@ -27,7 +28,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
@@ -101,7 +101,7 @@ class SlowSyncManagerTest {
 
     @Test
     fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
-        val initialTime = Clock.System.now()
+        val initialTime = DateTimeUtil.currentInstant()
 
         val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
@@ -110,7 +110,7 @@ class SlowSyncManagerTest {
 
         advanceUntilIdle()
 
-        val completedTime = Clock.System.now()
+        val completedTime = DateTimeUtil.currentInstant()
         verify(arrangement.slowSyncRepository)
             .function(arrangement.slowSyncRepository::setLastSlowSyncCompletionInstant)
             .with(
@@ -123,7 +123,7 @@ class SlowSyncManagerTest {
 
     @Test
     fun givenItWasCompletedRecently_whenCriteriaAreMet_thenShouldNotUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
-        val initialTime = Clock.System.now()
+        val initialTime = DateTimeUtil.currentInstant()
 
         val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
@@ -192,7 +192,7 @@ class SlowSyncManagerTest {
         val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
             .withSlowSyncWorkerReturning(stepSharedFlow)
-            .withLastSlowSyncPerformedAt(flowOf(Clock.System.now()))
+            .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
             .arrange()
 
         criteriaChannel.send(SyncCriteriaResolution.Ready)
@@ -214,7 +214,7 @@ class SlowSyncManagerTest {
         criteriaChannel.send(SyncCriteriaResolution.Ready)
 
         val lastPerformedInstant = Channel<Instant?>(Channel.UNLIMITED)
-        lastPerformedInstant.send(Clock.System.now())
+        lastPerformedInstant.send(DateTimeUtil.currentInstant())
 
         val stepSharedFlow = Channel<SlowSyncStep>(Channel.UNLIMITED)
         val step = SlowSyncStep.CONVERSATIONS
@@ -251,7 +251,7 @@ class SlowSyncManagerTest {
             val (arrangement, _) = Arrangement()
                 .withSatisfiedCriteria()
                 .withSlowSyncWorkerReturning(stepChannel.consumeAsFlow())
-                .withLastSlowSyncPerformedAt(flowOf(Clock.System.now() - 30.days))
+                .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant() - 30.days))
                 .arrange()
 
             val step = SlowSyncStep.CONTACTS

@@ -15,8 +15,9 @@ import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +40,7 @@ class ReceiptMessageHandlerTest {
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt() = runTest {
         insertTestData()
 
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
@@ -54,7 +55,7 @@ class ReceiptMessageHandlerTest {
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldMatchTheDateAndUser() = runTest {
         insertTestData()
 
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
@@ -73,7 +74,7 @@ class ReceiptMessageHandlerTest {
     fun givenAReceiptOfSelfUserIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainNoReceipts() = runTest {
         insertTestData()
 
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
         // Using Self User ID for the receipt
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
@@ -89,7 +90,7 @@ class ReceiptMessageHandlerTest {
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfAnotherType_thenTheResultShouldContainNoReceipts() = runTest {
         insertTestData()
 
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID
         // Delivery != Read
         val type = ReceiptType.DELIVERED
@@ -115,7 +116,7 @@ class ReceiptMessageHandlerTest {
                 id = "signalingId",
                 content = content,
                 conversationId = CONVERSATION_ID,
-                date = date.toString(),
+                date = date.toIsoDateTimeString(),
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
                 status = Message.Status.SENT,

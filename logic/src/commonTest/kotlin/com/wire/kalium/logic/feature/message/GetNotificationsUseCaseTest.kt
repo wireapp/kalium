@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.TimeParserImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -214,15 +213,12 @@ class GetNotificationsUseCaseTest {
         @Mock
         private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
-        val timeParser = TimeParserImpl()
-
         val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             selfUserId = SELF_USER_ID,
-            timeParser = timeParser,
             ephemeralNotificationsManager = ephemeralNotifications
         )
 

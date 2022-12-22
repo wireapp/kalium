@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 interface MemberChangeEventHandler {
     suspend fun handle(event: Event.Conversation.MemberChanged)
@@ -23,7 +23,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
-                    Clock.System.now().toEpochMilliseconds()
+                    DateTimeUtil.currentInstant().toEpochMilliseconds()
                 )
             }
 

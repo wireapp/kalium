@@ -6,8 +6,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
 internal object CallMapper {
@@ -42,7 +42,7 @@ internal class CallDAOImpl(
 ) : CallDAO {
 
     override suspend fun insertCall(call: CallEntity) {
-        val createdTime: Long = Clock.System.now().toEpochMilliseconds()
+        val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
 
         callsQueries.insertCall(
             conversation_id = call.conversationId,
