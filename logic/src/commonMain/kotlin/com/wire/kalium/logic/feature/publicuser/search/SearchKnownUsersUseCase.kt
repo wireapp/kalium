@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 /**
- * Searches for users that are; contacts or in federated backends
+ * Searches for users that are contacts, in the same team, or in the same conversations.
  */
 interface SearchKnownUsersUseCase {
     /**

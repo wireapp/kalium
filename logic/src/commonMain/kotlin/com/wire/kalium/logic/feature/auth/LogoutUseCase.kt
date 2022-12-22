@@ -19,7 +19,6 @@ interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
      * @see  [LogoutReason]
-
      */
     suspend operator fun invoke(reason: LogoutReason)
 }
