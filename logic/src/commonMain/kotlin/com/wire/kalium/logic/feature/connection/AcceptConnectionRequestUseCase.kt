@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 /**
  * Use Case that allows a user accept a connection request to connect with another User
@@ -32,7 +32,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
         return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .flatMap {
                 conversationRepository.fetchConversation(it.qualifiedConversationId)
-                conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, Clock.System.now().toString())
+                conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentIsoDateTimeString())
             }
             .fold({
                 kaliumLogger.e("An error occurred when accepting the connection request from $userId")

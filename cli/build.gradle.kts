@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
     implementation(project(":logic"))
+    implementation(project(":util"))
 
     implementation(libs.cliKt)
     implementation(libs.ktor.utils)

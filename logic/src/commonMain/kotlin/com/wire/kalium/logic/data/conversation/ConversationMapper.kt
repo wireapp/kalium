@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
@@ -305,7 +305,7 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                keyingMaterialLastUpdate = Clock.System.now(),
+                keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 

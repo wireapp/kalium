@@ -50,6 +50,7 @@ kotlin {
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
 
+                implementation(project(":util"))
                 api(project(":logger"))
             }
         }

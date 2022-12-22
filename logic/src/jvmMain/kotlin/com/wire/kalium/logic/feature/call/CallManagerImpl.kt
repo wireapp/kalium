@@ -25,9 +25,11 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -43,8 +45,8 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.logic.util.toInt
-import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -55,8 +57,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -160,7 +160,7 @@ class CallManagerImpl internal constructor(
             val msg = content.value.toByteArray()
 
             val currTime = System.currentTimeMillis()
-            val msgTime = message.date.toTimeInMillis()
+            val msgTime = message.date.toEpochMillis()
 
             wcall_recv_msg(
                 inst = deferredHandle.await(),

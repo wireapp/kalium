@@ -21,8 +21,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
 @Suppress("LongParameterList")
 class DeleteMessageUseCase internal constructor(
@@ -55,7 +55,7 @@ class DeleteMessageUseCase internal constructor(
                                             conversationId = conversationId
                                         ),
                                     conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                    date = Clock.System.now().toString(),
+                                    date = DateTimeUtil.currentIsoDateTimeString(),
                                     senderUserId = selfUserId,
                                     senderClientId = currentClientId,
                                     status = Message.Status.PENDING,

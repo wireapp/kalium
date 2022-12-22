@@ -7,6 +7,7 @@ import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -21,9 +22,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import okio.Path
 import okio.buffer
 import okio.use
@@ -202,7 +200,7 @@ class RestoreBackupUseCaseTest {
 
         private fun createMetadataFile(metadataFilePath: Path, userId: UserId, userDBSecret: UserDBSecret? = null): Path {
             val clientId = "dummy-client-id"
-            val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
+            val creationTime = DateTimeUtil.currentIsoDateTimeString()
             val metadataJson =
                 BackupMetadata(
                     clientPlatform,

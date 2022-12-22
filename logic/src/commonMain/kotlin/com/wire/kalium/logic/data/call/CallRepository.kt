@@ -21,7 +21,7 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -64,7 +64,6 @@ internal class CallDataSource(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val timeParser: TimeParser,
     private val callMapper: CallMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
@@ -217,7 +216,7 @@ internal class CallDataSource(
 
         callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                val establishedTime = if (status == CallStatus.ESTABLISHED) timeParser.currentTimeStamp()
+                val establishedTime = if (status == CallStatus.ESTABLISHED) DateTimeUtil.currentIsoDateTimeString()
                 else call.establishedTime
 
                 // Update Metadata
@@ -351,7 +350,7 @@ internal class CallDataSource(
             uuid4().toString(),
             MessageContent.MissedCall,
             conversationId,
-            timeParser.currentTimeStamp(),
+            DateTimeUtil.currentIsoDateTimeString(),
             qualifiedUserId,
             Message.Status.SENT,
             Message.Visibility.VISIBLE
