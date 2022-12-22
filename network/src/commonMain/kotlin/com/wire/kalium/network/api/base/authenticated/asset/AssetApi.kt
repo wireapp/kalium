@@ -28,6 +28,7 @@ interface AssetApi {
     /**
      * Deletes an asset, this will try to consume api v4 (federated aware endpoint)
      * @param assetId the asset identifier
+     * @param assetDomain the asset domain
      * @param assetToken the asset token, can be null in case of public assets
      */
     suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): NetworkResponse<Unit>
