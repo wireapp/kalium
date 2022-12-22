@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -82,7 +81,8 @@ class DeleteMessageUseCase internal constructor(
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
 
             assetRepository.deleteAsset(
-                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                assetToRemove.assetId,
+                assetToRemove.assetDomain,
                 assetToRemove.assetToken
             )
                 .onFailure {

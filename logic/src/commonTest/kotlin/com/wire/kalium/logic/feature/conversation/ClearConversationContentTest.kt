@@ -14,10 +14,12 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ClearConversationContentTest {
 
     @Test
@@ -64,7 +66,7 @@ class ClearConversationContentTest {
         with(arrangement) {
             verify(assetRepository)
                 .suspendFunction(assetRepository::deleteAsset)
-                .with(anything(), anything())
+                .with(anything(), anything(), anything())
                 .wasNotInvoked()
         }
 
@@ -86,7 +88,7 @@ class ClearConversationContentTest {
         with(arrangement) {
             verify(assetRepository)
                 .suspendFunction(assetRepository::deleteAsset)
-                .with(anything(), anything())
+                .with(anything(), anything(), anything())
                 .wasNotInvoked()
         }
 
@@ -115,7 +117,7 @@ class ClearConversationContentTest {
         with(arrangement) {
             verify(assetRepository)
                 .suspendFunction(assetRepository::deleteAsset)
-                .with(anything(), anything())
+                .with(anything(), anything(), anything())
                 .wasInvoked()
 
             verify(conversationRepository)

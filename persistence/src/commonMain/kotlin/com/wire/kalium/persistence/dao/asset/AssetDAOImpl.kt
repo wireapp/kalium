@@ -9,7 +9,7 @@ internal object AssetMapper {
     @Suppress("FunctionParameterNaming")
     fun fromAssets(
         key: String,
-        domain: String,
+        domain: String?,
         data_path: String,
         data_size: Long,
         downloaded_date: Long?
