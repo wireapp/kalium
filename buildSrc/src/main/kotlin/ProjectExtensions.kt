@@ -1,5 +1,7 @@
+import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import org.gradle.api.Project
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 /**
  * Convenience method to obtain a property from `$projectRoot/local.properties` file
@@ -25,3 +27,15 @@ internal fun <T> getLocalProperty(propertyName: String, defaultValue: T, project
     println("> Reading local prop '$propertyName' with value: $localValue")
     return localValue
 }
+
+/**
+ * Run command and return the [Process]
+ */
+fun String.execute(): Process = ProcessGroovyMethods.execute(this).also {
+    it.waitFor(30, TimeUnit.SECONDS)
+}
+
+/**
+ * Run command and return the output as text
+ */
+fun Process.text(): String = ProcessGroovyMethods.getText(this)
