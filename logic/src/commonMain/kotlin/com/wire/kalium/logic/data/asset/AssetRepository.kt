@@ -289,7 +289,7 @@ internal class AssetDataSource(
     }
 
     private suspend fun saveAssetInDB(
-        assetId: com.wire.kalium.network.api.base.model.AssetId,
+        assetId: NetworkAssetId,
         decodedAssetPath: Path,
         assetDataSize: Long
     ) = wrapStorageRequest {

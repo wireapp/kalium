@@ -21,12 +21,11 @@ internal class PersistMessageUseCaseImpl(
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
 
-        return messageRepository
-            .persistMessage(
-                message = modifiedMessage,
-                updateConversationReadDate = message.isSelfTheSender(selfUserId),
-                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
-            )
+        return messageRepository.persistMessage(
+            message = modifiedMessage,
+            updateConversationReadDate = message.isSelfTheSender(selfUserId),
+            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
+        )
     }
 
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
@@ -41,9 +40,7 @@ internal class PersistMessageUseCaseImpl(
                     receiptMode == Conversation.ReceiptMode.ENABLED
                 })
 
-            message.copy(
-                expectsReadConfirmation = expectsReadConfirmation
-            )
+            message.copy(expectsReadConfirmation = expectsReadConfirmation)
         } else {
             message
         }

@@ -15,8 +15,10 @@ interface MessageDAO {
     suspend fun deleteAllMessages()
 
     /**
-     * Inserts the message, or ignores if there's already a message
-     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
      *
      * @see insertOrIgnoreMessages
      */
@@ -27,8 +29,11 @@ interface MessageDAO {
     )
 
     /**
-     * Inserts the messages, or ignores messages if there already exists a message
-     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * Inserts the messages, or ignores messages if there already exists a message with the same [MessageEntity.id] and
+     * [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
      *
      * @see insertOrIgnoreMessage
      */
