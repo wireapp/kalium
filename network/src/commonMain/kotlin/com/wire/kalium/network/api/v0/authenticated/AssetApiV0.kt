@@ -101,7 +101,6 @@ internal open class AssetApiV0 internal constructor(
         "$PATH_PUBLIC_ASSETS_V4/$assetDomain/$assetId"
     }
 
-
     override suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: () -> Source,
