@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -34,12 +33,7 @@ internal class ClearConversationContentImpl(
 
                 if (messageContent is MessageContent.Asset) {
                     with(messageContent.value.remoteData) {
-                        assetRepository.deleteAssetLocally(
-                            AssetId(
-                                assetId,
-                                assetDomain.orEmpty()
-                            )
-                        )
+                        assetRepository.deleteAssetLocally(assetId)
                     }
                 }
             }

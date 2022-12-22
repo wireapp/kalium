@@ -11,12 +11,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GetPublicAssetUseCaseTest {
 
     @Mock
@@ -36,7 +38,7 @@ class GetPublicAssetUseCaseTest {
 
         given(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
-            .whenInvokedWith(eq(assetKey))
+            .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
             .thenReturn(Either.Right(expectedPath))
 
         val publicAsset = getPublicAsset(assetKey)
@@ -46,7 +48,7 @@ class GetPublicAssetUseCaseTest {
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
-            .with(eq(assetKey))
+            .with(eq(assetKey.value), eq(assetKey.domain))
             .wasInvoked(exactly = once)
     }
 
@@ -56,7 +58,7 @@ class GetPublicAssetUseCaseTest {
 
         given(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
-            .whenInvokedWith(eq(assetKey))
+            .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
             .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
 
         val publicAsset = getPublicAsset(assetKey)
@@ -66,7 +68,7 @@ class GetPublicAssetUseCaseTest {
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
-            .with(eq(assetKey))
+            .with(eq(assetKey.value), eq(assetKey.domain))
             .wasInvoked(exactly = once)
     }
 }
