@@ -209,7 +209,7 @@ internal class AssetDataSource(
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
+                assetApi.downloadAsset(assetId.value, assetId.domain, assetToken?.ifEmpty { null }, tempFileSink)
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
@@ -310,7 +310,7 @@ internal class AssetDataSource(
     }
 
     override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit> =
-        wrapApiRequest { assetApi.deleteAsset(idMapper.toApiModel(assetId), assetToken) }
+        wrapApiRequest { assetApi.deleteAsset(assetId.value, assetId.domain, assetToken) }
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit> =

@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.base.authenticated.asset
 
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.utils.NetworkResponse
 import okio.Sink
 import okio.Source
@@ -12,7 +11,7 @@ interface AssetApi {
      * @param assetToken the asset token, can be null in case of public assets
      * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
-    suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit>
+    suspend fun downloadAsset(assetId: String, assetDomain: String?, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit>
 
     /** Uploads an already encrypted asset
      * @param metadata the metadata associated to the asset that wants to be uploaded
@@ -30,5 +29,5 @@ interface AssetApi {
      * @param assetId the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
      */
-    suspend fun deleteAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Unit>
+    suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): NetworkResponse<Unit>
 }
