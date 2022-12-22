@@ -26,8 +26,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                implementation(libs.paging3)
-                implementation(libs.work)
+                implementation(libs.annotation)
             }
         }
     }
