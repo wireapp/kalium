@@ -18,6 +18,7 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
@@ -30,12 +31,14 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -73,7 +76,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-
+    suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
@@ -281,6 +284,10 @@ class MessageDataSource(
                 idMapper.toDaoModel(conversationId)
             )
         }
+
+    override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
+        wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
+            .map { Instant.parse(it.date) }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
