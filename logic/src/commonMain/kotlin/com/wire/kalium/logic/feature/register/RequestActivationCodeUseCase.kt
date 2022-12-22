@@ -9,20 +9,26 @@ import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
 
+/**
+ * Use case to request an activation code for a given email address.
+ */
 class RequestActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
+    /**
+     * @param email [String] the registered email address to request an activation code for
+     * @return [RequestActivationCodeResult.Success] or [RequestActivationCodeResult.Failure] with the specific error.
+     */
     suspend operator fun invoke(email: String): RequestActivationCodeResult {
 
         return registerAccountRepository.requestEmailActivationCode(email)
             .fold({
-                if(it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
+                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
                     when {
                         it.kaliumException.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
                         it.kaliumException.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail
                         it.kaliumException.isKeyExists() -> RequestActivationCodeResult.Failure.AlreadyInUse
-                        it.kaliumException.isDomainBlockedForRegistration() ->
-                            RequestActivationCodeResult.Failure.DomainBlocked
+                        it.kaliumException.isDomainBlockedForRegistration() -> RequestActivationCodeResult.Failure.DomainBlocked
                         else -> RequestActivationCodeResult.Failure.Generic(it)
                     }
                 else RequestActivationCodeResult.Failure.Generic(it)
