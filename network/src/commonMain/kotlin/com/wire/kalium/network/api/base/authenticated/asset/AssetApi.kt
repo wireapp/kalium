@@ -8,6 +8,7 @@ interface AssetApi {
     /**
      * Downloads an asset, this will try to consume api v4 (federated aware endpoint)
      * @param assetId the asset identifier
+     * @param assetDomain the asset domain
      * @param assetToken the asset token, can be null in case of public assets
      * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
