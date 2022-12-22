@@ -41,7 +41,12 @@ internal open class AssetApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun downloadAsset(assetId: String, assetDomain: String?, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> = runCatching {
+    override suspend fun downloadAsset(
+        assetId: String,
+        assetDomain: String?,
+        assetToken: String?,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit> = runCatching {
         httpClient.prepareGet(buildAssetsPath(assetId, assetDomain)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.execute { httpResponse ->
@@ -95,8 +100,8 @@ internal open class AssetApiV0 internal constructor(
             throw Error("Asset domain is not set")
         }
         return assetDomain?.let { domain ->
-            "$PATH_PUBLIC_ASSETS_V4/${domain}/${assetId}"
-        } ?: "$PATH_PUBLIC_ASSETS_V3/${assetId}"
+            "$PATH_PUBLIC_ASSETS_V4/$domain/$assetId"
+        } ?: "$PATH_PUBLIC_ASSETS_V3/$assetId"
     }
 
     override suspend fun uploadAsset(
@@ -104,7 +109,7 @@ internal open class AssetApiV0 internal constructor(
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
-        wrapKaliumResponse<AssetResponse> {
+        wrapKaliumResponse {
             httpClient.post(PATH_PUBLIC_ASSETS_V3) {
                 contentType(ContentType.MultiPart.Mixed)
                 setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))

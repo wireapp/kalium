@@ -200,7 +200,7 @@ internal class AssetDataSource(
         assetSHA256: SHA256Key? = null
     ): Either<CoreFailure, Path> {
         return wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }.fold({
-            val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId}")
+            val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
