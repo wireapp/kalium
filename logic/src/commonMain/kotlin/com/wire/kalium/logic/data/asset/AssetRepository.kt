@@ -70,6 +70,7 @@ interface AssetRepository {
      * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
      */
+    @Suppress("LongParameterList")
     suspend fun fetchPrivateDecodedAsset(
         assetId: String,
         assetDomain: String?,
@@ -191,6 +192,7 @@ internal class AssetDataSource(
             assetSHA256 = assetSHA256Key
         )
 
+    @Suppress("LongParameterList")
     private suspend fun fetchOrDownloadDecodedAsset(
         assetId: String,
         assetDomain: String?,

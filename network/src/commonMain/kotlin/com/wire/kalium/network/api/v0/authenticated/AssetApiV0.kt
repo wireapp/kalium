@@ -95,14 +95,12 @@ internal open class AssetApiV0 internal constructor(
      * Build path for assets endpoint download.
      * The case for using V3 is a fallback and should not happen.
      */
-    protected open fun buildAssetsPath(assetId: String, assetDomain: String?): String {
-        if (assetDomain?.isBlank() == true) {
-            throw Error("Asset domain is not set")
-        }
-        return assetDomain?.let { domain ->
-            "$PATH_PUBLIC_ASSETS_V4/$domain/$assetId"
-        } ?: "$PATH_PUBLIC_ASSETS_V3/$assetId"
+    protected open fun buildAssetsPath(assetId: String, assetDomain: String?): String = if (assetDomain.isNullOrBlank()) {
+        "$PATH_PUBLIC_ASSETS_V3/$assetId"
+    } else {
+        "$PATH_PUBLIC_ASSETS_V4/$assetDomain/$assetId"
     }
+
 
     override suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
