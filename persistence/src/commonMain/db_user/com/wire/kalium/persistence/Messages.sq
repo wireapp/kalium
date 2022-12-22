@@ -314,11 +314,11 @@ LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.messa
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
 needsToBeNotified:
-WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, isOneOnOne, mutedStatus) AS (
+WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
  IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
 	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
-	 (conversationType == 'ONE_ON_ONE') AS isOneOnOne, mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
+	mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
 SELECT (
     CASE mutedStatus
     WHEN 'ALL_MUTED' THEN 0
@@ -328,7 +328,7 @@ SELECT (
                 isSelfMessage == 0
                 AND isMentioningSelfUser == 1
                 OR  isQuotingSelfUser == 1
-                OR isOneOnOne == 1 FROM targetMessage)
+                FROM targetMessage)
             WHEN 'AWAY' THEN 0
             WHEN 'NONE' THEN  (SELECT isSelfMessage == 0 FROM targetMessage)
             WHEN 'AVAILABLE' THEN (SELECT isSelfMessage == 0 FROM targetMessage)
