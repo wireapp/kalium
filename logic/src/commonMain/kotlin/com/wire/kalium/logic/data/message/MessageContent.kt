@@ -92,7 +92,7 @@ sealed class MessageContent {
 
     data class QuotedMessageDetails(
         val senderId: UserId,
-        val senderName: String,
+        val senderName: String?,
         val isQuotingSelfUser: Boolean,
         /**
          * Indicates that the hash of the quote
