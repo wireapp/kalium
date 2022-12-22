@@ -53,7 +53,7 @@ class MessageDAOImpl(
 
             insertInDB(message)
 
-            if (queries.needsToBeNotified(message.id, message.conversationId).executeAsOne() == 0L) {
+            if (!needsToBeNotified(message.id, message.conversationId)) {
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
             }
 
@@ -62,6 +62,9 @@ class MessageDAOImpl(
             }
         }
     }
+
+    override fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+        queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) =
