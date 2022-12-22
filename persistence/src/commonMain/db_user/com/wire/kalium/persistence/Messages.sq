@@ -314,11 +314,11 @@ LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.messa
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
 needsToBeNotified:
-WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, isOneOnOne, mutedStatus) AS (
+WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
  IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
 	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
-	 (conversationType == 'ONE_ON_ONE') AS isOneOnOne, mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
+	mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
 SELECT (
     CASE mutedStatus
     WHEN 'ALL_MUTED' THEN 0
@@ -328,7 +328,7 @@ SELECT (
                 isSelfMessage == 0
                 AND isMentioningSelfUser == 1
                 OR  isQuotingSelfUser == 1
-                OR isOneOnOne == 1 FROM targetMessage)
+                FROM targetMessage)
             WHEN 'AWAY' THEN 0
             WHEN 'NONE' THEN  (SELECT isSelfMessage == 0 FROM targetMessage)
             WHEN 'AVAILABLE' THEN (SELECT isSelfMessage == 0 FROM targetMessage)
@@ -405,8 +405,25 @@ INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id,
 VALUES(?, ?, ?,?,?);
 
 insertMessageAssetContent:
-INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+asset_size = excluded.asset_size,
+asset_name = excluded.asset_name,
+asset_mime_type = excluded.asset_mime_type,
+asset_upload_status = excluded.asset_upload_status,
+asset_download_status = excluded.asset_download_status,
+asset_otr_key = excluded.asset_otr_key,
+asset_sha256 = excluded.asset_sha256,
+asset_id = excluded.asset_id,
+asset_token = excluded.asset_token,
+asset_domain = excluded.asset_domain,
+asset_encryption_algorithm = excluded.asset_encryption_algorithm,
+asset_width = excluded.asset_width,
+asset_height = excluded.asset_height,
+asset_duration_ms = excluded.asset_duration_ms,
+asset_normalized_loudness = excluded.asset_normalized_loudness;
 
 insertMemberChangeMessage:
 INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)

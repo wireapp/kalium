@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -229,6 +230,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenMultipleConversations_whenGettingConversationsForNotifications_thenOnlyUnnotifiedConversationsAreReturned() = runTest {
 
         // GIVEN
@@ -255,6 +257,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenMultipleConversations_whenGettingConversations_thenOrderIsCorrect() = runTest {
         // GIVEN
         conversationDAO.insertConversation(conversationEntity1)
@@ -321,6 +324,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @IgnoreIOS
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
         val convStored = conversationEntity1.copy(
             lastNotificationDate = "2022-04-30T15:36:00.000Z", lastModifiedDate = "2022-03-30T15:36:00.000Z", name = "old name"
