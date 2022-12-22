@@ -73,4 +73,16 @@ object TestMessage {
         editStatus = MessageEntity.EditStatus.NotEdited,
         senderName = "senderName"
     )
+
+    fun signalingMessage(
+        content: MessageContent.Signaling
+    ) = Message.Signaling(
+        id = TEST_MESSAGE_ID,
+        content = content,
+        conversationId = TestConversation.ID,
+        date = "currentDate",
+        senderUserId = TEST_SENDER_USER_ID,
+        senderClientId = TEST_SENDER_CLIENT_ID,
+        status = Message.Status.SENT
+    )
 }

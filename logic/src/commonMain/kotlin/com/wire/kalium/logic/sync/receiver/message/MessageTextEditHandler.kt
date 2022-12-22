@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.kaliumLogger
 
 interface MessageTextEditHandler {
     suspend fun handle(
@@ -21,28 +23,21 @@ class MessageTextEditHandlerImpl(
     override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.TextEdited
-    ) = messageRepository.updateTextMessageContent(
-        conversationId = message.conversationId,
-        messageContent = messageContent
-    ).flatMap {
-        messageRepository.markMessageAsEdited(
-            messageUuid = messageContent.editMessageId,
+    ) = messageRepository.getMessageById(message.conversationId, messageContent.editMessageId).flatMap { currentMessage ->
+
+        if (currentMessage.senderUserId != message.senderUserId) {
+            kaliumLogger.w(
+                message = "User '${message.senderUserId}' attempted to edit a message from another user. Ignoring the edit completely"
+            )
+            // Same as message not found. _i.e._ not found for the original sender at least
+            return@flatMap Either.Left(StorageFailure.DataNotFound)
+        }
+
+        messageRepository.updateTextMessage(
             conversationId = message.conversationId,
-            timeStamp = message.date
-        )
-    }.flatMap {
-        // whenever "other" client updates the content message, it discards the previous id
-        // and replaces it by a new id
-        // in order to still point to the same message on our device and every other device displaying the message,
-        // the "other client" sends us the "old" id, which will be equal to the
-        // one we currently have, and a "new" id. we, first adjust the changes to the status and content
-        // using the old id and after that we update the id which the one provided by the "other" client
-        // when the update happens again we repeat the process, by doing it we always reference to the id
-        // that the "other" client references, so that we can talk about the same message reference
-        messageRepository.updateMessageId(
-            conversationId = message.conversationId,
-            oldMessageId = messageContent.editMessageId,
-            newMessageId = message.id
+            messageContent = messageContent,
+            newMessageId = message.id,
+            editTimeStamp = message.date
         )
     }
 

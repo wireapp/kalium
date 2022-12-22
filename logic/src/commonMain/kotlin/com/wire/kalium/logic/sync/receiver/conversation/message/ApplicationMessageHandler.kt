@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -176,7 +177,11 @@ internal class ApplicationMessageHandlerImpl(
                 persistMessage(message)
             }
 
-            is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
+            is MessageContent.Reaction -> {
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES)
+                    .w("EDITING MESSAGE (REACTION): ORIGINAL ID: ${content.messageId}, EMOJI: ${content.emojiSet}")
+                persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
+            }
             is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
             is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
@@ -187,7 +192,11 @@ internal class ApplicationMessageHandlerImpl(
                 )
             }
 
-            is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
+            is MessageContent.TextEdited -> {
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES)
+                    .w("EDITING MESSAGE: ORIGINAL ID: ${content.editMessageId}, NEW ID: ${signaling.id}")
+                editTextHandler.handle(signaling, content)
+            }
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
