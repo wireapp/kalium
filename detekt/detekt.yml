@@ -159,7 +159,7 @@ empty-blocks:
 
 exceptions:
     active: true
-    excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/protobuf/**' ]
+    excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/protobuf/**', '**/buildSrc/**' ]
     ExceptionRaisedInUnexpectedLocation:
         active: false
         methodNames: [ toString, hashCode, equals, finalize ]
@@ -411,10 +411,10 @@ performance:
         active: true
     ForEachOnRange:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/buildSrc/**' ]
     SpreadOperator:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/buildSrc/**' ]
     UnnecessaryTemporaryInstantiation:
         active: true
 
@@ -519,7 +519,7 @@ style:
         maxJumpCount: 1
     MagicNumber:
         active: true
-        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' , '**/samples/src/**']
+        excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' , '**/samples/src/**', '**/buildSrc/**']
         ignoreNumbers: [ '-1', '0', '1', '2' ]
         ignoreAnnotated: [ 'Compose', 'Stable', 'Composable' ]
         ignoreHashCodeFunction: true
