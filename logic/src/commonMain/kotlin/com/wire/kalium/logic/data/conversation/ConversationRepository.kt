@@ -45,6 +45,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -53,7 +54,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -254,7 +254,7 @@ internal class ConversationDataSource internal constructor(
                         )
                     },
                     selfTeamIdProvider().getOrNull(),
-                    lastNotificationDate = Clock.System.now().toString()
+                    lastNotificationDate = DateTimeUtil.currentIsoDateTimeString()
                 )
             }
         conversationDAO.insertConversations(conversationEntities)

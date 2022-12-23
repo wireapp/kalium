@@ -24,8 +24,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
@@ -72,7 +72,7 @@ internal class ConversationGroupRepositoryImpl(
                     conversationResponse,
                     mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
                     teamId,
-                    Clock.System.now().toString()
+                    DateTimeUtil.currentIsoDateTimeString()
                 )
                 val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 

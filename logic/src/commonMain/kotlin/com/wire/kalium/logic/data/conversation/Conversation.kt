@@ -14,7 +14,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.utils.toJsonElement
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -183,7 +183,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             removedBy = null,
-            lastNotificationDate = Clock.System.now().toString(),
+            lastNotificationDate = DateTimeUtil.currentIsoDateTimeString(),
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
