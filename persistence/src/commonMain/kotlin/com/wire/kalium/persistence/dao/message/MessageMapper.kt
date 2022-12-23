@@ -310,7 +310,7 @@ object MessageMapper {
                         senderId = quotedSenderId.requireField("quotedSenderId"),
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
-                        senderName = quotedSenderName.requireField("quotedSenderName"),
+                        senderName = quotedSenderName,
                         dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
                         editTimestamp = quotedMessageEditTimestamp,
                         visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
