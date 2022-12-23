@@ -21,6 +21,9 @@ insertReaction:
 INSERT OR REPLACE INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
 VALUES(?, ?, ?, ?, ?);
 
+deleteAllReactionsForMessage:
+DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ?;
+
 selectByMessageIdAndConversationIdAndSenderId:
 SELECT * FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
 
