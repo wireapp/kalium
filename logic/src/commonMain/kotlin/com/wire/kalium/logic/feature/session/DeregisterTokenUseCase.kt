@@ -9,6 +9,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
 
+/**
+ * This use case will deregister the current push notification token.
+ */
 interface DeregisterTokenUseCase {
     suspend operator fun invoke(): Result
 
