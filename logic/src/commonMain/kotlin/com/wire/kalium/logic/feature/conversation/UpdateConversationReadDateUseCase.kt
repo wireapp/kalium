@@ -18,6 +18,10 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
+/**
+ * This use case will update last read date for a conversation.
+ * After that, will sync against other user's registered clients, using the self conversation.
+ */
 class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
@@ -27,6 +31,10 @@ class UpdateConversationReadDateUseCase internal constructor(
     private val sendConfirmation: SendConfirmationUseCase,
 ) {
 
+    /**
+     * @param conversationId The conversation id to update the last read date.
+     * @param time The last read date to update.
+     */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
         selfConversationIdProvider().flatMap { selfConversationIds ->
             sendConfirmation(conversationId)
