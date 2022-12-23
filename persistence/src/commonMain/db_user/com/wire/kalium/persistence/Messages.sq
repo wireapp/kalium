@@ -460,9 +460,9 @@ UPDATE MessageAssetContent
 SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
-updateAssetKeys {
+updateAssetContent {
     UPDATE MessageAssetContent
-    SET asset_id = :assetId, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 
     UPDATE Message
