@@ -265,7 +265,6 @@ class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    private val deviceLabel: String,
     platformUserStorageProperties: PlatformUserStorageProperties
 ) : CoroutineScope {
 
@@ -484,7 +483,7 @@ class UserSessionScope internal constructor(
     }
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig, deviceLabel)
+        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig, )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)

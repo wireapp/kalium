@@ -416,9 +416,7 @@ class ClientRepositoryTest {
         @Mock
         val clientConfigImpl: ClientConfig = mock(classOf<ClientConfig>())
 
-        val clientLabel: String = "device label"
-
-        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl, clientLabel)
+        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
 
         fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>): Arrangement {
             given(clientApi)
@@ -445,7 +443,7 @@ class ClientRepositoryTest {
 
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
-            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null
+            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null, cookieLabel = "cookieLabel"
         )
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val CLIENT_ID = TestClient.CLIENT_ID

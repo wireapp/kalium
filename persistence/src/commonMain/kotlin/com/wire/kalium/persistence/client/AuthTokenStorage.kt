@@ -11,7 +11,7 @@ data class AuthTokenEntity(
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String,
     @SerialName("token_type") val tokenType: String,
-    @SerialName("cookie_label") val liable: String? = null
+    @SerialName("cookie_label") val label: String? = null
 )
 
 @Serializable

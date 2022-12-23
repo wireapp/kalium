@@ -31,7 +31,7 @@ internal open class LoginApiV0 internal constructor(
         @SerialName("email") val email: String? = null,
         @SerialName("handle") val handle: String? = null,
         @SerialName("password") val password: String,
-        @SerialName("label") val label: String
+        @SerialName("label") val label: String?
     )
 
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {

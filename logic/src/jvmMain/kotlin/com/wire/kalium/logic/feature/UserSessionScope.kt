@@ -27,7 +27,6 @@ internal fun UserSessionScope(
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
-    deviceLabel: String
 ): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
@@ -45,7 +44,6 @@ internal fun UserSessionScope(
         userSessionScopeProvider,
         userStorageProvider,
         clientConfig,
-        deviceLabel,
         platformUserStorageProperties
     )
 }

@@ -36,13 +36,12 @@ interface ClientRemoteRepository {
 class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientConfig: ClientConfig,
-    private val deviceLabel: String,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
-        wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(clientConfig, param, deviceLabel)) }
+        wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(clientConfig, param)) }
             .map { clientResponse -> clientMapper.fromClientResponse(clientResponse) }
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
