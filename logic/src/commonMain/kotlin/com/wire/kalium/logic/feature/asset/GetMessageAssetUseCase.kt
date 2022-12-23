@@ -70,8 +70,11 @@ internal class GetMessageAssetUseCaseImpl(
                     }
                 }
                 // This should never happen
-                else -> return@fold CompletableDeferred(MessageAssetResult.Failure(
-                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))))
+                else -> return@fold CompletableDeferred(
+                    MessageAssetResult.Failure(
+                        CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
+                    )
+                )
             }
 
             // Start progress bar for generic assets
@@ -103,6 +106,6 @@ internal class GetMessageAssetUseCaseImpl(
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName :String) : MessageAssetResult()
+    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName: String) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }
