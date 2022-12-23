@@ -1,4 +1,4 @@
-DROP TRIGGER updateMutedConversationNotificationDateAfterNewMessage;
+DROP TRIGGER IF EXISTS updateMutedConversationNotificationDateAfterNewMessage;
 
 DROP VIEW MessagePreview;
 
