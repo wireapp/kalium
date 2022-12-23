@@ -21,8 +21,7 @@ class ObserveServerConfigUseCase internal constructor(
             class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
-
-
+    
     /**
      * @return the [Result] with the [Flow] list of [ServerConfig] if successful, otherwise a mapped failure.
      */

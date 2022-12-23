@@ -24,6 +24,7 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
 
     private fun isPasswordTooShort(password: String) = password.length < PASSWORD_MIN_LENGTH
 
+    @Suppress("NoMultipleSpaces")
     private companion object {
         private const val PASSWORD_MIN_LENGTH = 8
         private val PASSWORD_REGEX = ("^" +
