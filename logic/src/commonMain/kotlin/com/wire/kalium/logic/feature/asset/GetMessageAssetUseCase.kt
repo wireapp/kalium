@@ -96,13 +96,13 @@ internal class GetMessageAssetUseCaseImpl(
                     if (!wasDownloaded)
                         updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
 
-                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
+                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
                 })
             }
         })
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
+    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName :String) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }
