@@ -183,6 +183,6 @@ internal class SessionDataSource(
     }
 
     override suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?> = wrapStorageNullableRequest {
-        authTokenStorage.getToken(idMapper.toDaoModel(userId))?.label
+        authTokenStorage.getToken(idMapper.toDaoModel(userId))?.cookieLabel
     }
 }

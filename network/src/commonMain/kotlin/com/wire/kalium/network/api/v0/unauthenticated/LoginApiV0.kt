@@ -63,7 +63,7 @@ internal open class LoginApiV0 internal constructor(
             }
         }.mapSuccess { userDTO ->
             with(tokensPairResponse.value) {
-                Pair(first.toSessionDto(second, userDTO.id), userDTO)
+                Pair(first.toSessionDto(second, userDTO.id, param.label), userDTO)
             }
         }
     }

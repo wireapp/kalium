@@ -46,7 +46,8 @@ internal class SessionMapperImpl(
             userId = idMapper.toApiModel(userId),
             tokenType = tokenType,
             accessToken = accessToken,
-            refreshToken = refreshToken
+            refreshToken = refreshToken,
+            cookieLabel = cookieLabel
         )
     }
 
@@ -55,7 +56,8 @@ internal class SessionMapperImpl(
             userId = idMapper.fromDaoToDto(userId),
             tokenType = tokenType,
             accessToken = accessToken,
-            refreshToken = refreshToken
+            refreshToken = refreshToken,
+            cookieLabel = cookieLabel
         )
     }
 
@@ -64,7 +66,8 @@ internal class SessionMapperImpl(
             userId = idMapper.fromApiModel(userId),
             accessToken = accessToken,
             refreshToken = refreshToken,
-            tokenType = tokenType
+            tokenType = tokenType,
+            cookieLabel = cookieLabel
         )
     }
 
@@ -88,12 +91,15 @@ internal class SessionMapperImpl(
     override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
         ssoId?.let { SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
 
-    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = AuthTokenEntity(
-        userId = idMapper.toDaoModel(authSession.userId),
-        accessToken = authSession.accessToken,
-        refreshToken = authSession.refreshToken,
-        tokenType = authSession.tokenType
-    )
+    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = with(authSession) {
+        AuthTokenEntity(
+            userId = idMapper.toDaoModel(userId),
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            tokenType = tokenType,
+            cookieLabel = cookieLabel
+        )
+    }
 
     override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
         ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
