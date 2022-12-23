@@ -132,18 +132,40 @@ class RegisterAccountRepositoryTest {
 
         given(registerApi).coroutine {
             register(
-                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password, cookieLabel)
+                RegisterApi.RegisterParam.PersonalAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
         given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authTokens }
 
-        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, cookieLabel)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(
+            email = email,
+            code = code,
+            name = name,
+            password = password,
+            cookieLabel = cookieLabel
+        )
 
         assertIs<Either.Right<Pair<SsoId?, AuthTokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password, cookieLabel)) }
+        verify(registerApi).coroutine {
+            register(
+                RegisterApi.RegisterParam.PersonalAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
+            )
+        }
             .wasInvoked(exactly = once)
         verify(sessionMapper).function(sessionMapper::fromSessionDTO).with(any()).wasInvoked(exactly = once)
         verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
@@ -174,20 +196,48 @@ class RegisterAccountRepositoryTest {
         val expected = Pair(ssoId, authTokens)
 
         given(registerApi).coroutine {
-            register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon, cookieLabel))
+            register(
+                RegisterApi.RegisterParam.TeamAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    teamName = teamName,
+                    teamIcon = teamIcon,
+                    cookieLabel = cookieLabel
+                )
+            )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION) }
             .then { authTokens }
 
-        val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon, cookieLabel)
+        val actual = registerAccountRepository.registerTeamWithEmail(
+            email = email,
+            code = code,
+            name = name,
+            password = password,
+            teamName = teamName,
+            teamIcon = teamIcon,
+            cookieLabel = cookieLabel
+        )
 
         assertIs<Either.Right<Pair<SsoId?, AuthTokens>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {
-            register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon, cookieLabel))
+            register(
+                RegisterApi.RegisterParam.TeamAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    teamName = teamName,
+                    teamIcon = teamIcon,
+                    cookieLabel = cookieLabel
+                )
+            )
         }.wasInvoked(exactly = once)
         verify(sessionMapper).invocation {
             fromSessionDTO(SESSION)
@@ -205,18 +255,36 @@ class RegisterAccountRepositoryTest {
         val cookieLabel = "COOKIE_LABEL"
         given(registerApi).coroutine {
             register(
-                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password, cookieLabel)
+                RegisterApi.RegisterParam.PersonalAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             )
         }.then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, cookieLabel)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(
+            email = email,
+            code = code,
+            name = name,
+            password = password,
+            cookieLabel = cookieLabel
+        )
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
         verify(registerApi).coroutine {
             register(
-                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password, cookieLabel)
+                RegisterApi.RegisterParam.PersonalAccount(
+                    email = email,
+                    emailCode = code,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             )
         }.wasInvoked(exactly = once)
         verify(sessionMapper)
