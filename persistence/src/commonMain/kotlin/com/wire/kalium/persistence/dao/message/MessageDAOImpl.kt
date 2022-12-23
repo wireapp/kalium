@@ -66,7 +66,7 @@ class MessageDAOImpl(
     override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? =
         queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
 
-    private fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+    override fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
     @Deprecated("For test only!")
