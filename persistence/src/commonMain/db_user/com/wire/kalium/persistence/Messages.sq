@@ -525,6 +525,7 @@ getNotificationsMessages:
 SELECT * FROM MessagePreview AS message
 WHERE shouldNotify == 1
 AND visibility = 'VISIBLE'
+AND isSelfMessage == 0
 AND contentType IN ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
