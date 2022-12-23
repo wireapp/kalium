@@ -16,8 +16,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
 class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -34,7 +34,7 @@ class ToggleReactionUseCase internal constructor(
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-        val date = Clock.System.now().toString()
+        val date = DateTimeUtil.currentIsoDateTimeString()
 
         return reactionRepository.getSelfUserReactionsForMessage(messageId, conversationId)
             .flatMap { reactions ->

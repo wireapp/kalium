@@ -12,7 +12,6 @@
     <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnSFTRequest.kt:18</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:28</ID>
     <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:29</ID>
-    <ID>CommentSpacing:com.wire.kalium.logic.util.TimeParser.kt:10</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>DocumentedPublicUseCases:AddAuthenticatedUserUseCase.kt$AddAuthenticatedUserUseCase</ID>
     <ID>DocumentedPublicUseCases:AddMemberToConversationUseCase.kt$AddMemberToConversationUseCase</ID>
@@ -282,7 +281,7 @@
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:24</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:25</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.session.SessionResult.kt:7</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.logic.util.DateTimeUtil.kt:10</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.util.DateTimeUtil.kt:10</ID>
     <ID>SpacingAroundColon:com.wire.kalium.network.serialization.ByteArrayConverter.kt:17</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.QualifiedIDAdapter.kt:5</ID>

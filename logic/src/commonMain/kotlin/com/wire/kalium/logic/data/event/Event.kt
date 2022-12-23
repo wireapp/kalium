@@ -17,7 +17,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.utils.toJsonElement
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.serialization.json.JsonNull
 
 sealed class Event(open val id: String, open val transient: Boolean) {
@@ -208,7 +208,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val senderUserId: UserId,
             val message: String,
-            val timestampIso: String = Clock.System.now().toString()
+            val timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
         ) : Conversation(id, transient, conversationId) {
             override fun toString(): String {
                 val properties = mapOf(
@@ -486,7 +486,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             override val id: String,
             val userId: UserId,
-            val timestampIso: String = Clock.System.now().toString() // TODO we are not receiving it from API
+            val timestampIso: String = DateTimeUtil.currentIsoDateTimeString() // TODO we are not receiving it from API
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(

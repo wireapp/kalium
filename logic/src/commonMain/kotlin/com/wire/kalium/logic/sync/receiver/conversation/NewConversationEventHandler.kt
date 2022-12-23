@@ -13,7 +13,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 interface NewConversationEventHandler {
     suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
@@ -29,7 +29,7 @@ internal class NewConversationEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = conversationRepository
         .persistConversations(listOf(event.conversation), selfTeamIdProvider().getOrNull()?.value, originatedFromEvent = true)
-        .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString()) }
+        .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentIsoDateTimeString()) }
         .flatMap {
             userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { idMapper.fromApiModel(it.id) }
                 .toSet())

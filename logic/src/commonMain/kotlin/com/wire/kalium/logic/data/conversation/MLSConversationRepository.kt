@@ -36,11 +36,11 @@ import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -245,7 +245,7 @@ class MLSConversationDataSource(
                     sendCommitBundle(groupID, commitBundle)
                 }.flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
+                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), DateTimeUtil.currentInstant())
                     }
                 }
             }
