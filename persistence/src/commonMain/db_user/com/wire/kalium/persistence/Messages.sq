@@ -470,6 +470,11 @@ updateAssetKeys {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
+getLatestMessageFromOtherUsers:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.isSelfMessage = FALSE
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', MessageDetailsView.date) DESC LIMIT 1;
+
 updateMessageDate:
 UPDATE Message
 SET date = ?
