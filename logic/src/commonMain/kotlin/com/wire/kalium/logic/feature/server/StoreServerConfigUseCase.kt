@@ -5,7 +5,15 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Stores the server configuration metadata, like main urls and flags for this server.
+ */
 fun interface StoreServerConfigUseCase {
+    /**
+     * @param links the server configuration links to store @see [ServerConfig.Links]
+     * @param versionInfo the server configuration version to store @see [ServerConfig.VersionInfo]
+     * @return the [StoreServerConfigResult] whether the operation was successful or not and the stored [ServerConfig]
+     */
     suspend operator fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult
 }
 

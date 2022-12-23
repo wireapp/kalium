@@ -34,6 +34,10 @@ sealed class RegisterClientResult {
     }
 }
 
+/**
+ * This use case is responsible for registering the client.
+ * The client will be registered on the backend and the local storage.
+ */
 interface RegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientParam

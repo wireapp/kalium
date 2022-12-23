@@ -43,7 +43,14 @@ internal class ClearConversationContentImpl(
     }
 }
 
+/**
+ * This use case will clear all messages from a conversation and notify other clients, using the self conversation.
+ */
 interface ClearConversationContentUseCase {
+    /**
+     * @param conversationId The conversation id to clear all messages.
+     * @return [Result] of the operation, indicating success or failure.
+     */
     suspend operator fun invoke(conversationId: ConversationId): Result
 
     sealed class Result {

@@ -19,21 +19,18 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
+/**
+ * Use case that is responsible for observing the incoming calls.
+ */
 interface GetIncomingCallsUseCase {
+
+    /**
+     * That Flow emits everytime when the list is changed
+     * @return a [Flow] of incoming calls List that should be shown to the user.
+     */
     suspend operator fun invoke(): Flow<List<Call>>
 }
 
-/**
- *
- * @param callRepository CallRepository for getting all the incoming calls.
- * @param userRepository UserRepository for getting SelfUser data, to check the UserAvailabilityStatus
- * and do not show any incoming calls if User is UserAvailabilityStatus.AWAY.
- * @param conversationRepository ConversationRepository for getting ConversationsDetails, to check its MutedConversationStatus
- * and do not show incoming calls from the muted conversation.
- *
- * @return Flow<List<Call>> - Flow of Calls List that should be shown to the user.
- * That Flow emits everytime when the list is changed
- */
 internal class GetIncomingCallsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,

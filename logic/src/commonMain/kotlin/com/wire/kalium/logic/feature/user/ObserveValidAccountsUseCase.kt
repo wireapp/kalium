@@ -9,8 +9,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 
+/**
+ * This gets and observes the list of valid accounts, and it's associated team.
+ */
 interface ObserveValidAccountsUseCase {
 
+    /**
+     * @return a [Flow] of the list of valid accounts and their associated team.
+     */
     suspend operator fun invoke(): Flow<List<Pair<SelfUser, Team?>>>
 }
 
@@ -22,8 +28,8 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
         sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
-            val flowsOfSelfUsers = accountList.map {
-                userSessionScopeProvider.getOrCreate(it.userId).let {
+            val flowsOfSelfUsers = accountList.map { accountInfo ->
+                userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
                     combine(
                         it.users.getSelfUser(),
                         it.team.getSelfTeamUseCase()

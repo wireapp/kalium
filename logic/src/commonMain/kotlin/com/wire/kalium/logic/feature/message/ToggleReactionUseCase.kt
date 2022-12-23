@@ -19,6 +19,10 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 
+/**
+ * Toggles a reaction on a message.
+ * If the reaction already exists it will be removed, if not it will be added.
+ */
 class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userId: UserId,
@@ -26,6 +30,14 @@ class ToggleReactionUseCase internal constructor(
     private val reactionRepository: ReactionRepository,
     private val messageSender: MessageSender
 ) {
+    /**
+     * Operation to toggle a reaction on a message
+     *
+     * @param conversationId the id of the conversation the message is in
+     * @param messageId the id of the message to toggle the reaction on/off
+     * @param reaction the reaction "emoji" to toggle
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,

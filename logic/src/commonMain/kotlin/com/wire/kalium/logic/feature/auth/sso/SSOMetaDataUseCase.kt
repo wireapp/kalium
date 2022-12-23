@@ -12,7 +12,13 @@ sealed class SSOMetaDataResult {
     }
 }
 
+/**
+ * Gets the SSO metadata
+ */
 interface SSOMetaDataUseCase {
+    /**
+     * @return the [SSOMetaDataResult] with the metadata content if successful
+     */
     suspend operator fun invoke(): SSOMetaDataResult
 }
 

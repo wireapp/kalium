@@ -11,6 +11,10 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
 
+/**
+ * This use case is responsible for clearing the client data.
+ * The proteus client will be cleared and the MLS client will be cleared.
+ */
 interface ClearClientDataUseCase {
     suspend operator fun invoke()
 }
