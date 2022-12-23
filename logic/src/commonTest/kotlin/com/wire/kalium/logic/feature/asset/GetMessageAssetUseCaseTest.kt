@@ -172,7 +172,14 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) }, anything())
+                .whenInvokedWith(
+                    anything(),
+                    anything(),
+                    anything(),
+                    anything(),
+                    matching { it.data.contentEquals(secretKey.data) },
+                    anything()
+                )
                 .thenReturn(Either.Right(encodedPath))
             given(updateAssetMessageDownloadStatus)
                 .suspendFunction(updateAssetMessageDownloadStatus::invoke)
@@ -206,7 +213,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(any(), any(), any(), anything(), any())
+                .whenInvokedWith(any(), any(), any(), anything(), any(), any())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }

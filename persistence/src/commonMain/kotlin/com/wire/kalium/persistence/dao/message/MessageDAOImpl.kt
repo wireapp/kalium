@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -26,7 +27,8 @@ import kotlinx.coroutines.flow.Flow
 class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val conversationsQueries: ConversationsQueries,
-    private val selfUserId: UserIDEntity
+    private val selfUserId: UserIDEntity,
+    private val reactionsQueries: ReactionsQueries
 ) : MessageDAO {
     private val mapper = MessageMapper
 
@@ -34,10 +36,6 @@ class MessageDAOImpl(
 
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         queries.markMessageAsDeleted(id, conversationsId)
-
-    override suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String) {
-        queries.markMessageAsEdited(editTimeStamp, id, conversationId)
-    }
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -62,6 +60,9 @@ class MessageDAOImpl(
             }
         }
     }
+
+    override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? =
+        queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
 
     override fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
@@ -220,15 +221,30 @@ class MessageDAOImpl(
     }
 
     private fun updateAssetMessage(message: MessageEntity) {
+        if (message.content !is MessageEntityContent.Asset) {
+            kaliumLogger.e("The message can't be updated because it is not an asset")
+            return
+        }
         val assetMessageContent = message.content as MessageEntityContent.Asset
-        queries.updateAssetKeys(
-            messageId = message.id,
-            conversationId = message.conversationId,
-            assetId = assetMessageContent.assetId,
-            assetOtrKey = assetMessageContent.assetOtrKey,
-            assetSha256 = assetMessageContent.assetSha256Key,
-            visibility = message.visibility
-        )
+        with(assetMessageContent) {
+            // This will ONLY update the VISIBILITY of the original base message and all the asset content related fields
+            queries.updateAssetContent(
+                messageId = message.id,
+                conversationId = message.conversationId,
+                visibility = message.visibility,
+                assetId = assetId,
+                assetDomain = assetDomain,
+                assetToken = assetToken,
+                assetSize = assetSizeInBytes,
+                assetMimeType = assetMimeType,
+                assetName = assetName,
+                assetOtrKey = assetOtrKey,
+                assetSha256 = assetSha256Key,
+                assetUploadStatus = assetUploadStatus,
+                assetDownloadStatus = assetDownloadStatus,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm
+            )
+        }
     }
 
     /*
@@ -286,10 +302,6 @@ class MessageDAOImpl(
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
-    override suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String) {
-        queries.updateMessageId(newMessageId, oldMessageId, conversationId)
-    }
-
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageDate(date, id, conversationId)
 
@@ -343,23 +355,26 @@ class MessageDAOImpl(
             .executeAsList()
 
     override suspend fun updateTextMessageContent(
+        editTimeStamp: String,
         conversationId: QualifiedIDEntity,
-        messageId: String,
-        newTextContent: MessageEntityContent.Text
-    ) {
-        queries.transaction {
-            queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
-            queries.deleteMessageMentions(messageId, conversationId)
-            newTextContent.mentions.forEach {
-                queries.insertMessageMention(
-                    message_id = messageId,
-                    conversation_id = conversationId,
-                    start = it.start,
-                    length = it.length,
-                    user_id = it.userId
-                )
-            }
+        currentMessageId: String,
+        newTextContent: MessageEntityContent.Text,
+        newMessageId: String
+    ): Unit = queries.transaction {
+        queries.markMessageAsEdited(editTimeStamp, currentMessageId, conversationId)
+        reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
+        queries.deleteMessageMentions(currentMessageId, conversationId)
+        queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+        newTextContent.mentions.forEach {
+            queries.insertMessageMention(
+                message_id = currentMessageId,
+                conversation_id = conversationId,
+                start = it.start,
+                length = it.length,
+                user_id = it.userId
+            )
         }
+        queries.updateMessageId(newMessageId, currentMessageId, conversationId)
     }
 
     override suspend fun getConversationMessagesByContentType(

@@ -13,7 +13,13 @@ sealed class SSOSettingsResult {
     }
 }
 
+/**
+ * Gets the SSO settings
+ */
 interface SSOSettingsUseCase {
+    /**
+     * @return the [SSOSettingsResult] with the default_sso_code settings if successful
+     */
     suspend operator fun invoke(): SSOSettingsResult
 }
 

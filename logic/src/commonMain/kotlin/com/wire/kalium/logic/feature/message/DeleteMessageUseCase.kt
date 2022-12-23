@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -22,9 +21,12 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
+/**
+ * Deletes a message from the conversation
+ */
 @Suppress("LongParameterList")
 class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
@@ -36,6 +38,14 @@ class DeleteMessageUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) {
 
+    /**
+     * Operation to delete a message from the conversation
+     *
+     * @param conversationId the id of the conversation the message belongs to
+     * @param messageId the id of the message to delete
+     * @param deleteForEveryone either delete the message for everyone or just for the current user
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -56,7 +66,7 @@ class DeleteMessageUseCase internal constructor(
                                             conversationId = conversationId
                                         ),
                                     conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                    date = Clock.System.now().toString(),
+                                    date = DateTimeUtil.currentIsoDateTimeString(),
                                     senderUserId = selfUserId,
                                     senderClientId = currentClientId,
                                     status = Message.Status.PENDING,
@@ -82,7 +92,8 @@ class DeleteMessageUseCase internal constructor(
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
 
             assetRepository.deleteAsset(
-                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                assetToRemove.assetId,
+                assetToRemove.assetDomain,
                 assetToRemove.assetToken
             )
                 .onFailure {

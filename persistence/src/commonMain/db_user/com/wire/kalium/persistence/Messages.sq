@@ -460,15 +460,20 @@ UPDATE MessageAssetContent
 SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
-updateAssetKeys {
+updateAssetContent {
     UPDATE MessageAssetContent
-    SET asset_id = :assetId, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 
     UPDATE Message
     SET visibility = :visibility
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
+
+getLatestMessageFromOtherUsers:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.isSelfMessage = FALSE
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', MessageDetailsView.date) DESC LIMIT 1;
 
 updateMessageDate:
 UPDATE Message
@@ -487,8 +492,8 @@ WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageId:
 UPDATE Message
-SET id = ?
-WHERE id = ? AND conversation_id = ?;
+SET id = :newId
+WHERE id = :oldId AND conversation_id = :conversationId;
 
 selectAllMessages:
 SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
@@ -520,6 +525,7 @@ getNotificationsMessages:
 SELECT * FROM MessagePreview AS message
 WHERE shouldNotify == 1
 AND visibility = 'VISIBLE'
+AND isSelfMessage == 0
 AND contentType IN ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:

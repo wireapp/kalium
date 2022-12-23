@@ -6,9 +6,9 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -33,7 +33,7 @@ class ReceiptRepositoryTest {
     fun givenMessageReadReceiptsWerePersisted_whenObservingMessageReceipts_thenShouldReturnReceiptsPreviouslyStored() = runTest {
         insertInitialData()
 
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
 
         receiptRepository.persistReceipts(
             userId = TestUser.OTHER_USER_ID,
@@ -59,7 +59,7 @@ class ReceiptRepositoryTest {
         runTest {
             insertInitialData()
 
-            val date = Clock.System.now()
+            val date = DateTimeUtil.currentInstant()
 
             receiptRepository.persistReceipts(
                 userId = TestUser.OTHER_USER_ID_2,

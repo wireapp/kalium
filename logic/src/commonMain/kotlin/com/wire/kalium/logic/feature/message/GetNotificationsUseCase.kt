@@ -10,14 +10,20 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
+/**
+ * Get notifications for the current user
+ */
 interface GetNotificationsUseCase {
+    /**
+     * Operation to get all notifications, the Flow emits everytime when the list is changed
+     * @return [Flow] of [List] of [LocalNotificationConversation] with the List that should be shown to the user.
+     */
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
 }
 
@@ -27,12 +33,8 @@ interface GetNotificationsUseCase {
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
  * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
- * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
  * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
- *
- * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
- * That Flow emits everytime when the list is changed
  */
 @Suppress("LongParameterList")
 internal class GetNotificationsUseCaseImpl internal constructor(
@@ -40,7 +42,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val timeParser: TimeParser,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),

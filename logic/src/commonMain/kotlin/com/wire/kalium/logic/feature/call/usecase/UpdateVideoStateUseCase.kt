@@ -6,11 +6,18 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import kotlinx.coroutines.flow.first
 
+/**
+ * This use case is responsible for updating the video state of a call.
+ * @see [VideoState]
+ */
 class UpdateVideoStateUseCase(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
 ) {
-
+    /**
+     * @param conversationId the id of the conversation.
+     * @param videoState the new video state of the call.
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         videoState: VideoState

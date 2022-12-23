@@ -24,8 +24,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 import okio.Path
 
 @Suppress("MaxLineLength")
@@ -107,7 +107,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     )
                 ),
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,

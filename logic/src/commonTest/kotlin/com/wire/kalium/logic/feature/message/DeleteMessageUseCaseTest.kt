@@ -172,15 +172,15 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { message ->
-                message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
-            },
+                    message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
+                },
                 anything()
             )
             .wasInvoked(exactly = once)
 
         verify(arrangement.assetRepository)
             .suspendFunction(arrangement.assetRepository::deleteAsset)
-            .with(eq(ASSET_ID), eq(ASSET_TOKEN))
+            .with(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
             .wasInvoked(exactly = once)
 
         verify(arrangement.messageRepository)
@@ -283,7 +283,7 @@ class DeleteMessageUseCaseTest {
         fun withAssetRepositoryDeleteAssetSucceed() = apply {
             given(assetRepository)
                 .suspendFunction(assetRepository::deleteAsset)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 
