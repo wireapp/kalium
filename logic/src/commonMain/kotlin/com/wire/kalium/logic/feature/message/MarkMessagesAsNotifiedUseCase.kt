@@ -9,26 +9,55 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 
-interface MarkMessagesAsNotifiedUseCase {
-    suspend operator fun invoke(conversationId: ConversationId?): Result
-}
-
-class MarkMessagesAsNotifiedUseCaseImpl(
+/**
+ * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
+ * @see GetNotificationsUseCase
+ */
+class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository
-) : MarkMessagesAsNotifiedUseCase {
+) {
 
-    override suspend operator fun invoke(conversationId: ConversationId?): Result =
+    /**
+     * @param conversationId the specific conversation that needs to be marked as notified,
+     * or null for marking all notifications as notified.
+     */
+    @Deprecated("This will be removed in order to use a more explicit input", ReplaceWith("invoke(UpdateTarget)"))
+    suspend operator fun invoke(conversationId: ConversationId?): Result = if (conversationId == null) {
+        invoke(UpdateTarget.AllConversations)
+    } else {
+        invoke(UpdateTarget.SingleConversation(conversationId))
+    }
+
+    /**
+     * @param conversationsToUpdate which conversation(s) to be marked as notified.
+     */
+    suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
         messageRepository.getInstantOfLatestMessageFromOtherUsers().map {
             it.toIsoDateTimeString()
         }.flatMap { date ->
-            if (conversationId == null) {
-                conversationRepository.updateAllConversationsNotificationDate(date)
-            } else {
-                conversationRepository.updateConversationNotificationDate(conversationId, date)
+            when (conversationsToUpdate) {
+                UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate(date)
+
+                is UpdateTarget.SingleConversation ->
+                    conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId, date)
             }
         }.fold({ Result.Failure(it) }) { Result.Success }
 
+    /**
+     * Specifies which conversations should be marked as notified
+     */
+    sealed interface UpdateTarget {
+        /**
+         * All conversations should be marked as notified.
+         */
+        object AllConversations : UpdateTarget
+
+        /**
+         * A specific conversation, represented by its [conversationId], should be marked as notified
+         */
+        data class SingleConversation(val conversationId: ConversationId) : UpdateTarget
+    }
 }
 
 sealed class Result {
