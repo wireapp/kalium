@@ -57,7 +57,6 @@ interface MessageRepository {
 
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
-    suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -116,15 +115,11 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Either<CoreFailure, List<Message>>
 
-    suspend fun updateTextMessageContent(
+    suspend fun updateTextMessage(
         conversationId: ConversationId,
-        messageContent: MessageContent.TextEdited
-    ): Either<CoreFailure, Unit>
-
-    suspend fun updateMessageId(
-        conversationId: ConversationId,
-        oldMessageId: String,
-        newMessageId: String
+        messageContent: MessageContent.TextEdited,
+        newMessageId: String,
+        editTimeStamp: String
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -222,14 +217,6 @@ class MessageDataSource(
         wrapStorageRequest {
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
         }
-
-    override suspend fun markMessageAsEdited(
-        messageUuid: String,
-        conversationId: ConversationId,
-        timeStamp: String
-    ) = wrapStorageRequest {
-        messageDAO.markAsEdited(timeStamp, idMapper.toDaoModel(conversationId), messageUuid)
-    }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
@@ -358,40 +345,27 @@ class MessageDataSource(
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             idMapper.toDaoModel(conversationId),
             date,
-            visibility.map { it.toEntityVisibility() })
-            .map(messageMapper::fromEntityToMessage)
+            visibility.map { it.toEntityVisibility() }
+        ).map(messageMapper::fromEntityToMessage)
     }
 
-    override suspend fun updateMessageId(
+    override suspend fun updateTextMessage(
         conversationId: ConversationId,
-        oldMessageId: String,
-        newMessageId: String
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.updateMessageId(idMapper.toDaoModel(conversationId), oldMessageId, newMessageId)
-        }
-
-    override suspend fun updateTextMessageContent(
-        conversationId: ConversationId,
-        messageContent: MessageContent.TextEdited
+        messageContent: MessageContent.TextEdited,
+        newMessageId: String,
+        editTimeStamp: String
     ): Either<CoreFailure, Unit> {
-        val messageToUpdate = getMessageById(conversationId, messageContent.editMessageId)
-
-        return messageToUpdate.flatMap { message ->
-            wrapStorageRequest {
-                if (message.content is MessageContent.Text) {
-                    messageDAO.updateTextMessageContent(
-                        idMapper.toDaoModel(conversationId),
-                        messageContent.editMessageId,
-                        MessageEntityContent.Text(
-                            messageContent.newContent,
-                            messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
-                        )
-                    )
-                } else {
-                    throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
-                }
-            }
+        return wrapStorageRequest {
+            messageDAO.updateTextMessageContent(
+                editTimeStamp = editTimeStamp,
+                conversationId = idMapper.toDaoModel(conversationId),
+                currentMessageId = messageContent.editMessageId,
+                newTextContent = MessageEntityContent.Text(
+                    messageContent.newContent,
+                    messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
+                ),
+                newMessageId = newMessageId
+            )
         }
     }
 

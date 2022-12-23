@@ -11,7 +11,6 @@ interface MessageDAO {
     suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
 
     /**
@@ -45,7 +44,6 @@ interface MessageDAO {
      */
     suspend fun getLatestMessageFromOtherUsers(): MessageEntity?
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
@@ -68,9 +66,11 @@ interface MessageDAO {
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
+        editTimeStamp: String,
         conversationId: QualifiedIDEntity,
-        messageId: String,
-        newTextContent: MessageEntityContent.Text
+        currentMessageId: String,
+        newTextContent: MessageEntityContent.Text,
+        newMessageId: String
     )
 
     suspend fun getConversationMessagesByContentType(
