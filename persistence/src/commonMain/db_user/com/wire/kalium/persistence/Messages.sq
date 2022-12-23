@@ -470,6 +470,11 @@ updateAssetKeys {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
+getLatestMessageFromOtherUsers:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.isSelfMessage = FALSE
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', MessageDetailsView.date) DESC LIMIT 1;
+
 updateMessageDate:
 UPDATE Message
 SET date = ?
@@ -487,8 +492,8 @@ WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageId:
 UPDATE Message
-SET id = ?
-WHERE id = ? AND conversation_id = ?;
+SET id = :newId
+WHERE id = :oldId AND conversation_id = :conversationId;
 
 selectAllMessages:
 SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;

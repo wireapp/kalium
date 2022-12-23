@@ -20,7 +20,7 @@ interface GetAvatarAssetUseCase {
 internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetAvatarAssetUseCase {
     override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult =
         // TODO(important!!): do local lookup for the profile pic before downloading a new one
-        assetDataSource.downloadPublicAsset(assetKey).fold({
+        assetDataSource.downloadPublicAsset(assetKey.value, assetKey.domain).fold({
             PublicAssetResult.Failure(it)
         }) {
             PublicAssetResult.Success(it)

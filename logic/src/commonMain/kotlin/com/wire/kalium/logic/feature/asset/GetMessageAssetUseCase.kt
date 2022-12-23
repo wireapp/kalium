@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALL
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -80,7 +79,8 @@ internal class GetMessageAssetUseCaseImpl(
 
             scope.async(dispatcher.io) {
                 assetDataSource.fetchPrivateDecodedAsset(
-                    assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
+                    assetId = assetMetadata.assetKey,
+                    assetDomain = assetMetadata.assetKeyDomain,
                     assetName = assetMetadata.assetName,
                     assetToken = assetMetadata.assetToken,
                     encryptionKey = assetMetadata.encryptionKey,

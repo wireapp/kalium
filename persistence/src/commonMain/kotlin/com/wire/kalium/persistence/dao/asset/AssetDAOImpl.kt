@@ -9,7 +9,7 @@ internal object AssetMapper {
     @Suppress("FunctionParameterNaming")
     fun fromAssets(
         key: String,
-        domain: String,
+        domain: String?,
         data_path: String,
         data_size: Long,
         downloaded_date: Long?
@@ -29,10 +29,11 @@ class AssetDAOImpl internal constructor(
     private val mapper: AssetMapper = AssetMapper
 ) : AssetDAO {
 
+    // TODO(federation): support the case where domain is null
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
             assetEntity.key,
-            assetEntity.domain,
+            assetEntity.domain.orEmpty(),
             assetEntity.dataPath,
             assetEntity.dataSize,
             assetEntity.downloadedDate
@@ -44,7 +45,7 @@ class AssetDAOImpl internal constructor(
             assetsEntity.forEach { asset ->
                 queries.insertAsset(
                     asset.key,
-                    asset.domain,
+                    asset.domain.orEmpty(),
                     asset.dataPath,
                     asset.dataSize,
                     asset.downloadedDate

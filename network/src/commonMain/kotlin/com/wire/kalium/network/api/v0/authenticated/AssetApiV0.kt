@@ -4,7 +4,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
@@ -42,8 +41,13 @@ internal open class AssetApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> = runCatching {
-        httpClient.prepareGet(buildAssetsPath(assetId)) {
+    override suspend fun downloadAsset(
+        assetId: String,
+        assetDomain: String?,
+        assetToken: String?,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit> = runCatching {
+        httpClient.prepareGet(buildAssetsPath(assetId, assetDomain)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
@@ -91,9 +95,10 @@ internal open class AssetApiV0 internal constructor(
      * Build path for assets endpoint download.
      * The case for using V3 is a fallback and should not happen.
      */
-    protected open fun buildAssetsPath(assetId: AssetId): String {
-        return if (assetId.domain.isNotBlank()) "$PATH_PUBLIC_ASSETS_V4/${assetId.domain}/${assetId.value}"
-        else "$PATH_PUBLIC_ASSETS_V3/${assetId.value}"
+    protected open fun buildAssetsPath(assetId: String, assetDomain: String?): String = if (assetDomain.isNullOrBlank()) {
+        "$PATH_PUBLIC_ASSETS_V3/$assetId"
+    } else {
+        "$PATH_PUBLIC_ASSETS_V4/$assetDomain/$assetId"
     }
 
     override suspend fun uploadAsset(
@@ -108,9 +113,9 @@ internal open class AssetApiV0 internal constructor(
             }
         }
 
-    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Unit> =
+    override suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.delete(buildAssetsPath(assetId)) {
+            httpClient.delete(buildAssetsPath(assetId, assetDomain)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }
         }

@@ -7,9 +7,9 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -48,7 +48,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
     fun givenReceiptIsInserted_whenGettingDetails_shouldReturnItWithCorrectData() = runTest {
         insertTestData()
 
-        val insertedInstant = Clock.System.now()
+        val insertedInstant = DateTimeUtil.currentInstant()
         receiptDAO.insertReceipts(
             OTHER_USER.id, TEST_CONVERSATION.id, insertedInstant, ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
@@ -78,10 +78,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         insertTestData()
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
+            OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
+            SELF_USER_ID, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
 
         val result = receiptDAO
@@ -98,10 +98,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         insertTestData()
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
+            OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            SELF_USER_ID, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.READ, listOf(TEST_MESSAGE.id)
+            SELF_USER_ID, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.READ, listOf(TEST_MESSAGE.id)
         )
 
         val result = receiptDAO
@@ -125,10 +125,10 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         )
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
+            OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id)
         )
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf(otherMessageId)
+            OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(otherMessageId)
         )
 
         val result = receiptDAO
@@ -144,7 +144,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         insertTestData()
 
         receiptDAO.insertReceipts(
-            OTHER_USER.id, TEST_CONVERSATION.id, Clock.System.now(), ReceiptTypeEntity.DELIVERY, listOf("SomeUnknownMessage")
+            OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf("SomeUnknownMessage")
         )
     }
 

@@ -229,8 +229,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.SecurityHelper
-import com.wire.kalium.logic.util.TimeParser
-import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -475,7 +473,6 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
-            timeParser = timeParser,
             persistMessage = persistMessage,
             callMapper = callMapper
         )
@@ -657,8 +654,6 @@ class UserSessionScope internal constructor(
         get() = ApiMigrationManager(
             sessionManager.serverConfig().metaData.commonApiVersion.version, userStorage.database.metadataDAO, apiMigrations
         )
-
-    private val timeParser: TimeParser = TimeParserImpl()
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
@@ -911,7 +906,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            timeParser,
             userStorage,
             this,
         )
@@ -935,7 +929,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            timeParser,
             applicationMessageHandler,
             userStorage,
             userPropertyRepository,

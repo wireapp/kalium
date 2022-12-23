@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -22,8 +21,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
 /**
  * Deletes a message from the conversation
@@ -67,7 +66,7 @@ class DeleteMessageUseCase internal constructor(
                                             conversationId = conversationId
                                         ),
                                     conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                    date = Clock.System.now().toString(),
+                                    date = DateTimeUtil.currentIsoDateTimeString(),
                                     senderUserId = selfUserId,
                                     senderClientId = currentClientId,
                                     status = Message.Status.PENDING,
@@ -93,7 +92,8 @@ class DeleteMessageUseCase internal constructor(
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
 
             assetRepository.deleteAsset(
-                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                assetToRemove.assetId,
+                assetToRemove.assetDomain,
                 assetToRemove.assetToken
             )
                 .onFailure {

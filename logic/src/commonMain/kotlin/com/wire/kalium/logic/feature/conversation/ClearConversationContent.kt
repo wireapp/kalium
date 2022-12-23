@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -16,7 +15,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 internal interface ClearConversationContent {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -34,12 +33,7 @@ internal class ClearConversationContentImpl(
 
                 if (messageContent is MessageContent.Asset) {
                     with(messageContent.value.remoteData) {
-                        assetRepository.deleteAssetLocally(
-                            AssetId(
-                                assetId,
-                                assetDomain.orEmpty()
-                            )
-                        )
+                        assetRepository.deleteAssetLocally(assetId)
                     }
                 }
             }
@@ -75,11 +69,11 @@ internal class ClearConversationContentUseCaseImpl(
                             id = uuid4().toString(),
                             content = MessageContent.Cleared(
                                 conversationId = conversationId,
-                                time = Clock.System.now()
+                                time = DateTimeUtil.currentInstant()
                             ),
                             // sending the message to clear this conversation
                             conversationId = selfConversationId,
-                            date = Clock.System.now().toString(),
+                            date = DateTimeUtil.currentIsoDateTimeString(),
                             senderUserId = selfUserId,
                             senderClientId = currentClientId,
                             status = Message.Status.PENDING

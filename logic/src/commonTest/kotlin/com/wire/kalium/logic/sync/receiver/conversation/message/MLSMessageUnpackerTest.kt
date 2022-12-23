@@ -13,6 +13,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -24,7 +25,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -32,7 +32,7 @@ class MLSMessageUnpackerTest {
 
     @Test
     fun givenNewMLSMessageEventWithProposal_whenUnpacking_thenScheduleProposalTimer() = runTest {
-        val eventTimestamp = Clock.System.now()
+        val eventTimestamp = DateTimeUtil.currentInstant()
         val commitDelay: Long = 10
 
         val (arrangement, mlsUnpacker) = Arrangement()

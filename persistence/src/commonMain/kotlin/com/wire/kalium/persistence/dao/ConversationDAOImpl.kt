@@ -7,10 +7,10 @@ import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration
@@ -381,7 +381,7 @@ class ConversationDAOImpl(
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
+            DateTimeUtil.currentInstant().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
 
     override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) {

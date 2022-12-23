@@ -4,9 +4,9 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,7 +26,7 @@ class SlowSyncRepositoryTest {
 
     @Test
     fun givenInstantIsUpdated_whenGettingTheLastSlowSyncInstant_thenShouldReturnTheNewState() = runTest(testDispatcher) {
-        val instant = Clock.System.now()
+        val instant = DateTimeUtil.currentInstant()
 
         slowSyncRepository.setLastSlowSyncCompletionInstant(instant)
         assertEquals(instant, slowSyncRepository.observeLastSlowSyncCompletionInstant().first())
@@ -45,7 +45,7 @@ class SlowSyncRepositoryTest {
 //     @Ignore
     @Test
     fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest(testDispatcher) {
-        val firstInstant = Clock.System.now()
+        val firstInstant = DateTimeUtil.currentInstant()
         slowSyncRepository.observeLastSlowSyncCompletionInstant().test {
             awaitItem() // Ignore first item
             slowSyncRepository.setLastSlowSyncCompletionInstant(firstInstant)

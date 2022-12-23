@@ -14,8 +14,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
 /**
  * Sending a ping/knock message to a conversation
@@ -49,7 +49,7 @@ class SendKnockUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.Knock(hotKnock),
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,

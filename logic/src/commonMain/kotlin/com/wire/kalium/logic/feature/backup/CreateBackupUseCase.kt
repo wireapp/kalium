@@ -19,6 +19,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.KaliumDispatcher
@@ -26,9 +27,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import okio.FileNotFoundException
 import okio.Path
 import okio.Path.Companion.toPath
@@ -115,7 +113,7 @@ internal class CreateBackupUseCaseImpl(
 
     private suspend fun createMetadataFile(userId: UserId, userDBSecret: UserDBSecret): Path {
         val clientId = getCurrentClientId().first()
-        val creationTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toString()
+        val creationTime = DateTimeUtil.currentIsoDateTimeString()
         val metadataJson = BackupMetadata(
             clientPlatform,
             BackupCoder.version,
