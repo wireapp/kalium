@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.receiver.message
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
@@ -26,8 +27,9 @@ class MessageTextEditHandlerImpl(
     ) = messageRepository.getMessageById(message.conversationId, messageContent.editMessageId).flatMap { currentMessage ->
 
         if (currentMessage.senderUserId != message.senderUserId) {
+            val obfuscatedId = message.senderUserId.toString().obfuscateId()
             kaliumLogger.w(
-                message = "User '${message.senderUserId}' attempted to edit a message from another user. Ignoring the edit completely"
+                message = "User '$obfuscatedId' attempted to edit a message from another user. Ignoring the edit completely"
             )
             // Same as message not found. _i.e._ not found for the original sender at least
             return@flatMap Either.Left(StorageFailure.DataNotFound)
