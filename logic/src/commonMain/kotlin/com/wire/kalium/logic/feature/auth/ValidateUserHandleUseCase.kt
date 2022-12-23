@@ -1,10 +1,18 @@
 package com.wire.kalium.logic.feature.auth
 
+/**
+ * Validates a user handle
+ */
 interface ValidateUserHandleUseCase {
+    /**
+     * Validates a user handle
+     * @param handle The user handle to validate
+     * @return [ValidateUserHandleResult] if user's handle is [ValidateUserHandleResult.Valid] or [ValidateUserHandleResult.Invalid]
+     */
     operator fun invoke(handle: String): ValidateUserHandleResult
 }
 
-class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
+internal class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
     override operator fun invoke(handle: String): ValidateUserHandleResult {
         val forbiddenCharactersRegex = Regex(HANDLE_FORBIDDEN_CHARACTERS_REGEX)
         val handleWithoutInvalidCharacters = handle.replace(forbiddenCharactersRegex, "")
@@ -18,6 +26,7 @@ class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
                 val invalidCharactersUsed = allCharactersUsed.minus(validCharactersUsed.toSet())
                 ValidateUserHandleResult.Invalid.InvalidCharacters(handleWithoutInvalidCharacters, invalidCharactersUsed)
             }
+
             tooShort -> ValidateUserHandleResult.Invalid.TooShort(handleWithoutInvalidCharacters)
             tooLong -> ValidateUserHandleResult.Invalid.TooLong(handleWithoutInvalidCharacters)
             else -> ValidateUserHandleResult.Valid(handle)

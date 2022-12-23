@@ -46,11 +46,20 @@ sealed class RegisterParam(
     ) : RegisterParam(firstName, lastName, email, password)
 }
 
+/**
+ * This use case is responsible for registering a new account.
+ */
 class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
+    /**
+     * @see [RegisterParam.PrivateAccount] and [RegisterParam.Team]
+     * @param param [RegisterParam] the registration to create a private account or a team account
+     *
+     * @return [RegisterResult] with credentials if successful or [RegisterResult.Failure] with the specific error
+     */
     suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
@@ -73,7 +82,7 @@ class RegisterAccountUseCase internal constructor(
             }
         }
     }.map { (ssoId, authTokens) ->
-               RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
+        RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)

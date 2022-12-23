@@ -8,7 +8,13 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 
+/**
+ * This use case will return the list of clients of the current user.
+ */
 interface SelfClientsUseCase {
+    /**
+     * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
+     */
     suspend operator fun invoke(): SelfClientsResult
 }
 
@@ -22,7 +28,8 @@ class SelfClientsUseCaseImpl(
             val currentClientId = provideClientId()
             SelfClientsResult.Success(
                 clients = clients.sortedByDescending { it.registrationTime },
-                currentClientId = currentClientId.getOrNull())
+                currentClientId = currentClientId.getOrNull()
+            )
         }
     )
 }

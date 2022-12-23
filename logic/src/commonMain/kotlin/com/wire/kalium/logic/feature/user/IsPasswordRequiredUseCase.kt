@@ -7,10 +7,17 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
+/**
+ * Checks if the current requires password to authenticate operations.
+ * In case the user doesn't have a password, means is an SSO user.
+ */
 class IsPasswordRequiredUseCase internal constructor(
     private val selfUserId: UserId,
     private val sessionRepository: SessionRepository,
 ) {
+    /**
+     * @return [Result] with [Boolean] true if the user requires password, false otherwise.
+     */
     suspend operator fun invoke(): Result = eitherInvoke().fold({
         Result.Failure(it)
     }, {
