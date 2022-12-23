@@ -1,7 +1,11 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity;
 
-CREATE TABLE Receipt (
+-- Delete the ReceiptDetails View
+DROP VIEW ReceiptDetails;
+
+-- Create new table with ON UPDATE CASCADE
+CREATE TABLE ReceiptTemp (
     message_id TEXT NOT NULL,
     conversation_id TEXT AS QualifiedIDEntity NOT NULL,
     user_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -12,26 +16,16 @@ CREATE TABLE Receipt (
     PRIMARY KEY (message_id, conversation_id, user_id, type)
 );
 
--- TODO: Cast to proper types when/if SQLDelight supports it:
-insertReceipt:
-WITH insertion(message_id, conversation_id, user_id, type, date) AS(
-    VALUES (CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT))
-)
-INSERT OR IGNORE INTO Receipt(message_id, conversation_id, user_id, type, date)
-SELECT
-    insertion.message_id,
-    insertion.conversation_id,
-    insertion.user_id,
-    insertion.type,
-    insertion.date
-FROM insertion
-WHERE EXISTS (
-    SELECT 1 FROM Message
-    WHERE
-        Message.conversation_id = insertion.conversation_id AND
-        Message.id = insertion.message_id
-);
+-- Migrate data to new table
+INSERT INTO ReceiptTemp(message_id, conversation_id, user_id, type, date) SELECT * FROM Receipt;
 
+-- Drop old table
+DROP TABLE IF EXISTS Receipt;
+
+-- Rename new temp table to Receipt
+ALTER TABLE ReceiptTemp RENAME TO Receipt;
+
+-- Create the View again
 CREATE VIEW IF NOT EXISTS ReceiptDetails
 AS SELECT
 	Receipt.type,
@@ -50,10 +44,3 @@ FROM
 	Receipt
 INNER JOIN User ON User.qualified_id = Receipt.user_id
 ORDER BY User.name;
-
-selectReceiptsByConversationIdAndMessageId:
-SELECT *
-FROM ReceiptDetails
-    WHERE messageId = ?
-	AND conversationId = ?
-	AND type = ?;
