@@ -220,15 +220,29 @@ class MessageDAOImpl(
     }
 
     private fun updateAssetMessage(message: MessageEntity) {
+        if (message.content !is MessageEntityContent.Asset) {
+            kaliumLogger.e("The message can't be updated because it is not an asset")
+            return
+        }
         val assetMessageContent = message.content as MessageEntityContent.Asset
-        queries.updateAssetKeys(
-            messageId = message.id,
-            conversationId = message.conversationId,
-            assetId = assetMessageContent.assetId,
-            assetOtrKey = assetMessageContent.assetOtrKey,
-            assetSha256 = assetMessageContent.assetSha256Key,
-            visibility = message.visibility
-        )
+        with(assetMessageContent) {
+            queries.updateAssetContent(
+                messageId = message.id,
+                conversationId = message.conversationId,
+                visibility = message.visibility,
+                assetId = assetId,
+                assetDomain = assetDomain,
+                assetToken = assetToken,
+                assetSize = assetSizeInBytes,
+                assetMimeType = assetMimeType,
+                assetName = assetName,
+                assetOtrKey = assetOtrKey,
+                assetSha256 = assetSha256Key,
+                assetUploadStatus = assetUploadStatus,
+                assetDownloadStatus = assetDownloadStatus,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm
+            )
+        }
     }
 
     /*
