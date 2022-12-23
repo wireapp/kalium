@@ -846,6 +846,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
         }
 
+    @Suppress("LongMethod")
     @Test
     @IgnoreIOS
     fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_ThenTheFinalMessageShouldIncludeTheChanges() = runTest {
