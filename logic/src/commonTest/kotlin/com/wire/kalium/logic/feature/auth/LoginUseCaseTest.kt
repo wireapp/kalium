@@ -381,7 +381,8 @@ class LoginUseCaseTest {
             userId = UserId("user_id", "domain.de"),
             accessToken = "access_token",
             refreshToken = "refresh_token",
-            tokenType = "token_type"
+            tokenType = "token_type",
+            cookieLabel = "cookie_label",
         )
         val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
 
