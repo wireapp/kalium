@@ -227,6 +227,7 @@ class MessageDAOImpl(
         }
         val assetMessageContent = message.content as MessageEntityContent.Asset
         with(assetMessageContent) {
+            // This will ONLY update the VISIBILITY of the original base message and all the asset content related fields
             queries.updateAssetContent(
                 messageId = message.id,
                 conversationId = message.conversationId,
