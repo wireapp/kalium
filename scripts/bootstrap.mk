@@ -64,6 +64,7 @@ native/.tarballs.stamp:
 	mkdir -p "$(NATIVE_TARBALLS)"
 	touch "$@"
 
+
 $(CRYPTOBOX_C_TAR_GZ): $(NATIVE)
 	curl -L "$(CRYPTOBOX_C_URL)" --output "$@"
 
@@ -86,7 +87,6 @@ $(LIBSODIUM_CODE)/.stamp: $(LIBSODIUM_TAR_GZ)
 	mkdir -p "$(LIBSODIUM_CODE)"
 	tar -xC "$(LIBSODIUM_CODE)" --strip-components=1 -f "$<"
 	touch "$@"
-
 
 $(LIBSODIUM_ARTIFACT): $(LIBSODIUM_CODE)/.stamp
 	cd $(LIBSODIUM_CODE) && ./configure
@@ -117,6 +117,6 @@ $(AVS_FRAMEWORK_UNZIP): $(AVS_FRAMEWORK_ZIP)
 	unzip "$<" -d "$@"
 
 $(AVS_FRAMEWORK_LOCATION): $(AVS_FRAMEWORK_UNZIP)
-	
+
 $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_LOCATION)
 	cp -r "$<" "$@"
