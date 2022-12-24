@@ -28,7 +28,7 @@ AVS_ARTIFACT_FILE := avs.framework
 
 NATIVE_TARBALLS = native/.tarballs
 NATIVE_LIBS = native/libs
-NATIVE := $(NATIVE_LIBS) $(NATIVE_TARBALLS)
+NATIVE := native/.libs.stamp native/.tarballs.stamp
 
 CRYPTOBOX_C_URL := https://github.com/wireapp/cryptobox-c/archive/refs/tags/$(CRYPTOBOX_C_VERSION).tar.gz
 CRYPTOBOX_C_TAR_GZ := $(NATIVE_TARBALLS)/cryptobox-c_$(CRYPTOBOX_C_VERSION).tar.gz
@@ -58,21 +58,24 @@ clean-native:
 	@echo "Removing native dir"
 	@rm -rf native
 
-$(NATIVE_LIBS):
-	mkdir -p "$@"
+native/.libs.stamp:
+	mkdir -p "$(NATIVE_LIBS)"
+	touch "$@"
 
-$(NATIVE_TARBALLS):
-	mkdir -p "$@"
+native/.tarballs.stamp:
+	mkdir -p "$(NATIVE_TARBALLS)"
+	touch "$@"
 
 $(CRYPTOBOX_C_TAR_GZ): $(NATIVE)
 	curl -L "$(CRYPTOBOX_C_URL)" --output "$@"
 
-$(CRYPTOBOX_C_CODE): $(CRYPTOBOX_C_TAR_GZ)
-	rm -rf "$@"
-	mkdir -p "$@"
-	tar -xC "$@" --strip-components=1 -f "$<"
+$(CRYPTOBOX_C_CODE)/.stamp: $(CRYPTOBOX_C_TAR_GZ)
+	rm -rf "$(CRYPTOBOX_C_CODE)"
+	mkdir -p "$(CRYPTOBOX_C_CODE)"
+	tar -xC "$(CRYPTOBOX_C_CODE)" --strip-components=1 -f "$<"
+	touch "$@"
 
-$(CRYPTOBOX_C_ARTIFACT): $(CRYPTOBOX_C_CODE)
+$(CRYPTOBOX_C_ARTIFACT): $(CRYPTOBOX_C_CODE)/.stamp
 	make -C $(CRYPTOBOX_C_CODE) compile-release
 	cp "$(CRYPTOBOX_C_CODE)/target/release/$(LIBCRYPTOBOX_ARTIFACT_FILE)" "$@"
 
@@ -80,13 +83,14 @@ $(CRYPTOBOX_C_ARTIFACT): $(CRYPTOBOX_C_CODE)
 $(LIBSODIUM_TAR_GZ): $(NATIVE)
 	curl -L "$(LIBSODIUM_URL)" --output "$@"
 
-$(LIBSODIUM_CODE): $(LIBSODIUM_TAR_GZ)
-	rm -rf "$@"
-	mkdir -p "$@"
-	tar -xC "$@" --strip-components=1 -f "$<"
+$(LIBSODIUM_CODE)/.stamp: $(LIBSODIUM_TAR_GZ)
+	rm -rf "$(LIBSODIUM_CODE)"
+	mkdir -p "$(LIBSODIUM_CODE)"
+	tar -xC "$(LIBSODIUM_CODE)" --strip-components=1 -f "$<"
+	touch "$@"
 
 
-$(LIBSODIUM_ARTIFACT): $(LIBSODIUM_CODE)
+$(LIBSODIUM_ARTIFACT): $(LIBSODIUM_CODE)/.stamp
 	cd $(LIBSODIUM_CODE) && ./configure
 	make -C $(LIBSODIUM_CODE)
 	cp  "$(LIBSODIUM_CODE)/src/libsodium/.libs/$(LIBSODIUM_ARTIFACT_FILE)" "$@"
@@ -95,12 +99,13 @@ $(LIBSODIUM_ARTIFACT): $(LIBSODIUM_CODE)
 $(CRYPTOBOX4J_TAR_GZ): $(NATIVE)
 	curl -L "$(CRYPTOBOX4J_URL)" --output "$@"
 
-$(CRYPTOBOX4J_CODE): $(CRYPTOBOX4J_TAR_GZ)
-	rm -rf "$@"
-	mkdir -p "$@"
-	tar -xC "$@" --strip-components=1 -f "$<"
+$(CRYPTOBOX4J_CODE)/.stamp: $(CRYPTOBOX4J_TAR_GZ)
+	rm -rf "$(CRYPTOBOX4J_CODE)"
+	mkdir -p "$(CRYPTOBOX4J_CODE)"
+	tar -xC "$(CRYPTOBOX4J_CODE)" --strip-components=1 -f "$<"
+	touch "$@"
 
-$(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE) $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT)
+$(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE)/.stamp $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT)
 	cc -std=c99 -g -Wall $(CRYPTOBOX4J_CODE)/src/cryptobox-jni.c \
 		-I"$(JAVA_HOME)/include" \
 		-I"$(JAVA_HOME)/include/$(OS)" \
