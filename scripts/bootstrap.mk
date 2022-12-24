@@ -53,10 +53,6 @@ AVS_FRAMEWORK_ARTIFACT := $(NATIVE_LIBS)/$(AVS_ARTIFACT_FILE)
 
 all: $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT) $(CRYPTOBOX4J_ARTIFACT) $(AVS_FRAMEWORK_ARTIFACT)
 
-.PHONY: check-rust
-check-rust:
-	which rustc
-
 .PHONY: clean-native
 clean-native:
 	@echo "Removing native dir"
@@ -76,7 +72,7 @@ $(CRYPTOBOX_C_CODE): $(CRYPTOBOX_C_TAR_GZ)
 	mkdir -p "$@"
 	tar -xC "$@" --strip-components=1 -f "$<"
 
-$(CRYPTOBOX_C_ARTIFACT): check-rust $(CRYPTOBOX_C_CODE)
+$(CRYPTOBOX_C_ARTIFACT): $(CRYPTOBOX_C_CODE)
 	make -C $(CRYPTOBOX_C_CODE) compile-release
 	cp "$(CRYPTOBOX_C_CODE)/target/release/$(LIBCRYPTOBOX_ARTIFACT_FILE)" "$@"
 
