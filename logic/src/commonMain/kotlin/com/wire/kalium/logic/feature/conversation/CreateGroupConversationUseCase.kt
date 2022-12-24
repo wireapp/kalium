@@ -13,7 +13,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 /**
  * Creates a group conversation.
@@ -38,7 +38,7 @@ class CreateGroupConversationUseCase internal constructor(
         }.flatMap { clientId ->
             conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
         }.flatMap { conversation ->
-            conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
+            conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentIsoDateTimeString())
                 .map { conversation }
         }.fold({
             if (it is NetworkFailure.NoNetworkConnection) {

@@ -21,6 +21,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -72,7 +73,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -263,7 +263,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationApi)
@@ -286,7 +286,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationDAO)
@@ -1155,7 +1155,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 MapperProvider.idMapper().toApiModel(CONVERSATION_ID),
                 MapperProvider.idMapper().toApiModel(USER_ID),
-                Clock.System.now().toString(),
+                DateTimeUtil.currentIsoDateTimeString(),
                 ConversationNameUpdateEvent("newName")
             )
         )

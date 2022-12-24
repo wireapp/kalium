@@ -7,7 +7,7 @@ CREATE TABLE Receipt (
     user_id TEXT AS QualifiedIDEntity NOT NULL,
     type TEXT AS ReceiptTypeEntity NOT NULL,
     date TEXT NOT NULL,
-    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (message_id, conversation_id, user_id, type)
 );

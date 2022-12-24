@@ -113,7 +113,7 @@ class UserDatabaseBuilder internal constructor(
         get() = CallDAOImpl(database.callsQueries)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries)
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)

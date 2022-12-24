@@ -15,12 +15,18 @@ kotlin {
             dependencies {
                 // coroutines
                 implementation(libs.coroutines.core)
+                implementation(libs.ktxDateTime)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
+            }
+        }
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.annotation)
             }
         }
     }

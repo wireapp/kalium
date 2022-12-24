@@ -20,7 +20,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -90,7 +89,6 @@ class CallRepositoryTest {
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
-            timeParser = TimeParserImpl(),
             persistMessage = persistMessage,
             callMapper = callMapper
         )

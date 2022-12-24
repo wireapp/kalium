@@ -6,7 +6,15 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * This use case will add a member(s) to a given conversation.
+ */
 interface AddMemberToConversationUseCase {
+    /**
+     * @param conversationId the id of the conversation
+     * @param userIdList the list of user ids to add to the conversation
+     * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
+     */
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 
     sealed interface Result {

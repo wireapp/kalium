@@ -1,15 +1,16 @@
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.given
@@ -21,60 +22,73 @@ import kotlin.test.Test
 
 class MessageTextEditHandlerTest {
 
-    @Mock
-    private val messageRepository: MessageRepository = mock(MessageRepository::class)
+    @Test
+    fun givenEditMatchesOriginalSender_whenHandling_thenShouldUpdateContentWithCorrectParameters() = runTest {
+        val (arrangement, messageTextEditHandler) = Arrangement()
+            .withCurrentMessageByIdReturning(Either.Right(ORIGINAL_MESSAGE))
+            .arrange()
 
-    private val messageTextEditHandler: MessageTextEditHandler = MessageTextEditHandlerImpl(messageRepository)
+        messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT)
+
+        with(arrangement) {
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .with(eq(EDIT_MESSAGE.conversationId), eq(EDIT_CONTENT), eq(EDIT_MESSAGE.id), eq(EDIT_MESSAGE.date))
+                .wasInvoked(exactly = once)
+        }
+    }
 
     @Test
-    fun givenACorrectMessageAndMessageContent_whenHandling_ThenDataGetsUpdatedCorrectly() = runTest {
-        // given
-        val mockMessageContent = MessageContent.TextEdited(
-            editMessageId = "someId",
+    fun givenEditDoesNOTMatchesOriginalSender_whenHandling_thenShouldNOTUpdateContent() = runTest {
+        val (arrangement, messageTextEditHandler) = Arrangement()
+            .withCurrentMessageByIdReturning(Either.Right(ORIGINAL_MESSAGE))
+            .arrange()
+
+        messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = TestUser.OTHER_USER_ID), EDIT_CONTENT)
+
+        with(arrangement) {
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .with(any(), any(), any(), any())
+                .wasNotInvoked()
+        }
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val messageRepository: MessageRepository = mock(MessageRepository::class)
+
+        init {
+            given(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withCurrentMessageByIdReturning(result: Either<CoreFailure, Message>) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(result)
+        }
+
+        fun arrange(): Pair<Arrangement, MessageTextEditHandler> =
+            this to MessageTextEditHandlerImpl(messageRepository)
+
+    }
+
+    private companion object {
+        val ORIGINAL_MESSAGE = TestMessage.TEXT_MESSAGE
+        val ORIGINAL_MESSAGE_ID = ORIGINAL_MESSAGE.id
+        val ORIGINAL_SENDER_USER_ID = ORIGINAL_MESSAGE.senderUserId
+        val EDIT_CONTENT = MessageContent.TextEdited(
+            editMessageId = ORIGINAL_MESSAGE_ID,
             newContent = "some new content",
             newMentions = listOf()
         )
-        val mockMessage = Message.Signaling(
-            id = "someId",
-            content = mockMessageContent,
-            conversationId = ConversationId("someValue", "someDomain"),
-            date = "someDate",
-            senderUserId = UserId("someValue", "someDomain"),
-            senderClientId = ClientId("someValue"),
-            status = Message.Status.SENT,
+        val EDIT_MESSAGE = TestMessage.signalingMessage(
+            content = EDIT_CONTENT
         )
-
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateTextMessageContent)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsEdited)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessageId)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(Either.Right(Unit))
-        // when
-        messageTextEditHandler.handle(mockMessage, mockMessageContent)
-        // then
-        verify(messageRepository)
-            .suspendFunction(messageRepository::updateTextMessageContent)
-            .with(eq(mockMessage.conversationId), eq(mockMessageContent))
-            .wasInvoked(exactly = once)
-
-        verify(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsEdited)
-            .with(eq(mockMessageContent.editMessageId), eq(mockMessage.conversationId), eq(mockMessage.date))
-            .wasInvoked(exactly = once)
-
-        verify(messageRepository)
-            .suspendFunction(messageRepository::updateMessageId)
-            .with(eq(mockMessage.conversationId), eq(mockMessageContent.editMessageId), eq(mockMessage.id))
-            .wasInvoked(exactly = once)
     }
-
 }

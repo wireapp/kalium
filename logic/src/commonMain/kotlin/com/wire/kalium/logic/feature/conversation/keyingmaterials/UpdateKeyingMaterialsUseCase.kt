@@ -14,6 +14,10 @@ sealed class UpdateKeyingMaterialsResult {
 
 }
 
+/**
+ * This use case will check if the number of keying materials is below the minimum threshold and will
+ * upload new keying materials if needed for the mls conversations of the user.
+ */
 interface UpdateKeyingMaterialsUseCase {
     suspend operator fun invoke(): UpdateKeyingMaterialsResult
 }

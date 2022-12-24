@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -13,7 +14,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 
 class NewMessageEventHandlerTest {
@@ -40,7 +40,7 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(MessageUnpackResult.HandshakeMessage))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(Clock.System.now())
+        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
 

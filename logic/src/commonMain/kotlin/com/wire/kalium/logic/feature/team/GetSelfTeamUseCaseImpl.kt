@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 
+/**
+ * This use case is responsible for getting the team of the self user.
+ * fixme: this can be replaced, since we are not using the team, but the team id, we can inject the team id directly
+ * @see [SelfTeamIdProvider]
+ */
 fun interface GetSelfTeamUseCase {
     suspend operator fun invoke(): Flow<Team?>
 }

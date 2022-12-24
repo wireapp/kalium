@@ -27,6 +27,9 @@ data class SSORedirects(val success: String, val error: String) {
     )
 }
 
+/**
+ * Initiates a login using SSO
+ */
 interface SSOInitiateLoginUseCase {
     sealed class Param {
         abstract val ssoCode: String
@@ -35,6 +38,10 @@ interface SSOInitiateLoginUseCase {
         data class WithRedirect(override val ssoCode: String) : Param()
     }
 
+    /**
+     * @param param the [Param] to use for the login with redirect or not
+     * @return the [SSOInitiateLoginResult] with the request url if successful
+     */
     suspend operator fun invoke(param: Param): SSOInitiateLoginResult
 }
 

@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlin.test.BeforeTest
@@ -14,6 +15,7 @@ open class BaseMessageTest : BaseDatabaseTest() {
     protected lateinit var conversationDAO: ConversationDAO
     protected lateinit var userDAO: UserDAO
     protected lateinit var reactionDAO: ReactionDAO
+    protected lateinit var receiptDAO: ReceiptDAO
 
     @BeforeTest
     fun setUp() {
@@ -24,6 +26,7 @@ open class BaseMessageTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
+        receiptDAO = db.receiptDAO
     }
 
     /**

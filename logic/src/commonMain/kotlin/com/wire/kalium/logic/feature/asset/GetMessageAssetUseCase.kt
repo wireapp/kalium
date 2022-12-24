@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALL
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -71,8 +70,11 @@ internal class GetMessageAssetUseCaseImpl(
                     }
                 }
                 // This should never happen
-                else -> return@fold CompletableDeferred(MessageAssetResult.Failure(
-                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))))
+                else -> return@fold CompletableDeferred(
+                    MessageAssetResult.Failure(
+                        CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
+                    )
+                )
             }
 
             // Start progress bar for generic assets
@@ -80,7 +82,8 @@ internal class GetMessageAssetUseCaseImpl(
 
             scope.async(dispatcher.io) {
                 assetDataSource.fetchPrivateDecodedAsset(
-                    assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
+                    assetId = assetMetadata.assetKey,
+                    assetDomain = assetMetadata.assetKeyDomain,
                     assetName = assetMetadata.assetName,
                     assetToken = assetMetadata.assetToken,
                     encryptionKey = assetMetadata.encryptionKey,
@@ -96,13 +99,13 @@ internal class GetMessageAssetUseCaseImpl(
                     if (!wasDownloaded)
                         updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
 
-                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
+                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
                 })
             }
         })
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
+    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName: String) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }

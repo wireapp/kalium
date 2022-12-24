@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -82,7 +83,7 @@ class TimestampKeyRepositoryTest {
 
         verify(arrangement.metadataDAO)
             .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(timestamp.toString()), eq(key.name))
+            .with(eq(timestamp.toIsoDateTimeString()), eq(key.name))
             .wasInvoked(once)
     }
 
@@ -93,7 +94,7 @@ class TimestampKeyRepositoryTest {
         fun withMetaDataDaoValueReturns(timestamp: Instant?) = apply {
             given(metadataDAO).suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(anything())
-                .thenReturn(flowOf(timestamp?.toString()))
+                .thenReturn(flowOf(timestamp?.toIsoDateTimeString()))
         }
 
         fun withMetaDataDaoInsertValue() = apply {
