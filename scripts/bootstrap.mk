@@ -12,13 +12,11 @@ endif
 OS := $(shell uname -s | tr A-Z a-z)
 
 ifeq ($(OS),darwin)
-  LIBNAME_FLAG=-install_name
   LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
   LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
   LIBSODIUM_ARTIFACT_FILE := libsodium.dylib
 endif
 ifeq ($(OS),linux)
-  LIBNAME_FLAG=-soname
   LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.so
   LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.so
   LIBSODIUM_ARTIFACT_FILE := libsodium.so
@@ -106,17 +104,11 @@ $(CRYPTOBOX4J_CODE)/.stamp: $(CRYPTOBOX4J_TAR_GZ)
 	touch "$@"
 
 $(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE)/.stamp $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT)
-	cc -std=c99 -g -Wall $(CRYPTOBOX4J_CODE)/src/cryptobox-jni.c \
-		-I"$(JAVA_HOME)/include" \
-		-I"$(JAVA_HOME)/include/$(OS)" \
-		-I"$(CRYPTOBOX_C_CODE)/src" \
-		-L"$(NATIVE_LIBS)" \
-		-lcryptobox \
-		-lsodium \
-		-shared \
-		-fPIC \
-		-Wl,$(LIBNAME_FLAG),$(LIBCRYPTOBOX_JNI_ARTIFACT_FILE) \
-		-o "$@"
+	mkdir -p "$(CRYPTOBOX4J_CODE)/build/lib/"
+	# This is a workaround as CRYPTOBOX4J does currently not support CFLAGs
+	make -C $(CRYPTOBOX4J_CODE) compile-native CC="$(CC) -L\"$(CURDIR)/$(NATIVE_LIBS)\" -I\"$(CURDIR)/$(CRYPTOBOX_C_CODE)/src\""
+	cp "$(CRYPTOBOX4J_CODE)/build/lib/$(LIBCRYPTOBOX_JNI_ARTIFACT_FILE)" "$@"
+
 
 $(AVS_FRAMEWORK_ZIP): $(NATIVE)
 	curl -L "$(AVS_FRAMEWORK_URL)" --output "$@"
