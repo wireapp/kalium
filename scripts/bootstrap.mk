@@ -109,7 +109,6 @@ $(CRYPTOBOX4J_ARTIFACT): $(CRYPTOBOX4J_CODE)/.stamp $(CRYPTOBOX_C_ARTIFACT) $(LI
 	cc -std=c99 -g -Wall $(CRYPTOBOX4J_CODE)/src/cryptobox-jni.c \
 		-I"$(JAVA_HOME)/include" \
 		-I"$(JAVA_HOME)/include/$(OS)" \
-		-I"$(CRYPTOBOX4J_CODE)/build/include" \
 		-I"$(CRYPTOBOX_C_CODE)/src" \
 		-L"$(NATIVE_LIBS)" \
 		-lcryptobox \
