@@ -155,7 +155,10 @@ interface ConversationRepository {
 
     suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
-    suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit>
+    suspend fun changeConversationName(
+        conversationId: ConversationId,
+        conversationName: String
+    ): Either<CoreFailure, ConversationRenameResponse>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -168,7 +171,6 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
-    private val renamedConversationEventHandler: RenamedConversationEventHandler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -176,7 +178,6 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -599,13 +600,10 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            conversationApi.updateConversationName(idMapper.toApiModel(conversationId), conversationName)
-        }.onSuccess { response ->
-            if (response is ConversationRenameResponse.Changed)
-                renamedConversationEventHandler.handle(eventMapper.conversationRenamed(LocalId.generate(), response.event, true))
-        }.map { Either.Right(Unit) }
+    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String)
+            : Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
+        conversationApi.updateConversationName(idMapper.toApiModel(conversationId), conversationName)
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
