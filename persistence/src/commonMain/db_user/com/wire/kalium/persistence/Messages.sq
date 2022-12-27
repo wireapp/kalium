@@ -450,6 +450,11 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+updateQuotedMessageId:
+UPDATE MessageTextContent
+SET quoted_message_id = ?
+WHERE quoted_message_id = ? AND conversation_id = ?;
+
 updateAssetUploadStatus:
 UPDATE MessageAssetContent
 SET asset_upload_status = ?
