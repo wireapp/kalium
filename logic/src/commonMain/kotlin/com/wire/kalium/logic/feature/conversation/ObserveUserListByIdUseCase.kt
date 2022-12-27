@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
+/**
+ * This use case will observe and return the list of users objects, contacts and connections.
+ * Using a list of user ids to obverse.
+ *
+ * @see User
+ */
 class ObserveUserListByIdUseCase internal constructor(
     private val userRepository: UserRepository,
 ) {

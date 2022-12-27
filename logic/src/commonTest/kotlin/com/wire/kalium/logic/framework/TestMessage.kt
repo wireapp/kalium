@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
+    const val TEST_DATE = "2000-01-01T12:00:00.000Z"
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
@@ -33,7 +34,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
         conversationId = TestConversation.ID,
-        date = "date",
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
@@ -44,7 +45,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = MessageContent.MissedCall,
         conversationId = ConversationId("conv", "id"),
-        date = "date",
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.PENDING,
     )
@@ -53,7 +54,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = ASSET_CONTENT,
         conversationId = ConversationId("conv", "id"),
-        date = "date",
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
@@ -63,7 +64,7 @@ object TestMessage {
     val ENTITY = MessageEntity.Regular(
         TEST_MESSAGE_ID,
         TestConversation.ENTITY_ID,
-        date = "date",
+        date = TEST_DATE,
         senderUserId = TestUser.ENTITY_ID,
         status = MessageEntity.Status.SENT,
         visibility = MessageEntity.Visibility.VISIBLE,
@@ -71,5 +72,17 @@ object TestMessage {
         senderClientId = "clientId",
         editStatus = MessageEntity.EditStatus.NotEdited,
         senderName = "senderName"
+    )
+
+    fun signalingMessage(
+        content: MessageContent.Signaling
+    ) = Message.Signaling(
+        id = TEST_MESSAGE_ID,
+        content = content,
+        conversationId = TestConversation.ID,
+        date = "currentDate",
+        senderUserId = TEST_SENDER_USER_ID,
+        senderClientId = TEST_SENDER_CLIENT_ID,
+        status = Message.Status.SENT
     )
 }

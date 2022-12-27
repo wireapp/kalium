@@ -18,6 +18,7 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -56,7 +58,6 @@ interface MessageRepository {
 
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
-    suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -79,7 +80,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-
+    suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
@@ -120,15 +121,11 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Either<CoreFailure, List<Message>>
 
-    suspend fun updateTextMessageContent(
+    suspend fun updateTextMessage(
         conversationId: ConversationId,
-        messageContent: MessageContent.TextEdited
-    ): Either<CoreFailure, Unit>
-
-    suspend fun updateMessageId(
-        conversationId: ConversationId,
-        oldMessageId: String,
-        newMessageId: String
+        messageContent: MessageContent.TextEdited,
+        newMessageId: String,
+        editTimeStamp: String
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -227,14 +224,6 @@ class MessageDataSource(
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
         }
 
-    override suspend fun markMessageAsEdited(
-        messageUuid: String,
-        conversationId: ConversationId,
-        timeStamp: String
-    ) = wrapStorageRequest {
-        messageDAO.markAsEdited(timeStamp, idMapper.toDaoModel(conversationId), messageUuid)
-    }
-
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
@@ -294,6 +283,10 @@ class MessageDataSource(
                 idMapper.toDaoModel(conversationId)
             )
         }
+
+    override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
+        wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
+            .map { Instant.parse(it.date) }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
@@ -365,40 +358,27 @@ class MessageDataSource(
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             idMapper.toDaoModel(conversationId),
             date,
-            visibility.map { it.toEntityVisibility() })
-            .map(messageMapper::fromEntityToMessage)
+            visibility.map { it.toEntityVisibility() }
+        ).map(messageMapper::fromEntityToMessage)
     }
 
-    override suspend fun updateMessageId(
+    override suspend fun updateTextMessage(
         conversationId: ConversationId,
-        oldMessageId: String,
-        newMessageId: String
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.updateMessageId(idMapper.toDaoModel(conversationId), oldMessageId, newMessageId)
-        }
-
-    override suspend fun updateTextMessageContent(
-        conversationId: ConversationId,
-        messageContent: MessageContent.TextEdited
+        messageContent: MessageContent.TextEdited,
+        newMessageId: String,
+        editTimeStamp: String
     ): Either<CoreFailure, Unit> {
-        val messageToUpdate = getMessageById(conversationId, messageContent.editMessageId)
-
-        return messageToUpdate.flatMap { message ->
-            wrapStorageRequest {
-                if (message.content is MessageContent.Text) {
-                    messageDAO.updateTextMessageContent(
-                        idMapper.toDaoModel(conversationId),
-                        messageContent.editMessageId,
-                        MessageEntityContent.Text(
-                            messageContent.newContent,
-                            messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
-                        )
-                    )
-                } else {
-                    throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
-                }
-            }
+        return wrapStorageRequest {
+            messageDAO.updateTextMessageContent(
+                editTimeStamp = editTimeStamp,
+                conversationId = idMapper.toDaoModel(conversationId),
+                currentMessageId = messageContent.editMessageId,
+                newTextContent = MessageEntityContent.Text(
+                    messageContent.newContent,
+                    messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
+                ),
+                newMessageId = newMessageId
+            )
         }
     }
 

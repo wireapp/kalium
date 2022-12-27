@@ -22,7 +22,14 @@ sealed class SSOLoginSessionResult {
     }
 }
 
+/**
+ * Obtains a session from the server using the provided cookie
+ */
 interface GetSSOLoginSessionUseCase {
+    /**
+     * @param cookie the cookie to use for the login
+     * @return the [SSOLoginSessionResult] with tokens and proxy credentials
+     */
     suspend operator fun invoke(cookie: String): SSOLoginSessionResult
 }
 

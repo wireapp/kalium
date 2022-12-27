@@ -6,6 +6,10 @@ import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
 
+/**
+ * This use case is responsible for getting the client.
+ * If the client is not found, it will be registered.
+ */
 interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientUseCase.RegisterClientParam

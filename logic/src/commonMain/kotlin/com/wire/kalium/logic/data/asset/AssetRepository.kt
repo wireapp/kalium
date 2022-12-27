@@ -9,8 +9,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.AssetId
-import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -28,7 +26,6 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
-import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
     /**
@@ -64,7 +61,7 @@ interface AssetRepository {
      * @param assetId the asset identifier
      * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] of the decoded asset
      */
-    suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path>
+    suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path>
 
     /**
      * Method used to fetch the [Path] of a decoded private asset
@@ -74,8 +71,10 @@ interface AssetRepository {
      * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
      */
+    @Suppress("LongParameterList")
     suspend fun fetchPrivateDecodedAsset(
-        assetId: AssetId,
+        assetId: String,
+        assetDomain: String?,
         assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key,
@@ -83,21 +82,15 @@ interface AssetRepository {
     ): Either<CoreFailure, Path>
 
     /**
-     * Method used to download the list of avatar pictures of the current authenticated user
-     * @param assetIdList list of the assets' id that wants to be downloaded
-     * @return [Either] a [CoreFailure] if anything went wrong, or Unit if operation was successful
-     */
-    suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit>
-
-    /**
      * Method used to delete asset locally and externally
      */
-    suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit>
+    suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): Either<CoreFailure, Unit>
 
     /**
      * Method used to delete asset only locally
      */
-    suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit>
+    // TODO(federation): add the domain to delete asset locally
+    suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -179,37 +172,41 @@ internal class AssetDataSource(
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
 
-    override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetName = assetId.toString(), assetToken = null)
+    override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path> =
+        fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId.toString(), assetToken = null)
 
     override suspend fun fetchPrivateDecodedAsset(
-        assetId: AssetId,
+        assetId: String,
+        assetDomain: String?,
         assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key
     ): Either<CoreFailure, Path> =
         fetchOrDownloadDecodedAsset(
-            assetId = idMapper.toApiModel(assetId),
+            assetId = assetId,
+            assetDomain,
             assetName = assetName,
             assetToken = assetToken,
             encryptionKey = encryptionKey,
             assetSHA256 = assetSHA256Key
         )
 
+    @Suppress("LongParameterList")
     private suspend fun fetchOrDownloadDecodedAsset(
-        assetId: NetworkAssetId,
+        assetId: String,
+        assetDomain: String?,
         assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key? = null,
         assetSHA256: SHA256Key? = null
     ): Either<CoreFailure, Path> {
-        return wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
-            val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId.value}")
+        return wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }.fold({
+            val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
+                assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink)
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
@@ -221,7 +218,7 @@ internal class AssetDataSource(
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
-                        kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId.value, assetName.fileExtension()))
+                        kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId, assetName.fileExtension()))
 
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
@@ -238,7 +235,7 @@ internal class AssetDataSource(
 
                         // Everything went fine, we persist the asset to the DB
                         else -> {
-                            saveAssetInDB(assetId, decodedAssetPath, assetDataSize)
+                            saveAssetInDB(assetId, assetDomain, decodedAssetPath, assetDataSize)
                             Either.Right(decodedAssetPath)
                         }
                     }
@@ -289,32 +286,27 @@ internal class AssetDataSource(
     }
 
     private suspend fun saveAssetInDB(
-        assetId: NetworkAssetId,
+        assetId: String,
+        assetDomain: String?,
         decodedAssetPath: Path,
         assetDataSize: Long
     ) = wrapStorageRequest {
         assetDao.insertAsset(
             assetMapper.fromUserAssetToDaoModel(
                 assetId,
+                assetDomain,
                 decodedAssetPath,
                 assetDataSize
             )
         )
     }
 
-    override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
-        assetIdList.filterNotNull().forEach { userAssetId ->
-            downloadPublicAsset(idMapper.toQualifiedAssetId(userAssetId.value, userAssetId.domain))
-        }
-        return Either.Right(Unit)
-    }
-
-    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit> =
-        wrapApiRequest { assetApi.deleteAsset(idMapper.toApiModel(assetId), assetToken) }
+    override suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): Either<CoreFailure, Unit> =
+        wrapApiRequest { assetApi.deleteAsset(assetId, assetDomain, assetToken) }
             .flatMap { deleteAssetLocally(assetId) }
 
-    override suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit> =
-        wrapStorageRequest { assetDao.deleteAsset(assetId.value) }
+    override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
+        wrapStorageRequest { assetDao.deleteAsset(assetId) }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

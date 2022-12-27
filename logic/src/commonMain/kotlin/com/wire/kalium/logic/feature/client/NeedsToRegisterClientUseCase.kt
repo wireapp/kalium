@@ -6,6 +6,9 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * This use case will return true if the current user needs to register a client.
+ */
 interface NeedsToRegisterClientUseCase {
     suspend operator fun invoke(): Boolean
 }

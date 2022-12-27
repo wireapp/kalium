@@ -175,7 +175,7 @@ sealed class MessageEntityContent {
              * matches the hash of the original message
              */
             val isVerified: Boolean,
-            val senderName: String,
+            val senderName: String?,
             val dateTime: String,
             val editTimestamp: String?,
             val visibility: MessageEntity.Visibility,

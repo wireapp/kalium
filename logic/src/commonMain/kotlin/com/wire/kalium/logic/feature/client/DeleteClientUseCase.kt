@@ -10,6 +10,10 @@ import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 
+/**
+ * This use case is responsible for deleting the client.
+ * The client will be deleted from the backend and the local storage.
+ */
 interface DeleteClientUseCase {
     suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
 }

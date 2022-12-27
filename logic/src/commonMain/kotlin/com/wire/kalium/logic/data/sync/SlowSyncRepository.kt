@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.sync
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,7 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
 
     override suspend fun setLastSlowSyncCompletionInstant(instant: Instant) {
         logger.i("Updating last slow sync instant: $instant")
-        metadataDao.insertValue(value = instant.toString(), key = LAST_SLOW_SYNC_INSTANT_KEY)
+        metadataDao.insertValue(value = instant.toIsoDateTimeString(), key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
     override suspend fun clearLastSlowSyncCompletionInstant() {

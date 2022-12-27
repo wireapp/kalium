@@ -15,12 +15,12 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -93,7 +93,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenDetailedReceiptEntity_whenMappingToModel_thenReturnDetailedReceipt() = runTest {
         // given
-        val date = Clock.System.now()
+        val date = DateTimeUtil.currentInstant()
         val detailedReceiptEntity = DetailedReceiptEntity(
             type = ReceiptTypeEntity.READ,
             userId = SELF_USER_ID_ENTITY,

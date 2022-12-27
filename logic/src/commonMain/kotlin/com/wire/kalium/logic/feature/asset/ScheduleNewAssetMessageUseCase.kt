@@ -32,6 +32,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -131,7 +132,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     )
                 ),
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -70,7 +70,7 @@ internal class SlowSyncManager(
     private suspend fun isSlowSyncNeededFlow(): Flow<Boolean> = slowSyncRepository.observeLastSlowSyncCompletionInstant()
         .map { lastTimeSlowSyncWasPerformed ->
             lastTimeSlowSyncWasPerformed?.let {
-                val currentTime = Clock.System.now()
+                val currentTime = DateTimeUtil.currentInstant()
                 logger.i("Last SlowSync was performed on '$lastTimeSlowSyncWasPerformed'")
                 val nextSlowSyncDateTime = lastTimeSlowSyncWasPerformed + MIN_TIME_BETWEEN_SLOW_SYNCS
                 logger.i("Next SlowSync should be performed on '$nextSlowSyncDateTime'")
@@ -99,7 +99,7 @@ internal class SlowSyncManager(
                 logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                 performSlowSync()
                 logger.i("SlowSync completed. Updating last completion instant")
-                slowSyncRepository.setLastSlowSyncCompletionInstant(Clock.System.now())
+                slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
             } else {
                 logger.i("No need to perform SlowSync. Marking as Complete")
             }

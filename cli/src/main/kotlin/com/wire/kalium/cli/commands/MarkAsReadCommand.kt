@@ -4,8 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 
 class MarkAsReadCommand : CliktCommand(name = "mark-as-read", help = "Mark a conversation as read") {
 
@@ -15,7 +15,7 @@ class MarkAsReadCommand : CliktCommand(name = "mark-as-read", help = "Mark a con
         val selectedConversation = userSession.selectConversation()
         val result = userSession.conversations.updateConversationReadDateUseCase(
             selectedConversation.id,
-            Clock.System.now()
+            DateTimeUtil.currentInstant()
         )
         echo("Marked conversation as read")
     }

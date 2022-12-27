@@ -16,6 +16,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
@@ -39,7 +40,8 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope.sessionRepository, userId,
             tokenStorage = globalPreferences.authTokenStorage
         )
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
+        val networkContainer: AuthenticatedNetworkContainer =
+            AuthenticatedNetworkContainer.create(sessionManager, UserIdDTO(userId.value, userId.domain))
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.serverConfig().metaData.commonApiVersion.version)
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
 

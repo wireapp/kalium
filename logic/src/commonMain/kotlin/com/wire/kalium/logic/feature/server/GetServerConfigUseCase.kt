@@ -5,9 +5,16 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Gets the [ServerConfig.Links] stored locally, using the url as a key.
+ */
 class GetServerConfigUseCase internal constructor(
     private val configRepository: ServerConfigRepository
 ) {
+    /**
+     * @param url the url to use as a key to get the [ServerConfig.Links]
+     * @return the [Result] with the [ServerConfig.Links] if successful, otherwise a mapped failure.
+     */
     suspend operator fun invoke(url: String): GetServerConfigResult = configRepository.fetchRemoteConfig(url).fold({
         GetServerConfigResult.Failure.Generic(it)
     }, { GetServerConfigResult.Success(it) })

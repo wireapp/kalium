@@ -6,7 +6,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateD
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import kotlinx.datetime.Instant
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 
 interface ConversationStatusMapper {
     fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO
@@ -20,7 +20,7 @@ class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusM
     override fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO {
         return MemberUpdateDTO(
             otrMutedStatus = MutedStatus.fromOrdinal(mutedStatus.status),
-            otrMutedRef = Instant.fromEpochMilliseconds(mutedStatusTimestamp).toString()
+            otrMutedRef = mutedStatusTimestamp.toIsoDateTimeString()
         )
     }
 
