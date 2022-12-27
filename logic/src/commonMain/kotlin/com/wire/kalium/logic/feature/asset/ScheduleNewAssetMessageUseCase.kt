@@ -82,7 +82,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
-    private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val messageRepository: MessageRepository,
     private val scope: CoroutineScope,

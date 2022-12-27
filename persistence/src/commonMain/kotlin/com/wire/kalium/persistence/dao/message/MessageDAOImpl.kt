@@ -20,8 +20,10 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
