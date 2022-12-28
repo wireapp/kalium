@@ -59,7 +59,7 @@ internal class MemberLeaveEventHandlerImpl(
         wrapStorageRequest {
             conversationDAO.deleteMembersByQualifiedID(
                 userIDList.map { idMapper.toDaoModel(it) },
-                idMapper.toDaoModel(conversationID)
+                conversationID.toDao()
             )
         }
 }

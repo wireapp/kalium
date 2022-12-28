@@ -7,6 +7,5 @@ expect interface MessageRepositoryExtensions
 
 expect class MessageRepositoryExtensionsImpl(
     messageDAO: MessageDAO,
-    idMapper: IdMapper,
     messageMapper: MessageMapper
 ) : MessageRepositoryExtensions

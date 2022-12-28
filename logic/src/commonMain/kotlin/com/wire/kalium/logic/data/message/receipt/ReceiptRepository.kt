@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -39,8 +40,8 @@ class ReceiptRepositoryImpl(
         messageIds: List<String>
     ) {
         receiptDAO.insertReceipts(
-            userId = idMapper.toDaoModel(userId),
-            conversationId = idMapper.toDaoModel(conversationId),
+            userId = userId.toDao(),
+            conversationId = conversationId.toDao(),
             date = date,
             type = receiptsMapper.toTypeEntity(type),
             messageIds = messageIds
@@ -53,7 +54,7 @@ class ReceiptRepositoryImpl(
         type: ReceiptType
     ): Flow<List<DetailedReceipt>> =
         receiptDAO.observeDetailedReceiptsForMessage(
-            conversationId = idMapper.toDaoModel(conversationId),
+            conversationId = conversationId.toDao(),
             messageId = messageId,
             type = receiptsMapper.toTypeEntity(type = type)
         ).map {

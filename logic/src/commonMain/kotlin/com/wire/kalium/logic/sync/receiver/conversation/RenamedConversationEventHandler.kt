@@ -46,6 +46,6 @@ internal class RenamedConversationEventHandlerImpl(
     }
 
     private suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
-        wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
+        wrapStorageRequest { conversationDAO.updateConversationName(conversationId.toDao(), conversationName, timestamp) }
 
 }

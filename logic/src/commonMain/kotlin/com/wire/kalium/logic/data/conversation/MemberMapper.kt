@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
@@ -24,14 +26,14 @@ interface MemberMapper {
 internal class MemberMapperImpl(private val idMapper: IdMapper, private val roleMapper: ConversationRoleMapper) : MemberMapper {
 
     override fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member =
-        Conversation.Member(idMapper.fromApiModel(conversationMember.id), roleMapper.fromApi(conversationMember.conversationRole))
+        Conversation.Member(conversationMember.id.toModel(), roleMapper.fromApi(conversationMember.conversationRole))
 
     override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
         val self = with(conversationMembersResponse.self) {
-            Conversation.Member(idMapper.fromApiModel(id), roleMapper.fromApi(conversationRole))
+            Conversation.Member(id.toModel(), roleMapper.fromApi(conversationRole))
         }
         val others = conversationMembersResponse.otherMembers.map { member ->
-            Conversation.Member(idMapper.fromApiModel(member.id), roleMapper.fromApi(member.conversationRole))
+            Conversation.Member(member.id.toModel(), roleMapper.fromApi(member.conversationRole))
         }
         return MembersInfo(self, others)
     }
@@ -47,19 +49,19 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
     }
 
     override fun toDaoModel(member: Conversation.Member): PersistedMember = with(member) {
-        PersistedMember(idMapper.toDaoModel(id), roleMapper.toDAO(role))
+        PersistedMember(id.toDao(), roleMapper.toDAO(role))
     }
 
     override fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->
-            val id = idMapper.fromApiModel(entry.key)
+            val id = entry.key.toModel()
             val clients = entry.value.map(idMapper::fromSimpleClientResponse)
             Recipient(id, clients)
         }
 
     override fun fromMapOfClientsEntityToRecipients(qualifiedMap: Map<QualifiedIDEntity, List<Client>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->
-            val id = idMapper.fromDaoModel(entry.key)
+            val id = entry.key.toModel()
             val clients = entry.value.map(idMapper::fromClient)
             Recipient(id, clients)
         }
@@ -72,7 +74,7 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
         }
 
     override fun fromDaoModel(entity: PersistedMember): Conversation.Member = with(entity) {
-        Conversation.Member(idMapper.fromDaoModel(user), roleMapper.fromDAO(role))
+        Conversation.Member(user.toModel(), roleMapper.fromDAO(role))
     }
 }
 

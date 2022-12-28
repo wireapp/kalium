@@ -3,6 +3,9 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
@@ -96,7 +99,7 @@ internal class ConversationMapperImpl(
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) EPOCH_FIRST_DAY else lastReadDate
 
         Conversation(
-            id = idMapper.fromDaoModel(id),
+            id = id.toModel(),
             name = name,
             type = type.fromDaoModelToType(),
             teamId = teamId?.let { TeamId(it) },
@@ -133,7 +136,7 @@ internal class ConversationMapperImpl(
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
                         otherUser = OtherUser(
-                            id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                            id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
                             name = name,
                             accentId = 0,
                             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -141,8 +144,8 @@ internal class ConversationMapperImpl(
                             deleted = userDeleted ?: false,
                             botService = botService?.let { BotService(it.id, it.provider) },
                             handle = null,
-                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                            completePicture = previewAssetId?.toModel(),
+                            previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
                             connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
                         ),
@@ -168,7 +171,7 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.CONNECTION_PENDING -> {
                     val otherUser = OtherUser(
-                        id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                        id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
                         name = name,
                         accentId = 0,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -176,13 +179,13 @@ internal class ConversationMapperImpl(
                         deleted = userDeleted ?: false,
                         botService = botService?.let { BotService(it.id, it.provider) },
                         handle = null,
-                        completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                        previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                        completePicture = previewAssetId?.toModel(),
+                        previewPicture = previewAssetId?.toModel(),
                         teamId = teamId?.let { TeamId(it) }
                     )
 
                     ConversationDetails.Connection(
-                        conversationId = idMapper.fromDaoModel(id),
+                        conversationId = id.toModel(),
                         otherUser = otherUser,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                         lastModifiedDate = lastModifiedDate.orEmpty(),
@@ -190,8 +193,8 @@ internal class ConversationMapperImpl(
                             conversationId = id.value,
                             from = "",
                             lastUpdate = "",
-                            qualifiedConversationId = idMapper.fromDaoModel(id),
-                            qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
+                            qualifiedConversationId = id.toModel(),
+                            qualifiedToId = otherUserId.requireField("otherUserID in Connection").toModel(),
                             status = connectionStatusMapper.fromDaoModel(connectionStatus),
                             toId = "", // todo
                             fromUser = otherUser
@@ -217,15 +220,16 @@ internal class ConversationMapperImpl(
         }
     }
 
-    override fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> = accessRoleList.map {
-        when (it) {
-            ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
-            ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
-            ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
-            ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
-            ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
+    override fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> =
+        accessRoleList.map {
+            when (it) {
+                ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
+                ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
+                ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+                ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
+            }
         }
-    }
 
     override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState =
         when (groupState) {
@@ -244,9 +248,10 @@ internal class ConversationMapperImpl(
         teamId: String?,
         options: ConversationOptions
     ) = CreateConversationRequest(
-        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
-            idMapper.toApiModel(it)
-        } else emptyList(),
+        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS)
+            members.map { it.toApi() }
+        else
+            emptyList(),
         name = name,
         access = options.access?.toList()?.map { toApiModel(it) },
         accessRole = options.accessRole?.map { toApiModel(it) },
@@ -281,7 +286,7 @@ internal class ConversationMapperImpl(
 
     override fun fromMigrationModel(conversation: Conversation): ConversationEntity = with(conversation) {
         ConversationEntity(
-            id = idMapper.toDaoModel(conversation.id),
+            id = conversation.id.toDao(),
             name = name,
             type = type.toDAO(),
             teamId = conversation.teamId?.value,
