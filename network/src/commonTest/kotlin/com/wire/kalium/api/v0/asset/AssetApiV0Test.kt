@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
+import com.wire.kalium.network.api.v0.authenticated.StreamAssetContent
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -15,7 +16,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.writer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.Source
@@ -53,6 +56,21 @@ class AssetApiV0Test : ApiTest {
         // Then
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
+    }
+
+
+    @Test
+    fun test() = runTest {
+        val fileSystem = FakeFileSystem()
+        val encryptedData = "some-data".encodeToByteArray()
+        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
+        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+
+       val test =  StreamAssetContent(assetMetadata, encryptedData.size.toLong(), encryptedDataSource, kotlin.coroutines.coroutineContext)
+
+        writer {
+            test.writeTo(channel)
+        }
     }
 
     private fun getDummyDataSource(fileSystem: FakeFileSystem, dummyData: ByteArray): Source {

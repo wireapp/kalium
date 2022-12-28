@@ -10,6 +10,7 @@ import io.ktor.util.InternalAPI
 import io.ktor.utils.io.writer
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.cancel
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -47,7 +48,9 @@ internal fun OutgoingContent.convertToOkHttpBody(callContext: CoroutineContext):
 
     is OutgoingContent.ReadChannelContent -> ByteChannelRequestBody(contentLength, callContext) { readFrom() }
     is OutgoingContent.WriteChannelContent -> {
-        ByteChannelRequestBody(contentLength, callContext) { GlobalScope.writer(callContext) { writeTo(channel) }.channel }
+        ByteChannelRequestBody(contentLength, callContext) {
+            GlobalScope.writer(callContext) { writeTo(channel) }.channel
+        }
     }
 
     is OutgoingContent.NoContent -> ByteArray(0).toRequestBody(null, 0, 0)

@@ -33,6 +33,7 @@ import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
 import okio.Buffer
@@ -182,7 +183,6 @@ internal class StreamAssetContent internal constructor(
         try {
             coroutineScope {
                 if (!channel.isClosedForWrite && producerJob.isActive) {
-
                     channel.writeStringUtf8(openingData)
                     val contentBuffer = Buffer()
                     val fileContentStream = fileContentStream()

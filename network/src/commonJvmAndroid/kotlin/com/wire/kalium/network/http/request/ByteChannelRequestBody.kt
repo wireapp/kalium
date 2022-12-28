@@ -30,6 +30,13 @@ class ByteChannelRequestBody(
 ) : RequestBody(), CoroutineScope {
 
     /**
+     * The [Job] used to manage the lifecycle of the block provided in the constructor.
+     * This will be the [Job] coming from the [CoroutineContext] provided in the constructor.
+     * Which will be the Job created within the Ktor
+     */
+    private val producerJob = Job(callContext[Job])
+
+    /**
      * The [CoroutineContext] for this [CoroutineScope].
      *
      * It is composed of the [callContext] and a new [Job] and [Dispatchers.IO] to ensure that the
@@ -38,13 +45,7 @@ class ByteChannelRequestBody(
     override val coroutineContext: CoroutineContext
         get() = callContext + producerJob + Dispatchers.IO
 
-    /**
-     * The [Job] used to manage the lifecycle of the block provided in the constructor.
-     * This will be the [Job] coming from the [CoroutineContext] provided in the constructor.
-     * Which will be the Job created within the Ktor
-     */
-    private val producerJob = Job(callContext[Job])
-
+    override fun contentLength(): Long = contentLength ?: -1
     override fun contentType(): MediaType? = null
 
     /**
@@ -67,8 +68,6 @@ class ByteChannelRequestBody(
         }
     }
 
-    override fun contentLength(): Long = contentLength ?: -1
-
     /**
      * Completes the given job when the block returns calling either `complete()` when the block runs
      * successfully or `completeExceptionally()` on exception.
@@ -78,7 +77,6 @@ class ByteChannelRequestBody(
         try {
             return block()
         } catch (ex: Exception) {
-            println("Exception in withJob: $ex")
             job.completeExceptionally(ex)
             // wrap all exceptions thrown from inside `okhttp3.RequestBody#writeTo(..)` as an IOException
             // see https://github.com/awslabs/aws-sdk-kotlin/issues/733
