@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -38,6 +39,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -63,6 +65,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         val (_, sendAssetUseCase) = Arrangement()
             .withStoredData(assetToSend, inputDataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+            .withObservingMessageVisibility()
             .arrange()
 
         // When
@@ -86,6 +89,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val unauthorizedException = TestNetworkException.missingAuth
             val (_, sendAssetUseCase) = Arrangement()
                 .withUploadAssetErrorResponse(unauthorizedException)
+                .withObservingMessageVisibility()
                 .arrange()
 
             // When
@@ -107,6 +111,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
         val (arrangement, sendAssetUseCase) = Arrangement()
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+            .withObservingMessageVisibility()
             .arrange()
 
         // When
@@ -136,6 +141,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
             val (arrangement, sendAssetUseCase) = Arrangement()
                 .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .withObservingMessageVisibility()
                 .arrange()
 
             // When
@@ -180,8 +186,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                     }
                 )
                 .wasInvoked(exactly = once)
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
+            verify(arrangement.updateAssetMessageUploadStatus)
+                .suspendFunction(arrangement.updateAssetMessageUploadStatus::invoke)
                 .with(
                     matching {
                         it == Message.UploadStatus.FAILED_UPLOAD
@@ -203,6 +209,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
             val (arrangement, sendAssetUseCase) = Arrangement()
                 .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .withObservingMessageVisibility()
                 .arrange()
 
             // When
@@ -233,6 +240,9 @@ class ScheduleNewAssetMessageUseCaseTest {
         val messageSender = mock(classOf<MessageSender>())
 
         @Mock
+        val messageRepository = mock(classOf<MessageRepository>())
+
+        @Mock
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -242,7 +252,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
 
         @Mock
-        val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
+        val updateAssetMessageUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
 
         @Mock
         private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
@@ -293,8 +303,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(messageSender::sendPendingMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateAssetMessageUploadStatus)
+                .suspendFunction(updateAssetMessageUploadStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(UpdateUploadStatusResult.Success)
         }
@@ -316,8 +326,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateAssetMessageUploadStatus)
+                .suspendFunction(updateAssetMessageUploadStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
@@ -335,21 +345,28 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateAssetMessageUploadStatus)
+                .suspendFunction(updateAssetMessageUploadStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
+        fun withObservingMessageVisibility() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::observeMessageVisibility)
+                .whenInvokedWith(any(), any())
+                .thenReturn(flowOf())
+        }
+
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
-            updateUploadStatus,
+            updateAssetMessageUploadStatus,
             currentClientIdProvider,
             assetDataSource,
             QualifiedID("some-id", "some-domain"),
             slowSyncRepository,
             messageSender,
-            userPropertyRepository,
+            messageRepository,
             testScope,
             testDispatcher
         )
