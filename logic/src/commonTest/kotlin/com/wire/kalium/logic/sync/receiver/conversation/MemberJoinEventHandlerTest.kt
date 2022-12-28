@@ -95,7 +95,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchConversationIfUnknownSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .withPersistMembersSucceeding()
             .arrange()
@@ -119,7 +119,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchConversationIfUnknownSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .withPersistMembersSucceeding()
             .arrange()
