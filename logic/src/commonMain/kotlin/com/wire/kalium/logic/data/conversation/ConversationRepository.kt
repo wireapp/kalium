@@ -5,7 +5,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -26,7 +25,6 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -42,7 +40,6 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
@@ -600,8 +597,10 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String)
-            : Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
+    override suspend fun changeConversationName(
+        conversationId: ConversationId,
+        conversationName: String
+    ): Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
         conversationApi.updateConversationName(idMapper.toApiModel(conversationId), conversationName)
     }
 
