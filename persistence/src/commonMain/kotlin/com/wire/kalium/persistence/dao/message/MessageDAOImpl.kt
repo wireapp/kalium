@@ -377,6 +377,7 @@ class MessageDAOImpl(
             )
         }
         queries.updateMessageId(newMessageId, currentMessageId, conversationId)
+        queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
     }
 
     override suspend fun getConversationMessagesByContentType(
