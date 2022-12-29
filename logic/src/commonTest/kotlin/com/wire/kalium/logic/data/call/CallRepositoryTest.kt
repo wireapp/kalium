@@ -1331,7 +1331,7 @@ class CallRepositoryTest {
         private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
         private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
         private val callerId = UserId(value = "callerId", domain = "domain")
-        private val callerIdString = "callerId@domain")
+        private const val callerIdString = "callerId@domain"
 
         private val oneOnOneConversationDetails = ConversationDetails.OneOne(
             conversation = oneOnOneConversation,
