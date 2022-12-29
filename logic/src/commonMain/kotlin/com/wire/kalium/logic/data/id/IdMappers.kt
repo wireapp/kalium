@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.base.model.QualifiedID
@@ -15,4 +16,5 @@ fun QualifiedIDEntity.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, do
 fun NetworkQualifiedId.toModel(): QualifiedID = QualifiedID(value, domain)
 fun NetworkQualifiedId.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
 
-//
+fun UserAssetDTO.toDao(domain: String): QualifiedIDEntity = PersistenceQualifiedId(key, domain)
+fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key, domain)

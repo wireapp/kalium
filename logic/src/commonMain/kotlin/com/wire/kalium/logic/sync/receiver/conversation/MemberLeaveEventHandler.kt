@@ -4,13 +4,12 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -27,7 +26,6 @@ internal class MemberLeaveEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MemberLeaveEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -58,7 +56,7 @@ internal class MemberLeaveEventHandlerImpl(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.deleteMembersByQualifiedID(
-                userIDList.map { idMapper.toDaoModel(it) },
+                userIDList.map { it.toDao() },
                 conversationID.toDao()
             )
         }

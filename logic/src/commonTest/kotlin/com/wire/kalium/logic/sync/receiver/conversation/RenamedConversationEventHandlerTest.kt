@@ -76,8 +76,7 @@ class RenamedConversationEventHandlerTest {
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,
-            persistMessage,
-            MapperProvider.idMapper()
+            persistMessage
         )
 
         fun withRenamingConversationSuccess() = apply {

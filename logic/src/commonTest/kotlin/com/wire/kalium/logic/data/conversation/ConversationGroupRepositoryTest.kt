@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
@@ -623,7 +624,7 @@ class ConversationGroupRepositoryTest {
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
-                ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_member"),
+                ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
                 emptyList()
             ),
             GROUP_NAME,

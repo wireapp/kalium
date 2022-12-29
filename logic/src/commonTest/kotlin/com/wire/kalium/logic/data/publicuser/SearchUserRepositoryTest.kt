@@ -99,8 +99,6 @@ class SearchUserRepositoryTest {
         given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
-
-        given(idMapper).function(idMapper::toDaoModel).whenInvokedWith(anything()).then { PersistenceQualifiedId(it.value, it.domain) }
     }
 
     @Test

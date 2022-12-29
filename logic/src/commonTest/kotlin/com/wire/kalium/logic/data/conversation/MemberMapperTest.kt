@@ -46,20 +46,7 @@ class MemberMapperTest {
         val membersResponse = MEMBERS_RESPONSE
         val mappedID = QualifiedID("someValue", "someDomain")
 
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
-
         memberMapper.fromApiModel(membersResponse)
-
-        verify(idMapper)
-            .invocation { idMapper.fromApiModel(SELF_MEMBER_RESPONSE.id) }
-            .wasInvoked(exactly = once)
-
-        verify(idMapper)
-            .invocation { idMapper.fromApiModel(OTHER_MEMBER_RESPONSE.id) }
-            .wasInvoked(exactly = once)
 
         verify(roleMapper)
             .invocation { roleMapper.fromApi(OTHER_MEMBER_RESPONSE.conversationRole) }
@@ -69,29 +56,20 @@ class MemberMapperTest {
     @Test
     fun givenAMembersResponse_whenMappingFromApiModel_shouldUseIdReturnedFromMapperAllMembers() {
         val membersResponse = MEMBERS_RESPONSE
-        val mappedID = QualifiedID("someValue", "someDomain")
+        val otherID = QualifiedID("other1", "domain1")
+        val selfID = QualifiedID("selfId", "selfDomain")
 
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
 
         val result = memberMapper.fromApiModel(membersResponse)
 
-        assertEquals(mappedID, result.otherMembers.first().id)
-        assertEquals(mappedID, result.self.id)
+        assertEquals(otherID, result.otherMembers.first().id)
+        assertEquals(selfID, result.self.id)
         assertEquals(OTHER_MEMBER.role, result.otherMembers.first().role)
     }
 
     @Test
     fun givenAMembersResponseWithNoOthers_whenMappingFromApiModel_shouldReturnNoOthers() {
         val membersResponse = MEMBERS_RESPONSE.copy(otherMembers = listOf())
-        val mappedID = QualifiedID("someValue", "someDomain")
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
-
         val result = memberMapper.fromApiModel(membersResponse)
 
         assertTrue(result.otherMembers.isEmpty())
@@ -105,11 +83,6 @@ class MemberMapperTest {
             others.add(others.first())
         }
         val membersResponse = MEMBERS_RESPONSE.copy(otherMembers = others)
-        val mappedID = QualifiedID("someValue", "someDomain")
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
 
         val result = memberMapper.fromApiModel(membersResponse)
 

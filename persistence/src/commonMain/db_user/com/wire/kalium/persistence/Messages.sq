@@ -348,8 +348,9 @@ SELECT (
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
+WHERE visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
 GROUP BY conversationId
-HAVING date = MAX(date) AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
+HAVING date = MAX(date)
 ORDER BY message.date ASC;
 
 getUnreadMessages:
@@ -449,6 +450,11 @@ updateMessageStatus:
 UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
+
+updateQuotedMessageId:
+UPDATE MessageTextContent
+SET quoted_message_id = ?
+WHERE quoted_message_id = ? AND conversation_id = ?;
 
 updateAssetUploadStatus:
 UPDATE MessageAssetContent

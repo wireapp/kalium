@@ -22,13 +22,16 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
 object TestUser {
-    val USER_ID = UserId("value", "domain")
+    private const val value = "value"
+    private const val domain = "domain"
+
+    val USER_ID = UserId(value, domain)
     val OTHER_USER_ID = USER_ID.copy(value = "otherValue")
     val OTHER_USER_ID_2 = USER_ID.copy(value = "otherValue2")
-    val ENTITY_ID = QualifiedIDEntity("entityUserValue", "entityDomain")
+    val ENTITY_ID = QualifiedIDEntity(value, domain)
     val NETWORK_ID = com.wire.kalium.network.api.base.model.UserId(
-        value = "networkValue",
-        domain = "networkDomain"
+        value = value,
+        domain = domain
     )
     const val JSON_QUALIFIED_ID = """{"value":"jsonValue" , "domain":"jsonDomain" }"""
 
@@ -99,7 +102,7 @@ object TestUser {
     )
 
     val USER_DTO = UserDTO(
-        id = QualifiedID("user_id", "domain.com"),
+        id = NETWORK_ID,
         name = "user_name_123",
         accentId = 2,
         assets = listOf(),

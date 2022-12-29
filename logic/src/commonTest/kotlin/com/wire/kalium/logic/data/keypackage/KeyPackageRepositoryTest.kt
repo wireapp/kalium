@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -150,13 +151,13 @@ class KeyPackageRepositoryTest {
 
         fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 

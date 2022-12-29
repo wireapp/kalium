@@ -2,10 +2,18 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -25,7 +33,7 @@ class RenameConversationUseCaseTest {
     @Test
     fun givenAConversation_WhenChangingNameIsSuccessful_ThenReturnSuccess() = runTest {
         val (arrangement, renameConversation) = Arrangement()
-            .withRenameConversationIs(Either.Right(Unit))
+            .withRenameConversationIs(Either.Right(CONVERSATION_RENAME_RESPONSE))
             .arrange()
 
         val result = renameConversation(TestConversation.ID, "new_name")
@@ -35,6 +43,11 @@ class RenameConversationUseCaseTest {
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::changeConversationName)
             .with(eq(TestConversation.ID), eq("new_name"))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.renamedConversationEventHandler)
+            .suspendFunction(arrangement.renamedConversationEventHandler::handle)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -61,11 +74,19 @@ class RenameConversationUseCaseTest {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
+        @Mock
+        val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
+
         val selfUserId = USER_ID
 
-        private val renameConversation = RenameConversationUseCaseImpl(conversationRepository, persistMessage, selfUserId)
+        private val renameConversation = RenameConversationUseCaseImpl(
+            conversationRepository,
+            persistMessage,
+            renamedConversationEventHandler,
+            selfUserId
+        )
 
-        fun withRenameConversationIs(either: Either<CoreFailure, Unit>) = apply {
+        fun withRenameConversationIs(either: Either<CoreFailure, ConversationRenameResponse>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::changeConversationName)
                 .whenInvokedWith(any(), any())
@@ -73,5 +94,16 @@ class RenameConversationUseCaseTest {
         }
 
         fun arrange() = this to renameConversation
+    }
+
+    companion object {
+        private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
+            EventContentDTO.Conversation.ConversationRenameDTO(
+                ConversationRepositoryTest.CONVERSATION_ID.toApi(),
+                ConversationRepositoryTest.USER_ID.toApi(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                ConversationNameUpdateEvent("newName")
+            )
+        )
     }
 }

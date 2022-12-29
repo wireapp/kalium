@@ -35,9 +35,6 @@ class SessionMapperTest {
     fun givenAnAuthTokens_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthTokens = TEST_AUTH_TOKENS
 
-        given(idMapper).invocation { toApiModel(authSession.userId) }
-            .then { QualifiedID(authSession.userId.value, authSession.userId.domain) }
-
         val acuteValue: SessionDTO =
             with(authSession) {
                 SessionDTO(
@@ -55,9 +52,6 @@ class SessionMapperTest {
     @Test
     fun givenAnAuthTokens_whenMappingToPersistenceAuthTokens_thenValuesAreMappedCorrectly() {
         val authSession: AuthTokens = TEST_AUTH_TOKENS
-
-        given(idMapper).invocation { toDaoModel(authSession.userId) }
-            .then { PersistenceQualifiedId(authSession.userId.value, authSession.userId.domain) }
 
         given(idMapper).invocation { idMapper.toSsoIdEntity(TEST_SSO_ID) }.then { TEST_SSO_ID_ENTITY }
 

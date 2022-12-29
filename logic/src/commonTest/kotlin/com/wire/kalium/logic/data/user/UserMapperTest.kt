@@ -84,17 +84,6 @@ class UserMapperTest {
 
         private val userMapper = UserMapperImpl(idMapper = idMapper)
 
-        init {
-            given(idMapper)
-                .function(idMapper::fromApiToDao)
-                .whenInvokedWith(any())
-                .then { TestUser.ENTITY_ID }
-            given(idMapper)
-                .function(idMapper::toQualifiedAssetIdEntity)
-                .whenInvokedWith(any(), any())
-                .then { value, _ -> PersistenceQualifiedId(value, TestUser.ENTITY_ID.domain) }
-        }
-
         fun arrange() = this to userMapper
     }
 }

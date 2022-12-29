@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -180,8 +181,8 @@ object TestConversation {
     val CONVERSATION_RESPONSE = ConversationResponse(
         "creator",
         ConversationMembersResponse(
-            ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_admin"),
-            listOf(ConversationMemberDTO.Other(MapperProvider.idMapper().toApiModel(TestUser.OTHER.id), conversationRole = "wire_member"))
+            ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_admin"),
+            listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), conversationRole = "wire_member"))
         ),
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,

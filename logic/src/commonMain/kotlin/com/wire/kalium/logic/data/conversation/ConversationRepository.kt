@@ -5,7 +5,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -29,7 +28,6 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -45,7 +43,6 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
@@ -158,7 +155,10 @@ interface ConversationRepository {
 
     suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
-    suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit>
+    suspend fun changeConversationName(
+        conversationId: ConversationId,
+        conversationName: String
+    ): Either<CoreFailure, ConversationRenameResponse>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -171,7 +171,6 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
-    private val renamedConversationEventHandler: RenamedConversationEventHandler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -179,7 +178,6 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -600,13 +598,14 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            conversationApi.updateConversationName(conversationId.toApi(), conversationName)
-        }.onSuccess { response ->
-            if (response is ConversationRenameResponse.Changed)
-                renamedConversationEventHandler.handle(eventMapper.conversationRenamed(LocalId.generate(), response.event, true))
-        }.map { Either.Right(Unit) }
+    override suspend fun changeConversationName(
+        conversationId: ConversationId,
+        conversationName: String
+    ): Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
+        conversationApi.updateConversationName(conversationId.toApi(), conversationName)
+    }.onSuccess {
+
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

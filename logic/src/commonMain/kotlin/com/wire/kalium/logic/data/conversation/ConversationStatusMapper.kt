@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
@@ -50,6 +51,6 @@ class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusM
         }
     }
 
-    override fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId = idMapper.fromDaoModel(removedBy)
+    override fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId = removedBy.toModel()
 
 }

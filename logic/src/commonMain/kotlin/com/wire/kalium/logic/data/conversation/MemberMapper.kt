@@ -40,10 +40,10 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
 
     override fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember> {
         val otherMembers = conversationMembersResponse.otherMembers.map { member ->
-            PersistedMember(idMapper.fromApiToDao(member.id), roleMapper.fromApiModelToDaoModel(member.conversationRole))
+            PersistedMember(member.id.toDao(), roleMapper.fromApiModelToDaoModel(member.conversationRole))
         }
         val selfMember = with(conversationMembersResponse.self) {
-            PersistedMember(idMapper.fromApiToDao(id), roleMapper.fromApiModelToDaoModel(conversationRole))
+            PersistedMember(id.toDao(), roleMapper.fromApiModelToDaoModel(conversationRole))
         }
         return otherMembers + selfMember
     }

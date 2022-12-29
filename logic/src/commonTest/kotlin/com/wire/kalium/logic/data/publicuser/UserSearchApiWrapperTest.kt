@@ -317,28 +317,6 @@ class UserSearchApiWrapperTest {
         @Mock
         private val conversationDAO: ConversationDAO = mock(classOf<ConversationDAO>())
 
-        @Mock
-        private val idMapper: IdMapper = mock(classOf<IdMapper>())
-
-        // Propagate the mapping of the id so their content are equal, when passing it to the
-        // mock functions
-        init {
-            given(idMapper)
-                .function(idMapper::toDaoModel)
-                .whenInvokedWith(anything())
-                .then { PersistenceQualifiedId(it.value, it.domain) }
-
-            given(idMapper)
-                .function(idMapper::fromDaoModel)
-                .whenInvokedWith(anything())
-                .then { QualifiedID(it.value, it.domain) }
-
-            given(idMapper)
-                .function(idMapper::fromApiModel)
-                .whenInvokedWith(anything())
-                .then { QualifiedID(it.value, it.domain) }
-        }
-
         fun withSuccessConversationExcludedFullSearch(
             conversationMembers: List<Member>,
             searchApiUsers: List<ContactDTO>,
