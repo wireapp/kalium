@@ -51,7 +51,7 @@ class OnCloseCall(
     }
 
     private fun shouldPersistMissedCall(conversationId: String, callStatus: CallStatus): Boolean {
-        if(callStatus == CallStatus.MISSED)
+        if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {
             val isGroupCall = it.conversationType == Conversation.Type.GROUP
