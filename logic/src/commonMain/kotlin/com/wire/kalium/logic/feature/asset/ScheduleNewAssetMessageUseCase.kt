@@ -141,12 +141,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             message to assetMessageMetaData
         }.flatMap { (message, assetMessageMetaData) ->
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message).flatMap {
-                // start upload
-                // when deleted
-                // cancel the upload
+            persistMessage(message).onSuccess {
                 // We update the asset message upload status to UPLOAD_IN_PROGRESS so that we can track the progress of the asset upload
-
                 uploadAssetAndUpdateMessage(
                     message,
                     conversationId,
