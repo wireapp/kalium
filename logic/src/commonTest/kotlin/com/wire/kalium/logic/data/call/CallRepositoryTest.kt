@@ -1261,6 +1261,33 @@ class CallRepositoryTest {
         )
     }
 
+    @Test
+    fun givenAMissedCall_whenPersistMissedCallInvoked_thenStoreTheMissedCallInDatabase() = runTest {
+
+        val qualifiedIdEntity = QualifiedIDEntity(conversationId.value, conversationId.domain)
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(eq(qualifiedIdEntity))
+            .thenReturn(callerIdString)
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(eq(any()))
+            .thenReturn(Either.Right(Unit))
+
+        callRepository.persistMissedCall(conversationId)
+
+        verify(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .with(eq(qualifiedIdEntity))
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(eq(any()))
+            .wasInvoked(exactly = once)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1304,6 +1331,7 @@ class CallRepositoryTest {
         private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
         private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
         private val callerId = UserId(value = "callerId", domain = "domain")
+        private val callerIdString = "callerId@domain")
 
         private val oneOnOneConversationDetails = ConversationDetails.OneOne(
             conversation = oneOnOneConversation,

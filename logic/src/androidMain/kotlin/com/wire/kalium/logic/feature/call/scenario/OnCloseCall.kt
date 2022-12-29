@@ -4,13 +4,14 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import com.wire.kalium.logger.obfuscateId
 
 @Suppress("LongParameterList")
 class OnCloseCall(
@@ -39,14 +40,27 @@ class OnCloseCall(
                 conversationIdString = conversationIdWithDomain.toString(),
                 status = callStatus
             )
+
+            if (shouldPersistMissedCall(conversationIdWithDomain.toString(), callStatus)) {
+                callRepository.persistMissedCall(conversationIdWithDomain)
+            }
+
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
 
     }
 
+    private fun shouldPersistMissedCall(conversationId: String, callStatus: CallStatus): Boolean {
+        return callRepository.getCallMetadataProfile().data[conversationId]?.let {
+            val isGroupCall = it.conversationType == Conversation.Type.GROUP
+            (callStatus == CallStatus.CLOSED && isGroupCall && it.establishedTime.isNullOrEmpty()) || callStatus == CallStatus.MISSED
+        } ?: false
+    }
+
     private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallClosedReason.CANCELLED -> CallStatus.MISSED
+        CallClosedReason.TIMEOUT_ECONN -> CallStatus.MISSED
         CallClosedReason.REJECTED -> CallStatus.REJECTED
         else -> {
             CallStatus.CLOSED
