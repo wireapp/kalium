@@ -151,8 +151,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     )
                 }
             }.fold({ coreFailure ->
-                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
                 log("Failed to schedule asset message: $coreFailure")
+                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
                 ScheduleNewAssetMessageResult.Failure(coreFailure)
             }, {
                 log("Asset message upload successfull with message id:$generatedMessageId")
@@ -177,7 +177,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 withContext(scope.coroutineContext + parentJob) {
                     launch {
                         log("Starting the upload and persist of private asset ${assetMessageMetaData.assetId}")
-
                         messageRepository.observeMessageVisibility(message.id, conversationId)
                             .collect { messageVisibility ->
                                 if (messageVisibility == MessageEntity.Visibility.DELETED) {
@@ -198,6 +197,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         log("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
                         updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
                     }.flatMap { (assetId, sha256) ->
+                        log("Persisting the message with id: ${message.id}")
                         // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
                         // and persist and update the message on the DB layer to display the changes on the Conversation screen
                         val updatedMessage = message.copy(
@@ -209,10 +209,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                                 )
                             )
                         )
-                        log("Persisting the message with id: ${updatedMessage.id}")
                         persistMessage(updatedMessage).onFailure {
+                            log("Failed to persist message with id: ${updatedMessage.id} with failure ${it}")
                             // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
-                            log("Failed to persist message with id: ${updatedMessage.id} with failure ${it.}")
                         }.onSuccess {
                             log("Successfully persisted message with id: ${updatedMessage.id}")
                             // Finally we try to send the Asset Message to the recipients of the given conversation
