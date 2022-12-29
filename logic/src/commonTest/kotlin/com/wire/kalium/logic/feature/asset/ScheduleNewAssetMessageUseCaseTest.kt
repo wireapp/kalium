@@ -41,6 +41,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -247,10 +248,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             .arrange()
 
         // When
-       val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
         advanceUntilIdle()
 
         // Then
+        assertTrue(arrangement.testScope.isActive)
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
     }
 
@@ -284,7 +286,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
-        private val testScope = TestScope(testDispatcher.default)
+        val testScope = TestScope(testDispatcher.default)
 
         init {
             withToggleReadReceiptsStatus()

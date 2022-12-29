@@ -97,79 +97,72 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetWidth: Int?,
         assetHeight: Int?
     ): ScheduleNewAssetMessageResult {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
-
-        val generatedMessageId = uuid4().toString()
-
-        return currentClientIdProvider().map { currentClientId ->
-            val otrKey = generateOtrKey()
-
-            val assetMessageMetaData = AssetMessageMetadata(
-                conversationId = conversationId,
-                mimeType = assetMimeType,
-                assetDataPath = assetDataPath,
-                assetDataSize = assetDataSize,
-                assetName = assetName,
-                assetWidth = assetWidth,
-                assetHeight = assetHeight,
-                otrKey = otrKey,
-                // Sha256 will be replaced with right values after asset upload
-                sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)),
-                // Asset ID will be replaced with right value after asset upload
-                assetId = UploadedAssetId("", ""),
-            )
-
-            val message = Message.Regular(
-                id = generatedMessageId,
-                content = MessageContent.Asset(
-                    provideAssetMessageContent(
-                        assetMessageMetaData,
-                        // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                        Message.UploadStatus.UPLOAD_IN_PROGRESS
-                    )
-                ),
-                conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
-                senderUserId = userId,
-                senderClientId = currentClientId,
-                status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited,
-            )
-
-            message to assetMessageMetaData
-        }.flatMap { (message, assetMessageMetaData) ->
-            // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message).onSuccess {
-                // We update the asset message upload status to UPLOAD_IN_PROGRESS so that we can track the progress of the asset upload
-                uploadAssetAndUpdateMessage(
-                    message,
-                    conversationId,
-                    assetMessageMetaData
-                )
+        return withContext(dispatcher.default) {
+            slowSyncRepository.slowSyncStatus.first {
+                it is SlowSyncStatus.Complete
             }
-        }.fold({ coreFailure ->
-            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                .d("Failed to schedule asset message: $coreFailure")
-            ScheduleNewAssetMessageResult.Failure(coreFailure)
-        }, {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
-                "Asset message scheduled for upload"
-            )
-            ScheduleNewAssetMessageResult.Success(generatedMessageId)
-        })
+
+            val generatedMessageId = uuid4().toString()
+
+            currentClientIdProvider().map { currentClientId ->
+                val otrKey = generateOtrKey()
+
+                val assetMessageMetaData = AssetMessageMetadata(
+                    conversationId = conversationId,
+                    mimeType = assetMimeType,
+                    assetDataPath = assetDataPath,
+                    assetDataSize = assetDataSize,
+                    assetName = assetName,
+                    assetWidth = assetWidth,
+                    assetHeight = assetHeight,
+                    otrKey = otrKey,
+                    // Sha256 will be replaced with right values after asset upload
+                    sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)),
+                    // Asset ID will be replaced with right value after asset upload
+                    assetId = UploadedAssetId("", ""),
+                )
+
+                val message = Message.Regular(
+                    id = generatedMessageId,
+                    content = MessageContent.Asset(
+                        provideAssetMessageContent(
+                            assetMessageMetaData,
+                            // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                            Message.UploadStatus.UPLOAD_IN_PROGRESS
+                        )
+                    ),
+                    conversationId = conversationId,
+                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    senderUserId = userId,
+                    senderClientId = currentClientId,
+                    status = Message.Status.PENDING,
+                    editStatus = Message.EditStatus.NotEdited,
+                )
+
+                message to assetMessageMetaData
+            }.flatMap { (message, assetMessageMetaData) ->
+                // We persist the asset message right away so that it can be displayed on the conversation screen loading
+                persistMessage(message).onSuccess {
+                    // We update the asset message upload status to UPLOAD_IN_PROGRESS so that we can track the progress of the asset upload
+                    uploadAssetAndUpdateMessage(
+                        message,
+                        conversationId,
+                        assetMessageMetaData
+                    )
+                }
+            }.fold({ coreFailure ->
+                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, generatedMessageId)
+                log("Failed to schedule asset message: $coreFailure")
+                ScheduleNewAssetMessageResult.Failure(coreFailure)
+            }, {
+                log("Asset message upload successfull with message id:$generatedMessageId")
+                ScheduleNewAssetMessageResult.Success(generatedMessageId)
+            })
+        }
     }
 
-    // Generate the otr asymmetric key that will be used to encrypt the data
     private fun generateOtrKey(): AES256Key {
         return generateRandomAES256Key()
-    }
-
-    val test = CoroutineExceptionHandler() { _, throwable ->
-        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-            .e("Error while uploading asset", throwable)
     }
 
     private suspend fun uploadAssetAndUpdateMessage(
@@ -183,18 +176,18 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             supervisorScope {
                 withContext(scope.coroutineContext + parentJob) {
                     launch {
+                        log("Starting the upload and persist of private asset ${assetMessageMetaData.assetId}")
+
                         messageRepository.observeMessageVisibility(message.id, conversationId)
                             .collect { messageVisibility ->
                                 if (messageVisibility == MessageEntity.Visibility.DELETED) {
                                     if (parentJob.isActive) {
+                                        log("Message deleted cancelling the upload")
                                         parentJob.cancel()
                                     }
                                 }
                             }
                     }
-
-                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                        .d("Uploading asset with id: ${assetMessageMetaData.assetId}")
 
                     assetDataSource.uploadAndPersistPrivateAsset(
                         assetMessageMetaData.mimeType,
@@ -202,12 +195,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         assetMessageMetaData.otrKey,
                         assetMessageMetaData.assetName.fileExtension()
                     ).onFailure {
-                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                            .d("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
+                        log("Failed to upload asset with id: ${assetMessageMetaData.assetId}")
                         updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
                     }.flatMap { (assetId, sha256) ->
-                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                            .d("Successfully uploaded asset with id: $assetId")
                         // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
                         // and persist and update the message on the DB layer to display the changes on the Conversation screen
                         val updatedMessage = message.copy(
@@ -219,18 +209,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                                 )
                             )
                         )
-                        kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                            .d("Updating asset message with id: ${updatedMessage.id} with assetId: $assetId")
+                        log("Persisting the message with id: ${updatedMessage.id}")
                         persistMessage(updatedMessage).onFailure {
-                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                                .d("Failed to persist message with id: ${updatedMessage.id}")
                             // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
-                            kaliumLogger.e(
-                                "There was an error when trying to persist the updated asset message with the information returned by the backend "
-                            )
+                            log("Failed to persist message with id: ${updatedMessage.id} with failure ${it.}")
                         }.onSuccess {
-                            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH)
-                                .d("Successfully persisted message with id: ${updatedMessage.id}")
+                            log("Successfully persisted message with id: ${updatedMessage.id}")
                             // Finally we try to send the Asset Message to the recipients of the given conversation
                             prepareAndSendAssetMessage(message, conversationId)
                         }
@@ -238,11 +222,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 }
             }
         } catch (e: Exception) {
-            print("Exception thrown")
             if (e is CancellationException) {
+                log("Asset upload has been cancelled with exception: ${e.message}")
                 // It is okay if we cancel anything here, we do not need to inform the user or react to it in any way
                 Either.Right(Unit)
             } else {
+                log("Asset upload failed with exception ${e.message}")
                 Either.Left(CoreFailure.Unknown(e))
             }
         }
@@ -253,14 +238,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Message.Regular> {
         return messageSender.sendPendingMessage(conversationId, message.id).onFailure {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
-                "Failed to send message with id: ${message.id}"
-            )
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
+            log("There was an error when trying to send the asset on the conversation")
         }.flatMap {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SEARCH).d(
-                "Successfully sent message with id: ${message.id}"
-            )
+            log("Successfully sent message with id: ${message.id}")
             Either.Right(message)
         }
     }
@@ -276,13 +256,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 name = assetName,
                 mimeType = mimeType,
                 metadata = when {
-                    isDisplayableImageMimeType(mimeType) && (
-                            assetHeight.isGreaterThan(0) && (
-                                    assetWidth.isGreaterThan(
-                                        0
-                                    )
-                                    )
-                            ) -> {
+                    isDisplayableImageMimeType(mimeType)
+                            && (assetHeight.isGreaterThan(0)
+                            && (assetWidth.isGreaterThan(0)))
+                    -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
 
@@ -304,8 +281,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
     }
 
+    private fun log(message: String) {
+        kaliumLogger.d("$TAG: $message")
+    }
+
     private companion object {
         const val DEFAULT_BYTE_ARRAY_SIZE = 16
+        const val TAG = "ScheduleNewAssetMessage"
     }
 
 }
