@@ -34,6 +34,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -231,6 +232,28 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .wasInvoked(exactly = twice)
         }
 
+    @Test
+    fun test() = runTest(testDispatcher.default) {
+        val assetToSend = mockedLongAssetData()
+        val assetName = "some-asset.txt"
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+        val expectedAssetId = dummyUploadedAssetId
+        val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+
+        val (arrangement, sendAssetUseCase) = Arrangement()
+            .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+            .withObservingMessageVisibility(MessageEntity.Visibility.DELETED)
+            .arrange()
+
+        // When
+       val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(result is ScheduleNewAssetMessageResult.Success)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -351,11 +374,11 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withObservingMessageVisibility() = apply {
+        fun withObservingMessageVisibility(messageVisiblity: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::observeMessageVisibility)
                 .whenInvokedWith(any(), any())
-                .thenReturn(flowOf())
+                .thenReturn(flowOf(messageVisiblity))
         }
 
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
