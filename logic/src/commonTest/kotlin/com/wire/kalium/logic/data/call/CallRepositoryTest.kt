@@ -1272,7 +1272,7 @@ class CallRepositoryTest {
 
         given(persistMessage)
             .suspendFunction(persistMessage::invoke)
-            .whenInvokedWith(eq(any()))
+            .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
 
         callRepository.persistMissedCall(conversationId)
@@ -1284,7 +1284,7 @@ class CallRepositoryTest {
 
         verify(persistMessage)
             .suspendFunction(persistMessage::invoke)
-            .with(eq(any()))
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
