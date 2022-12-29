@@ -758,11 +758,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn("callerId@domain")
 
-        given(persistMessage)
-            .suspendFunction(persistMessage::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-
         // when
         callRepository.createCall(
             conversationId = conversationId,
@@ -778,11 +773,6 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(callDAO).suspendFunction(callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(persistMessage)
-            .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
 
