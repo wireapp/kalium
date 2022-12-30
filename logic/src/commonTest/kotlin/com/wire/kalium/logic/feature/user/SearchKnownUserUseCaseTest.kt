@@ -176,7 +176,6 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-
         searchKnownUsersUseCase(
             searchQuery = searchQuery,
             searchUsersOptions = searchUsersOptions
@@ -274,7 +273,7 @@ class SearchKnownUserUseCaseTest {
             given(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
                 .whenInvokedWith(
-                    if (searchQuery == null) any() else eq(searchQuery),
+                    if (searchQuery == null) any() else eq(searchQuery.removePrefix("@")),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
@@ -342,7 +341,7 @@ class SearchKnownUserUseCaseTest {
             given(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
                 .whenInvokedWith(
-                    if (searchQuery == null) any() else eq(searchQuery),
+                    if (searchQuery == null) any() else eq(searchQuery.removePrefix("@")),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(flowOf(UserSearchResult(otherUsers)))
