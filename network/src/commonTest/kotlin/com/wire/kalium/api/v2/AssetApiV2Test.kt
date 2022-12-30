@@ -1,6 +1,7 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.common.runTestWithCancellation
 import com.wire.kalium.model.asset.AssetUploadResponseJson
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
@@ -23,13 +24,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+
+// NOTE: KaliumHttpEngine, the actual engine propagates the execution of the HttpRequest further to the HttpClient
+// look [KaliumHttpEngine.kt] line : 116, MockClientEngine does not, it simply stops propagating it further and lets
+// us mock the Response and Request, because of that StreamAssetContent's Job will be hanging because writeTo() is not executed and thus,
+// it does not complete and in the end we end up with a TimeOut coming from runTest,
+// that is why in some cases where we use assetApi.uploadAsset method we cancel the execution of the runTest root Job
+// once the body is executed, so that the Job is not hanging, because once we get the response we do not care about anything else
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetApiV2Test : ApiTest {
 
     private val userId: UserId = UserId("user_id", "domain")
 
     @Test
-    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
+    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTestWithCancellation {
         // Given
         val fileSystem = FakeFileSystem()
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
