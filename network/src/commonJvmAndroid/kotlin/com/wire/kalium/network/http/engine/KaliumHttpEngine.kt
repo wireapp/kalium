@@ -165,7 +165,6 @@ class KaliumHttpEngine(override val config: OkHttpConfig) : HttpClientEngineBase
         return buildResponseData(response, requestTime, responseContent, callContext)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     @OptIn(DelicateCoroutinesApi::class)
     private fun BufferedSource.toChannel(context: CoroutineContext, requestData: HttpRequestData): ByteReadChannel =
         GlobalScope.writer(context) {

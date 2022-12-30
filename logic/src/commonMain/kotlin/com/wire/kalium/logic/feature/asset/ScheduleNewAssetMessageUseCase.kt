@@ -160,6 +160,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         return generateRandomAES256Key()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun uploadAssetAndUpdateMessage(
         message: Message.Regular,
         conversationId: ConversationId,

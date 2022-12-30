@@ -17,23 +17,23 @@ class OkHttpConfig : HttpClientEngineConfig() {
     /**
      * Preconfigured [OkHttpClient] instance instead of configuring one.
      */
-    public var preconfigured: OkHttpClient? = null
+    var preconfigured: OkHttpClient? = null
 
     /**
      * Size of the cache that keeps least recently used [OkHttpClient] instances. Set "0" to avoid caching.
      */
-    public var clientCacheSize: Int = 10
+    var clientCacheSize: Int = 10
 
     /**
      * If provided, this [WebSocket.Factory] will be used to create [WebSocket] instances.
      * Otherwise, [OkHttpClient] is used directly.
      */
-    public var webSocketFactory: WebSocket.Factory? = null
+    var webSocketFactory: WebSocket.Factory? = null
 
     /**
      * Configure [OkHttpClient] using [OkHttpClient.Builder].
      */
-    public fun config(block: OkHttpClient.Builder.() -> Unit) {
+    private fun config(block: OkHttpClient.Builder.() -> Unit) {
         val oldConfig = config
         config = {
             oldConfig()
@@ -44,7 +44,7 @@ class OkHttpConfig : HttpClientEngineConfig() {
     /**
      * Add [Interceptor] to [OkHttp] client.
      */
-    public fun addInterceptor(interceptor: Interceptor) {
+    fun addInterceptor(interceptor: Interceptor) {
         config {
             addInterceptor(interceptor)
         }
@@ -53,7 +53,7 @@ class OkHttpConfig : HttpClientEngineConfig() {
     /**
      * Add network [Interceptor] to [OkHttp] client.
      */
-    public fun addNetworkInterceptor(interceptor: Interceptor) {
+    fun addNetworkInterceptor(interceptor: Interceptor) {
         config {
             addNetworkInterceptor(interceptor)
         }

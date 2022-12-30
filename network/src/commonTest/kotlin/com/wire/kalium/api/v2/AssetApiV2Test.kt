@@ -24,7 +24,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-
 // NOTE: KaliumHttpEngine, the actual engine propagates the execution of the HttpRequest further to the HttpClient
 // look [KaliumHttpEngine.kt] line : 116, MockClientEngine does not, it simply stops propagating it further and lets
 // us mock the Response and Request, because of that StreamAssetContent's Job will be hanging because writeTo() is not executed and thus,
