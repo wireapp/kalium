@@ -64,7 +64,7 @@ class AssetApiV2Test : ApiTest {
     }
 
     @Test
-    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTest {
+    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTestWithCancellation {
         // Given
         val fileSystem = FakeFileSystem()
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
