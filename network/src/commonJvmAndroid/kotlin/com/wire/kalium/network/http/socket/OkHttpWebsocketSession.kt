@@ -166,6 +166,8 @@ internal class OkHttpWebsocketSession(
         DeprecationLevel.ERROR
     )
 
+    override suspend fun flush() {}
+
     override fun terminate() {
         coroutineContext.cancel()
     }
