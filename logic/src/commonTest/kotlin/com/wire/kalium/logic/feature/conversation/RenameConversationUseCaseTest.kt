@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.logic.functional.Either

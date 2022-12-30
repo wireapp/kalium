@@ -575,9 +575,9 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
         conversationDAO.whoDeletedMeInConversation(
-            conversationId.toDao(),
-            idMapper.toStringDaoModel(selfUserId)
-        )?.let { it.toModel() }
+                conversationId.toDao(),
+                idMapper.toStringDaoModel(selfUserId)
+            )?.toModel()
     }
 
     override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
@@ -603,8 +603,6 @@ internal class ConversationDataSource internal constructor(
         conversationName: String
     ): Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
         conversationApi.updateConversationName(conversationId.toApi(), conversationName)
-    }.onSuccess {
-
     }
 
     companion object {
