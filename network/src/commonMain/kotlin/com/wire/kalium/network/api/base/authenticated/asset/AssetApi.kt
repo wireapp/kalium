@@ -19,7 +19,7 @@ interface AssetApi {
      * @param encryptedDataSource the source of the encrypted data to be uploaded
      * @param encryptedDataSize the size in bytes of the asset to be uploaded
      */
-    suspend fun uploadAsset(
+        suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long

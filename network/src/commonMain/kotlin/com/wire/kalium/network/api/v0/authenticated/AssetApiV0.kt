@@ -180,6 +180,9 @@ internal class StreamAssetContent internal constructor(
 
     @OptIn(ExperimentalStdlibApi::class)
     override suspend fun writeTo(channel: ByteWriteChannel) {
+        producerJob.invokeOnCompletion {
+            println()
+        }
         try {
             coroutineScope {
                 if (!channel.isClosedForWrite && producerJob.isActive) {

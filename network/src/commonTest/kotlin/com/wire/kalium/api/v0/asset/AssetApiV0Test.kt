@@ -1,6 +1,7 @@
 package com.wire.kalium.api.v0.asset
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.common.runTestWithCancellation
 import com.wire.kalium.model.asset.AssetDownloadResponseJson
 import com.wire.kalium.model.asset.AssetUploadResponseJson
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -8,7 +9,6 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
-import com.wire.kalium.network.api.v0.authenticated.StreamAssetContent
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -16,9 +16,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.writer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.Source
@@ -29,10 +27,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+// NOTE: KaliumHttpEngine, the actual engine propagates the execution of the HttpRequest further to the HttpClient
+// look [KaliumHttpEngine.kt] line : 116, MockClientEngine does not, it simply stops propagating it further and lets
+// us mock the Response and Request, because of that StreamAssetContent's Job will be hanging because writeTo() is not executed and thus,
+// it does not complete and in the end we end up with a TimeOut coming from runTest,
+// that is why in some cases where we use assetApi.uploadAsset method we cancel the execution of the runTest root Job
+// once the body is executed, so that the Job is not hanging, because once we get the response we do not care about anything else
 @ExperimentalCoroutinesApi
 class AssetApiV0Test : ApiTest {
     @Test
-    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
+    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTestWithCancellation {
         // Given
         val fileSystem = FakeFileSystem()
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
@@ -58,21 +62,6 @@ class AssetApiV0Test : ApiTest {
         assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
     }
 
-
-    @Test
-    fun test() = runTest {
-        val fileSystem = FakeFileSystem()
-        val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
-        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
-
-       val test =  StreamAssetContent(assetMetadata, encryptedData.size.toLong(), encryptedDataSource, kotlin.coroutines.coroutineContext)
-
-        writer {
-            test.writeTo(channel)
-        }
-    }
-
     private fun getDummyDataSource(fileSystem: FakeFileSystem, dummyData: ByteArray): Source {
         val dummyPath = "some-data-path".toPath()
         fileSystem.write(dummyPath) {
@@ -82,31 +71,31 @@ class AssetApiV0Test : ApiTest {
     }
 
     @Test
-    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTest {
-        // Given
-        val fileSystem = FakeFileSystem()
-        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
-        val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
-        val networkClient = mockAuthenticatedNetworkClient(
-            INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.BadRequest,
-            assertion = {
-                assertPost()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(PATH_ASSETS_V3)
-            }
-        )
+    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTestWithCancellation {
+            // Given
+            val fileSystem = FakeFileSystem()
+            val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+            val encryptedData = "some-data".encodeToByteArray()
+            val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
+            val networkClient = mockAuthenticatedNetworkClient(
+                INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.BadRequest,
+                assertion = {
+                    assertPost()
+                    assertNoQueryParams()
+                    assertAuthorizationHeaderExist()
+                    assertPathEqual(PATH_ASSETS_V3)
+                }
+            )
 
-        // When
-        val assetApi: AssetApi = AssetApiV0(networkClient)
-        val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
+            // When
+            val assetApi: AssetApi = AssetApiV0(networkClient)
+            val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
-        // Then
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.InvalidRequestError)
-    }
+            // Then
+            assertTrue(response is NetworkResponse.Error)
+            assertTrue(response.kException is KaliumException.InvalidRequestError)
+        }
 
     @Test
     fun givenAValidAssetDownloadApiRequest_whenCallingTheAssetDownloadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
