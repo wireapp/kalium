@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 
 @Suppress("LongParameterList")
 class ConversationScope internal constructor(
@@ -44,7 +45,8 @@ class ConversationScope internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val sendConfirmation: SendConfirmationUseCase
+    private val sendConfirmation: SendConfirmationUseCase,
+    private val renamedConversationHandler: RenamedConversationEventHandler
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -127,7 +129,7 @@ class ConversationScope internal constructor(
         get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
 
     val renameConversation: RenameConversationUseCase
-        get() = RenameConversationUseCaseImpl(conversationRepository, persistMessage, selfUserId)
+        get() = RenameConversationUseCaseImpl(conversationRepository, persistMessage, renamedConversationHandler, selfUserId)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
