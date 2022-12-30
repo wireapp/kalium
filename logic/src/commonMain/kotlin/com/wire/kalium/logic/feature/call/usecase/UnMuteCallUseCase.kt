@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import kotlinx.coroutines.flow.first
 
 /**
  * This use case is responsible for un-mute a call.
@@ -20,9 +21,11 @@ class UnMuteCallUseCase(
             conversationId = conversationId.toString(),
             isMuted = false
         )
-        // We should call AVS muting method only for established call, otherwise incoming call could mute the current call
-        callRepository.getCallMetadataProfile()[conversationId.toString()]?.establishedTime?.let {
-            callManager.value.muteCall(false)
+        val activeCall = callRepository.establishedCallsFlow().first().find {
+            it.conversationId == conversationId
         }
+
+        // We should call AVS muting method only for established call, otherwise incoming call could mute the current call
+        activeCall?.let { callManager.value.muteCall(false) }
     }
 }
