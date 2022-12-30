@@ -4,11 +4,8 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.network.api.v0.authenticated.StreamAssetContent
 import io.ktor.utils.io.writer
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -18,11 +15,9 @@ import okio.Path.Companion.toPath
 import okio.Source
 import okio.fakefilesystem.FakeFileSystem
 import org.junit.Test
-import javax.print.attribute.standard.JobName
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class ByteChannelRequestBodyTest {
 

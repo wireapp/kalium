@@ -23,4 +23,3 @@ internal fun OkHttpClient.Builder.setupTimeoutAttributes(
     }
     return this
 }
-

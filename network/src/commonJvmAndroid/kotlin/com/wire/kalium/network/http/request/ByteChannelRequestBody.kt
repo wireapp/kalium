@@ -73,6 +73,7 @@ class ByteChannelRequestBody(
      * successfully or `completeExceptionally()` on exception.
      * @return the result of calling [block]
      */
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> withJob(job: CompletableJob, block: () -> T): T {
         try {
             return block()

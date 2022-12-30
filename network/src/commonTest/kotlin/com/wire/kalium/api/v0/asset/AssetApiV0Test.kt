@@ -36,31 +36,32 @@ import kotlin.test.assertTrue
 @ExperimentalCoroutinesApi
 class AssetApiV0Test : ApiTest {
     @Test
-    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTestWithCancellation {
-        // Given
-        val fileSystem = FakeFileSystem()
-        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
-        val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
-        val networkClient = mockAuthenticatedNetworkClient(
-            VALID_ASSET_UPLOAD_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                assertPost()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(PATH_ASSETS_V3)
-            }
-        )
+    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTestWithCancellation {
+            // Given
+            val fileSystem = FakeFileSystem()
+            val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+            val encryptedData = "some-data".encodeToByteArray()
+            val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
+            val networkClient = mockAuthenticatedNetworkClient(
+                VALID_ASSET_UPLOAD_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.Created,
+                assertion = {
+                    assertPost()
+                    assertNoQueryParams()
+                    assertAuthorizationHeaderExist()
+                    assertPathEqual(PATH_ASSETS_V3)
+                }
+            )
 
-        // When
-        val assetApi: AssetApi = AssetApiV0(networkClient)
-        val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
+            // When
+            val assetApi: AssetApi = AssetApiV0(networkClient)
+            val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
-        // Then
-        assertTrue(response.isSuccessful())
-        assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
-    }
+            // Then
+            assertTrue(response.isSuccessful())
+            assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
+        }
 
     private fun getDummyDataSource(fileSystem: FakeFileSystem, dummyData: ByteArray): Source {
         val dummyPath = "some-data-path".toPath()
@@ -71,7 +72,8 @@ class AssetApiV0Test : ApiTest {
     }
 
     @Test
-    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTestWithCancellation {
+    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() =
+        runTestWithCancellation {
             // Given
             val fileSystem = FakeFileSystem()
             val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")

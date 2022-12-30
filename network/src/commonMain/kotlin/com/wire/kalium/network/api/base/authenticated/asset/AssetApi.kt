@@ -12,14 +12,19 @@ interface AssetApi {
      * @param assetToken the asset token, can be null in case of public assets
      * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
-    suspend fun downloadAsset(assetId: String, assetDomain: String?, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit>
+    suspend fun downloadAsset(
+        assetId: String,
+        assetDomain: String?,
+        assetToken: String?,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit>
 
     /** Uploads an already encrypted asset
      * @param metadata the metadata associated to the asset that wants to be uploaded
      * @param encryptedDataSource the source of the encrypted data to be uploaded
      * @param encryptedDataSize the size in bytes of the asset to be uploaded
      */
-        suspend fun uploadAsset(
+    suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long

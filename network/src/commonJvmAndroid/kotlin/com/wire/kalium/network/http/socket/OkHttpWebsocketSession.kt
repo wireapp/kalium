@@ -71,6 +71,7 @@ internal class OkHttpWebsocketSession(
         require(negotiatedExtensions.isEmpty()) { "Extensions are not supported." }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @OptIn(ObsoleteCoroutinesApi::class)
     override val outgoing: SendChannel<Frame> = actor {
         val websocket: WebSocket = webSocketFactory.newWebSocket(engineRequest, self.await())
@@ -151,8 +152,6 @@ internal class OkHttpWebsocketSession(
         _incoming.close(t)
         outgoing.close(t)
     }
-
-    override suspend fun flush() {}
 
     /**
      * Creates a new web socket and starts the session.

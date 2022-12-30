@@ -173,7 +173,7 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
         headers.associate {
-                it.first to it.second.joinToString(",")
+            it.first to it.second.joinToString(",")
         }
 
     private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {
@@ -183,37 +183,41 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("""REQUEST FAILURE: {
+            kaliumLogger.v(
+                """REQUEST FAILURE: {
                         |"endpoint":"${obfuscatePath(Url(context.url))}",
                         | "method":"${context.method.value}",
                         |  "cause":"$cause"}
-                        |  """.trimMargin())
+                        |  """.trimMargin()
+            )
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("""RESPONSE FAILURE: 
+            kaliumLogger.v(
+                """RESPONSE FAILURE: 
                             |{"endpoint":"${obfuscatePath(request.url)}\",
                             | "method":"${request.method.value}",
                             |  "cause":"$cause"}
-                            |  """.trimMargin())
+                            |  """.trimMargin()
+            )
         }
     }
 
-//     @OptIn(DelicateCoroutinesApi::class)
-//     private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
-//
-//         val charset = content.contentType?.charset() ?: Charsets.UTF_8
-//
-//         val channel = ByteChannel()
-//         GlobalScope.launch(Dispatchers.Unconfined) {
-//             val text = channel.tryReadText(charset) ?: "\"request body omitted\""
-//             kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
-//         }
-//
-//         return content.observe(channel)
-//     }
+    @OptIn(DelicateCoroutinesApi::class)
+    private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
+
+        val charset = content.contentType?.charset() ?: Charsets.UTF_8
+
+        val channel = ByteChannel()
+        GlobalScope.launch(Dispatchers.Unconfined) {
+            val text = channel.tryReadText(charset) ?: "\"request body omitted\""
+            kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
+        }
+
+        return content.observe(channel)
+    }
 
     public companion object : HttpClientPlugin<Config, KaliumKtorCustomLogging> {
         override val key: AttributeKey<KaliumKtorCustomLogging> = AttributeKey("ClientLogging")

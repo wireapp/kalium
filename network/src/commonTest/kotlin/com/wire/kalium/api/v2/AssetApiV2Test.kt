@@ -37,58 +37,60 @@ class AssetApiV2Test : ApiTest {
     private val userId: UserId = UserId("user_id", "domain")
 
     @Test
-    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTestWithCancellation {
-        // Given
-        val fileSystem = FakeFileSystem()
-        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
-        val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
-        val networkClient = mockAuthenticatedNetworkClient(
-            VALID_ASSET_UPLOAD_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                assertPost()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(PATH_ASSETS)
-            }
-        )
+    fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTestWithCancellation {
+            // Given
+            val fileSystem = FakeFileSystem()
+            val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+            val encryptedData = "some-data".encodeToByteArray()
+            val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
+            val networkClient = mockAuthenticatedNetworkClient(
+                VALID_ASSET_UPLOAD_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.Created,
+                assertion = {
+                    assertPost()
+                    assertNoQueryParams()
+                    assertAuthorizationHeaderExist()
+                    assertPathEqual(PATH_ASSETS)
+                }
+            )
 
-        // When
-        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
-        val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
+            // When
+            val assetApi: AssetApi = AssetApiV2(networkClient, userId)
+            val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
-        // Then
-        assertTrue(response.isSuccessful())
-        assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
-    }
+            // Then
+            assertTrue(response.isSuccessful())
+            assertEquals(response.value, VALID_ASSET_UPLOAD_RESPONSE.serializableData)
+        }
 
     @Test
-    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTestWithCancellation {
-        // Given
-        val fileSystem = FakeFileSystem()
-        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
-        val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
-        val networkClient = mockAuthenticatedNetworkClient(
-            INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.BadRequest,
-            assertion = {
-                assertPost()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(PATH_ASSETS)
-            }
-        )
+    fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() =
+        runTestWithCancellation {
+            // Given
+            val fileSystem = FakeFileSystem()
+            val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+            val encryptedData = "some-data".encodeToByteArray()
+            val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
+            val networkClient = mockAuthenticatedNetworkClient(
+                INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.BadRequest,
+                assertion = {
+                    assertPost()
+                    assertNoQueryParams()
+                    assertAuthorizationHeaderExist()
+                    assertPathEqual(PATH_ASSETS)
+                }
+            )
 
-        // When
-        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
-        val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
+            // When
+            val assetApi: AssetApi = AssetApiV2(networkClient, userId)
+            val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
-        // Then
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.InvalidRequestError)
-    }
+            // Then
+            assertTrue(response is NetworkResponse.Error)
+            assertTrue(response.kException is KaliumException.InvalidRequestError)
+        }
 
     @Test
     fun givenAValidAssetDownloadApiRequest_whenCallingTheAssetDownloadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {

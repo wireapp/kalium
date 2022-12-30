@@ -178,6 +178,7 @@ internal class StreamAssetContent internal constructor(
 
     private val closingArray = "\r\n--frontier--\r\n"
 
+    @Suppress("TooGenericExceptionCaught")
     @OptIn(ExperimentalStdlibApi::class)
     override suspend fun writeTo(channel: ByteWriteChannel) {
         producerJob.invokeOnCompletion {

@@ -78,6 +78,7 @@ internal open class MessageApiV0 internal constructor(
                 val body = parameters.toRequestBody()
                 performRequest(QUERY_IGNORE_MISSING, true, body)
             }
+
             is MessageApi.MessageOption.IgnoreSome -> {
                 val body = parameters.toRequestBody()
                 val commaSeparatedList = option.userIDs.joinToString(",")
@@ -88,6 +89,7 @@ internal open class MessageApiV0 internal constructor(
                 val body = parameters.toRequestBody()
                 performRequest(QUERY_REPORT_MISSING, true, body)
             }
+
             is MessageApi.MessageOption.ReportSome -> {
                 val body = parameters.toRequestBody()
                 body.reportMissing = option.userIDs
@@ -112,7 +114,7 @@ internal open class MessageApiV0 internal constructor(
                 setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
                 contentType(ContentType.Application.XProtoBuf)
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             throw e
         }
     }
