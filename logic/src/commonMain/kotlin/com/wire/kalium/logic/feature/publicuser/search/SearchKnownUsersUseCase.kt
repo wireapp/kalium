@@ -41,7 +41,7 @@ internal class SearchKnownUsersUseCaseImpl(
     ): Flow<SearchUsersResult> {
         return if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
-                handle = searchQuery,
+                handle = searchQuery.removePrefix("@"),
                 searchUsersOptions = searchUsersOptions
             )
         } else {
