@@ -21,13 +21,13 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -53,6 +53,7 @@ interface CallRepository {
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
+    suspend fun persistMissedCall(conversationId: ConversationId)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -221,18 +222,34 @@ internal class CallDataSource(
 
                 // Update Metadata
                 this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
-
-                // Persist Missed Call Message if necessary
-                if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
-                    callingLogger.i("[CallRepository][UpdateCallStatusById] -> Persist Missed Call Message")
-                    persistMissedCallMessageIfNeeded(conversationId = modifiedConversationId)
-                }
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
                 data = updatedCallMetadata
             )
         }
+    }
+
+    override suspend fun persistMissedCall(conversationId: ConversationId) {
+        callingLogger.i(
+            "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+        )
+        val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
+        val callerId = callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)
+
+        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
+
+        val message = Message.System(
+            uuid4().toString(),
+            MessageContent.MissedCall,
+            conversationId,
+            DateTimeUtil.currentIsoDateTimeString(),
+            qualifiedUserId,
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE
+        )
+        persistMessage(message)
     }
 
     override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
@@ -336,27 +353,6 @@ internal class CallDataSource(
             .first()
             .firstOrNull()
             ?.conversationId
-
-    private suspend fun persistMissedCallMessageIfNeeded(conversationId: ConversationId) {
-        val callerId = callDAO.getCallerIdByConversationId(
-            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                conversationId = conversationId
-            )
-        )
-
-        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
-
-        val message = Message.System(
-            uuid4().toString(),
-            MessageContent.MissedCall,
-            conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
-            qualifiedUserId,
-            Message.Status.SENT,
-            Message.Visibility.VISIBLE
-        )
-        persistMessage(message)
-    }
 
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
         this.combine(_callMetadataProfile) { calls, metadata ->
