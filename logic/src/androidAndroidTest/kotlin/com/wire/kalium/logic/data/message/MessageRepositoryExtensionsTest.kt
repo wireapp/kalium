@@ -66,16 +66,9 @@ class MessageRepositoryExtensionsTest {
         private val messageDAO: MessageDAO = mock(MessageDAO::class)
 
         @Mock
-        private val idMapper: IdMapper = mock(IdMapper::class)
-
-        @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
 
         init {
-            given(idMapper)
-                .function(idMapper::toDaoModel)
-                .whenInvokedWith(any())
-                .thenReturn(CONVERSATION_ID_ENTITY)
 
             given(messageMapper)
                 .function(messageMapper::fromEntityToMessage)
@@ -98,7 +91,6 @@ class MessageRepositoryExtensionsTest {
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
                 messageDAO,
-                idMapper,
                 messageMapper
             )
         }
