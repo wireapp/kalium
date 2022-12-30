@@ -206,7 +206,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                             )
                         )
                         persistMessage(updatedMessage).onFailure {
-                            log("Failed to persist message with id: ${updatedMessage.id} with failure ${it}")
+                            log("Failed to persist message with id: ${updatedMessage.id} with failure $it")
                             // TODO: Should we fail the whole message sending if the updated message persistence fails?
                             //  Check when implementing AR-2408
                         }.onSuccess {

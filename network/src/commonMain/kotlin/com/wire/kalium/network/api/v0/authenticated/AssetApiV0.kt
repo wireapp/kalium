@@ -30,12 +30,9 @@ import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.writeStringUtf8
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.supervisorScope
 import okio.Buffer
 import okio.IOException
 import okio.Sink

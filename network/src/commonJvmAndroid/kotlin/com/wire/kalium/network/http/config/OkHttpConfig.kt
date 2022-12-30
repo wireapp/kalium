@@ -22,6 +22,7 @@ class OkHttpConfig : HttpClientEngineConfig() {
     /**
      * Size of the cache that keeps least recently used [OkHttpClient] instances. Set "0" to avoid caching.
      */
+    @Suppress("MagicNumber")
     var clientCacheSize: Int = 10
 
     /**
