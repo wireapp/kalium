@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.framework.TestTeam
@@ -13,9 +12,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

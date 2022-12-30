@@ -1,19 +1,17 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -26,7 +24,6 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock

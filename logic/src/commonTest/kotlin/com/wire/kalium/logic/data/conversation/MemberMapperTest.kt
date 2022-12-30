@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -44,8 +43,6 @@ class MemberMapperTest {
     @Test
     fun givenAMembersResponse_whenMappingFromApiModel_shouldCallIdMapperForAllMembers() {
         val membersResponse = MEMBERS_RESPONSE
-        val mappedID = QualifiedID("someValue", "someDomain")
-
         memberMapper.fromApiModel(membersResponse)
 
         verify(roleMapper)
@@ -58,7 +55,6 @@ class MemberMapperTest {
         val membersResponse = MEMBERS_RESPONSE
         val otherID = QualifiedID("other1", "domain1")
         val selfID = QualifiedID("selfId", "selfDomain")
-
 
         val result = memberMapper.fromApiModel(membersResponse)
 
@@ -96,7 +92,6 @@ class MemberMapperTest {
         val OTHER_MEMBER_RESPONSE =
             ConversationMemberDTO.Other(id = UserIdDTO("other1", "domain1"), conversationRole = "wire_member", service = null)
         val OTHER_MEMBER = Conversation.Member(id = UserId("other1", "domain1"), role = Conversation.Member.Role.Member)
-
 
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, listOf(OTHER_MEMBER_RESPONSE))
         val MEMBERS_INFO = MembersInfo(SELF_MEMBER, listOf(OTHER_MEMBER))

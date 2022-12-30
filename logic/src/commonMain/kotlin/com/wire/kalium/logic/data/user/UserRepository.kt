@@ -130,7 +130,7 @@ internal class UserDataSource internal constructor(
                 if (usersOnSameDomain) {
                     if (it.value.isEmpty()) Either.Right(Unit)
                     else wrapApiRequest {
-                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.value.map{ userId -> userId.toApi() }))
+                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.value.map { userId -> userId.toApi() }))
                     }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
                 } else {
                     it.value.forEach { userId ->
@@ -190,7 +190,7 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map { it.toDao() }
-        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map{ it.toDao() })
+        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map { it.toDao() })
         // TODO we should differentiate users with incomplete data not by checking if name isNullOrBlank
         // TODO but add separate property (when federated backend is down)
         qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }

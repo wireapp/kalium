@@ -14,7 +14,6 @@ import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-
 @Suppress("TooManyFunctions")
 interface IdMapper {
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
@@ -70,6 +69,7 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toProtoModel(conversationId: ConversationId): QualifiedConversationId =
         QualifiedConversationId(conversationId.value, conversationId.domain)
+
     override fun fromProtoUserId(qualifiedUserId: QualifiedUserId): UserId =
         UserId(qualifiedUserId.id, qualifiedUserId.domain)
 
