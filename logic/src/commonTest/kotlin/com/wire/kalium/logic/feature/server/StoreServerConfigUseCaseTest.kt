@@ -42,7 +42,7 @@ class StoreServerConfigUseCaseTest {
     }
 
     @Test
-    fun givenServerlinkswithAwaitAtTheEndOfWebSocketLink_whenStoreConfig_thenStoreWithAwaitRemoved() = runTest {
+    fun givenServerLinksWithAwaitAtTheEndOfWebSocketLink_whenStoreConfig_thenStoreWithAwaitRemoved() = runTest {
         val links = newServerConfig(1).links.copy(webSocket = "wss://example.com/await")
         val versionInfo = ServerConfig.VersionInfo(false, listOf(1), null, listOf(2))
         val expected = newServerConfig(1).copy(links = links.copy(webSocket = "wss://example.com/"))

@@ -25,7 +25,7 @@ internal class StoreServerConfigUseCaseImpl(
     override suspend fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult {
         val cleanWsLink = URLBuilder(links.webSocket).apply {
             pathSegments = pathSegments.toMutableList().apply {
-                remove("await")
+                if (last() == "await") removeLast()
             }
         }.buildString()
 
