@@ -7,14 +7,14 @@ internal typealias NetworkQualifiedId = com.wire.kalium.network.api.base.model.Q
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
 
 // QualifiedID
-fun QualifiedID.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)
-fun QualifiedID.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
+internal fun QualifiedID.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)
+internal fun QualifiedID.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
 
-fun QualifiedIDEntity.toModel(): QualifiedID = QualifiedID(value, domain)
-fun QualifiedIDEntity.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)
+internal fun QualifiedIDEntity.toModel(): QualifiedID = QualifiedID(value, domain)
+internal fun QualifiedIDEntity.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)
 
-fun NetworkQualifiedId.toModel(): QualifiedID = QualifiedID(value, domain)
-fun NetworkQualifiedId.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
+internal fun NetworkQualifiedId.toModel(): QualifiedID = QualifiedID(value, domain)
+internal fun NetworkQualifiedId.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
 
-fun UserAssetDTO.toDao(domain: String): QualifiedIDEntity = PersistenceQualifiedId(key, domain)
-fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key, domain)
+internal fun UserAssetDTO.toDao(domain: String): QualifiedIDEntity = PersistenceQualifiedId(key, domain)
+internal fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key, domain)
