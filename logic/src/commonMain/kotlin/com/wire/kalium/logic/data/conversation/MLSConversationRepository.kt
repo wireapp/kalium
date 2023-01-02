@@ -11,6 +11,9 @@ import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -119,7 +122,7 @@ class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
                 conversationDAO.observeGetConversationByQualifiedID(
-                    idMapper.toDaoModel(messageEvent.conversationId)
+                    messageEvent.conversationId.toDao()
                 ).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
@@ -351,10 +354,13 @@ class MLSConversationDataSource(
     override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID) {
-                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
                     val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
                         userClients.value.map { userClient ->
-                            CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                            CryptoQualifiedClientId(
+                                userClient.id,
+                                idMapper.toCryptoQualifiedIDId(userClients.key.toModel())
+                            )
                         }
                     }
                     return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->

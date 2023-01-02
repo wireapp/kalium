@@ -162,6 +162,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean,
         val selfRole: Conversation.Member.Role?
+//         val isTeamAdmin: Boolean, TODO kubaz
     ) : ConversationDetails(conversation)
 
     data class Connection(

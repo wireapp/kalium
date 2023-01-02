@@ -3,8 +3,8 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.logic.functional.Either
@@ -98,8 +98,8 @@ class RenameConversationUseCaseTest {
     companion object {
         private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
             EventContentDTO.Conversation.ConversationRenameDTO(
-                MapperProvider.idMapper().toApiModel(ConversationRepositoryTest.CONVERSATION_ID),
-                MapperProvider.idMapper().toApiModel(ConversationRepositoryTest.USER_ID),
+                ConversationRepositoryTest.CONVERSATION_ID.toApi(),
+                ConversationRepositoryTest.USER_ID.toApi(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 ConversationNameUpdateEvent("newName")
             )

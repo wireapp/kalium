@@ -1,11 +1,9 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthTokens
-import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -35,9 +33,6 @@ class SessionMapperTest {
     fun givenAnAuthTokens_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthTokens = TEST_AUTH_TOKENS
 
-        given(idMapper).invocation { toApiModel(authSession.userId) }
-            .then { QualifiedID(authSession.userId.value, authSession.userId.domain) }
-
         val acuteValue: SessionDTO =
             with(authSession) {
                 SessionDTO(
@@ -55,9 +50,6 @@ class SessionMapperTest {
     @Test
     fun givenAnAuthTokens_whenMappingToPersistenceAuthTokens_thenValuesAreMappedCorrectly() {
         val authSession: AuthTokens = TEST_AUTH_TOKENS
-
-        given(idMapper).invocation { toDaoModel(authSession.userId) }
-            .then { PersistenceQualifiedId(authSession.userId.value, authSession.userId.domain) }
 
         given(idMapper).invocation { idMapper.toSsoIdEntity(TEST_SSO_ID) }.then { TEST_SSO_ID_ENTITY }
 

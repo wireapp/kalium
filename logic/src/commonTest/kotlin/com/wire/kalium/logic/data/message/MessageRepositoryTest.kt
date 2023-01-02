@@ -46,7 +46,6 @@ class MessageRepositoryTest {
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf())
-            .withMappedId(mappedId)
             .withMappedMessageModel(TEST_MESSAGE)
             .arrange()
 
@@ -70,7 +69,6 @@ class MessageRepositoryTest {
         val mappedMessage = TEST_MESSAGE
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf(entity))
-            .withMappedId(mappedId)
             .withMappedMessageModel(mappedMessage)
             .arrange()
 
@@ -94,7 +92,6 @@ class MessageRepositoryTest {
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedId(mappedId)
             .withMappedMessageEntity(mappedEntity)
             .arrange()
 
@@ -120,7 +117,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -138,7 +134,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -162,7 +157,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -195,7 +189,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -221,7 +214,6 @@ class MessageRepositoryTest {
 
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf(entity))
-            .withMappedId(mappedId)
             .withMappedMessageModel(mappedMessage)
             .arrange()
 
@@ -273,22 +265,6 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
                 .whenInvokedWith(anything(), anything(), anything())
                 .then { _, _, _ -> messages }
-            return this
-        }
-
-        fun withMappedId(mappedId: QualifiedIDEntity): Arrangement {
-            given(idMapper)
-                .function(idMapper::toDaoModel)
-                .whenInvokedWith(anything())
-                .then { mappedId }
-            return this
-        }
-
-        fun withMappedApiModelId(mappedId: NetworkQualifiedId): Arrangement {
-            given(idMapper)
-                .function(idMapper::toApiModel)
-                .whenInvokedWith(anything())
-                .then { mappedId }
             return this
         }
 

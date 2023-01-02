@@ -126,7 +126,6 @@ class ReceiptsMapperTest {
             .withDomainUserTypeStandard()
             .withConnectionStateAccepted()
             .withAvailabilityStatusNone()
-            .withIdMapper(SELF_USER_ID_ENTITY)
             .arrange()
 
         // when
@@ -172,13 +171,6 @@ class ReceiptsMapperTest {
                 .function(availabilityStatusMapper::fromDaoAvailabilityStatusToModel)
                 .whenInvokedWith(eq(UserAvailabilityStatusEntity.NONE))
                 .then { UserAvailabilityStatus.NONE }
-        }
-
-        fun withIdMapper(id: QualifiedIDEntity) = apply {
-            given(idMapper)
-                .function(idMapper::fromDaoModel)
-                .whenInvokedWith(eq(id))
-                .then { QualifiedID(id.value, id.domain) }
         }
 
         fun arrange() = this to ReceiptsMapperImpl(
