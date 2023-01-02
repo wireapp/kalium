@@ -370,8 +370,7 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            renamedConversationHandler
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -887,7 +886,8 @@ class UserSessionScope internal constructor(
             persistMessage,
             updateKeyingMaterialThresholdProvider,
             selfTeamId,
-            messages.sendConfirmation
+            messages.sendConfirmation,
+            renamedConversationHandler
         )
 
     val migration get() = MigrationScope(userStorage.database)

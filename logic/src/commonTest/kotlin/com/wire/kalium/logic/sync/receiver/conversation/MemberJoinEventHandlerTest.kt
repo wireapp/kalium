@@ -95,7 +95,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchConversationIfUnknownSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .withPersistMembersSucceeding()
             .arrange()
@@ -107,6 +107,30 @@ class MemberJoinEventHandlerTest {
             .with(
                 matching {
                     it is Message.System && it.content is MessageContent.MemberChange
+                }
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberJoinEventWithEmptyId_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers).copy(id = "")
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .withPersistMembersSucceeding()
+            .arrange()
+
+        eventHandler.handle(event)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(
+                matching {
+                    it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
             )
             .wasInvoked(exactly = once)
