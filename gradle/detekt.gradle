@@ -26,5 +26,17 @@ dependencies {
     def catalogs = project.extensions.getByType(VersionCatalogsExtension)
     detekt "io.gitlab.arturbosch.detekt:detekt-cli:${catalogs.first().findVersion("detekt").get()}"
     detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:${catalogs.first().findVersion("detekt").get()}"
-    detekt project(path: ":detekt-rules")
+    detekt "com.wire:detekt-rules:1.0.0-SNAPSHOT" changing(true)
+}
+
+configurations {
+    all {
+        resolutionStrategy {
+            eachDependency { DependencyResolveDetails details ->
+                if (requested.group == "com.wire" && requested.name == "detekt-rules") {
+                    cacheChangingModulesFor(0, "SECONDS") // disable cache for jar dependency
+                }
+            }
+        }
+    }
 }

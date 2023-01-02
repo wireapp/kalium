@@ -23,8 +23,26 @@ buildscript {
 }
 
 repositories {
+    configureWireDetektRepo()
     google()
     mavenCentral()
+}
+
+// Configure the repository for wire's detekt custom rules, no need to config fancy packages distribution
+// TODO: move to convention plugins
+fun RepositoryHandler.configureWireDetektRepo() {
+    val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
+        patternLayout {
+            artifact("/[module]-[revision].[ext]")
+        }
+        metadataSources.artifact()
+    }
+    exclusiveContent {
+        forRepositories(repo)
+        filter {
+            includeModule("com.wire", "detekt-rules")
+        }
+    }
 }
 
 plugins {
