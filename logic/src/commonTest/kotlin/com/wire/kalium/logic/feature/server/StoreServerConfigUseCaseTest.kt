@@ -61,7 +61,6 @@ class StoreServerConfigUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     private class Arrangement {
         @Mock
         val configRepository = mock(ServerConfigRepository::class)
@@ -84,4 +83,3 @@ class StoreServerConfigUseCaseTest {
     }
 
 }
-
