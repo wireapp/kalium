@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -40,8 +42,8 @@ internal class ConnectionMapperImpl(
             conversationId = conversationId,
             from = from,
             lastUpdate = lastUpdate,
-            qualifiedConversationId = idMapper.fromDaoModel(qualifiedConversationId),
-            qualifiedToId = idMapper.fromDaoModel(qualifiedToId),
+            qualifiedConversationId = qualifiedConversationId.toModel(),
+            qualifiedToId = qualifiedToId.toModel(),
             status = statusMapper.fromDaoModel(status),
             toId = toId,
             fromUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) }
@@ -50,7 +52,7 @@ internal class ConnectionMapperImpl(
 
     override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
         ConversationDetails.Connection(
-            conversationId = idMapper.fromDaoModel(qualifiedConversationId),
+            conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdate,
@@ -66,8 +68,8 @@ internal class ConnectionMapperImpl(
         conversationId = state.conversationId,
         from = state.from,
         lastUpdate = state.lastUpdate,
-        qualifiedConversationId = idMapper.fromApiModel(state.qualifiedConversationId),
-        qualifiedToId = idMapper.fromApiModel(state.qualifiedToId),
+        qualifiedConversationId = state.qualifiedConversationId.toModel(),
+        qualifiedToId = state.qualifiedToId.toModel(),
         status = statusMapper.fromApiModel(state.status),
         toId = state.toId
     )
@@ -76,8 +78,8 @@ internal class ConnectionMapperImpl(
         conversationId = state.conversationId,
         from = state.from,
         lastUpdate = state.lastUpdate,
-        qualifiedConversationId = idMapper.toDaoModel(state.qualifiedConversationId),
-        qualifiedToId = idMapper.toDaoModel(state.qualifiedToId),
+        qualifiedConversationId = state.qualifiedConversationId.toDao(),
+        qualifiedToId = state.qualifiedToId.toDao(),
         status = statusMapper.toDaoModel(state.status),
         toId = state.toId,
     )

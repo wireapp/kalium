@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -19,6 +22,7 @@ import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
@@ -53,7 +57,7 @@ class PublicUserMapperImpl(
 ) : PublicUserMapper {
 
     override fun fromDaoModelToPublicUser(userEntity: UserEntity) = OtherUser(
-        id = idMapper.fromDaoModel(userEntity.id),
+        id = userEntity.id.toModel(),
         name = userEntity.name,
         handle = userEntity.handle,
         email = userEntity.email,
@@ -61,8 +65,8 @@ class PublicUserMapperImpl(
         accentId = userEntity.accentId,
         teamId = userEntity.team?.let { TeamId(it) },
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
-        completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
+        previewPicture = userEntity.previewAssetId?.toModel(),
+        completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
@@ -71,7 +75,7 @@ class PublicUserMapperImpl(
 
     override fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity = with(otherUser) {
         UserEntity(
-            id = idMapper.toDaoModel(id),
+            id = id.toDao(),
             name = name,
             handle = handle,
             email = email,
@@ -79,8 +83,8 @@ class PublicUserMapperImpl(
             accentId = accentId,
             team = teamId?.value,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
-            previewAssetId = previewPicture?.let { idMapper.toDaoModel(it) },
-            completeAssetId = completePicture?.let { idMapper.toDaoModel(it) },
+            previewAssetId = previewPicture?.toDao(),
+            completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotEntity(it.id, it.provider) },
@@ -90,9 +94,9 @@ class PublicUserMapperImpl(
 
     override fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
         OtherUserMinimized(
-            id = idMapper.fromDaoModel(userEntity.id),
+            id = userEntity.id.toModel(),
             name = userEntity.name,
-            completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
+            completePicture = userEntity.completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         )
 
@@ -107,9 +111,9 @@ class PublicUserMapperImpl(
         teamId = userDetailResponse.teamId?.let { TeamId(it) },
         connectionStatus = ConnectionState.NOT_CONNECTED,
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
-            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
+            ?.let { QualifiedID(it.key, userDetailResponse.id.domain) },
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
-            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
+            ?.let { QualifiedID(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
@@ -129,9 +133,9 @@ class PublicUserMapperImpl(
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
         previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()
-            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
+            ?.let { QualifiedIDEntity(it.key, userDetailResponse.id.domain) },
         completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()
-            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
+            ?.let { QualifiedIDEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
