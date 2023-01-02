@@ -784,13 +784,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
-        with(result) {
-            shouldSucceed()
-            verify(arrange.renamedConversationEventHandler)
-                .suspendFunction(arrange.renamedConversationEventHandler::handle)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
+        result.shouldSucceed()
     }
 
     @Test
@@ -849,8 +843,7 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
-                clientApi,
-                renamedConversationEventHandler
+                clientApi
             )
 
         init {
@@ -1151,7 +1144,7 @@ class ConversationRepositoryTest {
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
 
-        val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
+        private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
             EventContentDTO.Conversation.ConversationRenameDTO(
                 MapperProvider.idMapper().toApiModel(CONVERSATION_ID),
                 MapperProvider.idMapper().toApiModel(USER_ID),

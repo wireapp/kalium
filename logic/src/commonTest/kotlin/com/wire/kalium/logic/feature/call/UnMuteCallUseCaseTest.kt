@@ -1,7 +1,5 @@
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.data.call.CallMetadata
-import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -14,10 +12,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UnMuteCallUseCaseTest {
 
     @Mock
@@ -44,24 +45,18 @@ class UnMuteCallUseCaseTest {
     }
 
     @Test
-    fun `givenAEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateAndMuteCall`() = runTest {
-        val updateCallMetadata = callMetadata.copy(establishedTime = "time")
+    fun givenAnEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateAndMuteCall() = runTest {
         given(callRepository)
-            .function(callRepository::getCallMetadataProfile)
-            .whenInvoked()
-            .thenReturn(
-                CallMetadataProfile(mapOf(conversationId.toString() to updateCallMetadata))
-            )
+            .suspendFunction(callRepository::establishedCallsFlow)
+            .whenInvoked().then {
+                flowOf(listOf(call))
+            }
 
         unMuteCall(conversationId)
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
             .with(eq(conversationId.toString()), eq(isMuted))
-            .wasInvoked(once)
-
-        verify(callRepository)
-            .function(callRepository::getCallMetadataProfile)
             .wasInvoked(once)
 
         verify(callManager)
@@ -71,23 +66,18 @@ class UnMuteCallUseCaseTest {
     }
 
     @Test
-    fun `givenNonEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateOnly`() = runTest {
+    fun givenNonEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateOnly() = runTest {
         given(callRepository)
-            .function(callRepository::getCallMetadataProfile)
-            .whenInvoked()
-            .thenReturn(
-                CallMetadataProfile(mapOf(conversationId.toString() to callMetadata))
-            )
+            .suspendFunction(callRepository::establishedCallsFlow)
+            .whenInvoked().then {
+                flowOf(listOf())
+            }
 
         unMuteCall(conversationId)
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
             .with(eq(conversationId.toString()), eq(isMuted))
-            .wasInvoked(once)
-
-        verify(callRepository)
-            .function(callRepository::getCallMetadataProfile)
             .wasInvoked(once)
 
         verify(callManager)
@@ -99,7 +89,10 @@ class UnMuteCallUseCaseTest {
     companion object {
         const val isMuted = false
         private val conversationId = ConversationId("value", "domain")
-        val callMetadata = CallMetadata(
+        val call = Call(
+            conversationId = conversationId,
+            status = CallStatus.ESTABLISHED,
+            callerId = "called-id",
             isMuted = false,
             isCameraOn = false,
             conversationName = null,
