@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -80,7 +82,7 @@ internal class UserMapperImpl(
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
-            id = idMapper.fromApiModel(id),
+            id = id.toModel(),
             name = name,
             handle = handle,
             email = email,
@@ -88,10 +90,8 @@ internal class UserMapperImpl(
             accentId = accentId,
             teamId = teamId?.let { TeamId(it) },
             connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
-            completePicture = assets.getCompleteAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
+            previewPicture = assets.getPreviewAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
+            completePicture = assets.getCompleteAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
             availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
@@ -101,19 +101,15 @@ internal class UserMapperImpl(
         userTypeEntity: UserTypeEntity?
     ): UserEntity {
         return UserEntity(
-            id = idMapper.fromApiToDao(userProfileDTO.id),
+            id = userProfileDTO.id.toDao(),
             name = userProfileDTO.name,
             handle = userProfileDTO.handle,
             email = userProfileDTO.email,
             phone = null, // TODO phone number not available in `UserProfileDTO`
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
-                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
-            },
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
-                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
-            },
+            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.toDao(userProfileDTO.id.domain),
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.toDao(userProfileDTO.id.domain),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
@@ -123,7 +119,7 @@ internal class UserMapperImpl(
 
     override fun fromDaoModelToSelfUser(userEntity: UserEntity) = with(userEntity) {
         SelfUser(
-            idMapper.fromDaoModel(id),
+            id.toModel(),
             name,
             handle,
             email,
@@ -131,15 +127,15 @@ internal class UserMapperImpl(
             accentId,
             team?.let { TeamId(it) },
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.let { idMapper.fromDaoModel(it) },
-            completeAssetId?.let { idMapper.fromDaoModel(it) },
+            previewAssetId?.toModel(),
+            completeAssetId?.toModel(),
             availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
         )
     }
 
     override fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity = with(selfUser) {
         UserEntity(
-            id = idMapper.toDaoModel(id),
+            id = id.toDao(),
             name = name,
             handle = handle,
             email = email,
@@ -147,8 +143,8 @@ internal class UserMapperImpl(
             accentId = accentId,
             team = teamId?.value,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
-            previewAssetId = previewPicture?.let { idMapper.toDaoModel(it) },
-            completeAssetId = completePicture?.let { idMapper.toDaoModel(it) },
+            previewAssetId = previewPicture?.toDao(),
+            completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = UserTypeEntity.STANDARD,
             botService = null,
@@ -179,7 +175,7 @@ internal class UserMapperImpl(
         updateRequest: UserUpdateRequest
     ): UserEntity {
         return UserEntity(
-            id = idMapper.toDaoModel(user.id),
+            id = user.id.toDao(),
             name = updateRequest.name ?: user.name,
             handle = user.handle,
             email = user.email,
@@ -187,10 +183,8 @@ internal class UserMapperImpl(
             accentId = updateRequest.accentId ?: user.accentId,
             team = user.teamId?.value,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
-            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
-            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()?.toDao(user.id.domain),
+            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(user.id.domain),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
@@ -207,8 +201,8 @@ internal class UserMapperImpl(
             phone = phone,
             accentId = accentId,
             team = teamId,
-            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
-            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
@@ -262,10 +256,8 @@ internal class UserMapperImpl(
             accentId = user.accentId,
             team = teamId ?: user.teamId,
             connectionStatus = member?.let { ConnectionEntity.State.ACCEPTED } ?: ConnectionEntity.State.NOT_CONNECTED,
-            previewAssetId = user.assets.getPreviewAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
-            completeAssetId = user.assets.getCompleteAssetOrNull()
-                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            previewAssetId = user.assets.getPreviewAssetOrNull()?.toDao(user.id.domain),
+            completeAssetId = user.assets.getCompleteAssetOrNull()?.toDao(user.id.domain),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = member?.permissions?.let { userEntityTypeMapper.teamRoleCodeToUserType(it.own) }
                 ?: userEntityTypeMapper.fromTeamAndDomain(
@@ -287,9 +279,9 @@ internal class UserMapperImpl(
                 name = event.name ?: persistedEntity.name,
                 handle = event.handle ?: persistedEntity.handle,
                 accentId = event.accentId ?: persistedEntity.accentId,
-                previewAssetId = event.previewAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
                     ?: persistedEntity.previewAssetId,
-                completeAssetId = event.completeAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
                     ?: persistedEntity.completeAssetId
             )
         }

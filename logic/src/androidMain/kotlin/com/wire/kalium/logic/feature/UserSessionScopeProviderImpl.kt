@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
@@ -32,7 +32,7 @@ internal actual class UserSessionScopeProviderImpl(
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
-        val userIdEntity = IdMapperImpl().toDaoModel(userId)
+        val userIdEntity = userId.toDao()
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootProteusPath = rootPathsProvider.rootProteusPath(userId)
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
