@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ServerConfigFailure
@@ -195,7 +196,7 @@ internal class ServerConfigDataSource(
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
+        wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =

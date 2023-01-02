@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.UserAssetDTO
+import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +16,7 @@ class IdMapperTest {
     fun givenAQualifiedId_whenMappingToApiModel_thenTheFieldsShouldBeMappedCorrectly() {
         val qualifiedID = QualifiedID("value", "domain")
 
-        val networkID = idMapper.toApiModel(qualifiedID)
+        val networkID = qualifiedID.toApi()
 
         assertEquals(qualifiedID.value, networkID.value)
         assertEquals(qualifiedID.domain, networkID.domain)
@@ -24,7 +26,7 @@ class IdMapperTest {
     fun givenAnAPIQualifiedId_whenMappingFromApiModel_thenTheFieldsShouldBeMappedCorrectly() {
         val networkID = NetworkQualifiedId("value", "domain")
 
-        val qualifiedID = idMapper.fromApiModel(networkID)
+        val qualifiedID = networkID.toModel()
 
         assertEquals(networkID.value, qualifiedID.value)
         assertEquals(networkID.domain, qualifiedID.domain)
@@ -60,22 +62,23 @@ class IdMapperTest {
     }
 
     @Test
-    fun givenPairOfValueAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetId() {
-        val (value, domain) = Pair("Test", "Test")
+    fun givenNetworkAssetAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetId() {
+        val domain = "domain"
+        val assetDTO = UserAssetDTO("key", null, UserAssetTypeDTO.IMAGE)
+        val qualifiedAssetID = assetDTO.toModel(domain)
 
-        val qualifiedAssetID = idMapper.toQualifiedAssetId(value, domain)
-
-        assertEquals(qualifiedAssetID.value, value)
+        assertEquals(qualifiedAssetID.value, assetDTO.key)
         assertEquals(qualifiedAssetID.domain, domain)
     }
 
     @Test
-    fun givenPairOfValueAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetIdEntity() {
-        val (value, domain) = Pair("Test", "Test")
+    fun givenNetworkAssetAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetIdEntity() {
+        val domain = "domain"
+        val assetDTO = UserAssetDTO("key", null, UserAssetTypeDTO.IMAGE)
 
-        val qualifiedIDEntity = idMapper.toQualifiedAssetIdEntity(value, domain)
+        val qualifiedIDEntity = assetDTO.toDao(domain)
 
-        assertEquals(qualifiedIDEntity.value, value)
+        assertEquals(qualifiedIDEntity.value, assetDTO.key)
         assertEquals(qualifiedIDEntity.domain, domain)
     }
 
