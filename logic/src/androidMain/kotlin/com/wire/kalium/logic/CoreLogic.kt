@@ -20,10 +20,9 @@ import kotlinx.coroutines.cancel
  */
 actual class CoreLogic(
     private val appContext: Context,
-    clientLabel: String,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
+) : CoreLogicCommon(rootPath, kaliumConfigs) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
         GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
@@ -64,7 +63,6 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
-            clientLabel
         )
     }
 }
