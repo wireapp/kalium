@@ -29,7 +29,6 @@ internal fun UserSessionScope(
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
-    deviceLabel: String
 ): UserSessionScope {
     val platformUserStorageProperties =
         PlatformUserStorageProperties(applicationContext, SecurityHelper(globalPreferences.passphraseStorage))
@@ -49,7 +48,6 @@ internal fun UserSessionScope(
         userSessionScopeProvider,
         userStorageProvider,
         clientConfig,
-        deviceLabel,
         platformUserStorageProperties
     )
 }
