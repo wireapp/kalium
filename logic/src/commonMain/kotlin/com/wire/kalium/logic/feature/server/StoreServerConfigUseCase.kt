@@ -33,13 +33,13 @@ internal class StoreServerConfigUseCaseImpl(
         return configRepository.storeConfig(cleanLinks, versionInfo)
             .fold({ StoreServerConfigResult.Failure.Generic(it) }, { StoreServerConfigResult.Success(it) })
     }
+}
 
+sealed class StoreServerConfigResult {
+    // TODO: change to return the id only so we are now passing the whole config object around in the app
+    class Success(val serverConfig: ServerConfig) : StoreServerConfigResult()
 
-    sealed class StoreServerConfigResult {
-        // TODO: change to return the id only so we are now passing the whole config object around in the app
-        class Success(val serverConfig: ServerConfig) : StoreServerConfigResult()
-
-        sealed class Failure : StoreServerConfigResult() {
-            class Generic(val genericFailure: CoreFailure) : Failure()
-        }
+    sealed class Failure : StoreServerConfigResult() {
+        class Generic(val genericFailure: CoreFailure) : Failure()
     }
+}
