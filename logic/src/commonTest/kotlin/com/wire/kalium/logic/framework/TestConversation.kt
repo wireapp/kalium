@@ -28,8 +28,11 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 
 object TestConversation {
-    val ID = ConversationId("valueConvo", "domainConvo")
-    fun id(suffix: Int = 0) = ConversationId("valueConvo_$suffix", "domainConvo")
+    private const val conversationValue = "valueConvo"
+    private const val conversationDomain = "domainConvo"
+
+    val ID = ConversationId(conversationValue, conversationDomain)
+    fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 
     val ONE_ON_ONE = Conversation(
         ID.copy(value = "1O1 ID"),
@@ -225,7 +228,7 @@ object TestConversation {
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
-    val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
+    val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
     val ENTITY = ConversationEntity(
         ENTITY_ID,
         "convo name",
