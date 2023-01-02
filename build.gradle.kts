@@ -28,8 +28,8 @@ repositories {
     mavenCentral()
 }
 
-// Configure the repository for wire's detekt custom rules, no need to config fancy packages distribution
-// TODO: move to convention plugins
+// Configure the repository for wire's detekt custom rules, no need to mess up with versioning
+// TODO(convention): move to convention plugins
 fun RepositoryHandler.configureWireDetektRepo() {
     val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
         patternLayout {
