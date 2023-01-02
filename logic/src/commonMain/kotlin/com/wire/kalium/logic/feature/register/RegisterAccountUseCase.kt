@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.register
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -33,7 +34,7 @@ sealed class RegisterParam(
         email: String,
         password: String,
         val emailActivationCode: String,
-        cookieLabel: String?// = uuid4().toString(),
+        cookieLabel: String? = uuid4().toString(),
     ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 
     @Suppress("LongParameterList")
@@ -45,7 +46,7 @@ sealed class RegisterParam(
         val emailActivationCode: String,
         val teamName: String,
         val teamIcon: String,
-        cookieLabel: String?// = uuid4().toString()
+        cookieLabel: String? = uuid4().toString()
     ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 }
 

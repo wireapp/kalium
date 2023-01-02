@@ -66,6 +66,7 @@ interface RegisterClientUseCase {
     }
 }
 
+@Suppress("LongParameterList")
 class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,

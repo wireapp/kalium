@@ -59,7 +59,6 @@ internal class LoginUseCaseImpl internal constructor(
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
-
         return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)

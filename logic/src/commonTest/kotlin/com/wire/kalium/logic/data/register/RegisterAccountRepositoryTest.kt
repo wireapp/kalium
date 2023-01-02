@@ -171,6 +171,7 @@ class RegisterAccountRepositoryTest {
         verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
     }
 
+    @Suppress("LongMethod")
     @Test
     fun givenApiRequestRequestSuccess_whenRegisteringTeamAccountWithEmail_thenSuccessIsPropagated() = runTest {
         val email = EMAIL

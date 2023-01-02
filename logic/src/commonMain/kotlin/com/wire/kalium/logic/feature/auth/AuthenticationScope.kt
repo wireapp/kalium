@@ -18,7 +18,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import io.ktor.util.collections.ConcurrentMap
 
-class AuthenticationScopeProvider() {
+class AuthenticationScopeProvider {
 
     private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>, AuthenticationScope> by lazy {
         ConcurrentMap()
