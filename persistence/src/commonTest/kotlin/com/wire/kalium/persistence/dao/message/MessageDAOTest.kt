@@ -930,7 +930,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
 
-        // assert values that should not be updated
+        // asset values that should not be updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
         assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
