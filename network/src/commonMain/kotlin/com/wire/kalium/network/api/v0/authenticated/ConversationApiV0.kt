@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.TeamId
@@ -30,8 +31,10 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
 import okio.IOException
 
@@ -102,12 +105,7 @@ internal open class ConversationApiV0 internal constructor(
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(addParticipantRequest)
         }.let { response ->
-            when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { response }
-                    .mapSuccess { ConversationMemberAddedResponse.Changed(it) }
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, response)
-                else -> wrapKaliumResponse { response }
-            }
+            handleConversationMemberAddedResponse(response)
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
@@ -126,6 +124,7 @@ internal open class ConversationApiV0 internal constructor(
             when (response.status) {
                 HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberLeaveDTO> { response }
                     .mapSuccess { ConversationMemberRemovedResponse.Changed(it) }
+
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
@@ -188,6 +187,7 @@ internal open class ConversationApiV0 internal constructor(
             when (response.status) {
                 HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.ConversationRenameDTO> { response }
                     .mapSuccess { ConversationRenameResponse.Changed(it) }
+
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationRenameResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
@@ -201,6 +201,34 @@ internal open class ConversationApiV0 internal constructor(
             APINotSupported("MLS: fetchGroupInfo api is only available on API V3")
         )
 
+    override suspend fun joinConversation(
+        code: String,
+        key: String,
+        uri: String?
+    ): NetworkResponse<ConversationMemberAddedResponse> =
+        httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+            setBody(JoinConversationRequest(code, key, uri))
+        }.execute { httpResponse ->
+            handleConversationMemberAddedResponse(httpResponse)
+        }
+
+    protected suspend fun handleConversationMemberAddedResponse(httpResponse: HttpResponse): NetworkResponse<ConversationMemberAddedResponse> =
+        when (httpResponse.status) {
+            HttpStatusCode.OK -> {
+                wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { httpResponse }
+                    .mapSuccess { ConversationMemberAddedResponse.Changed(it) }
+            }
+
+            HttpStatusCode.NoContent -> {
+                NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, httpResponse)
+            }
+
+            else -> {
+                wrapKaliumResponse { httpResponse }
+            }
+        }
+
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -211,7 +239,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_LIST_IDS = "list-ids"
         const val PATH_ACCESS = "access"
         const val PATH_NAME = "name"
-
+        const val PATH_JOIN = "join"
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
