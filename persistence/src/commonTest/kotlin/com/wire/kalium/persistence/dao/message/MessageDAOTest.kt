@@ -849,7 +849,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Suppress("LongMethod")
     @Test
     @IgnoreIOS
-    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_ThenTheFinalMessageShouldIncludeTheChanges() = runTest {
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -930,25 +930,22 @@ class MessageDAOTest : BaseDatabaseTest() {
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
 
-        // assert values are updated
+        // assert values that should not be updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedDownloadStatus, updatedMessageContent.assetDownloadStatus)
-        assertEquals(updatedAssetSize, updatedMessageContent.assetSizeInBytes)
-        assertEquals(updatedAssetName, updatedMessageContent.assetName)
-        assertEquals(updatedMimeType, updatedMessageContent.assetMimeType)
-        assertEquals(updatedAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
-        assertEquals(updatedAssetToken, updatedMessageContent.assetToken)
-        assertEquals(updatedAssetId, updatedMessageContent.assetId)
-        assertEquals(updatedAssetDomain, updatedMessageContent.assetDomain)
+        assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(initialAssetName, updatedMessageContent.assetName)
+        assertEquals(initialMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(initialAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(initialAssetToken, updatedMessageContent.assetToken)
+        assertEquals(initialAssetId, updatedMessageContent.assetId)
+        assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
-
-        // assert values that should not be updated
+        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
         assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
         assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
         assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
-
     }
 
     @Test
