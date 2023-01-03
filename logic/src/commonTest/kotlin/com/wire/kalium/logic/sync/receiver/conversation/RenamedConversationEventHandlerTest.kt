@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -76,8 +75,7 @@ class RenamedConversationEventHandlerTest {
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,
-            persistMessage,
-            MapperProvider.idMapper()
+            persistMessage
         )
 
         fun withRenamingConversationSuccess() = apply {
