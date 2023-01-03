@@ -258,7 +258,7 @@ class MessageDataSource(
         messageUuid: String,
         conversationId: ConversationId
     ): Flow<MessageEntity.Visibility> {
-        return messageDAO.observeMessageVisibility(messageUuid, idMapper.toDaoModel(conversationId))
+        return messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
     }
 
     override suspend fun updateAssetMessageUploadStatus(
