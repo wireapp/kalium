@@ -192,6 +192,8 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -747,12 +749,19 @@ class UserSessionScope internal constructor(
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
         get() = IsMessageSentInSelfConversationUseCaseImpl(selfConversationIdProvider)
 
+    private val assetMessageHandler: AssetMessageHandler
+        get() = AssetMessageHandlerImpl(
+            messageRepository,
+            persistMessage,
+            userConfigRepository
+        )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
             assetRepository,
             messageRepository,
-            userConfigRepository,
+            assetMessageHandler,
             callManager,
             persistMessage,
             persistReaction,
