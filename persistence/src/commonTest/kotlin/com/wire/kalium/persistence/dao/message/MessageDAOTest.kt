@@ -876,6 +876,9 @@ class MessageDAOTest : BaseDatabaseTest() {
         val updatedAssetToken = "updated-token"
         val initialMetadataWidth = 100
         val initialMetadataHeight = 300
+        val updatedMetadataHeight = null
+        val updatedMetadataWidth = null
+
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
             date = "2000-01-01T13:00:00.000Z",
@@ -887,7 +890,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetSizeInBytes = initialAssetSize,
                 assetName = initialAssetName,
                 assetMimeType = initialMimeType,
-                assetOtrKey = byteArrayOf(),
+                assetOtrKey = dummyOtrKey,
                 assetSha256Key = dummySha256Key,
                 assetId = initialAssetId,
                 assetDomain = initialDomain,
@@ -911,7 +914,9 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetEncryptionAlgorithm = updatedAssetEncryption,
                 assetUploadStatus = updatedUploadStatus,
                 assetDownloadStatus = updatedDownloadStatus,
-                assetToken = updatedAssetToken
+                assetToken = updatedAssetToken,
+                assetWidth = updatedMetadataWidth,
+                assetHeight = updatedMetadataHeight
             )
         )
         conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
@@ -924,9 +929,10 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
+
+        // assert values are updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedUploadStatus, updatedMessageContent.assetUploadStatus)
         assertEquals(updatedDownloadStatus, updatedMessageContent.assetDownloadStatus)
         assertEquals(updatedAssetSize, updatedMessageContent.assetSizeInBytes)
         assertEquals(updatedAssetName, updatedMessageContent.assetName)
@@ -935,10 +941,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(updatedAssetToken, updatedMessageContent.assetToken)
         assertEquals(updatedAssetId, updatedMessageContent.assetId)
         assertEquals(updatedAssetDomain, updatedMessageContent.assetDomain)
-        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
-        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
+
+        // assert values that should not be updated
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
+        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
+
     }
 
     @Test
