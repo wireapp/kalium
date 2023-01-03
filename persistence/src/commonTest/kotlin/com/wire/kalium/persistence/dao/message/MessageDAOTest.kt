@@ -875,9 +875,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val initialAssetToken = "Some-token"
         val updatedAssetToken = "updated-token"
         val initialMetadataWidth = 100
-        val updatedMetadataWidth = null
         val initialMetadataHeight = 300
-        val updatedMetadataHeight = null
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
             date = "2000-01-01T13:00:00.000Z",
@@ -889,7 +887,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetSizeInBytes = initialAssetSize,
                 assetName = initialAssetName,
                 assetMimeType = initialMimeType,
-                assetOtrKey = dummyOtrKey,
+                assetOtrKey = byteArrayOf(),
                 assetSha256Key = dummySha256Key,
                 assetId = initialAssetId,
                 assetDomain = initialDomain,
@@ -913,9 +911,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetEncryptionAlgorithm = updatedAssetEncryption,
                 assetUploadStatus = updatedUploadStatus,
                 assetDownloadStatus = updatedDownloadStatus,
-                assetToken = updatedAssetToken,
-                assetWidth = updatedMetadataWidth,
-                assetHeight = updatedMetadataHeight
+                assetToken = updatedAssetToken
             )
         )
         conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
@@ -930,17 +926,17 @@ class MessageDAOTest : BaseDatabaseTest() {
         val updatedMessageContent = updatedMessage?.content
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedMessageContent.assetUploadStatus, updatedUploadStatus)
-        assertEquals(updatedMessageContent.assetDownloadStatus, updatedDownloadStatus)
-        assertEquals(updatedMessageContent.assetSizeInBytes, updatedAssetSize)
-        assertEquals(updatedMessageContent.assetName, updatedAssetName)
-        assertEquals(updatedMessageContent.assetMimeType, updatedMimeType)
-        assertEquals(updatedMessageContent.assetEncryptionAlgorithm, updatedAssetEncryption)
-        assertEquals(updatedMessageContent.assetToken, updatedAssetToken)
-        assertEquals(updatedMessageContent.assetId, updatedAssetId)
-        assertEquals(updatedMessageContent.assetDomain, updatedAssetDomain)
-        assertEquals(updatedMessageContent.assetWidth, updatedMetadataWidth)
-        assertEquals(updatedMessageContent.assetHeight, updatedMetadataHeight)
+        assertEquals(updatedUploadStatus, updatedMessageContent.assetUploadStatus)
+        assertEquals(updatedDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(updatedAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(updatedAssetName, updatedMessageContent.assetName)
+        assertEquals(updatedMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(updatedAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(updatedAssetToken, updatedMessageContent.assetToken)
+        assertEquals(updatedAssetId, updatedMessageContent.assetId)
+        assertEquals(updatedAssetDomain, updatedMessageContent.assetDomain)
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
     }
