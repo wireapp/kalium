@@ -47,7 +47,7 @@ fun Process.text(): String = ProcessGroovyMethods.getText(this)
 /**
  * Configure the repository for wire's detekt custom rules
  */
-fun RepositoryHandler.configureWireDetektRules() {
+fun RepositoryHandler.wireDetektRulesRepo() {
     val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
         patternLayout {
             artifact("/[module]-[revision].[ext]")

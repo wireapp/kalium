@@ -23,7 +23,7 @@ buildscript {
 }
 
 repositories {
-    configureWireDetektRules()
+    wireDetektRulesRepo()
     google()
     mavenCentral()
 }
