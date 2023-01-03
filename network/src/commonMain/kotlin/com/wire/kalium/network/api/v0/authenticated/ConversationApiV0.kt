@@ -38,6 +38,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
 import okio.IOException
 
+@Suppress("TooManyFunctions")
 internal open class ConversationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConversationApi {
@@ -227,7 +228,6 @@ internal open class ConversationApiV0 internal constructor(
                 wrapKaliumResponse { httpResponse }
             }
         }
-
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

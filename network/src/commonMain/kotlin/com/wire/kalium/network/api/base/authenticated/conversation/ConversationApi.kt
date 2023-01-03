@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
+@Suppress("TooManyFunctions")
 interface ConversationApi {
 
     /**
