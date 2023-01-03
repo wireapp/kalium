@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -73,7 +74,7 @@ class EventMapper(
         transient: Boolean
     ): Event = Event.Conversation.ConversationReceiptMode(
         id = id,
-        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
         receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode)
     )
@@ -107,9 +108,9 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.MLSWelcome(
         id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        eventContentDTO.qualifiedConversation.toModel(),
         transient,
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.message,
     )
 
@@ -119,9 +120,9 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.NewMessage(
         id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        eventContentDTO.qualifiedConversation.toModel(),
         transient,
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        eventContentDTO.qualifiedFrom.toModel(),
         ClientId(eventContentDTO.data.sender),
         eventContentDTO.time,
         eventContentDTO.data.text,
@@ -136,9 +137,9 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.NewMLSMessage(
         id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        eventContentDTO.qualifiedConversation.toModel(),
         transient,
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.message
     )
@@ -154,7 +155,7 @@ class EventMapper(
     )
 
     private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean): Event.User.UserDelete {
-        return Event.User.UserDelete(transient, id, idMapper.fromApiModel(eventUserDelete.userId))
+        return Event.User.UserDelete(transient, id, eventUserDelete.userId.toModel())
     }
 
     private fun clientRemove(
@@ -171,7 +172,7 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.NewConversation(
         id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        eventContentDTO.qualifiedConversation.toModel(),
         transient,
         eventContentDTO.time,
         eventContentDTO.data
@@ -183,8 +184,8 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.MemberJoin(
         id = id,
-        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        addedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        addedBy = eventContentDTO.qualifiedFrom.toModel(),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time,
         transient = transient
@@ -196,9 +197,9 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.MemberLeave(
         id = id,
-        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        removedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        removedList = eventContentDTO.members.qualifiedUserIds.map { idMapper.fromApiModel(it) },
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        removedBy = eventContentDTO.qualifiedFrom.toModel(),
+        removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
         transient = transient
     )
@@ -212,11 +213,11 @@ class EventMapper(
             eventContentDTO.roleChange.role?.isNotEmpty() == true -> {
                 Event.Conversation.MemberChanged.MemberChangedRole(
                     id = id,
-                    conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
                     timestampIso = eventContentDTO.time,
                     transient = transient,
                     member = Conversation.Member(
-                        id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+                        id = eventContentDTO.roleChange.qualifiedUserId.toModel(),
                         role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
                     ),
                 )
@@ -225,7 +226,7 @@ class EventMapper(
             eventContentDTO.roleChange.mutedStatus != null -> {
                 Event.Conversation.MemberChanged.MemberMutedStatusChanged(
                     id = id,
-                    conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
                     timestampIso = eventContentDTO.time,
                     mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef.orEmpty(),
                     transient = transient,
@@ -236,7 +237,7 @@ class EventMapper(
             else -> {
                 Event.Conversation.MemberChanged.IgnoredMemberChanged(
                     id,
-                    idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    eventContentDTO.qualifiedConversation.toModel(),
                     transient
                 )
             }
@@ -289,8 +290,8 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.DeletedConversation(
         id = id,
-        conversationId = idMapper.fromApiModel(deletedConversationDTO.qualifiedConversation),
-        senderUserId = idMapper.fromApiModel(deletedConversationDTO.qualifiedFrom),
+        conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
+        senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
         transient = transient,
         timestampIso = deletedConversationDTO.time
     )
@@ -301,8 +302,8 @@ class EventMapper(
         transient: Boolean
     ) = Event.Conversation.RenamedConversation(
         id = id,
-        conversationId = idMapper.fromApiModel(event.qualifiedConversation),
-        senderUserId = idMapper.fromApiModel(event.qualifiedFrom),
+        conversationId = event.qualifiedConversation.toModel(),
+        senderUserId = event.qualifiedFrom.toModel(),
         conversationName = event.updateNameData.conversationName,
         transient = transient,
         timestampIso = event.time,

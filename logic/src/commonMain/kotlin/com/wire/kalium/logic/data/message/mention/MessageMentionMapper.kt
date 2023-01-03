@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.message.mention
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
@@ -21,7 +23,7 @@ class MessageMentionMapperImpl(
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = idMapper.fromDaoModel(mention.userId)
+            userId = mention.userId.toModel()
         )
     }
 
@@ -29,7 +31,7 @@ class MessageMentionMapperImpl(
         return MessageEntity.Mention(
             start = mention.start,
             length = mention.length,
-            userId = idMapper.toDaoModel(mention.userId)
+            userId = mention.userId.toDao()
         )
     }
 

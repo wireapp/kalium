@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message.reaction
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.UserReactions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -63,8 +64,8 @@ class ReactionRepositoryImpl(
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         reactionsDAO.insertReaction(
             originalMessageId = originalMessageId,
-            conversationId = idMapper.toDaoModel(conversationId),
-            senderUserId = idMapper.toDaoModel(senderUserId),
+            conversationId = conversationId.toDao(),
+            senderUserId = senderUserId.toDao(),
             date = date,
             emoji = emoji
         )
@@ -79,8 +80,8 @@ class ReactionRepositoryImpl(
         reactionsDAO
             .deleteReaction(
                 originalMessageId = originalMessageId,
-                conversationId = idMapper.toDaoModel(conversationId),
-                senderUserId = idMapper.toDaoModel(senderUserId),
+                conversationId = conversationId.toDao(),
+                senderUserId = senderUserId.toDao(),
                 emoji = emoji
             )
     }
@@ -89,7 +90,7 @@ class ReactionRepositoryImpl(
         originalMessageId: String,
         conversationId: ConversationId
     ): Either<StorageFailure, UserReactions> = wrapStorageRequest {
-        reactionsDAO.getReaction(originalMessageId, idMapper.toDaoModel(conversationId), idMapper.toDaoModel(selfUserId))
+        reactionsDAO.getReaction(originalMessageId, conversationId.toDao(), selfUserId.toDao())
     }
 
     override suspend fun updateReaction(
@@ -101,8 +102,8 @@ class ReactionRepositoryImpl(
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         reactionsDAO.updateReactions(
             originalMessageId,
-            idMapper.toDaoModel(conversationId),
-            idMapper.toDaoModel(senderUserId),
+            conversationId.toDao(),
+            senderUserId.toDao(),
             date,
             userReactions
         )
@@ -113,7 +114,7 @@ class ReactionRepositoryImpl(
         messageId: String
     ): Flow<List<MessageReaction>> =
         reactionsDAO.observeMessageReactions(
-            conversationId = idMapper.toDaoModel(conversationId),
+            conversationId = conversationId.toDao(),
             messageId = messageId
         ).map {
             it.map { messageReaction ->
