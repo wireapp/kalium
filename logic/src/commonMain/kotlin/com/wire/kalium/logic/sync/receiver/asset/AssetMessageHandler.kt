@@ -12,6 +12,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
 
+
 internal interface AssetMessageHandler {
     suspend fun handle(
         message: Message.Regular,
@@ -66,13 +67,11 @@ internal class AssetMessageHandlerImpl(
                     message.senderUserId
                 ) && persistedMessage is Message.Regular
             ) {
-                val assetMessageContent = persistedMessage.content as MessageContent.Asset
                 // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
                 // the preview message persisted previously with the rest of the data
                 persistMessage(
                     updateAssetMessageWithDecryptionKeys(
                         persistedMessage,
-                        assetMessageContent,
                         validDecryptionKeys
                     )
                 )
@@ -94,9 +93,9 @@ internal class AssetMessageHandlerImpl(
 
     private fun updateAssetMessageWithDecryptionKeys(
         persistedMessage: Message.Regular,
-        assetMessageContent: MessageContent.Asset,
         remoteData: AssetContent.RemoteData
     ): Message.Regular {
+        val assetMessageContent = persistedMessage.content as MessageContent.Asset
         // The message was previously received with just metadata info, so let's update it with the raw data info
         return persistedMessage.copy(
             content = assetMessageContent.copy(
