@@ -23,32 +23,16 @@ buildscript {
 }
 
 repositories {
-    configureWireDetektRepo()
+    configureWireDetektRules()
     google()
     mavenCentral()
-}
-
-// Configure the repository for wire's detekt custom rules, no need to mess up with versioning
-// TODO(convention): move to convention plugins
-fun RepositoryHandler.configureWireDetektRepo() {
-    val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
-        patternLayout {
-            artifact("/[module]-[revision].[ext]")
-        }
-        metadataSources.artifact()
-    }
-    exclusiveContent {
-        forRepositories(repo)
-        filter {
-            includeModule("com.wire", "detekt-rules")
-        }
-    }
 }
 
 plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
+    id("scripts.detekt")
 }
 
 dependencies {
@@ -107,5 +91,3 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
-
-apply(from = "$rootDir/gradle/detekt.gradle")
