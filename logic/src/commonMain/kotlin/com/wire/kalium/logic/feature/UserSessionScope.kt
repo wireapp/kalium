@@ -235,8 +235,11 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
+import kotlin.coroutines.CoroutineContext
 
 fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
@@ -1022,6 +1025,8 @@ class UserSessionScope internal constructor(
         clientRepository, notificationTokenRepository, pushTokenRepository
     )
 
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
     init {
         launch {
             apiMigrationManager.performMigrations()
@@ -1043,4 +1048,7 @@ class UserSessionScope internal constructor(
         }
     }
 
+    fun onDestroy() {
+        cancel()
+    }
 }
