@@ -23,6 +23,7 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
     wireDetektRulesRepo()
     google()
     mavenCentral()
@@ -47,9 +48,9 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {

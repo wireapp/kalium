@@ -13,20 +13,7 @@ dependencies {
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
     detektPlugins("com.wire:detekt-rules:1.0.0-SNAPSHOT") {
-        isChanging = true // enforce snapshot version check for updates
-    }
-}
-
-configurations {
-    all {
-        resolutionStrategy {
-            eachDependency {
-                if (requested.group == "com.wire" && requested.name == "detekt-rules") {
-                    // enforce snapshot version check for updates everytime instead of 24 hrs.
-                    cacheChangingModulesFor(0, "SECONDS")
-                }
-            }
-        }
+        isChanging = true
     }
 }
 
