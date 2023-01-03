@@ -13,7 +13,7 @@ dependencies {
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
     detektPlugins("com.wire:detekt-rules:1.0.0-SNAPSHOT") {
-        isChanging = true
+        isChanging = true // enforce snapshot version check for updates
     }
 }
 
@@ -22,7 +22,8 @@ configurations {
         resolutionStrategy {
             eachDependency {
                 if (requested.group == "com.wire" && requested.name == "detekt-rules") {
-                    cacheChangingModulesFor(0, "SECONDS") // disable cache for jar dependency
+                    // enforce snapshot version check for updates everytime instead of 24 hrs.
+                    cacheChangingModulesFor(0, "SECONDS")
                 }
             }
         }
@@ -49,6 +50,7 @@ tasks.withType<Detekt> {
     reports.xml.required.set(true)
     reports.txt.required.set(false)
 
+    // general detekt ignore patterns of files, instead of by rule
     exclude(
         "buildSrc/**",
         "**/build/**",
