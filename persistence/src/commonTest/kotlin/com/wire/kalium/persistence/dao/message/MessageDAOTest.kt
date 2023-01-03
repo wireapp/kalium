@@ -1,7 +1,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.IgnoreIOS
@@ -428,6 +430,46 @@ class MessageDAOTest : BaseDatabaseTest() {
             .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
             .first()
         // then
+        assertContains(messageIds, messageId)
+    }
+
+    @Test
+    fun givenConversation_WhenSelfUserLeft_ThenLastMessageShouldBeMemberChangedSystem() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "memberRemoved"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        val selfUserId = DefaultDatabaseTestValues.userId
+
+        userDAO.insertUser(userEntity1.copy(id = selfUserId))
+        conversationDAO.insertMember(Member(selfUserId, Member.Role.Member), conversationId)
+        conversationDAO.deleteMemberByQualifiedID(selfUserId, conversationId)
+
+
+        messageDAO.insertOrIgnoreMessage(
+            newSystemMessageEntity(
+                senderUserId = selfUserId,
+                conversationId = conversationId,
+                content = MessageEntityContent.MemberChange(
+                    memberUserIdList = listOf(selfUserId),
+                    memberChangeType = MessageEntity.MemberChangeType.REMOVED
+                ),
+                status = MessageEntity.Status.SENT,
+            )
+        )
+
+        // when
+        val lastMessage = messageDAO.observeLastMessages()
+            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+            .first()
+        // then
+        // TODO kubaz assert that it contains member change message with self ids
         assertContains(messageIds, messageId)
     }
 

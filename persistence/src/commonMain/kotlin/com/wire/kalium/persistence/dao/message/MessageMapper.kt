@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -60,7 +61,7 @@ object MessageMapper {
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
             adminName = senderName,
-            count = memberChangeList.requireField("memberChangeList").size,
+            userIdList = memberChangeList.requireField("memberChangeList"),
             type = memberChangeType.requireField("memberChangeType")
         )
 
@@ -86,6 +87,7 @@ object MessageMapper {
         contentType: MessageEntity.ContentType,
         date: String,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -122,7 +124,9 @@ object MessageMapper {
             content = content,
             date = date,
             visibility = visibility,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            senderUserId = senderUserId,
+            selfUserId = selfUserId
         )
 
     }
@@ -134,6 +138,7 @@ object MessageMapper {
         contentType: MessageEntity.ContentType,
         date: String,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,

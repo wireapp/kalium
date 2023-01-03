@@ -214,12 +214,12 @@ sealed class MessagePreviewContent {
 
         data class MembersAdded(
             val adminName: String?,
-            val count: Int, // TODO add usernames
+            val userIdList: List<UserId> // TODO add usernames
         ) : WithUser(adminName)
 
         data class MembersRemoved(
             val adminName: String?,
-            val count: Int, // TODO add usernames
+            val userIdList: List<UserId> // TODO add usernames
         ) : WithUser(adminName)
 
         data class ConversationNameChange(val adminName: String?) : WithUser(adminName)

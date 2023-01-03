@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -32,7 +31,6 @@ interface MessageMapper {
 }
 
 class MessageMapperImpl(
-    private val idMapper: IdMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
@@ -127,7 +125,9 @@ class MessageMapperImpl(
             content = message.content.toMessageContent(),
             date = message.date,
             visibility = message.visibility.toModel(),
-            isSelfMessage = message.isSelfMessage
+            isSelfMessage = message.isSelfMessage,
+            senderUserId = message.senderUserId.toModel(),
+            selfUserId = message.selfUserId?.toModel()
         )
     }
 
@@ -371,10 +371,15 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
     is MessagePreviewEntityContent.MemberChange -> when (type) {
-        MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
-        MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
+        MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(
+            adminName = adminName,
+            userIdList = userIdList.map { it.toModel() }
+        )
+        MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(
+            adminName = adminName,
+            userIdList = userIdList.map { it.toModel() }
+        )
     }
-
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
