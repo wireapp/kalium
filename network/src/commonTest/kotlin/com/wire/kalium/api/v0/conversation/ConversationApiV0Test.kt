@@ -280,7 +280,10 @@ class ConversationApiV0Test : ApiTest {
 
         assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
         assertIs<ConversationMemberAddedResponse.Changed>(response.value)
-        assertEquals(EventContentDTOJson.validMemberJoin.serializableData, (response.value as ConversationMemberAddedResponse.Changed).event)
+        assertEquals(
+            EventContentDTOJson.validMemberJoin.serializableData,
+            (response.value as ConversationMemberAddedResponse.Changed).event
+        )
     }
 
     @Test
