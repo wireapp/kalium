@@ -12,7 +12,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
 
-
 internal interface AssetMessageHandler {
     suspend fun handle(
         message: Message.Regular,
@@ -33,7 +32,9 @@ internal class AssetMessageHandlerImpl(
             } else {
                 val newMessage = message.copy(
                     content = MessageContent.RestrictedAsset(
-                        messageContent.value.mimeType, messageContent.value.sizeInBytes, messageContent.value.name ?: ""
+                        mimeType = messageContent.value.mimeType,
+                        sizeInBytes = messageContent.value.sizeInBytes,
+                        name = messageContent.value.name ?: ""
                     )
                 )
                 persistMessage(newMessage)
@@ -43,19 +44,14 @@ internal class AssetMessageHandlerImpl(
 
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
         val assetContent = message.content as MessageContent.Asset
-        val isPreviewMessage = assetContent.value.sizeInBytes > 0 && !assetContent.value.hasValidRemoteData()
+
         messageRepository.getMessageById(message.conversationId, message.id).onFailure {
             // No asset message was received previously, so just persist the preview of the asset message
-            val isValidImage = assetContent.value.metadata?.let {
-                it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
-            } ?: false
-
             // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
             // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
             // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
             val previewMessage = message.copy(
-                content = message.content.copy(value = assetContent.value),
-                visibility = if (isPreviewMessage && !isValidImage) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
+                visibility = if (assetContent.value.shouldBeDisplayed) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
             )
             persistMessage(previewMessage)
         }.onSuccess { persistedMessage ->
