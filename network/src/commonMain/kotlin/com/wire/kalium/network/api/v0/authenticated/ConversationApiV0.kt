@@ -213,7 +213,9 @@ internal open class ConversationApiV0 internal constructor(
             handleConversationMemberAddedResponse(httpResponse)
         }
 
-    protected suspend fun handleConversationMemberAddedResponse(httpResponse: HttpResponse): NetworkResponse<ConversationMemberAddedResponse> =
+    protected suspend fun handleConversationMemberAddedResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<ConversationMemberAddedResponse> =
         when (httpResponse.status) {
             HttpStatusCode.OK -> {
                 wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { httpResponse }
