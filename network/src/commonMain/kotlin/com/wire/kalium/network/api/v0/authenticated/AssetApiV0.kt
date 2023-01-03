@@ -211,5 +211,3 @@ internal class StreamAssetContent internal constructor(
 
 private const val BUFFER_SIZE = 1024 * 8L
 
-
-

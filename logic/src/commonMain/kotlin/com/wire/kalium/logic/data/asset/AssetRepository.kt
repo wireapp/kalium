@@ -20,7 +20,6 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.firstOrNull
 import okio.IOException
 import okio.Path

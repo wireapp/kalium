@@ -166,6 +166,7 @@ internal class OkHttpWebsocketSession(
         DeprecationLevel.ERROR
     )
 
+    @Suppress("EmptyFunctionBlock")
     override suspend fun flush() {}
 
     override fun terminate() {
