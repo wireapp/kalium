@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetSecurityClassificationTypeUseCaseTest {
+class ObserveSecurityClassificationLabelUseCaseTest {
 
     @Test
     fun givenAConversationId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest {
@@ -30,7 +30,7 @@ class GetSecurityClassificationTypeUseCaseTest {
             .withGettingClassifiedDomainsDisabled()
             .arrange()
 
-        val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+        val result = getConversationClassifiedType(TestConversation.ID)
 
         assertIs<SecurityClassificationTypeResult.Success>(result)
         assertEquals(SecurityClassificationType.NONE, result.classificationType)
@@ -44,7 +44,7 @@ class GetSecurityClassificationTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
                 .arrange()
 
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(TestConversation.ID)
 
             assertIs<SecurityClassificationTypeResult.Success>(result)
             assertEquals(SecurityClassificationType.CLASSIFIED, result.classificationType)
@@ -58,7 +58,7 @@ class GetSecurityClassificationTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("anta.com", "bella.com"))
                 .arrange()
 
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(TestConversation.ID)
 
             assertIs<SecurityClassificationTypeResult.Success>(result)
             assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.classificationType)
@@ -72,7 +72,7 @@ class GetSecurityClassificationTypeUseCaseTest {
                 .withParticipantsResponseFails()
                 .arrange()
 
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(TestConversation.ID)
 
             assertIs<SecurityClassificationTypeResult.Failure>(result)
         }
@@ -84,7 +84,7 @@ class GetSecurityClassificationTypeUseCaseTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val getSecurityClassificationType = GetSecurityClassificationTypeUseCaseImpl(
+        private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
             selfUserId, conversationRepository, userConfigRepository
         )
 
