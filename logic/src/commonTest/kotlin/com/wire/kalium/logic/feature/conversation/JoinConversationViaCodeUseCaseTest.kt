@@ -19,6 +19,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -109,6 +110,34 @@ class JoinConversationViaCodeUseCaseTest {
             .with(any(), any())
             .wasInvoked(exactly = once)
     }
+
+    @Test
+    fun givenFetchLimitedConversationInfoFail_whenJoiningViaCode_thenReturnUnchangedWithNullConversationId() = runTest {
+        val code = "code"
+        val key = "key"
+        val domain = null
+
+        val(useCae, arrangement) = Arrangement()
+            .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
+            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Left(NetworkFailure.NoNetworkConnection(IOException())))
+            .arrange()
+
+        useCae(code, key, domain).also {
+            assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
+            assertEquals(null, it.conversationId)
+        }
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
+            .with(any(), any(), eq(null))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
 
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserIdDomain")
