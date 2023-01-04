@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -341,6 +342,57 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenCodeAndKey_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
+        val (code, key, uri) = Triple("code", "key", null)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withJoinConversationAPIResponse(code, key, uri, NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200))
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenCodeAndKey_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+        val (code, key, uri) = Triple("code", "key", null)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withJoinConversationAPIResponse(code, key, uri, NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204))
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -377,6 +429,18 @@ class ConversationGroupRepositoryTest {
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
+
+        fun withJoinConversationAPIResponse(
+            code: String,
+            key: String,
+            uri: String?,
+            result: NetworkResponse<ConversationMemberAddedResponse>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::joinConversation)
+                .whenInvokedWith(eq(code), eq(key), eq(uri))
+                .thenReturn(result)
+        }
 
         fun withMlsConversationEstablished(): Arrangement {
             given(mlsConversationRepository)

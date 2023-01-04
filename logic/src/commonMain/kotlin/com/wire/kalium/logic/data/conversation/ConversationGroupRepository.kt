@@ -36,6 +36,7 @@ interface ConversationGroupRepository {
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -160,6 +161,13 @@ internal class ConversationGroupRepositoryImpl(
             }
         } ?: Either.Left(StorageFailure.DataNotFound)
 
+    override suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse> = wrapApiRequest {
+        conversationApi.joinConversation(code, key, uri)
+    }.onSuccess { response ->
+        if (response is ConversationMemberAddedResponse.Changed) {
+            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+        }
+    }
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
             conversationApi.removeMember(userId.toApi(), conversationId.toApi())
