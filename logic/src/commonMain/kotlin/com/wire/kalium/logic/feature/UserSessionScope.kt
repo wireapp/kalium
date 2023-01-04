@@ -1005,7 +1005,7 @@ class UserSessionScope internal constructor(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
-    val getSecurityClassificationType: ObserveSecurityClassificationLabelUseCase
+    val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(userId, conversationRepository, userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
