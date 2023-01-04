@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -23,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -37,6 +39,7 @@ interface ConversationGroupRepository {
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
+    suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversionInfo>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -168,6 +171,10 @@ internal class ConversationGroupRepositoryImpl(
             memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
         }
     }
+
+    override suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversionInfo> =
+        wrapApiRequest { conversationApi.fetchLimitedInformationViaCode(code, key) }
+
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
             conversationApi.removeMember(userId.toApi(), conversationId.toApi())

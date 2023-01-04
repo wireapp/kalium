@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -393,6 +394,23 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenCodeAndKey_whenFetchingLimitedConversationInfo_thenApiIsCalled() = runTest {
+        val (code, key) = "code" to "key"
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withFetchLimitedConversationInfo(code, key, NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200))
+            .arrange()
+
+        conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::fetchLimitedInformationViaCode)
+            .with(eq(code), eq(key))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -429,6 +447,17 @@ class ConversationGroupRepositoryTest {
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
+
+        fun withFetchLimitedConversationInfo(
+            code: String,
+            key: String,
+            result: NetworkResponse<LimitedConversionInfo>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
+                .whenInvokedWith(eq(code), eq(key))
+                .thenReturn(result)
+        }
 
         fun withJoinConversationAPIResponse(
             code: String,
