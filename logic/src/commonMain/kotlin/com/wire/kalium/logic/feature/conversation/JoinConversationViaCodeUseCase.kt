@@ -23,7 +23,6 @@ class JoinConversationViaCodeUseCase internal constructor(
                 }
             })
 
-
     private fun onConversationChanged(response: ConversationMemberAddedResponse.Changed): Result =
         Result.Success.Changed(response.event.qualifiedConversation.toModel())
 

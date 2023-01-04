@@ -319,5 +319,5 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
-    val LIMITED_CONVERSATION_INFO: LimitedConversionInfo = LimitedConversionInfo("conv_id_value",  "name")
+    val LIMITED_CONVERSATION_INFO: LimitedConversionInfo = LimitedConversionInfo("conv_id_value", "name")
 }

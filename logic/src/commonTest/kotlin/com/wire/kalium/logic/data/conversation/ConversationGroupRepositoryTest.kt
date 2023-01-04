@@ -350,7 +350,12 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-            .withJoinConversationAPIResponse(code, key, uri, NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200))
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
+            )
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
@@ -376,7 +381,12 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-            .withJoinConversationAPIResponse(code, key, uri, NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204))
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
+            )
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
@@ -399,7 +409,11 @@ class ConversationGroupRepositoryTest {
         val (code, key) = "code" to "key"
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withFetchLimitedConversationInfo(code, key, NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200))
+            .withFetchLimitedConversationInfo(
+                code,
+                key,
+                NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200)
+            )
             .arrange()
 
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)

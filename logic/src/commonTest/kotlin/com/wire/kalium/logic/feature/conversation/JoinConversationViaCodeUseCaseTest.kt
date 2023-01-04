@@ -32,7 +32,7 @@ class JoinConversationViaCodeUseCaseTest {
         val key = "key"
         val domain = "domain"
 
-        val(useCae, arrangement) = Arrangement()
+        val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE))
             .arrange()
 
@@ -62,7 +62,7 @@ class JoinConversationViaCodeUseCaseTest {
         val domain = "domain"
 
         val limitedConversionInfo = LimitedConversionInfo("id", null)
-        val(useCae, arrangement) = Arrangement()
+        val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
             .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversionInfo))
             .arrange()
@@ -90,7 +90,7 @@ class JoinConversationViaCodeUseCaseTest {
         val domain = null
 
         val limitedConversionInfo = LimitedConversionInfo("id", null)
-        val(useCae, arrangement) = Arrangement()
+        val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
             .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversionInfo))
             .arrange()
@@ -117,7 +117,7 @@ class JoinConversationViaCodeUseCaseTest {
         val key = "key"
         val domain = null
 
-        val(useCae, arrangement) = Arrangement()
+        val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
             .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Left(NetworkFailure.NoNetworkConnection(IOException())))
             .arrange()
@@ -138,10 +138,10 @@ class JoinConversationViaCodeUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserIdDomain")
     }
+
     private class Arrangement {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
         private val useCase: JoinConversationViaCodeUseCase = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
@@ -150,13 +150,18 @@ class JoinConversationViaCodeUseCaseTest {
             code: String,
             key: String,
             uri: String?,
-            result:  Either<CoreFailure, ConversationMemberAddedResponse>): Arrangement = apply {
+            result: Either<CoreFailure, ConversationMemberAddedResponse>
+        ): Arrangement = apply {
             given(conversationGroupRepository)
                 .coroutine { conversationGroupRepository.joinViaInviteCode(code, key, uri) }
                 .thenReturn(result)
         }
 
-        suspend fun withFetchLimitedInfoViaInviteCodeReturns(code: String, key: String, result: Either<NetworkFailure, LimitedConversionInfo>): Arrangement = apply {
+        suspend fun withFetchLimitedInfoViaInviteCodeReturns(
+            code: String,
+            key: String,
+            result: Either<NetworkFailure, LimitedConversionInfo>
+        ): Arrangement = apply {
             given(conversationGroupRepository)
                 .coroutine { conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key) }
                 .thenReturn(result)

@@ -164,7 +164,11 @@ internal class ConversationGroupRepositoryImpl(
             }
         } ?: Either.Left(StorageFailure.DataNotFound)
 
-    override suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse> = wrapApiRequest {
+    override suspend fun joinViaInviteCode(
+        code: String,
+        key: String,
+        uri: String?
+    ): Either<CoreFailure, ConversationMemberAddedResponse> = wrapApiRequest {
         conversationApi.joinConversation(code, key, uri)
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
