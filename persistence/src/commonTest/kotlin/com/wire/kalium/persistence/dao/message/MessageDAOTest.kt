@@ -849,7 +849,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Suppress("LongMethod")
     @Test
     @IgnoreIOS
-    fun givenAnAssetMessageInDB_WhenUpdatingDownloadState_ThenTheFinalMessageShouldIncludeTheChanges() = runTest {
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -857,16 +857,28 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dummyOtrKey = byteArrayOf(1, 2, 3)
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
         val initialUploadStatus = MessageEntity.UploadStatus.IN_PROGRESS
+        val updatedUploadStatus = MessageEntity.UploadStatus.UPLOADED
         val initialDownloadStatus = MessageEntity.DownloadStatus.IN_PROGRESS
+        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
         val initialAssetSize = 1000L
+        val updatedAssetSize = 2000L
         val initialAssetName = "Some asset name.zip"
+        val updatedAssetName = "updated asset name.svg"
         val initialAssetId = "some-id-124567"
+        val updatedAssetId = "some-updated-id-0000"
         val initialDomain = "some@domain.com"
+        val updatedAssetDomain = "some@future-domain.com"
         val initialMimeType = "application/zip"
+        val updatedMimeType = "image/svg"
         val initialAssetEncryption = "AES/GCM"
+        val updatedAssetEncryption = "AES/CBC"
         val initialAssetToken = "Some-token"
+        val updatedAssetToken = "updated-token"
         val initialMetadataWidth = 100
         val initialMetadataHeight = 300
+        val updatedMetadataHeight = null
+        val updatedMetadataWidth = null
+
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
             date = "2000-01-01T13:00:00.000Z",
@@ -890,26 +902,50 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetHeight = initialMetadataHeight
             )
         )
-
-        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
-
+        val updatedAssetMessage = initialAssetMessage.copy(
+            content = (initialAssetMessage.content as MessageEntityContent.Asset).copy(
+                assetSizeInBytes = updatedAssetSize,
+                assetName = updatedAssetName,
+                assetMimeType = updatedMimeType,
+                assetOtrKey = dummyOtrKey,
+                assetSha256Key = dummySha256Key,
+                assetId = updatedAssetId,
+                assetDomain = updatedAssetDomain,
+                assetEncryptionAlgorithm = updatedAssetEncryption,
+                assetUploadStatus = updatedUploadStatus,
+                assetDownloadStatus = updatedDownloadStatus,
+                assetToken = updatedAssetToken,
+                assetWidth = updatedMetadataWidth,
+                assetHeight = updatedMetadataHeight
+            )
+        )
         conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessage(initialAssetMessage)
 
         // when
-        messageDAO.updateAssetDownloadStatus(
-            downloadStatus = updatedDownloadStatus,
-            id = initialAssetMessage.id,
-            conversationId = initialAssetMessage.conversationId
-        )
+        messageDAO.insertOrIgnoreMessage(updatedAssetMessage)
 
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
+
+        // asset values that should not be updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(initialAssetName, updatedMessageContent.assetName)
+        assertEquals(initialMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(initialAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(initialAssetToken, updatedMessageContent.assetToken)
+        assertEquals(initialAssetId, updatedMessageContent.assetId)
+        assertEquals(initialDomain, updatedMessageContent.assetDomain)
+        assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
+        assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
+        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
+        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test
