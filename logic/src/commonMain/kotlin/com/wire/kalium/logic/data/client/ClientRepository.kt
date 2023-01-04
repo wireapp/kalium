@@ -6,6 +6,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -151,7 +152,7 @@ class ClientDataSource(
 
     override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>> =
         wrapStorageRequest {
-            clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
+            clientDAO.getClientsOfUserByQualifiedID(userId.toDao())
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }

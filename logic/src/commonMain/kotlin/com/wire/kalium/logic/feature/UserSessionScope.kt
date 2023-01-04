@@ -271,6 +271,7 @@ class UserSessionScope internal constructor(
     )
 
     private var _clientId: ClientId? = null
+
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
     private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
         clientRepository.currentClientId().onSuccess {
@@ -369,8 +370,7 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            renamedConversationHandler
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -886,7 +886,8 @@ class UserSessionScope internal constructor(
             persistMessage,
             updateKeyingMaterialThresholdProvider,
             selfTeamId,
-            messages.sendConfirmation
+            messages.sendConfirmation,
+            renamedConversationHandler
         )
 
     val migration get() = MigrationScope(userStorage.database)

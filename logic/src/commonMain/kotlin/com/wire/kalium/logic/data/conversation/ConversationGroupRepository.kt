@@ -5,6 +5,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -109,7 +111,7 @@ internal class ConversationGroupRepositoryImpl(
         userIdList: List<UserId>,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let { conversationEntity ->
+        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
             val conversation = conversationMapper.fromDaoModel(conversationEntity)
 
             when (conversation.protocol) {
@@ -124,12 +126,10 @@ internal class ConversationGroupRepositoryImpl(
 
     private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            val users = userIdList.map {
-                idMapper.toApiModel(it)
-            }
+            val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
-                addParticipantRequest, idMapper.toApiModel(conversationId)
+                addParticipantRequest, conversationId.toApi()
             )
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
@@ -143,7 +143,7 @@ internal class ConversationGroupRepositoryImpl(
         userId: UserId,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let { conversationEntity ->
+        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
             val conversation = conversationMapper.fromDaoModel(conversationEntity)
 
             when (conversation.protocol) {
@@ -165,7 +165,7 @@ internal class ConversationGroupRepositoryImpl(
 
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
-            conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
+            conversationApi.removeMember(userId.toApi(), conversationId.toApi())
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
                 memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))

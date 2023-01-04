@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -124,7 +125,7 @@ internal class TeamDataSource(
                             user = userProfile,
                             member = member,
                             teamId = teamId,
-                            selfUser = idMapper.toApiModel(selfUserId)
+                            selfUser = selfUserId.toApi()
                         )
                         userDAO.insertUser(user)
                     }
