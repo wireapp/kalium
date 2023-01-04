@@ -204,7 +204,7 @@ internal class RestoreBackupUseCaseImpl(
         }
 
     private suspend fun isFromOtherClient(extractedBackupPath: Path): Boolean =
-        backupMetadata(extractedBackupPath)?.clientId != currentClientIdProvider().fold({""}, { it.value })
+        backupMetadata(extractedBackupPath)?.clientId != currentClientIdProvider().fold({ "" }, { it.value })
 }
 
 sealed class RestoreBackupResult {
