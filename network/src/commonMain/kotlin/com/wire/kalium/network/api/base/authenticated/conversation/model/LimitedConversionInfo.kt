@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LimitedConversionInfo (
+data class LimitedConversionInfo(
     @SerialName("id") val nonQualifiedConversationId: String,
     @SerialName("name") val name: String?
 )
