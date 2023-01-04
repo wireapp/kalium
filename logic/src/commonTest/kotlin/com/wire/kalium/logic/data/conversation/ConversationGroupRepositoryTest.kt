@@ -448,29 +448,6 @@ class ConversationGroupRepositoryTest {
                 selfTeamIdProvider
             )
 
-        fun withFetchLimitedConversationInfo(
-            code: String,
-            key: String,
-            result: NetworkResponse<LimitedConversionInfo>
-        ): Arrangement = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
-                .whenInvokedWith(eq(code), eq(key))
-                .thenReturn(result)
-        }
-
-        fun withJoinConversationAPIResponse(
-            code: String,
-            key: String,
-            uri: String?,
-            result: NetworkResponse<ConversationMemberAddedResponse>
-        ): Arrangement = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::joinConversation)
-                .whenInvokedWith(eq(code), eq(key), eq(uri))
-                .thenReturn(result)
-        }
-
         fun withMlsConversationEstablished(): Arrangement {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
@@ -506,6 +483,29 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::insertConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
+        }
+
+        fun withFetchLimitedConversationInfo(
+            code: String,
+            key: String,
+            result: NetworkResponse<LimitedConversionInfo>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
+                .whenInvokedWith(eq(code), eq(key))
+                .thenReturn(result)
+        }
+
+        fun withJoinConversationAPIResponse(
+            code: String,
+            key: String,
+            uri: String?,
+            result: NetworkResponse<ConversationMemberAddedResponse>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::joinConversation)
+                .whenInvokedWith(eq(code), eq(key), eq(uri))
+                .thenReturn(result)
         }
 
         fun withConversationDetailsById(conversation: Conversation) = apply {
