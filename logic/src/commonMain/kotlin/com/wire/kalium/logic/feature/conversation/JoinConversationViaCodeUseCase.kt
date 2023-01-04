@@ -8,6 +8,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 
+/**
+ * Use case for joining a conversation via a code invite code.
+ * the param can be obtained from the deep link
+ * @param code The code of the conversation to join.
+ * @param key The key of the conversation to join.
+ * @param domain optional domain of the conversation to join.
+ */
 class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId
@@ -17,7 +24,7 @@ class JoinConversationViaCodeUseCase internal constructor(
             .fold({ failure ->
                 Result.Failure(failure)
             }, { response ->
-                when(response) {
+                when (response) {
                     is ConversationMemberAddedResponse.Changed -> onConversationChanged(response)
                     ConversationMemberAddedResponse.Unchanged -> onConversationUnChanged(code, key, domain)
                 }
@@ -35,7 +42,7 @@ class JoinConversationViaCodeUseCase internal constructor(
             .fold({
                 Result.Success.Unchanged(null)
             }, {
-                ConversationId(it.nonQualifiedConversationId, domain ?: selfUserId.domain).let {conversationId ->
+                ConversationId(it.nonQualifiedConversationId, domain ?: selfUserId.domain).let { conversationId ->
                     Result.Success.Unchanged(conversationId)
                 }
             })
@@ -47,6 +54,7 @@ class JoinConversationViaCodeUseCase internal constructor(
             data class Changed(
                 override val conversationId: ConversationId,
             ) : Success(conversationId)
+
             data class Unchanged(
                 override val conversationId: ConversationId?,
             ) : Success(conversationId)
