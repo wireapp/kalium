@@ -849,7 +849,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Suppress("LongMethod")
     @Test
     @IgnoreIOS
-    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_ThenTheFinalMessageShouldIncludeTheChanges() = runTest {
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -875,9 +875,10 @@ class MessageDAOTest : BaseDatabaseTest() {
         val initialAssetToken = "Some-token"
         val updatedAssetToken = "updated-token"
         val initialMetadataWidth = 100
-        val updatedMetadataWidth = null
         val initialMetadataHeight = 300
         val updatedMetadataHeight = null
+        val updatedMetadataWidth = null
+
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
             date = "2000-01-01T13:00:00.000Z",
@@ -928,21 +929,23 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
+
+        // asset values that should not be updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedMessageContent.assetUploadStatus, updatedUploadStatus)
-        assertEquals(updatedMessageContent.assetDownloadStatus, updatedDownloadStatus)
-        assertEquals(updatedMessageContent.assetSizeInBytes, updatedAssetSize)
-        assertEquals(updatedMessageContent.assetName, updatedAssetName)
-        assertEquals(updatedMessageContent.assetMimeType, updatedMimeType)
-        assertEquals(updatedMessageContent.assetEncryptionAlgorithm, updatedAssetEncryption)
-        assertEquals(updatedMessageContent.assetToken, updatedAssetToken)
-        assertEquals(updatedMessageContent.assetId, updatedAssetId)
-        assertEquals(updatedMessageContent.assetDomain, updatedAssetDomain)
-        assertEquals(updatedMessageContent.assetWidth, updatedMetadataWidth)
-        assertEquals(updatedMessageContent.assetHeight, updatedMetadataHeight)
+        assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(initialAssetName, updatedMessageContent.assetName)
+        assertEquals(initialMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(initialAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(initialAssetToken, updatedMessageContent.assetToken)
+        assertEquals(initialAssetId, updatedMessageContent.assetId)
+        assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
+        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
+        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test
