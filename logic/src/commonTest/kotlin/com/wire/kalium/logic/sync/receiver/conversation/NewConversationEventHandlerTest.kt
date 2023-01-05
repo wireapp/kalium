@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
@@ -39,7 +39,7 @@ class NewConversationEventHandlerTest {
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
         )
-        val members = event.conversation.members.otherMembers.map { MapperProvider.idMapper().fromApiModel(it.id) }.toSet()
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamIdValue = "teamId"
         val teamId = TeamId(teamIdValue)
 
@@ -73,7 +73,7 @@ class NewConversationEventHandlerTest {
             conversation = TestConversation.CONVERSATION_RESPONSE
         )
 
-        val members = event.conversation.members.otherMembers.map { MapperProvider.idMapper().fromApiModel(it.id) }.toSet()
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamId = TestTeam.TEAM_ID
 
         val (arrangement, eventHandler) = Arrangement()

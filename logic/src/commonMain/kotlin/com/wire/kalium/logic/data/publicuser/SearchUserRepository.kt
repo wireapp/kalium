@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -89,7 +90,7 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
-                    conversationId = idMapper.toDaoModel(conversationId),
+                    conversationId = conversationId.toDao(),
                     searchQuery = searchQuery
                 )
             },
@@ -109,7 +110,7 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(
-                    conversationId = idMapper.toDaoModel(conversationId),
+                    conversationId = conversationId.toDao(),
                     handle = handle
                 )
             },
