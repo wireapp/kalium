@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -99,8 +98,6 @@ class SearchUserRepositoryTest {
         given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
-
-        given(idMapper).function(idMapper::toDaoModel).whenInvokedWith(anything()).then { PersistenceQualifiedId(it.value, it.domain) }
     }
 
     @Test

@@ -4,7 +4,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -21,7 +21,6 @@ actual interface MessageRepositoryExtensions {
 
 actual class MessageRepositoryExtensionsImpl actual constructor(
     private val messageDAO: MessageDAO,
-    private val idMapper: IdMapper,
     private val messageMapper: MessageMapper,
 ) : MessageRepositoryExtensions {
 
@@ -31,7 +30,7 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
         pagingConfig: PagingConfig,
     ): Flow<PagingData<Message.Standalone>> {
         val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
-            idMapper.toDaoModel(conversationId),
+            conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
             pagingConfig
         )

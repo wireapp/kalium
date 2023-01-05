@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message.reaction
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
@@ -40,7 +41,7 @@ internal class ReactionsMapperImpl(
 
     override fun fromEntityToModel(selfUserId: UserId, messageReactionEntity: MessageReactionEntity): MessageReaction =
         with(messageReactionEntity) {
-            val messageUserId = idMapper.fromDaoModel(userId)
+            val messageUserId = userId.toModel()
             MessageReaction(
                 emoji = emoji,
                 isSelfUser = selfUserId == messageUserId,
@@ -48,7 +49,7 @@ internal class ReactionsMapperImpl(
                     userId = messageUserId,
                     userName = name,
                     userHandle = handle,
-                    userPreviewAssetId = previewAssetIdEntity?.let { idMapper.fromDaoModel(it) },
+                    userPreviewAssetId = previewAssetIdEntity?.toModel(),
                     userType = domainUserTypeMapper.fromUserTypeEntity(userTypeEntity),
                     isUserDeleted = deleted,
                     connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
