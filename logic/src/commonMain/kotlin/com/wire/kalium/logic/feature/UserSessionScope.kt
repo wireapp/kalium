@@ -375,13 +375,13 @@ class UserSessionScope internal constructor(
 
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
-            userRepository,
             mlsConversationRepository,
             memberJoinHandler,
             memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            userId
+            userId,
+            selfTeamId
         )
 
     private val messageRepository: MessageRepository
