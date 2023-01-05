@@ -45,7 +45,7 @@ object CreateConversationRequestJson {
         |           "id": "${it.qualifiedUsers?.get(0)?.value}"
         |       }
         |   ],
-        |   "receipt_mode": ${it.receiptMode?.value},
+        |   "receipt_mode": ${it.receiptMode.value},
         |   "team": {
         |       "managed": false,
         |       "teamid": "${it.convTeamInfo?.teamId}"
@@ -75,7 +75,7 @@ object CreateConversationRequestJson {
         |           "id": "${it.qualifiedUsers?.get(0)?.value}"
         |       }
         |   ],
-        |   "receipt_mode": ${it.receiptMode?.value},
+        |   "receipt_mode": ${it.receiptMode.value},
         |   "team": {
         |       "managed": false,
         |       "teamid": "${it.convTeamInfo?.teamId}"

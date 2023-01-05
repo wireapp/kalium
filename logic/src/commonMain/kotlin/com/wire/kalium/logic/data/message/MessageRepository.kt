@@ -396,8 +396,6 @@ class MessageDataSource(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
-            .let {
-                receiptModeMapper.fromEntityToModel(it)
-            }
+            ?.let { receiptModeMapper.fromEntityToModel(it) }
     }
 }

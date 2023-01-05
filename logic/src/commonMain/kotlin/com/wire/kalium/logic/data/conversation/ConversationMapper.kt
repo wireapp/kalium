@@ -257,7 +257,7 @@ internal class ConversationMapperImpl(
         accessRole = options.accessRole?.map { toApiModel(it) },
         convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
         messageTimer = null,
-        receiptMode = options.readReceiptsEnabled?.let { if (it) ReceiptMode.ENABLED else ReceiptMode.DISABLED },
+        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
         conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
         protocol = toApiModel(options.protocol),
         creatorClient = options.creatorClientId?.value
