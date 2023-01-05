@@ -103,6 +103,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return sessionIds.associateWith { sessionId ->
+            encrypt(message, sessionId)
+        }
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,

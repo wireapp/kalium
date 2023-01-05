@@ -1,5 +1,7 @@
 import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import org.gradle.api.Project
+import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.kotlin.dsl.ivy
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -41,3 +43,21 @@ fun String.execute(): Process = ProcessGroovyMethods.execute(this).also {
  * Run command and return the output as text
  */
 fun Process.text(): String = ProcessGroovyMethods.getText(this)
+
+/**
+ * Configure the repository for wire's detekt custom rules
+ */
+fun RepositoryHandler.wireDetektRulesRepo() {
+    val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
+        patternLayout {
+            artifact("/[module]-[revision].[ext]")
+        }
+        metadataSources.artifact()
+    }
+    exclusiveContent {
+        forRepositories(repo)
+        filter {
+            includeModule("com.wire", "detekt-rules")
+        }
+    }
+}
