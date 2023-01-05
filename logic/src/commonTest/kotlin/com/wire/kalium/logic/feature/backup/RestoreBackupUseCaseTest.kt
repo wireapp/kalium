@@ -5,8 +5,11 @@ import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
@@ -39,6 +42,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, currentTestUserId)
             .withCorrectDbImportAction()
             .arrange()
@@ -50,7 +54,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result is RestoreBackupResult.Success)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasInvoked(once)
     }
 
@@ -59,6 +63,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, UserId("wrongUserId", "wrongDomain"))
             .withCorrectDbImportAction()
             .arrange()
@@ -72,7 +77,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -81,6 +86,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, currentTestUserId, true)
             .withCorrectDbImportAction()
             .arrange()
@@ -94,7 +100,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -104,6 +110,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withCorrectDbImportAction()
             .arrange()
@@ -116,7 +123,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasInvoked(once)
     }
 
@@ -127,6 +134,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, UserId("Darth-Vader", "death-star"), password)
             .withCorrectDbImportAction()
             .arrange()
@@ -139,7 +147,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -150,6 +158,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withCorrectDbImportAction()
             .arrange()
@@ -162,7 +171,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasNotInvoked()
     }
 
@@ -172,6 +181,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withIncorrectDbImportAction()
             .arrange()
@@ -184,7 +194,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any(), eq(null))
             .wasInvoked(once)
     }
 
@@ -192,6 +202,9 @@ class RestoreBackupUseCaseTest {
 
         @Mock
         val databaseImporter = mock(classOf<DatabaseImporter>())
+
+        @Mock
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         val fakeDBFileName = "fakeDBFile.db"
         private val selfUserId = currentTestUserId
@@ -274,26 +287,35 @@ class RestoreBackupUseCaseTest {
         fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any(), eq(userDBSecret))
                 .thenReturn(Unit)
         }
 
         fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any(), eq(userDBSecret))
                 .thenThrow(RuntimeException("DB import failed"))
+        }
+
+        fun withCurrentClientId(clientId: ClientId = currentTestClientId) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(clientId))
         }
 
         fun arrange() = this to RestoreBackupUseCaseImpl(
             databaseImporter = databaseImporter,
             kaliumFileSystem = fakeFileSystem,
             userId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper
         )
     }
 
     companion object {
         val currentTestUserId = UserId("some-user-id", "some-domain")
+        val currentTestClientId = ClientId("some-client-id")
     }
 }
