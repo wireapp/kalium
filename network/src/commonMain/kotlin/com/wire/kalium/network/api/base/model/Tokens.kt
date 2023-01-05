@@ -12,11 +12,12 @@ data class AccessTokenDTO(
     @SerialName("token_type") val tokenType: String
 )
 
-internal fun AccessTokenDTO.toSessionDto(refreshToken: String, qualifiedID: QualifiedID): SessionDTO = SessionDTO(
+internal fun AccessTokenDTO.toSessionDto(refreshToken: String, qualifiedID: QualifiedID, cookieLabel: String?): SessionDTO = SessionDTO(
     userId = qualifiedID,
     tokenType = tokenType,
     accessToken = value,
-    refreshToken = refreshToken
+    refreshToken = refreshToken,
+    cookieLabel = cookieLabel
 )
 
 @JvmInline

@@ -34,6 +34,7 @@ object RegisterClientRequestJson {
             serializable.deviceType?.let { "class" to it }
             serializable.label?.let { "label" to it }
             serializable.model?.let { "model" to it }
+            serializable.cookieLabel?.let { "cookie" to it }
             serializable.capabilities?.let {
                 putJsonArray("capabilities") {
                     it.forEach { clientCapabilityDTO ->
@@ -53,7 +54,8 @@ object RegisterClientRequestJson {
             preKeys = listOf(PreKeyDTO(1, "preykey_1"), PreKeyDTO(2, "prekey_2")),
             lastKey = PreKeyDTO(999, "last_prekey"),
             capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
-            model = "model"
+            model = "model",
+            cookieLabel = "cookie label"
         ),
         jsonProvider
     )
