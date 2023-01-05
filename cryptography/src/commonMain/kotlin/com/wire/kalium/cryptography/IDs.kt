@@ -29,6 +29,7 @@ data class CryptoQualifiedID(
     }
 }
 
+@Suppress("StringTemplate")
 data class CryptoQualifiedClientId(
     val value: String,
     val userId: CryptoQualifiedID
