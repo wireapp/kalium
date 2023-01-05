@@ -10,7 +10,8 @@ data class AuthTokenEntity(
     @SerialName("user_id") val userId: UserIDEntity,
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String,
-    @SerialName("token_type") val tokenType: String
+    @SerialName("token_type") val tokenType: String,
+    @SerialName("cookie_label") val cookieLabel: String?
 )
 
 @Serializable
@@ -41,14 +42,10 @@ class AuthTokenStorage internal constructor(
         refreshToken: String?,
     ): AuthTokenEntity {
         val key = tokenKey(userId)
-        val newToken: AuthTokenEntity = (refreshToken?.let {
-            AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
-        } ?: run {
-            kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())?.copy(
-                accessToken = accessToken,
-                tokenType = tokenType
-            )
-        }) ?: error("No token found for user")
+        val newToken = kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())
+            ?.let {
+                it.copy(accessToken = accessToken, refreshToken = refreshToken ?: it.refreshToken, tokenType = tokenType)
+            } ?: error("No token found for user")
 
         kaliumPreferences.putSerializable(
             key,

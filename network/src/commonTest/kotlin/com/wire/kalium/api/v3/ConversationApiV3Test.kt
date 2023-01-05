@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 class ConversationApiV3Test : ApiTest {
 
     @Test
-    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+    fun givenACreateNewConversationRequest_wheniCallingCreateNewConversaton_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             CREATE_CONVERSATION_RESPONSE,
             statusCode = HttpStatusCode.Created,

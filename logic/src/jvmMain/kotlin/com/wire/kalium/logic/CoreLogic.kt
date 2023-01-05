@@ -17,11 +17,10 @@ import java.io.File
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
 actual class CoreLogic(
-    clientLabel: String,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(
-    clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
+    rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {

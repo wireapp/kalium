@@ -44,7 +44,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) constructor(
             preKeyRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            mlsClientProvider
+            mlsClientProvider,
+            sessionRepository,
+            selfUserId
         )
 
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)

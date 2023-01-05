@@ -1,14 +1,15 @@
 package com.wire.kalium.network.api.base.unauthenticated.register
 
-import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.NewUserDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface RegisterApi {
 
     sealed class RegisterParam(
-        open val name: String
+        open val name: String,
+        open val cookieLabel: String?
     ) {
         internal abstract fun toBody(): NewUserDTO
 
@@ -16,8 +17,9 @@ interface RegisterApi {
             val email: String,
             val emailCode: String,
             override val name: String,
+            override val cookieLabel: String?,
             val password: String,
-        ) : RegisterParam(name) {
+        ) : RegisterParam(name, cookieLabel) {
             override fun toBody(): NewUserDTO = NewUserDTO(
                 email = email,
                 emailCode = emailCode,
@@ -26,7 +28,7 @@ interface RegisterApi {
                 accentId = null,
                 assets = null,
                 invitationCode = null,
-                label = null,
+                label = cookieLabel,
                 locale = null,
                 phone = null,
                 phoneCode = null,
@@ -44,10 +46,11 @@ interface RegisterApi {
             val email: String,
             val emailCode: String,
             override val name: String,
+            override val cookieLabel: String?,
             val password: String,
             val teamName: String,
             val teamIcon: String
-        ) : RegisterParam(name) {
+        ) : RegisterParam(name, cookieLabel) {
             override fun toBody(): NewUserDTO = NewUserDTO(
                 email = email,
                 emailCode = emailCode,
@@ -56,7 +59,7 @@ interface RegisterApi {
                 accentId = null,
                 assets = null,
                 invitationCode = null,
-                label = null,
+                label = cookieLabel,
                 locale = null,
                 phone = null,
                 phoneCode = null,

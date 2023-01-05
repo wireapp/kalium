@@ -142,4 +142,14 @@ class ConversationScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider
         )
+
+    val joinConversationViaCode: JoinConversationViaCodeUseCase
+        get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
+
+    val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
+        get() = CheckConversationInviteCodeUseCase(
+            conversationGroupRepository,
+            conversationRepository,
+            selfUserId
+        )
 }

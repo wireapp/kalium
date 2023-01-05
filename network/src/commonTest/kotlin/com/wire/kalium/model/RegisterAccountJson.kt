@@ -12,6 +12,7 @@ object RegisterAccountJson {
             put("password", serializable.password)
             put("email", serializable.email)
             put("email_code", serializable.emailCode)
+            serializable.cookieLabel?.let { put("label", it) }
         }.toString()
     }
 
@@ -20,7 +21,8 @@ object RegisterAccountJson {
             "test@email.com",
             "123456",
             "private user",
-            "password"
+            "password",
+            "cookieLabel"
         ),
         jsonProvider = jsonProvider
     )
