@@ -16,7 +16,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateD
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
@@ -215,7 +215,7 @@ internal open class ConversationApiV0 internal constructor(
             handleConversationMemberAddedResponse(httpResponse)
         }
 
-    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversionInfo> =
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
        wrapKaliumResponse {
            httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)

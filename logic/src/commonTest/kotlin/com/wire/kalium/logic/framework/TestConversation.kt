@@ -18,7 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -319,5 +319,5 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
-    val LIMITED_CONVERSATION_INFO: LimitedConversionInfo = LimitedConversionInfo("conv_id_value", "name")
+    val LIMITED_CONVERSATION_INFO: LimitedConversationInfo = LimitedConversationInfo("conv_id_value", "name")
 }

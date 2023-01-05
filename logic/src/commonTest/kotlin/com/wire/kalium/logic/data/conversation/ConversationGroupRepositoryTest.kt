@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -502,7 +502,7 @@ class ConversationGroupRepositoryTest {
         fun withFetchLimitedConversationInfo(
             code: String,
             key: String,
-            result: NetworkResponse<LimitedConversionInfo>
+            result: NetworkResponse<LimitedConversationInfo>
         ): Arrangement = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchLimitedInformationViaCode)

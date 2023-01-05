@@ -20,6 +20,8 @@ class JoinConversationViaCodeUseCase internal constructor(
     private val selfUserId: UserId
 ) {
     suspend operator fun invoke(code: String, key: String, domain: String?): Result =
+        // the swagger docs say that the URI is optional, without explaining what uri need to be used
+        // nevertheless the request works fine without the uri, so we are not going to use it
         conversionsGroupRepository.joinViaInviteCode(code, key, null)
             .fold({ failure ->
                 Result.Failure(failure)

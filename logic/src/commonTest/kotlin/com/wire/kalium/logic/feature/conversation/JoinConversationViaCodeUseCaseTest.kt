@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversionInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
@@ -61,15 +61,15 @@ class JoinConversationViaCodeUseCaseTest {
         val key = "key"
         val domain = "domain"
 
-        val limitedConversionInfo = LimitedConversionInfo("id", null)
+        val limitedConversationInfo = LimitedConversationInfo("id", null)
         val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
-            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversionInfo))
+            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversationInfo))
             .arrange()
 
         useCae(code, key, domain).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
-            assertEquals(ConversationId(limitedConversionInfo.nonQualifiedConversationId, domain), it.conversationId)
+            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedConversationId, domain), it.conversationId)
         }
 
         verify(arrangement.conversationGroupRepository)
@@ -89,15 +89,15 @@ class JoinConversationViaCodeUseCaseTest {
         val key = "key"
         val domain = null
 
-        val limitedConversionInfo = LimitedConversionInfo("id", null)
+        val limitedConversationInfo = LimitedConversationInfo("id", null)
         val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
-            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversionInfo))
+            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversationInfo))
             .arrange()
 
         useCae(code, key, domain).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
-            assertEquals(ConversationId(limitedConversionInfo.nonQualifiedConversationId, selfUserId.domain), it.conversationId)
+            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedConversationId, selfUserId.domain), it.conversationId)
         }
 
         verify(arrangement.conversationGroupRepository)
@@ -160,7 +160,7 @@ class JoinConversationViaCodeUseCaseTest {
         suspend fun withFetchLimitedInfoViaInviteCodeReturns(
             code: String,
             key: String,
-            result: Either<NetworkFailure, LimitedConversionInfo>
+            result: Either<NetworkFailure, LimitedConversationInfo>
         ): Arrangement = apply {
             given(conversationGroupRepository)
                 .coroutine { conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key) }
