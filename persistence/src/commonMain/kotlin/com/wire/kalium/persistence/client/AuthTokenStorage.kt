@@ -41,14 +41,10 @@ class AuthTokenStorage internal constructor(
         refreshToken: String?,
     ): AuthTokenEntity {
         val key = tokenKey(userId)
-        val newToken: AuthTokenEntity = (refreshToken?.let {
-            AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
-        } ?: run {
-            kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())?.copy(
-                accessToken = accessToken,
-                tokenType = tokenType
-            )
-        }) ?: error("No token found for user")
+        val newToken = kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())
+            ?.let {
+                it.copy(accessToken = accessToken, refreshToken = refreshToken ?: it.refreshToken, tokenType = tokenType)
+            } ?: error("No token found for user")
 
         kaliumPreferences.putSerializable(
             key,
@@ -57,7 +53,6 @@ class AuthTokenStorage internal constructor(
         )
         return newToken
     }
-
     // TODO: make suspendable
     fun getToken(userId: UserIDEntity): AuthTokenEntity? =
         kaliumPreferences.getSerializable(
