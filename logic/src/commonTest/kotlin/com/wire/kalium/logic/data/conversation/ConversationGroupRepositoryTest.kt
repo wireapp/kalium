@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -23,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -341,6 +343,88 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenCodeAndKey_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
+        val (code, key, uri) = Triple("code", "key", null)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
+            )
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenCodeAndKey_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+        val (code, key, uri) = Triple("code", "key", null)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
+            )
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenCodeAndKey_whenFetchingLimitedConversationInfo_thenApiIsCalled() = runTest {
+        val (code, key) = "code" to "key"
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withFetchLimitedConversationInfo(
+                code,
+                key,
+                NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200)
+            )
+            .arrange()
+
+        conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::fetchLimitedInformationViaCode)
+            .with(eq(code), eq(key))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -413,6 +497,29 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::insertConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
+        }
+
+        fun withFetchLimitedConversationInfo(
+            code: String,
+            key: String,
+            result: NetworkResponse<LimitedConversationInfo>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
+                .whenInvokedWith(eq(code), eq(key))
+                .thenReturn(result)
+        }
+
+        fun withJoinConversationAPIResponse(
+            code: String,
+            key: String,
+            uri: String?,
+            result: NetworkResponse<ConversationMemberAddedResponse>
+        ): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::joinConversation)
+                .whenInvokedWith(eq(code), eq(key), eq(uri))
+                .thenReturn(result)
         }
 
         fun withConversationDetailsById(conversation: Conversation) = apply {
