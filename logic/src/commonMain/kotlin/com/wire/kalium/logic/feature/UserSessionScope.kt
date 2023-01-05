@@ -375,13 +375,13 @@ class UserSessionScope internal constructor(
 
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
-            userRepository,
             mlsConversationRepository,
             memberJoinHandler,
             memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            userId
+            userId,
+            selfTeamId
         )
 
     private val messageRepository: MessageRepository
@@ -479,7 +479,10 @@ class UserSessionScope internal constructor(
     }
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
+        get() = ClientRemoteDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            clientConfig
+        )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
