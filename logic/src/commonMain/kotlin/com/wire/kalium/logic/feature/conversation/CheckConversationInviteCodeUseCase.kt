@@ -8,10 +8,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
-import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.network.exceptions.isGuestLinkDisabled
@@ -60,13 +57,6 @@ class CheckConversationInviteCodeUseCase internal constructor(
 
     private fun handleServerMissCommunicationError(error: NetworkFailure.ServerMiscommunication): Result.Failure =
         when (error.kaliumException) {
-            is APINotSupported,
-            is ProteusClientsChangedError,
-            is SendMessageError.MissingDeviceError,
-            is KaliumException.GenericError,
-            is KaliumException.RedirectError,
-            is KaliumException.ServerError,
-            is KaliumException.Unauthorized -> Result.Failure.Generic(error)
 
             is KaliumException.InvalidRequestError -> {
                 with(error.kaliumException) {
@@ -82,6 +72,8 @@ class CheckConversationInviteCodeUseCase internal constructor(
                     }
                 }
             }
+
+            else -> Result.Failure.Generic(error)
         }
 
     sealed interface Result {
