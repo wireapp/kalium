@@ -178,6 +178,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
         return toData(encrypted)
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKeyCrypto,
