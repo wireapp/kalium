@@ -28,7 +28,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val userStorageProvider: UserStorageProvider
+    private val userStorageProvider: UserStorageProvider,
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -60,18 +60,18 @@ internal actual class UserSessionScopeProviderImpl(
             userSessionWorkScheduler
         )
         return UserSessionScope(
-            appContext,
-            userId,
-            userDataSource,
-            globalScope,
-            globalCallManager,
-            globalPreferences,
-            sessionManager,
-            dataStoragePaths,
-            kaliumConfigs,
-            featureSupport,
-            userStorageProvider,
-            this
+            applicationContext = appContext,
+            userId = userId,
+            authenticatedDataSourceSet = userDataSource,
+            globalScope = globalScope,
+            globalCallManager = globalCallManager,
+            globalPreferences = globalPreferences,
+            sessionManager = sessionManager,
+            dataStoragePaths = dataStoragePaths,
+            kaliumConfigs = kaliumConfigs,
+            featureSupport = featureSupport,
+            userStorageProvider = userStorageProvider,
+            userSessionScopeProvider = this,
         )
     }
 }

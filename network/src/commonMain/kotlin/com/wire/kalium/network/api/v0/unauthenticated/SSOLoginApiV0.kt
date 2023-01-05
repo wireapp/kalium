@@ -74,8 +74,9 @@ internal open class SSOLoginApiV0 internal constructor(
                     bearerAuth(tokensPairResponse.value.first.value)
                 }
             }.mapSuccess { userIdDTO ->
+                // TODO: make sure that the cookie label is correct for SSOLogin
                 with(tokensPairResponse.value) {
-                    AuthenticationResultDTO(first.toSessionDto(second, userIdDTO.id), userIdDTO)
+                    AuthenticationResultDTO(first.toSessionDto(second, userIdDTO.id, null), userIdDTO)
                 }
             }
         }

@@ -18,7 +18,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import io.ktor.util.collections.ConcurrentMap
 
-class AuthenticationScopeProvider(private val clientLabel: String) {
+class AuthenticationScopeProvider {
 
     private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>, AuthenticationScope> by lazy {
         ConcurrentMap()
@@ -27,7 +27,6 @@ class AuthenticationScopeProvider(private val clientLabel: String) {
     fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
-                clientLabel,
                 serverConfig,
                 proxyCredentials
             )
@@ -35,7 +34,6 @@ class AuthenticationScopeProvider(private val clientLabel: String) {
 }
 
 class AuthenticationScope(
-    private val clientLabel: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
@@ -47,7 +45,7 @@ class AuthenticationScope(
         )
     }
     private val loginRepository: LoginRepository
-        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
+        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(

@@ -22,7 +22,7 @@ class LoginRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        loginRepository = LoginRepositoryImpl(loginApi, CLIENT_LABEL)
+        loginRepository = LoginRepositoryImpl(loginApi)
     }
 
     @Test

@@ -28,7 +28,7 @@ internal fun UserSessionScope(
     kaliumConfigs: KaliumConfigs,
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
-    userSessionScopeProvider: UserSessionScopeProvider
+    userSessionScopeProvider: UserSessionScopeProvider,
 ): UserSessionScope {
     val platformUserStorageProperties =
         PlatformUserStorageProperties(applicationContext, SecurityHelper(globalPreferences.passphraseStorage))
