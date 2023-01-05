@@ -1,3 +1,5 @@
+@file:Suppress("StringTemplate")
+
 package com.wire.kalium.cryptography
 
 typealias MLSGroupId = String
@@ -33,7 +35,6 @@ data class CryptoQualifiedClientId(
     val value: String,
     val userId: CryptoQualifiedID
 ) {
-    @Suppress("StringTemplate")
     override fun toString() = "${userId.value}:${value}@${userId.domain}"
 
     companion object {
