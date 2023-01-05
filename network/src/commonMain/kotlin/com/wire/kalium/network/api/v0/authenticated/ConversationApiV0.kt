@@ -16,6 +16,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateD
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
@@ -30,6 +31,7 @@ import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.put
@@ -213,6 +215,14 @@ internal open class ConversationApiV0 internal constructor(
             handleConversationMemberAddedResponse(httpResponse)
         }
 
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
+       wrapKaliumResponse {
+           httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
+                parameter(QUERY_KEY_CODE, code)
+               parameter(QUERY_KEY_KEY, key)
+           }
+       }
+
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ConversationMemberAddedResponse> =
@@ -242,6 +252,8 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_ACCESS = "access"
         const val PATH_NAME = "name"
         const val PATH_JOIN = "join"
+        const val QUERY_KEY_CODE = "code"
+        const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
