@@ -47,12 +47,18 @@ class NewConversationEventHandlerTest {
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamIdValue = "teamId"
         val teamId = TeamId(teamIdValue)
+        val creatorQualifiedId = QualifiedID(
+            value = "creator",
+            domain = ""
+        )
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
+            .withPersistSystemMessage()
+            .withQualifiedId(creatorQualifiedId)
             .arrange()
 
         eventHandler.handle(event)
@@ -80,12 +86,18 @@ class NewConversationEventHandlerTest {
 
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamId = TestTeam.TEAM_ID
+        val creatorQualifiedId = QualifiedID(
+            value = "creator",
+            domain = ""
+        )
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
+            .withPersistSystemMessage()
+            .withQualifiedId(creatorQualifiedId)
             .arrange()
 
         eventHandler.handle(event)

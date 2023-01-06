@@ -66,6 +66,7 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(createdConversation)
+            .withPersistingSystemMessage()
             .arrange()
 
         val result = createGroupConversation(name, members, conversationOptions)
@@ -86,6 +87,7 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -129,6 +131,7 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
