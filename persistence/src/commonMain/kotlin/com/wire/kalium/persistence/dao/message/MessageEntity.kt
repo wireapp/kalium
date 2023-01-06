@@ -239,7 +239,7 @@ sealed class MessageEntityContent {
     object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
-    data class NewConversationReceiptMode(val receiptMode: Boolean): System()
+    data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
 }
 
 /**

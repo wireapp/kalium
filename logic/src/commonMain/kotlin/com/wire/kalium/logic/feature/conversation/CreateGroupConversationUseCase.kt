@@ -25,6 +25,7 @@ import com.wire.kalium.util.DateTimeUtil
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */
+@Suppress("LongParameterList")
 class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,

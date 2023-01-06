@@ -185,7 +185,7 @@ sealed class MessageContent {
 
     data class NewConversationReceiptMode(
         val receiptMode: Boolean
-    ): System()
+    ) : System()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
