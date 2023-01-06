@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -15,25 +15,25 @@ import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetSecurityClassificationTypeUseCaseTest {
+class ObserveSecurityClassificationLabelUseCaseTest {
 
     @Test
     fun givenAConversationId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest {
         val (_, getConversationClassifiedType) = Arrangement()
             .withGettingClassifiedDomainsDisabled()
+            .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
             .arrange()
 
-        val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+        val result = getConversationClassifiedType(TestConversation.ID)
 
-        assertIs<SecurityClassificationTypeResult.Success>(result)
-        assertEquals(SecurityClassificationType.NONE, result.classificationType)
+        assertEquals(SecurityClassificationType.NONE, result.firstOrNull())
     }
 
     @Test
@@ -44,10 +44,9 @@ class GetSecurityClassificationTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
                 .arrange()
 
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(TestConversation.ID)
 
-            assertIs<SecurityClassificationTypeResult.Success>(result)
-            assertEquals(SecurityClassificationType.CLASSIFIED, result.classificationType)
+            assertEquals(SecurityClassificationType.CLASSIFIED, result.firstOrNull())
         }
 
     @Test
@@ -58,23 +57,9 @@ class GetSecurityClassificationTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("anta.com", "bella.com"))
                 .arrange()
 
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(TestConversation.ID)
 
-            assertIs<SecurityClassificationTypeResult.Success>(result)
-            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.classificationType)
-        }
-
-    @Test
-    fun givenAConversationId_WhenClassifiedFlagThrowsAnError_ThenResultIsFailure() =
-        runTest {
-            val (_, getConversationClassifiedType) = Arrangement()
-                .withGettingClassifiedDomains()
-                .withParticipantsResponseFails()
-                .arrange()
-
-            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
-
-            assertIs<SecurityClassificationTypeResult.Failure>(result)
+            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
         }
 
     private class Arrangement {
@@ -84,7 +69,7 @@ class GetSecurityClassificationTypeUseCaseTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val getSecurityClassificationType = GetSecurityClassificationTypeUseCaseImpl(
+        private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
             selfUserId, conversationRepository, userConfigRepository
         )
 
@@ -104,19 +89,13 @@ class GetSecurityClassificationTypeUseCaseTest {
 
         fun withParticipantsResponseDomains(domains: List<String>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
+                .suspendFunction(conversationRepository::observeConversationMembers)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(stubUserIds(domains)))
+                .thenReturn(flowOf(stubUserIds(domains)))
         }
 
-        fun withParticipantsResponseFails() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        private fun stubUserIds(domains: List<String>) = domains.map { domain -> UserId(uuid4().toString(), domain) }
+        private fun stubUserIds(domains: List<String>) =
+            domains.map { domain -> Conversation.Member(UserId(uuid4().toString(), domain), Conversation.Member.Role.Member) }
 
         fun arrange() = this to getSecurityClassificationType
 
