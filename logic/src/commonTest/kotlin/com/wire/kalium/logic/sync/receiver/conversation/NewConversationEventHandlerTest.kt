@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -16,6 +17,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -94,6 +96,49 @@ class NewConversationEventHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenNewGroupConversationEvent_whenHandlingIt_thenPersistSystemMessageForReceiptMode() = runTest {
+        // given
+        val event = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            transient = false,
+            timestampIso = "timestamp",
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+                creator = "creatorId@creatorDomain",
+                receiptMode = ReceiptMode.ENABLED
+            )
+        )
+
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+        val teamId = TestTeam.TEAM_ID
+        val creatorQualifiedId = QualifiedID(
+            value = "creatorId",
+            domain = "creatorDomain"
+        )
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(Unit))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(teamId))
+            .withPersistSystemMessage()
+            .withQualifiedId(creatorQualifiedId)
+            .arrange()
+
+        // when
+        eventHandler.handle(event)
+
+        // then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                val content = it.content as MessageContent.NewConversationReceiptMode
+                content.receiptMode
+            })
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -147,6 +192,20 @@ class NewConversationEventHandlerTest {
                 .suspendFunction(selfTeamIdProvider::invoke)
                 .whenInvoked()
                 .then { either }
+        }
+
+        fun withPersistSystemMessage() = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withQualifiedId(qualifiedId: QualifiedID) = apply {
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(qualifiedId)
         }
 
         fun arrange() = this to newConversationEventHandler
