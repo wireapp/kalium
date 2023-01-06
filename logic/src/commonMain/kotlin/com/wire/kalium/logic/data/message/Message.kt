@@ -234,6 +234,9 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+                is MessageContent.NewConversationReceiptMode -> mutableMapOf(
+                    typeKey to "newConversationReceiptMode"
+                )
             }
 
             val standardProperties = mapOf(
