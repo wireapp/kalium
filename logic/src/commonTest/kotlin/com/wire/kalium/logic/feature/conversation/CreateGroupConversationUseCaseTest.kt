@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
@@ -139,6 +139,39 @@ class CreateGroupConversationUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenPersistSystemMessageForReceiptMode() = runTest {
+        // given
+        val name = "Conv Name"
+        val creatorClientId = ClientId("ClientId")
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
+        val conversationOptions = ConversationOptions(
+            protocol = ConversationOptions.Protocol.PROTEUS,
+            creatorClientId = creatorClientId,
+            readReceiptsEnabled = true
+        )
+
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
+            .arrange()
+
+        // when
+        createGroupConversation(name, members, conversationOptions)
+
+        // then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                val content = it.content as MessageContent.NewConversationReceiptMode
+                content.receiptMode
+            })
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -202,6 +235,13 @@ class CreateGroupConversationUseCaseTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
                 .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withPersistingSystemMessage() = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
