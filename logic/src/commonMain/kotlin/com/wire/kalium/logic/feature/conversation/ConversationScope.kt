@@ -97,7 +97,6 @@ class ConversationScope internal constructor(
             syncManager,
             currentClientIdProvider,
             selfUserId,
-            qualifiedIdMapper,
             persistMessage
         )
 

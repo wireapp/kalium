@@ -154,9 +154,6 @@ class CreateGroupConversationUseCaseTest {
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
-        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
-
-        @Mock
         val syncManager = configure(mock(SyncManager::class)) {
             stubsUnitByDefault = true
         }
@@ -167,7 +164,6 @@ class CreateGroupConversationUseCaseTest {
             syncManager,
             currentClientIdProvider,
             TestUser.SELF.id,
-            qualifiedIdMapper,
             persistMessage
         )
 

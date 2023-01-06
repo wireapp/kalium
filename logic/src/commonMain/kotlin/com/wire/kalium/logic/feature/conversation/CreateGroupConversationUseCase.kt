@@ -32,7 +32,6 @@ class CreateGroupConversationUseCase internal constructor(
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     val persistMessage: PersistMessageUseCase
 ) {
 
