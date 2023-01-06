@@ -1,11 +1,16 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
@@ -24,7 +29,10 @@ class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val syncManager: SyncManager,
-    private val currentClientIdProvider: CurrentClientIdProvider
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val selfUserId: UserId,
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    val persistMessage: PersistMessageUseCase
 ) {
 
     /**
@@ -47,8 +55,31 @@ class CreateGroupConversationUseCase internal constructor(
                 Result.UnknownFailure(it)
             }
         }, {
+            handleSystemMessage(
+                conversation = it,
+                receiptModeEnabled = options.readReceiptsEnabled
+            )
             Result.Success(it)
         })
+
+    private suspend fun handleSystemMessage(
+        conversation: Conversation,
+        receiptModeEnabled: Boolean?
+    ) = receiptModeEnabled?.let { receiptMode ->
+        val message = Message.System(
+            uuid4().toString(),
+            MessageContent.NewConversationReceiptMode(
+                receiptMode = receiptMode
+            ),
+            conversation.id,
+            DateTimeUtil.currentIsoDateTimeString(),
+            selfUserId,
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE
+        )
+
+        persistMessage(message)
+    }
 
     sealed interface Result {
         /**

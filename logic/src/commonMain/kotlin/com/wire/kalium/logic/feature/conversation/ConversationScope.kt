@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -46,7 +47,8 @@ class ConversationScope internal constructor(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
-    private val renamedConversationHandler: RenamedConversationEventHandler
+    private val renamedConversationHandler: RenamedConversationEventHandler,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -89,7 +91,15 @@ class ConversationScope internal constructor(
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider)
+        get() = CreateGroupConversationUseCase(
+            conversationRepository,
+            conversationGroupRepository,
+            syncManager,
+            currentClientIdProvider,
+            selfUserId,
+            qualifiedIdMapper,
+            persistMessage
+        )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)

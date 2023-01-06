@@ -782,6 +782,9 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
+            persistMessage,
+            qualifiedIdMapper,
+            team.isSelfATeamMember
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
@@ -891,7 +894,8 @@ class UserSessionScope internal constructor(
             updateKeyingMaterialThresholdProvider,
             selfTeamId,
             messages.sendConfirmation,
-            renamedConversationHandler
+            renamedConversationHandler,
+            qualifiedIdMapper
         )
 
     val migration get() = MigrationScope(userStorage.database)
