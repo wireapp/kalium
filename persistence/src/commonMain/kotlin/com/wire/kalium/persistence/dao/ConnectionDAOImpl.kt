@@ -105,9 +105,9 @@ class ConnectionDAOImpl(
         )
     }
 
-    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) {
+    override suspend fun insertConnections(users: List<ConnectionEntity>) {
         connectionsQueries.transaction {
-            for (connectionEntity: ConnectionEntity in conversationList) {
+            for (connectionEntity: ConnectionEntity in users) {
                 connectionsQueries.insertConnection(
                     from_id = connectionEntity.from,
                     conversation_id = connectionEntity.conversationId,
@@ -140,14 +140,6 @@ class ConnectionDAOImpl(
 
     override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {
         connectionsQueries.updateNotificationFlag(flag, userId)
-    }
-
-    override suspend fun updateAllNotificationFlags(flag: Boolean) {
-        connectionsQueries.transaction {
-            connectionsQueries.selectConnectionRequests()
-                .executeAsList()
-                .forEach { connectionsQueries.updateNotificationFlag(flag, it.qualified_to) }
-        }
     }
 
     override suspend fun setAllConnectionsAsNotified() {
