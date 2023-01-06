@@ -8,6 +8,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -149,12 +151,24 @@ class CreateGroupConversationUseCaseTest {
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        @Mock
+        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
+        @Mock
         val syncManager = configure(mock(SyncManager::class)) {
             stubsUnitByDefault = true
         }
 
         private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider
+            conversationRepository,
+            conversationGroupRepository,
+            syncManager,
+            currentClientIdProvider,
+            TestUser.SELF.id,
+            qualifiedIdMapper,
+            persistMessage
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))

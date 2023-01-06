@@ -5,10 +5,13 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
@@ -101,10 +104,21 @@ class NewConversationEventHandlerTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        @Mock
+        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
+        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,
             userRepository,
-            selfTeamIdProvider
+            selfTeamIdProvider,
+            persistMessage,
+            qualifiedIdMapper,
+            isSelfATeamMember
         )
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
