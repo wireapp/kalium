@@ -80,7 +80,8 @@ class UserDatabaseBuilder internal constructor(
         ReactionAdapter = TableMapper.reactionAdapter,
         ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
-        UserAdapter = TableMapper.userAdapter
+        UserAdapter = TableMapper.userAdapter,
+        MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter
     )
 
     init {
