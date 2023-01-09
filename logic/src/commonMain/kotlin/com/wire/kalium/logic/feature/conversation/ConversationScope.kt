@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 
@@ -48,7 +49,8 @@ class ConversationScope internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -97,7 +99,8 @@ class ConversationScope internal constructor(
             syncManager,
             currentClientIdProvider,
             selfUserId,
-            persistMessage
+            persistMessage,
+            isSelfATeamMember
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase

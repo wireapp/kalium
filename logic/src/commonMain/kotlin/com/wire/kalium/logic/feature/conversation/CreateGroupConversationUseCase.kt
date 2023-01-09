@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
@@ -31,7 +32,8 @@ class CreateGroupConversationUseCase internal constructor(
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId,
-    val persistMessage: PersistMessageUseCase
+    val persistMessage: PersistMessageUseCase,
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
 
     /**
@@ -56,28 +58,30 @@ class CreateGroupConversationUseCase internal constructor(
         }, {
             handleSystemMessage(
                 conversation = it,
-                receiptModeEnabled = options.readReceiptsEnabled
+                receiptMode = options.readReceiptsEnabled
             )
             Result.Success(it)
         })
 
     private suspend fun handleSystemMessage(
         conversation: Conversation,
-        receiptModeEnabled: Boolean?
-    ) = receiptModeEnabled?.let { receiptMode ->
-        val message = Message.System(
-            uuid4().toString(),
-            MessageContent.NewConversationReceiptMode(
-                receiptMode = receiptMode
-            ),
-            conversation.id,
-            DateTimeUtil.currentIsoDateTimeString(),
-            selfUserId,
-            Message.Status.SENT,
-            Message.Visibility.VISIBLE
-        )
+        receiptMode: Boolean
+    ) {
+        if (isSelfATeamMember()) {
+            val message = Message.System(
+                uuid4().toString(),
+                MessageContent.NewConversationReceiptMode(
+                    receiptMode = receiptMode
+                ),
+                conversation.id,
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
+            )
 
-        persistMessage(message)
+            persistMessage(message)
+        }
     }
 
     sealed interface Result {
