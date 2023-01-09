@@ -125,9 +125,7 @@ class MessageMapperImpl(
             content = message.content.toMessageContent(),
             date = message.date,
             visibility = message.visibility.toModel(),
-            isSelfMessage = message.isSelfMessage,
-            senderUserId = message.senderUserId.toModel(),
-            selfUserId = message.selfUserId?.toModel()
+            isSelfMessage = message.isSelfMessage
         )
     }
 
@@ -372,12 +370,14 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
     is MessagePreviewEntityContent.MemberChange -> when (type) {
         MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(
-            adminName = adminName,
-            userIdList = userIdList.map { it.toModel() }
+            senderName = senderName,
+            isSelfUserAdded = isContainSelfUserId,
+            otherUserIdList = otherUserIdList.map { it.toModel() }
         )
         MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(
-            adminName = adminName,
-            userIdList = userIdList.map { it.toModel() }
+            senderName = senderName,
+            isSelfUserRemoved = isContainSelfUserId,
+            otherUserIdList = otherUserIdList.map { it.toModel() }
         )
     }
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)

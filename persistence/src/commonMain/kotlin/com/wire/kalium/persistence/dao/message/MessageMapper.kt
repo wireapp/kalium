@@ -27,7 +27,8 @@ object MessageMapper {
         isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
-        assetMimeType: String?
+        assetMimeType: String?,
+        selfUserId: QualifiedIDEntity?
     ) = when (contentType) {
         MessageEntity.ContentType.TEXT -> when {
             isSelfMessage -> MessagePreviewEntityContent.Text(
@@ -60,8 +61,10 @@ object MessageMapper {
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
         MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
-            adminName = senderName,
-            userIdList = memberChangeList.requireField("memberChangeList"),
+            senderName = senderName,
+            isContainSelfUserId = memberChangeList.requireField("memberChangeList")
+                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+            otherUserIdList = memberChangeList.requireField("memberChangeList").filterNot { it == selfUserId },
             type = memberChangeType.requireField("memberChangeType")
         )
 
@@ -115,7 +118,8 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId
         )
 
         return MessagePreviewEntity(
@@ -124,9 +128,7 @@ object MessageMapper {
             content = content,
             date = date,
             visibility = visibility,
-            isSelfMessage = isSelfMessage,
-            senderUserId = senderUserId,
-            selfUserId = selfUserId
+            isSelfMessage = isSelfMessage
         )
 
     }
@@ -166,7 +168,8 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId
         )
 
         return NotificationMessageEntity(
