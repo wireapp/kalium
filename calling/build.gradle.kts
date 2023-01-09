@@ -23,7 +23,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api(libs.avs)
+                api(project(":avs")) // TODO temporary until avs9.0.2 is available on Maven-central
                 api(libs.jna.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         artifact {
