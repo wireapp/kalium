@@ -196,6 +196,28 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenANewDisplayName_whenUpdatingOk_thenShouldSucceed() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        val result = userRepository.updateSelfDisplayName("newDisplayName")
+
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSelf)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -297,6 +319,14 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+            return this
+        }
+
+        fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::updateSelf)
+                .whenInvokedWith(any())
+                .thenReturn(response)
             return this
         }
 
