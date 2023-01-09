@@ -37,6 +37,9 @@ fun Project.configureDefaultMultiplatform(
             //       this should require us moving iOS code from iOSX64Main to
             //       another sourceSet (iOSMain/iOSCommon or similar)
             iosX64()
+            iosArm64()
+            iosSimulatorArm64()
+            macosX64()
         }
     }
 

@@ -3,7 +3,6 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.carthage.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -23,13 +22,6 @@ kotlin {
     android {
         dependencies {
             coreLibraryDesugaring(libs.desugarJdkLibs)
-        }
-    }
-
-    iosX64 {
-        carthage {
-            baseName = "Cryptography"
-            dependency("WireCryptobox")
         }
     }
 
@@ -85,6 +77,37 @@ kotlin {
                 implementation(libs.javaxCrypto)
                 implementation(libs.coreCryptoAndroid)
             }
+        }
+
+        val darwinMain by creating {
+            dependsOn(commonMain)
+        }
+        val darwinTest by creating {
+            dependsOn(commonTest)
+        }
+        val iosX64Main by sourceSets.getting {
+            dependsOn(darwinMain)
+        }
+        val iosX64Test by sourceSets.getting {
+            dependsOn(darwinTest)
+        }
+        val iosArm64Main by sourceSets.getting {
+            dependsOn(darwinMain)
+        }
+        val iosArm64Test by sourceSets.getting {
+            dependsOn(darwinTest)
+        }
+        val iosSimulatorArm64Main by sourceSets.getting {
+            dependsOn(darwinMain)
+        }
+        val iosSimulatorArm64Test by sourceSets.getting {
+            dependsOn(darwinTest)
+        }
+        val macosX64Main by sourceSets.getting {
+            dependsOn(darwinMain)
+        }
+        val macosX64Test by sourceSets.getting {
+            dependsOn(darwinTest)
         }
     }
 }
