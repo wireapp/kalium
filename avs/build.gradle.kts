@@ -1,2 +1,2 @@
 configurations.maybeCreate("default")
-artifacts.add("default", file("avs_9_0_2.aar"))
+artifacts.add("default", file("avs-9-0-2.aar"))
