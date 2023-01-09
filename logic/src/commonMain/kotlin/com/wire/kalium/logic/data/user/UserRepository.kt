@@ -212,7 +212,12 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    // FIXME(refactor): user info can be updated with null, null and null
+
+    @Deprecated(
+        message = "Create a dedicated function to update the corresponding user property, instead of updating the whole user",
+        replaceWith = ReplaceWith("eg: updateSelfDisplayName(displayName: String)")
+    )
+    // FIXME(refactor): create a dedicated function to update avatar, as this is the only usage of this function.
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user = getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
