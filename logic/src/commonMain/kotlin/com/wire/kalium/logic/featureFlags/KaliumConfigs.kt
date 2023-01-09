@@ -24,8 +24,6 @@ data class KaliumConfigs(
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val customUrlScheme: String = "",
     val fileRestrictionList: String = "",
-    val httpProxyPort: String = "",
-    val httpProxyUrl: String = "",
     val websiteUrl: String = "",
     val webSocketUrl: String = "",
     val certificate: String = "",
