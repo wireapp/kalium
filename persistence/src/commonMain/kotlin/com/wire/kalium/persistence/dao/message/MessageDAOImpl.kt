@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
@@ -178,6 +179,12 @@ class MessageDAOImpl(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 caller_id = message.senderUserId
+            )
+
+            is MessageEntityContent.NewConversationReceiptMode -> queries.insertNewConversationReceiptMode(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                receipt_mode = content.receiptMode
             )
 
             is MessageEntityContent.Knock -> {
@@ -407,6 +414,7 @@ class MessageDAOImpl(
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
+        is MessageEntityContent.NewConversationReceiptMode -> NEW_CONVERSATION_RECEIPT_MODE
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()

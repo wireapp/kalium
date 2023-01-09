@@ -23,6 +23,8 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
+    wireDetektRulesRepo()
     google()
     mavenCentral()
 }
@@ -31,6 +33,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
+    id("scripts.detekt")
 }
 
 dependencies {
@@ -45,9 +48,9 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
@@ -89,5 +92,3 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
-
-apply(from = "$rootDir/gradle/detekt.gradle")

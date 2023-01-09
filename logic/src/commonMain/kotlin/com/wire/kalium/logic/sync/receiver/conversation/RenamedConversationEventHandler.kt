@@ -4,11 +4,10 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -22,7 +21,6 @@ interface RenamedConversationEventHandler {
 internal class RenamedConversationEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
     private val persistMessage: PersistMessageUseCase,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RenamedConversationEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -46,6 +44,6 @@ internal class RenamedConversationEventHandlerImpl(
     }
 
     private suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
-        wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
+        wrapStorageRequest { conversationDAO.updateConversationName(conversationId.toDao(), conversationName, timestamp) }
 
 }

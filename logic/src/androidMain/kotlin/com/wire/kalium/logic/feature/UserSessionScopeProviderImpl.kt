@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
@@ -28,11 +28,11 @@ internal actual class UserSessionScopeProviderImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val userStorageProvider: UserStorageProvider
+    private val userStorageProvider: UserStorageProvider,
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
-        val userIdEntity = IdMapperImpl().toDaoModel(userId)
+        val userIdEntity = userId.toDao()
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootProteusPath = rootPathsProvider.rootProteusPath(userId)
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
@@ -60,18 +60,18 @@ internal actual class UserSessionScopeProviderImpl(
             userSessionWorkScheduler
         )
         return UserSessionScope(
-            appContext,
-            userId,
-            userDataSource,
-            globalScope,
-            globalCallManager,
-            globalPreferences,
-            sessionManager,
-            dataStoragePaths,
-            kaliumConfigs,
-            featureSupport,
-            userStorageProvider,
-            this
+            applicationContext = appContext,
+            userId = userId,
+            authenticatedDataSourceSet = userDataSource,
+            globalScope = globalScope,
+            globalCallManager = globalCallManager,
+            globalPreferences = globalPreferences,
+            sessionManager = sessionManager,
+            dataStoragePaths = dataStoragePaths,
+            kaliumConfigs = kaliumConfigs,
+            featureSupport = featureSupport,
+            userStorageProvider = userStorageProvider,
+            userSessionScopeProvider = this,
         )
     }
 }

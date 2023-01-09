@@ -9,6 +9,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.user.UserId
@@ -151,7 +154,7 @@ class MessageDataSource(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : MessageRepository {
 
-    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, idMapper, messageMapper)
+    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
 
     override suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -160,7 +163,7 @@ class MessageDataSource(
         visibility: List<Message.Visibility>
     ): Flow<List<Message>> =
         messageDAO.getMessagesByConversationAndVisibility(
-            idMapper.toDaoModel(conversationId),
+            conversationId.toDao(),
             limit,
             offset,
             visibility.map { it.toEntityVisibility() }
@@ -182,7 +185,7 @@ class MessageDataSource(
             }.map { (conversationId, messages) ->
                 LocalNotificationConversation(
                     // todo: needs some clean up!
-                    id = idMapper.fromDaoModel(conversationId),
+                    id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
                     messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
@@ -210,17 +213,17 @@ class MessageDataSource(
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.deleteMessage(messageUuid, conversationId.toDao())
         }
 
     override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
+            messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
         }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
-            messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.getMessageById(messageUuid, conversationId.toDao())
                 .firstOrNull()?.run {
                     messageMapper.fromEntityToMessage(this)
                 }
@@ -235,14 +238,14 @@ class MessageDataSource(
         date: String,
         visibility: List<Message.Visibility>
     ): Flow<List<Message>> = messageDAO.observeMessagesByConversationAndVisibilityAfterDate(
-        idMapper.toDaoModel(conversationId),
+        conversationId.toDao(),
         date,
         visibility.map { it.toEntityVisibility() }
     ).map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {
-            messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.updateMessageStatus(messageStatus, messageUuid, conversationId.toDao())
         }
 
     override suspend fun updateAssetMessageUploadStatus(
@@ -254,7 +257,7 @@ class MessageDataSource(
             messageDAO.updateAssetUploadStatus(
                 assetMapper.fromUploadStatusToDaoModel(uploadStatus),
                 messageUuid,
-                idMapper.toDaoModel(conversationId)
+                conversationId.toDao()
             )
         }
 
@@ -267,7 +270,7 @@ class MessageDataSource(
             messageDAO.updateAssetDownloadStatus(
                 assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 messageUuid,
-                idMapper.toDaoModel(conversationId)
+                conversationId.toDao()
             )
         }
 
@@ -277,12 +280,12 @@ class MessageDataSource(
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
-            messageDAO.updateMessageDate(date, messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.updateMessageDate(date, messageUuid, conversationId.toDao())
         }
 
     override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
         wrapStorageRequest {
-            messageDAO.updateMessagesAddMillisToDate(millis, idMapper.toDaoModel(conversationId), MessageEntity.Status.PENDING)
+            messageDAO.updateMessagesAddMillisToDate(millis, conversationId.toDao(), MessageEntity.Status.PENDING)
         }
 
     override suspend fun sendEnvelope(
@@ -291,7 +294,7 @@ class MessageDataSource(
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
-            idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
+            recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }
         }
@@ -309,7 +312,7 @@ class MessageDataSource(
                     recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
                     messageOption
                 ),
-                idMapper.toApiModel(conversationId),
+                conversationId.toApi(),
             )
         }.fold({ networkFailure ->
             val failure = when {
@@ -333,7 +336,7 @@ class MessageDataSource(
         }
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {
-        messageDAO.getAllPendingMessagesFromUser(idMapper.toDaoModel(senderUserId))
+        messageDAO.getAllPendingMessagesFromUser(senderUserId.toDao())
             .map(messageMapper::fromEntityToMessage)
     }
 
@@ -343,7 +346,7 @@ class MessageDataSource(
         visibility: List<Message.Visibility>
     ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
-            idMapper.toDaoModel(conversationId),
+            conversationId.toDao(),
             date,
             visibility.map { it.toEntityVisibility() }
         ).map(messageMapper::fromEntityToMessage)
@@ -358,7 +361,7 @@ class MessageDataSource(
         return wrapStorageRequest {
             messageDAO.updateTextMessageContent(
                 editTimeStamp = editTimeStamp,
-                conversationId = idMapper.toDaoModel(conversationId),
+                conversationId = conversationId.toDao(),
                 currentMessageId = messageContent.editMessageId,
                 newTextContent = MessageEntityContent.Text(
                     messageContent.newContent,
@@ -383,8 +386,8 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
 
         messageDAO.markMessagesAsDecryptionResolved(
-            conversationId = idMapper.toDaoModel(conversationId),
-            userId = idMapper.toDaoModel(userId),
+            conversationId = conversationId.toDao(),
+            userId = userId.toDao(),
             clientId = clientId.value
         )
     }
@@ -392,9 +395,7 @@ class MessageDataSource(
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
-        messageDAO.getReceiptModeFromGroupConversationByQualifiedID(idMapper.toDaoModel(conversationId))
-            .let {
-                receiptModeMapper.fromEntityToModel(it)
-            }
+        messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
+            ?.let { receiptModeMapper.fromEntityToModel(it) }
     }
 }

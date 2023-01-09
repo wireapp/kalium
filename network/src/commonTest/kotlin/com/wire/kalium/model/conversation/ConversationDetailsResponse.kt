@@ -1,6 +1,7 @@
 package com.wire.kalium.model.conversation
 
 import com.wire.kalium.api.json.AnyResponseProvider
+import com.wire.kalium.api.json.ValidJsonProvider
 
 object ConversationDetailsResponse {
 
@@ -114,4 +115,71 @@ object ConversationDetailsResponse {
     }
 
     val validGetDetailsForIds = AnyResponseProvider(data = "", jsonProvider)
+
+    val withNullReceiptMode = AnyResponseProvider(data = "") {
+        """
+        |{
+        |    "failed": [],
+        |    "found": [
+        |        {
+        |            "access": [
+        |                "invite"
+        |            ],
+        |            "access_role": "activated",
+        |            "access_role_v2": [
+        |                "team_member",
+        |                "non_team_member",
+        |                "service"
+        |            ],
+        |            "creator": "f4680835-2cfe-4d4d-8491-cbb201bd5c2b",
+        |            "id": "ebafd3d4-1548-49f2-ac4e-b2757e6ca44b",
+        |            "last_event": "0.0",
+        |            "last_event_time": "1970-01-01T00:00:00.000Z",
+        |            "members": {
+        |                "others": [
+        |                    {
+        |                        "conversation_role": "wire_member",
+        |                        "id": "22dfd5cc-11ae-4a9d-9046-ba27585f4613",
+        |                        "qualified_id": {
+        |                            "domain": "bella.wire.link",
+        |                            "id": "22dfd5cc-11ae-4a9d-9046-ba27585f4613"
+        |                        },
+        |                        "status": 0
+        |                    }
+        |                ],
+        |                "self": {
+        |                    "conversation_role": "wire_admin",
+        |                    "hidden": false,
+        |                    "hidden_ref": null,
+        |                    "id": "f4680835-2cfe-4d4d-8491-cbb201bd5c2b",
+        |                    "otr_archived": false,
+        |                    "otr_archived_ref": null,
+        |                    "otr_muted_ref": null,
+        |                    "otr_muted_status": null,
+        |                    "qualified_id": {
+        |                        "domain": "anta.wire.link",
+        |                        "id": "f4680835-2cfe-4d4d-8491-cbb201bd5c2b"
+        |                    },
+        |                    "service": null,
+        |                    "status": 0,
+        |                    "status_ref": "0.0",
+        |                    "status_time": "1970-01-01T00:00:00.000Z"
+        |                }
+        |            },
+        |            "message_timer": null,
+        |            "name": "test-anta-grp",
+        |            "protocol": "proteus",
+        |            "qualified_id": {
+        |                "domain": "anta.wire.link",
+        |                "id": "ebafd3d4-1548-49f2-ac4e-b2757e6ca44b"
+        |            },
+        |            "receipt_mode": null,
+        |            "team": null,
+        |            "type": 0
+        |        }
+        |    ],
+        |    "not_found": []
+        |}
+        """.trimMargin()
+    }
 }

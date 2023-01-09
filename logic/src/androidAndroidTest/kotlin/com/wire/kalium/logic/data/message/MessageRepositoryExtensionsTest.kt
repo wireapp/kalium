@@ -4,7 +4,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -40,7 +39,7 @@ class MessageRepositoryExtensionsTest {
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()
-        MessageRepositoryExtensionsTest
+
         val visibilities = listOf(Message.Visibility.VISIBLE)
         messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
             TestConversation.ID,
@@ -66,16 +65,9 @@ class MessageRepositoryExtensionsTest {
         private val messageDAO: MessageDAO = mock(MessageDAO::class)
 
         @Mock
-        private val idMapper: IdMapper = mock(IdMapper::class)
-
-        @Mock
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
 
         init {
-            given(idMapper)
-                .function(idMapper::toDaoModel)
-                .whenInvokedWith(any())
-                .thenReturn(CONVERSATION_ID_ENTITY)
 
             given(messageMapper)
                 .function(messageMapper::fromEntityToMessage)
@@ -98,7 +90,6 @@ class MessageRepositoryExtensionsTest {
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
                 messageDAO,
-                idMapper,
                 messageMapper
             )
         }

@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
@@ -48,9 +50,9 @@ class MessageMapperImpl(
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
-                conversationId = idMapper.toDaoModel(message.conversationId),
+                conversationId = message.conversationId.toDao(),
                 date = message.date,
-                senderUserId = idMapper.toDaoModel(message.senderUserId),
+                senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
                 editStatus = when (message.editStatus) {
@@ -66,9 +68,9 @@ class MessageMapperImpl(
             is Message.System -> MessageEntity.System(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
-                conversationId = idMapper.toDaoModel(message.conversationId),
+                conversationId = message.conversationId.toDao(),
                 date = message.date,
-                senderUserId = idMapper.toDaoModel(message.senderUserId),
+                senderUserId = message.senderUserId.toDao(),
                 status = status,
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -89,9 +91,9 @@ class MessageMapperImpl(
             is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
                 content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
-                conversationId = idMapper.fromDaoModel(message.conversationId),
+                conversationId = message.conversationId.toModel(),
                 date = message.date,
-                senderUserId = idMapper.fromDaoModel(message.senderUserId),
+                senderUserId = message.senderUserId.toModel(),
                 senderClientId = ClientId(message.senderClientId),
                 status = status,
                 editStatus = when (val editStatus = message.editStatus) {
@@ -108,9 +110,9 @@ class MessageMapperImpl(
             is MessageEntity.System -> Message.System(
                 id = message.id,
                 content = message.content.toMessageContent(),
-                conversationId = idMapper.fromDaoModel(message.conversationId),
+                conversationId = message.conversationId.toModel(),
                 date = message.date,
-                senderUserId = idMapper.fromDaoModel(message.senderUserId),
+                senderUserId = message.senderUserId.toModel(),
                 status = status,
                 visibility = visibility,
                 senderUserName = message.senderName,
@@ -121,7 +123,7 @@ class MessageMapperImpl(
     override fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview {
         return MessagePreview(
             id = message.id,
-            conversationId = idMapper.fromDaoModel(message.conversationId),
+            conversationId = message.conversationId.toModel(),
             content = message.content.toMessageContent(),
             date = message.date,
             visibility = message.visibility.toModel(),
@@ -243,7 +245,7 @@ class MessageMapperImpl(
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
             this.encodedData,
             this.isDecryptionResolved,
-            idMapper.toDaoModel(this.senderUserId),
+            this.senderUserId.toDao(),
             this.clientId?.value
         )
 
@@ -257,7 +259,7 @@ class MessageMapperImpl(
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
         is MessageContent.MemberChange -> {
-            val memberUserIdList = this.members.map { idMapper.toDaoModel(it) }
+            val memberUserIdList = this.members.map { it.toDao() }
             when (this) {
                 is MessageContent.MemberChange.Added ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
@@ -271,13 +273,14 @@ class MessageMapperImpl(
         is MessageContent.MissedCall -> MessageEntityContent.MissedCall
         is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
+        is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
         is MessageEntityContent.Text -> {
             val quotedMessageDetails = this.quotedMessage?.let {
                 MessageContent.QuotedMessageDetails(
-                    senderId = idMapper.fromDaoModel(it.senderId),
+                    senderId = it.senderId.toModel(),
                     senderName = it.senderName,
                     isQuotingSelfUser = it.isQuotingSelfUser,
                     isVerified = it.isVerified,
@@ -315,7 +318,7 @@ class MessageMapperImpl(
         is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
             this.encodedData,
             this.isDecryptionResolved,
-            idMapper.fromDaoModel(this.senderUserId),
+            this.senderUserId.toModel(),
             ClientId(this.senderClientId.orEmpty())
         )
     }
@@ -338,7 +341,7 @@ class MessageMapperImpl(
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
-            val memberList = this.memberUserIdList.map { idMapper.fromDaoModel(it) }
+            val memberList = this.memberUserIdList.map { it.toModel() }
             when (this.memberChangeType) {
                 MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
@@ -349,6 +352,7 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
         is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
         is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
+        is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
     }
 }
 

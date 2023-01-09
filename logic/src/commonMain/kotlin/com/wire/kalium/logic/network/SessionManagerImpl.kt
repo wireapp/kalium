@@ -6,6 +6,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -51,7 +52,7 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
         session.get() ?: run {
-            wrapStorageRequest { tokenStorage.getToken(idMapper.toDaoModel(userId)) }
+            wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
                 .map { sessionMapper.fromEntityToSessionDTO(it) }
                 .onSuccess { session.set(it) }
                 .onFailure { kaliumLogger.e("""SESSION MANAGER: 
@@ -72,7 +73,7 @@ class SessionManagerImpl internal constructor(
     override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
         wrapStorageRequest {
             tokenStorage.updateToken(
-                userId = idMapper.toDaoModel(userId),
+                userId = userId.toDao(),
                 accessToken = newAccessTokenDTO.value,
                 tokenType = newAccessTokenDTO.tokenType,
                 refreshToken = newRefreshTokenDTO?.value
@@ -126,7 +127,7 @@ class SessionManagerImpl internal constructor(
     }
 
     override fun proxyCredentials(): ProxyCredentialsDTO? =
-        wrapStorageRequest { tokenStorage.proxyCredentials(idMapper.toDaoModel(userId)) }.nullableFold({
+        wrapStorageRequest { tokenStorage.proxyCredentials(userId.toDao()) }.nullableFold({
             null
         }, {
             sessionMapper.fromEntityToProxyCredentialsDTO(it)

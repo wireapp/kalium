@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
@@ -23,7 +24,7 @@ class ClientMapper(
 
     fun toRegisterClientRequest(
         clientConfig: ClientConfig,
-        param: RegisterClientParam
+        param: RegisterClientParam,
     ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
@@ -33,6 +34,7 @@ class ClientMapper(
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
+        cookieLabel = param.cookieLabel
     )
 
     fun fromClientResponse(response: ClientResponse): Client = Client(
@@ -56,7 +58,7 @@ class ClientMapper(
         simpleClientResponse.map {
             with(it) {
                 InsertClientParam(
-                    userId = idMapper.fromDtoToDao(userIdDTO),
+                    userId = userIdDTO.toDao(),
                     id = id,
                     deviceType = toDeviceTypeEntity(deviceClass)
                 )

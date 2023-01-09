@@ -7,8 +7,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -28,8 +29,11 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 
 object TestConversation {
-    val ID = ConversationId("valueConvo", "domainConvo")
-    fun id(suffix: Int = 0) = ConversationId("valueConvo_$suffix", "domainConvo")
+    private const val conversationValue = "valueConvo"
+    private const val conversationDomain = "domainConvo"
+
+    val ID = ConversationId(conversationValue, conversationDomain)
+    fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 
     val ONE_ON_ONE = Conversation(
         ID.copy(value = "1O1 ID"),
@@ -180,8 +184,8 @@ object TestConversation {
     val CONVERSATION_RESPONSE = ConversationResponse(
         "creator",
         ConversationMembersResponse(
-            ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_admin"),
-            listOf(ConversationMemberDTO.Other(MapperProvider.idMapper().toApiModel(TestUser.OTHER.id), conversationRole = "wire_member"))
+            ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_admin"),
+            listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), conversationRole = "wire_member"))
         ),
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,
@@ -225,7 +229,7 @@ object TestConversation {
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
-    val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
+    val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
     val ENTITY = ConversationEntity(
         ENTITY_ID,
         "convo name",
@@ -314,4 +318,6 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED
     )
+
+    val LIMITED_CONVERSATION_INFO: LimitedConversationInfo = LimitedConversationInfo("conv_id_value", "name")
 }

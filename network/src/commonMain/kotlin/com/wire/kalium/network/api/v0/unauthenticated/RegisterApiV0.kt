@@ -39,7 +39,13 @@ internal open class RegisterApiV0 internal constructor(
             getToken(refreshToken).mapSuccess { accessTokenDTO ->
                 Pair(
                     registerResponse.value,
-                    SessionDTO(registerResponse.value.id, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)
+                    SessionDTO(
+                        userId = registerResponse.value.id,
+                        tokenType = accessTokenDTO.tokenType,
+                        accessToken = accessTokenDTO.value,
+                        refreshToken = refreshToken,
+                        cookieLabel = param.cookieLabel
+                    )
                 )
             }
         } ?: run {

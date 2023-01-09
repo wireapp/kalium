@@ -5,6 +5,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -37,7 +38,7 @@ internal class ReceiptModeUpdateEventHandlerImpl(
 
     private suspend fun updateReceiptMode(event: Event.Conversation.ConversationReceiptMode) = wrapStorageRequest {
         conversationDAO.updateConversationReceiptMode(
-            idMapper.toDaoModel(event.conversationId),
+            event.conversationId.toDao(),
             receiptModeMapper.toDaoModel(event.receiptMode)
         )
     }
