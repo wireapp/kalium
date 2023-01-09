@@ -4,12 +4,12 @@ import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.db.UserDBSecret
 
 interface DatabaseImporter {
-    suspend fun importFromFile(filePath: String, userDBSecret: UserDBSecret?)
+    suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
 }
 
 class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter {
 
-    override suspend fun importFromFile(filePath: String, userDBSecret: UserDBSecret?) {
+    override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
@@ -30,7 +30,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         restoreTable("Member")
         restoreTable("Client")
         restoreTable("Message")
-        restoreTable("Call")
+        if (!fromOtherClient) restoreTable("Call")
         restoreAssets()
         restoreTable("MessageConversationChangedContent")
         restoreTable("MessageFailedToDecryptContent")
@@ -47,7 +47,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     private fun restoreAssets() {
         sqlDriver.execute(
-            """UPDATE backupDb.MessageAssetContent 
+            """UPDATE $BACKUP_DB_ALIAS.MessageAssetContent 
             |SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""".trimMargin()
         )
         restoreTable("MessageAssetContent")

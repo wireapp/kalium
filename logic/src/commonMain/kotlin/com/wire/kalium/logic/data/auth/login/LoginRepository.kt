@@ -15,19 +15,20 @@ internal interface LoginRepository {
     suspend fun loginWithEmail(
         email: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
 internal class LoginRepositoryImpl internal constructor(
     private val loginApi: LoginApi,
-    private val clientLabel: String,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : LoginRepository {
@@ -35,16 +36,18 @@ internal class LoginRepositoryImpl internal constructor(
     override suspend fun loginWithEmail(
         email: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
+        login(LoginApi.LoginParam.LoginWithEmail(email, password, label), shouldPersistClient)
 
     override suspend fun loginWithHandle(
         handle: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
+        login(LoginApi.LoginParam.LoginWithHandel(handle, password, label), shouldPersistClient)
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,

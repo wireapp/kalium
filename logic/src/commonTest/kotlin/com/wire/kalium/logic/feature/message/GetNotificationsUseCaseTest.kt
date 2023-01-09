@@ -216,9 +216,6 @@ class GetNotificationsUseCaseTest {
         val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
-            userRepository = userRepository,
-            conversationRepository = conversationRepository,
-            selfUserId = SELF_USER_ID,
             ephemeralNotificationsManager = ephemeralNotifications
         )
 
