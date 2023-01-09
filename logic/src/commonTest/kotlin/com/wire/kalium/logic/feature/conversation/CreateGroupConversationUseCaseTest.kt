@@ -8,10 +8,14 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -67,6 +71,7 @@ class CreateGroupConversationUseCaseTest {
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(createdConversation)
             .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         val result = createGroupConversation(name, members, conversationOptions)
@@ -88,6 +93,7 @@ class CreateGroupConversationUseCaseTest {
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -132,6 +138,7 @@ class CreateGroupConversationUseCaseTest {
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -160,6 +167,7 @@ class CreateGroupConversationUseCaseTest {
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         // when
@@ -194,13 +202,19 @@ class CreateGroupConversationUseCaseTest {
             stubsUnitByDefault = true
         }
 
+        @Mock
+        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+
+        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+
         private val createGroupConversation = CreateGroupConversationUseCase(
             conversationRepository,
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
             TestUser.SELF.id,
-            persistMessage
+            persistMessage,
+            isSelfATeamMember
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -246,6 +260,13 @@ class CreateGroupConversationUseCaseTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { either }
         }
 
         fun arrange() = this to createGroupConversation
