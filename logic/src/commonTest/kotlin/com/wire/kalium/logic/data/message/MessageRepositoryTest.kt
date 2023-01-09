@@ -234,6 +234,29 @@ class MessageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenASystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val message = TEST_SYSTEM_MESSAGE
+        val mappedEntity = TEST_MESSAGE_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
+
+        messageRepository.persistMessage(message)
+
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
+                .with(eq(mappedEntity), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
 
         @Mock
@@ -340,6 +363,17 @@ class MessageRepositoryTest {
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
+        )
+        val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
+            receiptMode = true
+        )
+        val TEST_SYSTEM_MESSAGE = Message.System(
+            id = "uid",
+            content = TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT,
+            conversationId = TEST_CONVERSATION_ID,
+            date = TEST_DATETIME,
+            senderUserId = TEST_USER_ID,
+            status = Message.Status.SENT,
         )
     }
 }
