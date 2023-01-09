@@ -211,8 +211,7 @@ internal class UserDataSource internal constructor(
                 .map(userMapper::fromDaoModelToSelfUser)
         }
     }
-
-
+    
     @Deprecated(
         message = "Create a dedicated function to update the corresponding user property, instead of updating the whole user",
         replaceWith = ReplaceWith("eg: updateSelfDisplayName(displayName: String)")
