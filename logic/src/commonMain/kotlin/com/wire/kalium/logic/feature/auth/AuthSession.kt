@@ -41,5 +41,6 @@ data class AuthTokens(
     val userId: UserId,
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String
+    val tokenType: String,
+    val cookieLabel: String?
 )

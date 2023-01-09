@@ -111,8 +111,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
-import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -459,7 +459,8 @@ class UserSessionScope internal constructor(
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
-            userId
+            userId,
+            clientIdProvider
         )
 
     val persistMessage: PersistMessageUseCase
@@ -479,7 +480,10 @@ class UserSessionScope internal constructor(
     }
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
+        get() = ClientRemoteDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            clientConfig
+        )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
@@ -1005,8 +1009,8 @@ class UserSessionScope internal constructor(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
-    val getSecurityClassificationType: GetSecurityClassificationTypeUseCase
-        get() = GetSecurityClassificationTypeUseCaseImpl(userId, conversationRepository, userConfigRepository)
+    val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(userId, conversationRepository, userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories

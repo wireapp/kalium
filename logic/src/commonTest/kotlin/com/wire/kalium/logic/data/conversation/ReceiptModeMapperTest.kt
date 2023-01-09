@@ -51,20 +51,6 @@ class ReceiptModeMapperTest {
     }
 
     @Test
-    fun givenAConversationReceiptModeNull_whenMappingToDaoModel_thenReturnConversationEntityReceiptModeDisabled() {
-        // given
-        val conversationReceiptMode = null
-
-        val expectedResult = ConversationEntity.ReceiptMode.DISABLED
-
-        // when
-        val result = receiptModeMapper.toDaoModel(conversationReceiptMode)
-
-        // then
-        assertEquals(expectedResult, result)
-    }
-
-    @Test
     fun givenAnApiReceiptModeEnabled_whenMappingFromApiToDaoModel_thenReturnConversationEntityReceiptModeEnabled() {
         // given
         val conversationReceiptMode = ReceiptMode.ENABLED
@@ -82,20 +68,6 @@ class ReceiptModeMapperTest {
     fun givenAnApiReceiptModeDisabled_whenMappingFromApiToDaoModel_thenReturnConversationEntityReceiptModeDisabled() {
         // given
         val conversationReceiptMode = ReceiptMode.DISABLED
-
-        val expectedResult = ConversationEntity.ReceiptMode.DISABLED
-
-        // when
-        val result = receiptModeMapper.fromApiToDaoModel(conversationReceiptMode)
-
-        // then
-        assertEquals(expectedResult, result)
-    }
-
-    @Test
-    fun givenAnApiReceiptModeNull_whenMappingFromApiToDaoModel_thenReturnConversationEntityReceiptModeDisabled() {
-        // given
-        val conversationReceiptMode = null
 
         val expectedResult = ConversationEntity.ReceiptMode.DISABLED
 
@@ -135,20 +107,6 @@ class ReceiptModeMapperTest {
     }
 
     @Test
-    fun givenAnApiReceiptModeNull_whenMappingFromApiToModel_thenReturnConversationReceiptModeDisabled() {
-        // given
-        val conversationReceiptMode = null
-
-        val expectedResult = Conversation.ReceiptMode.DISABLED
-
-        // when
-        val result = receiptModeMapper.fromApiToModel(conversationReceiptMode)
-
-        // then
-        assertEquals(expectedResult, result)
-    }
-
-    @Test
     fun givenAConversationEntityReceiptModeEnabled_whenMappingFromEntityToModel_thenReturnConversationReceiptModeEnabled() {
         // given
         val conversationReceiptMode = ConversationEntity.ReceiptMode.ENABLED
@@ -166,20 +124,6 @@ class ReceiptModeMapperTest {
     fun givenAConversationEntityReceiptModeDisabled_whenMappingFromEntityToModel_thenReturnConversationReceiptModeDisabled() {
         // given
         val conversationReceiptMode = ConversationEntity.ReceiptMode.DISABLED
-
-        val expectedResult = Conversation.ReceiptMode.DISABLED
-
-        // when
-        val result = receiptModeMapper.fromEntityToModel(conversationReceiptMode)
-
-        // then
-        assertEquals(expectedResult, result)
-    }
-
-    @Test
-    fun givenAConversationEntityReceiptModeNull_whenMappingFromEntityToModel_thenReturnConversationReceiptModeDisabled() {
-        // given
-        val conversationReceiptMode = null
 
         val expectedResult = Conversation.ReceiptMode.DISABLED
 

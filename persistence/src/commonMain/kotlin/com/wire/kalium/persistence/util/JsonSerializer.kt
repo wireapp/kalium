@@ -7,7 +7,7 @@ internal object JsonSerializer {
     private val instance: Json by lazy {
         Json {
             encodeDefaults = true
-
+            explicitNulls = false
             // to enable the serialization of maps with complex keys
             // e.g. Map<QualifiedIDEntity, PersistenceSession>
             allowStructuredMapKeys = true

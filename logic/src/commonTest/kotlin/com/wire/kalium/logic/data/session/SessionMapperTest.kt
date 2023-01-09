@@ -39,7 +39,8 @@ class SessionMapperTest {
                     UserIdDTO(userId.value, userId.domain),
                     tokenType,
                     accessToken,
-                    refreshToken
+                    refreshToken,
+                    cookieLabel
                 )
             }
 
@@ -58,7 +59,8 @@ class SessionMapperTest {
                 userId = UserIDEntity(userId.value, userId.domain),
                 tokenType = tokenType,
                 accessToken = accessToken,
-                refreshToken = refreshToken
+                refreshToken = refreshToken,
+                cookieLabel = cookieLabel
             )
         }
 
@@ -73,7 +75,8 @@ class SessionMapperTest {
             userId = userId,
             tokenType = "Bearer",
             accessToken = "access_token",
-            refreshToken = "refresh_token"
+            refreshToken = "refresh_token",
+            cookieLabel = "cookie_label"
         )
 
         val TEST_SSO_ID = SsoId("scim_external", "subject", null)
