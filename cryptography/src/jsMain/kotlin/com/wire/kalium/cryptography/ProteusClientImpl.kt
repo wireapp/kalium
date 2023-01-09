@@ -97,6 +97,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        TODO("Not yet implemented")
+    }
+
     override fun deleteSession(sessionId: CryptoSessionId) {
         box.session_delete(sessionId.value)
     }

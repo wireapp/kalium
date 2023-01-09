@@ -214,9 +214,6 @@ class MessageScope internal constructor(
         get() = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
-            userRepository = userRepository,
-            conversationRepository = conversationRepository,
-            selfUserId = selfUserId,
             ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 

@@ -177,7 +177,8 @@ class AddAuthenticatedUserUseCaseTest {
             TEST_USERID,
             "access-token",
             "refresh-token",
-            "type"
+            "type",
+            "cookie-label"
         )
         val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
         val TEST_SSO_ID = SsoId(

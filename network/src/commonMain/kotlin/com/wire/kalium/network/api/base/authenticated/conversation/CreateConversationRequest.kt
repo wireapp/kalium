@@ -24,7 +24,7 @@ data class CreateConversationRequest(
     // Receipt mode, controls if read receipts are enabled for the conversation.
     // Any positive value is interpreted as enabled.
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode?,
+    val receiptMode: ReceiptMode,
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles
     // designed by Wire (i.e., no custom roles can have the same prefix)
     @SerialName("conversation_role")
@@ -53,7 +53,7 @@ internal data class CreateConversationRequestV3(
     // Receipt mode, controls if read receipts are enabled for the conversation.
     // Any positive value is interpreted as enabled.
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode?,
+    val receiptMode: ReceiptMode,
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles
     // designed by Wire (i.e., no custom roles can have the same prefix)
     @SerialName("conversation_role")

@@ -76,6 +76,21 @@ object TestNetworkException {
         ErrorResponse(404, "Team not found", "no-team")
     )
 
+    val noTeamMember = KaliumException.InvalidRequestError(
+        ErrorResponse(403, "Not a team member", "no-team-member")
+    )
+
+    val noConversation = KaliumException.InvalidRequestError(
+        ErrorResponse(404, "Conversation not found", "no-conversation")
+    )
+
+    val noConversationCode = KaliumException.InvalidRequestError(
+        ErrorResponse(404, "Conversation code not found", "no-conversation-code")
+    )
+
+    val guestLinkDisables = KaliumException.InvalidRequestError(
+        ErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
+    )
 }
 
 object TestNetworkResponseError {

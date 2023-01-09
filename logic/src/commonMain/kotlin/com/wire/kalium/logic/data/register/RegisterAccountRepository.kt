@@ -22,7 +22,8 @@ internal interface RegisterAccountRepository {
         email: String,
         code: String,
         name: String,
-        password: String
+        password: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 
     @Suppress("LongParameterList")
@@ -32,7 +33,8 @@ internal interface RegisterAccountRepository {
         name: String,
         password: String,
         teamName: String,
-        teamIcon: String
+        teamIcon: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 }
 
@@ -54,9 +56,18 @@ internal class RegisterAccountDataSource internal constructor(
         email: String,
         code: String,
         name: String,
-        password: String
+        password: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
-        register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password))
+        register(
+            RegisterApi.RegisterParam.PersonalAccount(
+                email = email,
+                emailCode = code,
+                name = name,
+                cookieLabel = cookieLabel,
+                password = password,
+            )
+        )
 
     override suspend fun registerTeamWithEmail(
         email: String,
@@ -64,9 +75,20 @@ internal class RegisterAccountDataSource internal constructor(
         name: String,
         password: String,
         teamName: String,
-        teamIcon: String
+        teamIcon: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
-        register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
+        register(
+            RegisterApi.RegisterParam.TeamAccount(
+                email = email,
+                emailCode = code,
+                name = name,
+                password = password,
+                cookieLabel = cookieLabel,
+                teamName = teamName,
+                teamIcon = teamIcon
+            )
+        )
 
     private suspend fun requestActivation(
         param: RegisterApi.RequestActivationCodeParam

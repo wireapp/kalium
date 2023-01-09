@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.register
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -23,6 +24,7 @@ sealed class RegisterParam(
     lastName: String,
     val email: String,
     val password: String,
+    val cookieLabel: String?
 ) {
     val name: String = "$firstName $lastName"
 
@@ -31,8 +33,9 @@ sealed class RegisterParam(
         lastName: String,
         email: String,
         password: String,
-        val emailActivationCode: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val emailActivationCode: String,
+        cookieLabel: String? = uuid4().toString(),
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 
     @Suppress("LongParameterList")
     class Team(
@@ -42,8 +45,9 @@ sealed class RegisterParam(
         password: String,
         val emailActivationCode: String,
         val teamName: String,
-        val teamIcon: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val teamIcon: String,
+        cookieLabel: String? = uuid4().toString()
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 }
 
 /**
@@ -65,19 +69,26 @@ class RegisterAccountUseCase internal constructor(
     ): RegisterResult = when (param) {
         is RegisterParam.PrivateAccount -> {
             with(param) {
-                registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password)
+                registerAccountRepository.registerPersonalAccountWithEmail(
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             }
         }
 
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
-                    email,
-                    emailActivationCode,
-                    name,
-                    password,
-                    teamName,
-                    teamIcon
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    teamName = teamName,
+                    teamIcon = teamIcon,
+                    cookieLabel = cookieLabel
                 )
             }
         }
