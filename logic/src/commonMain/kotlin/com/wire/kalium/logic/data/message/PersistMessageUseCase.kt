@@ -71,5 +71,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Receipt -> false
             is MessageContent.ClientAction -> false
             is MessageContent.CryptoSessionReset -> false
+            is MessageContent.NewConversationReceiptMode -> false
         }
 }

@@ -143,6 +143,16 @@ CREATE TABLE MessageConversationChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageNewConversationReceiptModeContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 CREATE VIEW IF NOT EXISTS MessageQuoteDetails
 AS SELECT
     MessageTextContent.message_id AS messageId,
@@ -262,7 +272,8 @@ QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
 QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
-QuotedMessage.quotedAssetName AS quotedAssetName
+QuotedMessage.quotedAssetName AS quotedAssetName,
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -274,6 +285,7 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
@@ -428,6 +440,10 @@ VALUES(?, ?, ?);
 
 insertConversationRenamedMessage:
 INSERT OR IGNORE INTO MessageConversationChangedContent(message_id, conversation_id, conversation_name)
+VALUES(?, ?, ?);
+
+insertNewConversationReceiptMode:
+INSERT OR IGNORE INTO MessageNewConversationReceiptModeContent(message_id, conversation_id, receipt_mode)
 VALUES(?, ?, ?);
 
 updateMessageStatus:
