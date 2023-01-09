@@ -233,14 +233,13 @@ internal class UserDataSource internal constructor(
         selfApi.changeHandle(ChangeHandleRequest(handle))
     }
 
-    override suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit> =
-        wrapApiRequest { selfApi.updateSelf(UserUpdateRequest(displayName, null, null)) }
-            .flatMap {
-                wrapStorageRequest {
-                    // userDAO.updateUserHandle(selfUserId.toDao(), displayName)
-                    kaliumLogger.d("local.db updateSelfDisplayName: $displayName")
-                }
-            }
+    override suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit> = wrapApiRequest {
+        selfApi.updateSelf(UserUpdateRequest(displayName, null, null))
+    }.flatMap {
+        wrapStorageRequest {
+            userDAO.updateUserDisplayName(selfUserId.toDao(), displayName)
+        }
+    }
 
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(selfUserId.toDao(), handle)
