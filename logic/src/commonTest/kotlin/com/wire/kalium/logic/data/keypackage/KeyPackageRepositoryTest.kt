@@ -2,12 +2,12 @@ package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -117,7 +117,7 @@ class KeyPackageRepositoryTest {
         val keyPackageApi = mock(classOf<KeyPackageApi>())
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         val mlsClientProvider = mock(classOf<MLSClientProvider>())
@@ -128,7 +128,10 @@ class KeyPackageRepositoryTest {
         }
 
         fun withCurrentClientId() = apply {
-            given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(SELF_CLIENT_ID) }
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(SELF_CLIENT_ID) }
         }
 
         fun withGeneratingKeyPackagesSuccessful() = apply {
@@ -147,17 +150,17 @@ class KeyPackageRepositoryTest {
 
         fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
-        fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider, SELF_USER_ID)
+        fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, mlsClientProvider, SELF_USER_ID)
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100

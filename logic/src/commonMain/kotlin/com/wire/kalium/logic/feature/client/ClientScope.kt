@@ -18,10 +18,10 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
-class ClientScope(
+class ClientScope @OptIn(DelicateKaliumApi::class) constructor(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
@@ -33,32 +33,35 @@ class ClientScope(
     private val sessionRepository: SessionRepository,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val selfUserId: UserId,
-    private val featureSupport: FeatureSupport,
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider
 ) {
+    @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
-            featureSupport,
+            isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            mlsClientProvider
+            mlsClientProvider,
+            sessionRepository,
+            selfUserId
         )
 
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
-        get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
+        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository, keyPackageLimitsProvider)
+        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientIdProvider, keyPackageLimitsProvider)
     val refillKeyPackages: RefillKeyPackagesUseCase
         get() = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
             keyPackageLimitsProvider,
-            clientRepository
+            clientIdProvider
         )
     val persistOtherUserClients: PersistOtherUserClientsUseCase
         get() = PersistOtherUserClientsUseCaseImpl(
@@ -76,15 +79,21 @@ class ClientScope(
     val clearClientData: ClearClientDataUseCase
         get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
 
-    val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase
-        get() = PersistRegisteredClientIdUseCaseImpl(clientRepository)
+    private val verifyExistingClientUseCase: VerifyExistingClientUseCase
+        get() = VerifyExistingClientUseCaseImpl(clientRepository)
+
+    val importClient: ImportClientUseCase
+        get() = ImportClientUseCaseImpl(
+            clientRepository,
+            getOrRegister
+        )
 
     val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             register,
             clearClientData,
-            persistRegisteredClientIdUseCase,
+            verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase
         )
 }

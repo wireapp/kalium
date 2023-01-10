@@ -14,6 +14,7 @@ import com.wire.kalium.cli.commands.CreateGroupCommand
 import com.wire.kalium.cli.commands.DeleteClientCommand
 import com.wire.kalium.cli.commands.ListenGroupCommand
 import com.wire.kalium.cli.commands.LoginCommand
+import com.wire.kalium.cli.commands.MarkAsReadCommand
 import com.wire.kalium.cli.commands.RefillKeyPackagesCommand
 import com.wire.kalium.cli.commands.RemoveMemberFromGroupCommand
 import com.wire.kalium.logger.FileLogger
@@ -35,7 +36,6 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     override fun run() = runBlocking {
         currentContext.findOrSetObject {
             CoreLogic(
-                clientLabel = "Kalium CLI",
                 rootPath = "$HOME_DIRECTORY/.kalium/accounts",
                 kaliumConfigs = KaliumConfigs(
                     developmentApiEnabled = developmentApiEnabled,
@@ -68,6 +68,7 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
         AddMemberToGroupCommand(),
         RemoveMemberFromGroupCommand(),
         ConsoleCommand(),
-        RefillKeyPackagesCommand()
+        RefillKeyPackagesCommand(),
+        MarkAsReadCommand()
     )
 ).main(args)

@@ -177,6 +177,17 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAClientId_whenPersistingRetainedClientId_thenTheStorageShouldBeCalledWithRightParameter() = runTest {
+        val clientId = CLIENT_ID
+
+        clientRepository.persistRetainedClientId(clientId)
+
+        verify(clientRegistrationStorage)
+            .suspendFunction(clientRegistrationStorage::setRetainedClientId)
+            .with(eq(clientRepository))
+    }
+
     // clientInfo
     @Test
     fun givenClientId_whenGettingClientInformationSuccess_thenTheSuccessIsReturned() = runTest {
@@ -432,7 +443,7 @@ class ClientRepositoryTest {
 
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
-            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null
+            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null, cookieLabel = "cookieLabel"
         )
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val CLIENT_ID = TestClient.CLIENT_ID

@@ -1,21 +1,19 @@
 package com.wire.kalium.persistence.dao.client
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
-import com.wire.kalium.persistence.Client as SQLDelightClient
 
 internal object ClientMapper {
-    fun toModel(dbEntry: SQLDelightClient) = Client(dbEntry.user_id, dbEntry.id, dbEntry.device_type)
-
     @Suppress("FunctionParameterNaming")
     fun fromClient(
         user_id: QualifiedIDEntity,
         id: String,
-        device_type: DeviceTypeEntity?
-    ): Client = Client(user_id, id, device_type)
+        device_type: DeviceTypeEntity?,
+        is_valid: Boolean
+    ): Client = Client(user_id, id, device_type, is_valid)
 }
 
 internal class ClientDAOImpl internal constructor(
@@ -23,22 +21,30 @@ internal class ClientDAOImpl internal constructor(
     private val mapper: ClientMapper = ClientMapper
 ) : ClientDAO {
 
-    override suspend fun insertClient(client: Client): Unit =
-        clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+    override suspend fun insertClient(client: InsertClientParam): Unit =
+        clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
 
-    override suspend fun insertClients(clients: List<Client>) = clientsQueries.transaction {
+    override suspend fun insertClients(clients: List<InsertClientParam>) = clientsQueries.transaction {
         clients.forEach { client ->
-            clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+            clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
         }
     }
 
-    override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<Client>) =
+    override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) =
         clientsQueries.transaction {
             clients.forEach { client ->
-                clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+                clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
             }
-            clientsQueries.deleteClientsOfUserExcept(qualifiedID, clients.map { it.id })
+            clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
+                clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
+            }
         }
+
+    override suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>) = clientsQueries.transaction {
+        invalidClientsList.forEach { (userId, clientIdList) ->
+            clientsQueries.tryMarkAsInvalid(userId, clientIdList)
+        }
+    }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
@@ -68,4 +74,9 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.selectAllClientsByConversation(id, mapper = mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
+
+    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
+        clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
+            .executeAsList().groupBy { it.userId }
+
 }

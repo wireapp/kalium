@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
+import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
@@ -15,6 +16,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
@@ -32,12 +34,14 @@ internal actual class UserSessionScopeProviderImpl(
         val rootStoragePath = "$rootAccountPath/storage"
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
-        val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
+        val dbPath = DBFolder("$rootAccountPath/database")
+        val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         val sessionManager = SessionManagerImpl(
             globalScope.sessionRepository, userId,
             tokenStorage = globalPreferences.authTokenStorage
         )
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
+        val networkContainer: AuthenticatedNetworkContainer =
+            AuthenticatedNetworkContainer.create(sessionManager, UserIdDTO(userId.value, userId.domain))
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.serverConfig().metaData.commonApiVersion.version)
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
 

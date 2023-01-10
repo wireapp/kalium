@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -22,6 +23,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
@@ -88,7 +90,7 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
-                    conversationId = idMapper.toDaoModel(conversationId),
+                    conversationId = conversationId.toDao(),
                     searchQuery = searchQuery
                 )
             },
@@ -108,7 +110,7 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(
-                    conversationId = idMapper.toDaoModel(conversationId),
+                    conversationId = conversationId.toDao(),
                     handle = handle
                 )
             },
@@ -132,29 +134,36 @@ internal class SearchUserRepositoryImpl(
             maxResultSize,
             searchUsersOptions
         ).flatMap {
-            wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.documents.map { it.qualifiedID }))
-            }.map { userDetailsResponses ->
-                val selfUser = getSelfUser()
-
-                UserSearchResult(userDetailsResponses.map { userProfileDTO ->
-                    publicUserMapper.fromUserDetailResponseWithUsertype(
-                        userDetailResponse = userProfileDTO,
-                        userType = userTypeMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = selfUser.teamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser.id.domain,
-                            isService = userProfileDTO.service != null,
+            val qualifiedIdList = it.documents.map { it.qualifiedID }
+            val response =
+                if (qualifiedIdList.isEmpty()) Either.Right(listOf())
+                else wrapApiRequest {
+                    userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
+                }
+            response.map { userProfileDTOList ->
+                val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
+                    val selfUser = getSelfUser()
+                    userProfileDTOList.map { userProfileDTO ->
+                        publicUserMapper.fromUserDetailResponseWithUsertype(
+                            userDetailResponse = userProfileDTO,
+                            userType = userTypeMapper.fromTeamAndDomain(
+                                otherUserDomain = userProfileDTO.id.domain,
+                                selfUserTeamId = selfUser.teamId?.value,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUser.id.domain,
+                                isService = userProfileDTO.service != null,
+                            )
                         )
-                    )
-                })
+                    }
+                }
+                UserSearchResult(otherUserList)
             }
         }
 
     // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
+    @OptIn(FlowPreview::class)
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()

@@ -24,10 +24,10 @@ internal class OnClientsRequest(
     private val callingScope: CoroutineScope
 ) : ClientsRequestHandler {
 
-    override fun onClientsRequest(inst: Handle, conversationIdString: String, arg: Pointer?) {
+    override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationIdString")
-            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
+            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationId")
+            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
             val conversationRecipients = conversationRepository.getConversationRecipientsForCalling(
                 conversationId = conversationIdWithDomain
             )
@@ -51,7 +51,7 @@ internal class OnClientsRequest(
                 val callClients = avsClients.toJsonString()
                 calling.wcall_set_clients_for_conv(
                     inst = inst,
-                    convId = federatedIdMapper.parseToFederatedId(conversationIdString),
+                    convId = federatedIdMapper.parseToFederatedId(conversationId),
                     clientsJson = callClients
                 )
                 callingLogger.d("[OnClientsRequest] -> Success")

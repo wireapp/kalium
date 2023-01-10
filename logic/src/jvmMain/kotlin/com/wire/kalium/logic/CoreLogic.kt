@@ -13,12 +13,14 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
 import java.io.File
 
+/**
+ * @sample samples.logic.CoreLogicSamples.versionedAuthScope
+ */
 actual class CoreLogic(
-    clientLabel: String,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(
-    clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
+    rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
@@ -54,3 +56,6 @@ actual class CoreLogic(
         )
     }
 }
+
+@Suppress("MayBeConst")
+actual val clientPlatform: String = "jvm"

@@ -8,6 +8,10 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -18,6 +22,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -25,12 +31,16 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -40,10 +50,13 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -62,9 +75,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -79,7 +92,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
-        val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, "time", CONVERSATION_RESPONSE)
         val selfUserFlow = flowOf(TestUser.SELF)
         val (arrangement, conversationRepository) = Arrangement()
             .withSelfUserFlow(selfUserFlow)
@@ -104,6 +117,7 @@ class ConversationRepositoryTest {
         val event = Event.Conversation.NewConversation(
             "id",
             TestConversation.ID,
+            false,
             "time",
             CONVERSATION_RESPONSE.copy(
                 groupId = RAW_GROUP_ID,
@@ -182,7 +196,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -216,7 +229,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
             .arrange()
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -253,7 +265,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationApi)
@@ -276,7 +288,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationDAO)
@@ -361,7 +373,7 @@ class ConversationRepositoryTest {
     fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
 
         val conversationIdDTO = ConversationIdDTO("conv_id", "conv_domain")
-        val newAccessIndoDTO = ConversationAccessInfoDTO(
+        val newAccessInfoDTO = ConversationAccessInfoDTO(
             accessRole = setOf(
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER,
@@ -378,7 +390,7 @@ class ConversationRepositoryTest {
         val newAccess = UpdateConversationAccessResponse.AccessUpdated(
             EventContentDTO.Conversation.AccessUpdate(
                 conversationIdDTO,
-                data = newAccessIndoDTO,
+                data = newAccessInfoDTO,
                 qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
             )
         )
@@ -406,7 +418,15 @@ class ConversationRepositoryTest {
 
         with(arrange) {
             verify(conversationApi)
-                .coroutine { conversationApi.updateAccessRole(conversationIdDTO, newAccessIndoDTO) }
+                .coroutine {
+                    conversationApi.updateAccess(
+                        conversationIdDTO,
+                        UpdateConversationAccessRequest(
+                            newAccessInfoDTO.access,
+                            newAccessInfoDTO.accessRole
+                        )
+                    )
+                }
                 .wasInvoked(exactly = once)
 
             verify(conversationDAO)
@@ -447,8 +467,8 @@ class ConversationRepositoryTest {
             verify(conversationApi)
                 .coroutine {
                     conversationApi.updateConversationMemberRole(
-                        MapperProvider.idMapper().toApiModel(conversationId),
-                        MapperProvider.idMapper().toApiModel(userId),
+                        conversationId.toApi(),
+                        userId.toApi(),
                         ConversationMemberRoleDTO(MapperProvider.conversationRoleMapper().toApi(newRole))
                     )
                 }
@@ -457,8 +477,8 @@ class ConversationRepositoryTest {
             verify(conversationDAO)
                 .coroutine {
                     conversationDAO.updateConversationMemberRole(
-                        MapperProvider.idMapper().toDaoModel(conversationId),
-                        MapperProvider.idMapper().toDaoModel(userId),
+                        conversationId.toDao(),
+                        userId.toDao(),
                         MapperProvider.conversationRoleMapper().toDAO(newRole)
                     )
                 }
@@ -476,7 +496,7 @@ class ConversationRepositoryTest {
         with(arrange) {
             verify(conversationDAO)
                 .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
-                .with(eq(MapperProvider.idMapper().toDaoModel(conversationId)))
+                .with(eq(conversationId.toDao()))
                 .wasInvoked(once)
         }
     }
@@ -484,24 +504,38 @@ class ConversationRepositoryTest {
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
-        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
+        val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
+        val conversationId = QualifiedID("some_value", "some_domain")
+
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+            id = conversationIdEntity,
             type = ConversationEntity.Type.GROUP,
-            unreadContentCountEntity = unreadContentCount
         )
 
+        val unreadMessagesCount = 5
+
+        val unreadMessages = List(unreadMessagesCount) {
+            TEST_MESSAGE_PREVIEW_ENTITY.copy(
+                id = "message$it",
+                conversationId = conversationIdEntity,
+                content = MessagePreviewEntityContent.Text("senderName", "body")
+            )
+        }
         val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
+            .withConversations(listOf(conversationEntity))
+            .withLastMessages(listOf())
+            .withUnreadMessages(unreadMessages)
             .arrange()
 
         // when
-        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-            // then
-            val conversationDetail = awaitItem()
+        conversationRepository.observeConversationListDetails().test {
+            val result = awaitItem()
 
-            assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
+            assertContains(result.map { it.conversation.id }, conversationId)
+            val conversation = result.first { it.conversation.id == conversationId }
+
+            assertIs<ConversationDetails.Group>(conversation)
+            assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
 
             awaitComplete()
         }
@@ -516,7 +550,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(null)
             .arrange()
 
         // when
@@ -525,8 +558,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
@@ -542,7 +574,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(null)
             .arrange()
 
         // when
@@ -551,54 +582,79 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
     }
 
     @Test
-    fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
+    fun givenAGroupConversationHasNewMessages_whenObservingConversationListDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
-        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
+        val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
+        val conversationId = QualifiedID("some_value", "some_domain")
+
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
-            type = ConversationEntity.Type.ONE_ON_ONE,
-            otherUserId = QualifiedIDEntity("otherUser", "domain"),
-            unreadContentCountEntity = unreadContentCount
+            id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
+            otherUserId = QualifiedIDEntity("otherUser", "domain")
         )
+        val unreadMessagesCount = 5
 
+        val unreadMessages = List(unreadMessagesCount) {
+            TEST_MESSAGE_PREVIEW_ENTITY.copy(
+                id = "message$it",
+                conversationId = conversationIdEntity,
+                content = MessagePreviewEntityContent.Text("senderName", "body")
+            )
+        }
         val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversation(conversationEntity)
-            .withLastUnreadMessage(TEST_MESSAGE_ENTITY)
+            .withConversations(listOf(conversationEntity))
+            .withLastMessages(listOf())
+            .withUnreadMessages(unreadMessages)
             .arrange()
 
         // when
-        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-            // then
-            val conversationDetail = awaitItem()
+        conversationRepository.observeConversationListDetails().test {
+            val result = awaitItem()
 
-            assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
-            assertTrue(conversationDetail.value.lastUnreadMessage != null)
+            assertContains(result.map { it.conversation.id }, conversationId)
+            val conversation = result.first { it.conversation.id == conversationId }
+
+            assertIs<ConversationDetails.OneOne>(conversation)
+            assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
 
             awaitComplete()
         }
     }
 
     @Test
-    fun givenUserHasUnReadConversation_whenGettingUnReadConversationCount_ThenCorrectlyGetTheCount() = runTest {
+    fun givenUserHasUnReadMessagesInConversation_whenObservingConversationListDetails_ThenCorrectlyGetTheCount() = runTest {
         // given
+        val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
+        val conversationId = QualifiedID("some_value", "some_domain")
+
+        val conversationEntity = TestConversation.VIEW_ENTITY.copy(id = conversationIdEntity, type = ConversationEntity.Type.GROUP)
+        val message = TEST_MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
         val (_, conversationRepository) = Arrangement()
-            .withUnreadConversationCount(10L)
+            .withConversations(listOf(conversationEntity))
+            .withLastMessages(listOf())
+            .withUnreadMessages(listOf(message))
             .arrange()
 
         // when
-        val result = conversationRepository.getUnreadConversationCount()
+        conversationRepository.observeConversationListDetails().test {
+            val result = awaitItem()
 
-        // then
-        assertIs<Either.Right<Long>>(result)
-        assertEquals(10L, result.value)
+            // then
+            assertContains(result.map { it.conversation.id }, conversationId)
+            val conversation = result.first { it.conversation.id == conversationId }
+
+            assertIs<ConversationDetails.Group>(conversation)
+            assertEquals(conversation.unreadEventCount.size, 1)
+
+            awaitComplete()
+        }
+
     }
 
     @Test
@@ -707,21 +763,6 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversation_WhenUpdatingTheName_ShouldReturnSuccess() = runTest {
-        val conversationId = ConversationId("conv_id", "conv_domain")
-        val (arrange, conversationRepository) = Arrangement().withExpectedObservableConversation(TestConversation.VIEW_ENTITY).arrange()
-
-        val result = conversationRepository.updateConversationName(conversationId, "newName", "2022-03-30T15:36:00.000Z")
-        with(result) {
-            shouldSucceed()
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationName)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
     fun givenAnUserId_WhenGettingConversationIds_ShouldReturnSuccess() = runTest {
         val userId = UserId("user_id", "user_domain")
         val (arrange, conversationRepository) = Arrangement().withConversationIdsByUserId(listOf(TestConversation.ID)).arrange()
@@ -745,11 +786,21 @@ class ConversationRepositoryTest {
             .arrange()
 
         val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun whenGettingConversationRecipients_thenDAOFunctionIscalled() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationRecipients(CONVERSATION_ENTITY_ID, emptyMap())
+            .arrange()
+
+        val result = conversationRepository.getConversationRecipients(CONVERSATION_ID)
         with(result) {
             shouldSucceed()
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationName)
-                .with(any(), eq(newConversationName), any())
+            verify(arrange.clientDao)
+                .suspendFunction(arrange.clientDao::conversationRecipient)
+                .with(any())
                 .wasInvoked(exactly = once)
         }
     }
@@ -781,6 +832,9 @@ class ConversationRepositoryTest {
 
         @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
+
+        @Mock
+        val renamedConversationEventHandler = configure(mock(RenamedConversationEventHandler::class)) { stubsUnitByDefault = true }
 
         val conversationRepository =
             ConversationDataSource(
@@ -880,18 +934,25 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withLastUnreadMessage(message: MessageEntity?) = apply {
+        fun withUnreadMessages(messages: List<MessagePreviewEntity>) = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::observeLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(message))
+                .suspendFunction(messageDAO::observeUnreadMessages)
+                .whenInvoked()
+                .thenReturn(flowOf(messages))
         }
 
-        fun withUnreadConversationCount(count: Long) = apply {
+        fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadConversationCount)
+                .suspendFunction(conversationDAO::getAllConversationDetails)
                 .whenInvoked()
-                .thenReturn(count)
+                .thenReturn(flowOf(conversations))
+        }
+
+        fun withLastMessages(messages: List<MessagePreviewEntity>) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::observeLastMessages)
+                .whenInvoked()
+                .thenReturn(flowOf(messages))
         }
 
         fun withUpdateConversationReadDateException(exception: Throwable) = apply {
@@ -903,7 +964,7 @@ class ConversationRepositoryTest {
 
         fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
             given(conversationApi)
-                .suspendFunction(conversationApi::updateAccessRole)
+                .suspendFunction(conversationApi::updateAccess)
                 .whenInvokedWith(any(), any())
                 .thenReturn(response)
         }
@@ -967,15 +1028,8 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withCreateNewConversation(response: NetworkResponse<ConversationResponse>) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::createNewConversation)
-                .whenInvokedWith(anything())
-                .thenReturn(response)
-        }
-
         fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {
-            val author = deletionAuthor?.let { MapperProvider.idMapper().toDaoModel(it) }
+            val author = deletionAuthor?.let { it.toDao() }
             given(conversationDAO)
                 .suspendFunction(conversationDAO::whoDeletedMeInConversation)
                 .whenInvokedWith(any(), any())
@@ -983,7 +1037,7 @@ class ConversationRepositoryTest {
         }
 
         fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
-            val conversationIdEntities = conversationIds.map { MapperProvider.idMapper().toDaoModel(it) }
+            val conversationIdEntities = conversationIds.map { it.toDao() }
 
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationIdsByUserId)
@@ -1002,8 +1056,15 @@ class ConversationRepositoryTest {
             given(conversationApi)
                 .suspendFunction(conversationApi::updateConversationName)
                 .whenInvokedWith(any(), eq(newName))
-                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+                .thenReturn(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
+
+        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
+            apply {
+                given(clientDao)
+                    .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
+                    .then { result }
+            }
 
         fun arrange() = this to conversationRepository
     }
@@ -1028,7 +1089,7 @@ class ConversationRepositoryTest {
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
-                ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_member"),
+                ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
                 emptyList()
             ),
             GROUP_NAME,
@@ -1046,7 +1107,8 @@ class ConversationRepositoryTest {
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
             ),
-            mlsCipherSuiteTag = null
+            mlsCipherSuiteTag = null,
+            receiptMode = ReceiptMode.DISABLED
         )
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
@@ -1067,10 +1129,31 @@ class ConversationRepositoryTest {
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited
+                editStatus = MessageEntity.EditStatus.NotEdited,
+                senderName = "sender",
+                expectsReadConfirmation = false
+            )
+
+        val TEST_MESSAGE_PREVIEW_ENTITY =
+            MessagePreviewEntity(
+                id = "uid",
+                content = MessagePreviewEntityContent.Text("senderName", "body"),
+                conversationId = TEST_QUALIFIED_ID_ENTITY,
+                date = "date",
+                isSelfMessage = false,
+                visibility = MessageEntity.Visibility.VISIBLE
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
+
+        private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
+            EventContentDTO.Conversation.ConversationRenameDTO(
+                CONVERSATION_ID.toApi(),
+                USER_ID.toApi(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                ConversationNameUpdateEvent("newName")
+            )
+        )
 
     }
 }

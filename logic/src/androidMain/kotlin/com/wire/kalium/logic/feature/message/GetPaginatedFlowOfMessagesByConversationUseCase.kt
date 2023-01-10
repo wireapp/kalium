@@ -9,6 +9,11 @@ import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 
+/**
+ * This use case will observe and return a flow of paginated messages for a given conversation.
+ * @see PagingData
+ * @see Message
+ */
 class GetPaginatedFlowOfMessagesByConversationUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
@@ -18,7 +23,7 @@ class GetPaginatedFlowOfMessagesByConversationUseCase internal constructor(
         conversationId: ConversationId,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
         pagingConfig: PagingConfig
-    ): Flow<PagingData<Message>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
+    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
         conversationId, visibility, pagingConfig
     ).flowOn(dispatcher.io)
 }

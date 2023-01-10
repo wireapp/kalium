@@ -50,6 +50,7 @@ internal open class MessageApiV0 internal constructor(
         priority = this.priority
     )
 
+    @Deprecated("This endpoint doesn't support federated environments", ReplaceWith("qualifiedSendMessage"))
     override suspend fun sendMessage(
         parameters: MessageApi.Parameters.DefaultParameters,
         conversationId: String,

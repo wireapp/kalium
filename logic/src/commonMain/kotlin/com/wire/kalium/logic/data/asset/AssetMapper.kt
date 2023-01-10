@@ -7,10 +7,10 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.model.AssetRetentionType
@@ -18,7 +18,7 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 import okio.Path
 import pbandk.ByteArr
 
@@ -26,10 +26,10 @@ interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity
+    fun fromUserAssetToDaoModel(assetId: String, assetDomain: String?, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
-    fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
+    fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
     fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
@@ -46,7 +46,7 @@ class AssetMapperImpl(
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
             // TODO: pass the md5 to the mapper so we can return Either left in case of any error
-            calcFileMd5(dataSource) ?: ""
+            calcFileMd5(dataSource) ?: TODO("handle failure")
         )
     }
 
@@ -59,17 +59,17 @@ class AssetMapperImpl(
             domain = uploadedAssetResponse.domain,
             dataPath = uploadAssetData.tempEncryptedDataPath.toString(),
             dataSize = uploadAssetData.dataSize,
-            downloadedDate = Clock.System.now().toEpochMilliseconds()
+            downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: String, assetDomain: String?, dataPath: Path, dataSize: Long): AssetEntity {
         return AssetEntity(
-            key = assetId.value,
-            domain = assetId.domain,
+            key = assetId,
+            domain = assetDomain,
             dataPath = dataPath.toString(),
             dataSize = dataSize,
-            downloadedDate = Clock.System.now().toEpochMilliseconds()
+            downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
     }
 
@@ -108,15 +108,18 @@ class AssetMapperImpl(
                     width = assetWidth ?: 0,
                     height = assetHeight ?: 0
                 )
+
                 assetMimeType.contains("video/") -> Video(
                     width = assetWidth,
                     height = assetHeight,
                     durationMs = assetDurationMs
                 )
+
                 assetMimeType.contains("audio/") -> Audio(
                     durationMs = assetDurationMs,
                     normalizedLoudness = assetNormalizedLoudness
                 )
+
                 else -> null
             }
         }
@@ -155,6 +158,7 @@ class AssetMapperImpl(
                                 )
                             }
                         }
+
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
                 } ?: defaultRemoteData,
@@ -164,34 +168,37 @@ class AssetMapperImpl(
         }
     }
 
-    override fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset = with(assetContent) {
-        Asset(
-            original = Asset.Original(
-                mimeType = mimeType,
-                size = sizeInBytes,
-                name = name,
-                metaData = when (metadata) {
-                    is Image -> Asset.Original.MetaData.Image(
-                        Asset.ImageMetaData(
-                            width = metadata.width,
-                            height = metadata.height,
+    override fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset =
+        with(messageContent.value) {
+            Asset(
+                original = Asset.Original(
+                    mimeType = mimeType,
+                    size = sizeInBytes,
+                    name = name,
+                    metaData = when (metadata) {
+                        is Image -> Asset.Original.MetaData.Image(
+                            Asset.ImageMetaData(
+                                width = metadata.width,
+                                height = metadata.height,
+                            )
                         )
+
+                        else -> null
+                    }
+                ),
+                status = Asset.Status.Uploaded(
+                    uploaded = Asset.RemoteData(
+                        otrKey = ByteArr(remoteData.otrKey),
+                        sha256 = ByteArr(remoteData.sha256),
+                        assetId = remoteData.assetId,
+                        assetToken = remoteData.assetToken,
+                        assetDomain = remoteData.assetDomain,
+                        encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                     )
-                    else -> null
-                }
-            ),
-            status = Asset.Status.Uploaded(
-                uploaded = Asset.RemoteData(
-                    otrKey = ByteArr(remoteData.otrKey),
-                    sha256 = ByteArr(remoteData.sha256),
-                    assetId = remoteData.assetId,
-                    assetToken = remoteData.assetToken,
-                    assetDomain = remoteData.assetDomain,
-                    encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
-                )
-            ),
-        )
-    }
+                ),
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+        }
 
     override fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus {
         return when (uploadStatus) {

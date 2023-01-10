@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
@@ -30,7 +31,7 @@ class SendConfirmationUseCase internal constructor(
 
     suspend operator fun invoke(
         conversationId: ConversationId,
-        type: Message.ConfirmationType,
+        type: ReceiptType,
         firstMessageId: String,
         moreMessageIds: List<String>
     ): Either<CoreFailure, Unit> {
@@ -43,15 +44,14 @@ class SendConfirmationUseCase internal constructor(
         val generatedMessageUuid = uuid4().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
-            val message = Message.Regular(
+            val message = Message.Signaling(
                 id = generatedMessageUuid,
-                content = MessageContent.Confirmation(type, firstMessageId, moreMessageIds),
+                content =  MessageContent.Receipt(type,  listOf(firstMessageId) + moreMessageIds),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited
+                status = Message.Status.PENDING
             )
             messageSender.sendMessage(message)
         }.onFailure {

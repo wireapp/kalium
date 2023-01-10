@@ -40,7 +40,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 .toSet()
         }
 
-        if (affectedModules.isEmpty() || affectedModules.first().isEmpty()) {
+        if (!hasToRunAllTests() && (affectedModules.isEmpty() || affectedModules.first().isEmpty())) {
             println("\uD83E\uDD8B It is not necessary to run any test, ending here to free up some resources.")
             return
         }
@@ -50,8 +50,9 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     private fun executeTask(affectedModules: Set<String>) {
         val tasksName = mutableListOf<String>()
+        val hasToRunAllTests = hasToRunAllTests()
         project.childProjects.values
-            .filter { affectedModules.contains(it.name) && !ignoredModules.contains(it.name) }
+            .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
                     .filter { it.name.equals(targetTestTask, true) }
@@ -68,6 +69,35 @@ open class OnlyAffectedTestTask : DefaultTask() {
             args(targetTask)
             executable("./gradlew")
         }
+    }
+
+    /**
+     * Get the predicate to compute if the module should be included or not in the test
+     */
+    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = when {
+        allTests == true -> true
+        else -> modulesPredicate
+    }
+
+    /**
+     * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].
+     */
+    private fun hasToRunAllTests(): Boolean {
+        val globalBuildSettingsFiles = listOf(
+            "gradle/libs.versions.toml",
+            "build.gradle.kts",
+            "gradle.properties",
+            "settings.gradle.kts",
+        )
+
+        val anySettingsFileChanged = globalBuildSettingsFiles.any { relativePath ->
+            val exitCode = "git diff --quiet origin/develop -- ${project.rootDir}/$relativePath".execute().exitValue()
+            exitCode != 0
+        }
+        if (anySettingsFileChanged) {
+            println("\uD83D\uDD27 Running all tests because there are changes at the root level")
+        }
+        return anySettingsFileChanged
     }
 
     /**

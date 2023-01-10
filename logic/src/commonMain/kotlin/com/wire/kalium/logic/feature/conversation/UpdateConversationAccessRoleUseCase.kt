@@ -8,6 +8,16 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
+/**
+ * This use case will update the access role configuration of a conversation.
+ * So we can operate and allow or not operation based on these roles:
+ * - [Conversation.isGuestAllowed]
+ * - [Conversation.isServicesAllowed]
+ * - [Conversation.isTeamGroup]
+ * - [Conversation.isNonTeamMemberAllowed]
+ *
+ * @see Conversation.AccessRole
+ */
 class UpdateConversationAccessRoleUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {

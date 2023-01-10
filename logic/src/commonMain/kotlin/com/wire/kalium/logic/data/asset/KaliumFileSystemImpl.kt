@@ -9,11 +9,17 @@ import okio.Source
 expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
     KaliumFileSystem
 
+@Suppress("TooManyFunctions")
 interface KaliumFileSystem {
     /**
      * Provides the root of the cache path, used to store temporary files
      */
     val rootCachePath: Path
+
+    /**
+     * Provides the root of the current user database path, used to store all the Database information.
+     */
+    val rootDBPath: Path
 
     /**
      * Opens an output stream that will be used to write the data on the given [outputPath]
@@ -42,11 +48,18 @@ interface KaliumFileSystem {
     fun createDirectory(dir: Path, mustCreate: Boolean = false)
 
     /**
-     * This will delete the content of the given [path]
+     * This will delete the content of the given file [path]
      * @param path the path to be deleted
      * @param mustExist whether it is certain that [path] exists before the deletion
      */
     fun delete(path: Path, mustExist: Boolean = false)
+
+    /**
+     * This will delete recursively the given [dir] and all its content
+     * @param dir the directory to be deleted
+     * @param mustExist whether it is certain that [dir] exists before the deletion
+     */
+    fun deleteContents(dir: Path, mustExist: Boolean = false)
 
     /**
      * Checks whether the given [path] is already created and exists on the current file system
@@ -62,7 +75,7 @@ interface KaliumFileSystem {
     fun copy(sourcePath: Path, targetPath: Path)
 
     /**
-     * Creates a temporary path if it didn't exist before and returns it if successful
+     * Creates a temporary path if it didn't exist before and returns it if successful.
      * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
      */
     fun tempFilePath(pathString: String? = null): Path
@@ -91,4 +104,11 @@ interface KaliumFileSystem {
      * @return the number of bytes written
      */
     suspend fun writeData(outputSink: Sink, dataSource: Source): Long
+
+    /**
+     * Provides a list of paths found in the given [dir] path from where the call is being invoked.
+     * @param dir the path from where the list of paths will be fetched
+     * @return the list of paths found.
+     */
+    suspend fun listDirectories(dir: Path): List<Path>
 }

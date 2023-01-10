@@ -11,6 +11,9 @@ import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -19,6 +22,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -35,23 +39,25 @@ import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
 data class ApplicationMessage(
     val message: ByteArray,
     val senderClientID: ClientId
 )
+
 data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?
 )
 
+@Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
@@ -61,6 +67,9 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
+    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
+    suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
+    suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
@@ -93,7 +102,6 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
-    private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
@@ -114,7 +122,7 @@ class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
                 conversationDAO.observeGetConversationByQualifiedID(
-                    idMapper.toDaoModel(messageEvent.conversationId)
+                    messageEvent.conversationId.toDao()
                 ).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
@@ -194,6 +202,38 @@ class MLSConversationDataSource(
         }
     }
 
+    override suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit> {
+        kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.joinByExternalCommit(groupInfo)
+            }.flatMap { commitBundle ->
+                sendCommitBundleForExternalCommit(groupID, commitBundle)
+            }.onSuccess {
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    idMapper.toCryptoModel(groupID)
+                )
+            }
+
+        }
+    }
+
+    override suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.conversationEpoch(idMapper.toCryptoModel(groupID)) < currentEpoch
+            }
+        }
+
+    override suspend fun clearJoinViaExternalCommit(groupID: GroupID) {
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(groupID))
+            }
+        }
+    }
+
     override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map(idMapper::fromGroupIDEntity)
@@ -208,7 +248,7 @@ class MLSConversationDataSource(
                     sendCommitBundle(groupID, commitBundle)
                 }.flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
+                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), DateTimeUtil.currentInstant())
                     }
                 }
             }
@@ -227,9 +267,25 @@ class MLSConversationDataSource(
         }
     }
 
+    private suspend fun sendCommitBundleForExternalCommit(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapApiRequest {
+                mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
+            }.fold({
+                wrapMLSRequest {
+                    mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(groupID))
+                }
+            }, {
+                wrapMLSRequest {
+                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                }
+            })
+        }
+    }
+
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO)
+            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO, true)
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event)
             }
@@ -277,7 +333,7 @@ class MLSConversationDataSource(
                             }
 
                         wrapMLSRequest {
-                            if (userIdList.contains(selfUserId) && clientKeyPackageList.isEmpty()) {
+                            if (userIdList.isEmpty()) {
                                 // We are creating a group with only our self client which technically
                                 // doesn't need be added with a commit, but our backend API requires one,
                                 // so we create a commit by updating our key material.
@@ -298,10 +354,13 @@ class MLSConversationDataSource(
     override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID) {
-                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
                     val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
                         userClients.value.map { userClient ->
-                            CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                            CryptoQualifiedClientId(
+                                userClient.id,
+                                idMapper.toCryptoQualifiedIDId(userClients.key.toModel())
+                            )
                         }
                     }
                     return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
@@ -332,7 +391,7 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members + selfUserId)
+                addMemberToMLSGroup(groupID, members)
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(

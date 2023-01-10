@@ -18,13 +18,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.Times
@@ -40,7 +40,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -357,15 +356,14 @@ class MessageSenderTest {
             .withSendProteusMessage()
             .arrange()
 
-        val message = Message.Regular(
+        val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = "1234",
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
 
         val messageTarget = MessageTarget.Client(
@@ -408,15 +406,14 @@ class MessageSenderTest {
             .withSendProteusMessage()
             .arrange()
 
-        val message = Message.Regular(
+        val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = "1234",
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
 
         val messageTarget = MessageTarget.Conversation
@@ -475,13 +472,10 @@ class MessageSenderTest {
         @Mock
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
 
-        @Mock
-        val timeParser = mock(TimeParser::class)
-
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
-            override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
+            override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
                 return Either.Right(message)
             }
         }
@@ -495,7 +489,6 @@ class MessageSenderTest {
             sessionEstablisher = sessionEstablisher,
             messageEnvelopeCreator = messageEnvelopeCreator,
             mlsMessageCreator = mlsMessageCreator,
-            timeParser = timeParser,
             messageSendingScheduler = messageSendingScheduler,
             messageSendingInterceptor = messageSendingInterceptor,
             scope = testScope
@@ -557,7 +550,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right("date")) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -596,13 +589,6 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
 
-        fun withCalculateMillisDifferenceSuccessful() = apply {
-            given(timeParser)
-                .function(timeParser::calculateMillisDifference)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(20L)
-        }
-
         fun withWaitUntilLiveOrFailure(failing: Boolean = false) = apply {
             given(syncManager)
                 .suspendFunction(syncManager::waitUntilLiveOrFailure)
@@ -631,7 +617,6 @@ class MessageSenderTest {
                 withUpdateMessageStatus(updateMessageStatusFailing)
                 withUpdateMessageDate(updateMessageDateFailing)
                 withUpdatePendingMessagesAddMillisToDate(updatePendingMessagesAddMillisToDateFailing)
-                withCalculateMillisDifferenceSuccessful()
 
             }
 
@@ -645,7 +630,6 @@ class MessageSenderTest {
             withUpdateMessageStatus()
             withUpdateMessageDate()
             withUpdatePendingMessagesAddMillisToDate()
-            withCalculateMillisDifferenceSuccessful()
         }
 
         companion object {
@@ -658,7 +642,7 @@ class MessageSenderTest {
                 recipients = listOf(),
                 dataBlob = null
             )
-            val MESSAGE_SENT_TIME = Clock.System.now().toString()
+            val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             val GROUP_ID = GroupID("groupId")

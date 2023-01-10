@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -46,6 +45,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 // TODO: refactor to arrangement pattern
@@ -98,8 +98,6 @@ class SearchUserRepositoryTest {
         given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
-
-        given(idMapper).function(idMapper::toDaoModel).whenInvokedWith(anything()).then { PersistenceQualifiedId(it.value, it.domain) }
     }
 
     @Test
@@ -442,6 +440,27 @@ class SearchUserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenContactSearchApiSuccessButListIsEmpty_whenSearchPublicContact_thenReturnEmptyListWithoutCallingUserDetailsApi() = runTest {
+        // given
+        given(userSearchApiWrapper)
+            .suspendFunction(userSearchApiWrapper::search)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE_EMPTY))
+
+        // when
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+
+        // then
+        assertIs<Either.Right<UserSearchResult>>(actual)
+        assertTrue { actual.value.result.isEmpty() }
+
+        verify(userDetailsApi)
+            .suspendFunction(userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
@@ -487,6 +506,14 @@ class SearchUserRepositoryTest {
             returned = 5,
             searchPolicy = SearchPolicyDTO.FULL_SEARCH,
             took = 100,
+        )
+
+        val CONTACT_SEARCH_RESPONSE_EMPTY = UserSearchResponse(
+            documents = emptyList(),
+            found = 0,
+            returned = 0,
+            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
+            took = 0,
         )
 
         val USER_RESPONSE = listOf(

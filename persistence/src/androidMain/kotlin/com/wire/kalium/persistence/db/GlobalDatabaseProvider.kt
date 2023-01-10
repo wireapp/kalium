@@ -1,7 +1,6 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Accounts
@@ -17,34 +16,26 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
+// TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(private val context: Context, passphrase: GlobalDatabaseSecret, encrypt: Boolean = true) {
     private val dbName = FileNameUtil.globalDBName()
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 
     init {
-        val onConnectCallback = object : AndroidSqliteDriver.Callback(GlobalDatabase.Schema) {
-            override fun onOpen(db: SupportSQLiteDatabase) {
-                super.onOpen(db)
-                db.execSQL("PRAGMA foreign_keys=ON;")
-            }
-        }
         driver = if (encrypt) {
             AndroidSqliteDriver(
                 schema = GlobalDatabase.Schema,
                 context = context,
                 name = dbName,
-                factory = SupportFactory(passphrase.value),
-                callback = onConnectCallback
+                factory = SupportFactory(passphrase.value)
             )
         } else {
             AndroidSqliteDriver(
                 schema = GlobalDatabase.Schema,
                 context = context,
-                name = dbName,
-                callback = onConnectCallback
+                name = dbName
             )
-
         }
 
         database = GlobalDatabase(
@@ -56,6 +47,8 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
                 apiProxyPortAdapter = IntColumnAdapter
             )
         )
+
+        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

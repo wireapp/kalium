@@ -7,6 +7,9 @@ import java.io.File
 import java.util.Base64
 
 @Suppress("TooManyFunctions")
+/**
+ *
+ */
 class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String
@@ -77,12 +80,22 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromSession(sessionId.value, message) }
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return sessionIds.associateWith { sessionId ->
+            encrypt(message, sessionId)
+        }
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
+    }
+
+    override fun deleteSession(sessionId: CryptoSessionId) {
+        // TODO Delete session
     }
 
     @Suppress("TooGenericExceptionCaught")

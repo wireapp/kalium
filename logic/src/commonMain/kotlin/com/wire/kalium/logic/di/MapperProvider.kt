@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -37,8 +39,6 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
-import com.wire.kalium.logic.data.message.ConfirmationTypeMapper
-import com.wire.kalium.logic.data.message.ConfirmationTypeMapperImpl
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -50,6 +50,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapperImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
@@ -79,10 +81,9 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
     fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
-    fun confirmationTypeMapper(): ConfirmationTypeMapper = ConfirmationTypeMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl(
         idMapper(),
@@ -91,10 +92,10 @@ internal object MapperProvider {
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
+    fun receiptsMapper(): ReceiptsMapper = ReceiptsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
         idMapper = idMapper(),
-        memberMapper = memberMapper(),
         selfUserId = selfUserId
     )
 
@@ -106,7 +107,8 @@ internal object MapperProvider {
             ProtocolInfoMapperImpl(),
             AvailabilityStatusMapperImpl(),
             DomainUserTypeMapperImpl(),
-            ConnectionStatusMapperImpl()
+            ConnectionStatusMapperImpl(),
+            ConversationRoleMapperImpl()
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
@@ -120,7 +122,7 @@ internal object MapperProvider {
         connectionMapper(),
         featureConfigMapper(),
         conversationRoleMapper(),
-        userTypeMapper(),
+        receiptModeMapper(),
     )
 
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
@@ -128,7 +130,7 @@ internal object MapperProvider {
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
-    fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper())
+    fun clientMapper(): ClientMapper = ClientMapper(idMapper(), preyKeyMapper(), locationMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(selfUserId: UserId): ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
@@ -150,5 +152,6 @@ internal object MapperProvider {
     fun mlsCommitBundleMapper(): MLSCommitBundleMapper = MLSCommitBundleMapperImpl()
 
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
+    fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
 
 }

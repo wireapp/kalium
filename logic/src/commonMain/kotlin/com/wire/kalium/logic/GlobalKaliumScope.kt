@@ -9,7 +9,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCase
+import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
@@ -38,8 +41,6 @@ import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
-import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
-import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -62,7 +63,8 @@ class GlobalKaliumScope internal constructor(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
+    private val authenticationScopeProvider: AuthenticationScopeProvider
 ) {
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
@@ -84,6 +86,9 @@ class GlobalKaliumScope internal constructor(
                 globalPreferences.value.authTokenStorage,
                 serverConfigRepository
             )
+
+    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
+        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
@@ -119,18 +124,18 @@ class GlobalKaliumScope internal constructor(
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
-    val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
-        get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(
-            globalConfigRepository
-        )
-    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
-        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-            globalConfigRepository
-        )
+
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 
     val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() =
             ServerConfigForAccountUseCase(serverConfigRepository)
+
+    val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
+        get() = ObserveIfAppUpdateRequiredUseCaseImpl(
+            serverConfigRepository,
+            authenticationScopeProvider,
+            userSessionScopeProvider.value
+        )
 }

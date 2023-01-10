@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.message.reaction
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -39,18 +41,20 @@ internal class ReactionsMapperImpl(
 
     override fun fromEntityToModel(selfUserId: UserId, messageReactionEntity: MessageReactionEntity): MessageReaction =
         with(messageReactionEntity) {
-            val messageUserId = idMapper.fromDaoModel(userId)
+            val messageUserId = userId.toModel()
             MessageReaction(
                 emoji = emoji,
-                userId = messageUserId,
-                name = name,
-                handle = handle,
                 isSelfUser = selfUserId == messageUserId,
-                previewAssetId = previewAssetIdEntity?.let { idMapper.fromDaoModel(it) },
-                userType = domainUserTypeMapper.fromUserTypeEntity(userTypeEntity),
-                deleted = deleted,
-                connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
-                userAvailabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                userSummary = UserSummary(
+                    userId = messageUserId,
+                    userName = name,
+                    userHandle = handle,
+                    userPreviewAssetId = previewAssetIdEntity?.toModel(),
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userTypeEntity),
+                    isUserDeleted = deleted,
+                    connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
+                    availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+                )
             )
         }
 }

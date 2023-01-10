@@ -9,6 +9,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -106,7 +108,7 @@ internal class ConnectionDataSource(
 
     override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
-            connectionApi.createConnection(idMapper.toApiModel(userId))
+            connectionApi.createConnection(userId.toApi())
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionSent))
@@ -121,7 +123,7 @@ internal class ConnectionDataSource(
         }
 
         return wrapApiRequest {
-            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
+            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
         }.map { connectionDTO ->
             val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
@@ -163,11 +165,11 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun setConnectionAsNotified(userId: UserId) {
-        connectionDAO.updateNotificationFlag(false, idMapper.toDaoModel(userId))
+        connectionDAO.updateNotificationFlag(false, userId.toDao())
     }
 
     override suspend fun setAllConnectionsAsNotified() {
-        connectionDAO.updateAllNotificationFlags(false)
+        connectionDAO.setAllConnectionsAsNotified()
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
@@ -187,7 +189,7 @@ internal class ConnectionDataSource(
         selfTeamIdProvider().flatMap { teamId ->
             // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
             wrapApiRequest {
-                userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
+                userDetailsApi.getUserInfo(connection.qualifiedToId.toApi())
             }.fold({
                 wrapStorageRequest {
                     connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
@@ -220,7 +222,7 @@ internal class ConnectionDataSource(
                      as the final solution we need to ignore the conversation part, but now? we can't! */
                 conversationDAO.insertConversation(
                     conversationEntity = ConversationEntity(
-                        id = idMapper.toDaoModel(connection.qualifiedConversationId),
+                        id = connection.qualifiedConversationId.toDao(),
                         name = null,
                         type = ConversationEntity.Type.CONNECTION_PENDING,
                         teamId = null,
@@ -230,7 +232,8 @@ internal class ConnectionDataSource(
                         lastModifiedDate = connection.lastUpdate,
                         lastReadDate = connection.lastUpdate,
                         access = emptyList(),
-                        accessRole = emptyList()
+                        accessRole = emptyList(),
+                        receiptMode = ConversationEntity.ReceiptMode.DISABLED
                     )
                 )
             }
@@ -238,7 +241,7 @@ internal class ConnectionDataSource(
             ACCEPTED -> {
                 kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
                 conversationDAO.updateConversationType(
-                    idMapper.toDaoModel(connection.qualifiedConversationId),
+                    connection.qualifiedConversationId.toDao(),
                     ConversationEntity.Type.ONE_ON_ONE
                 )
             }
@@ -251,16 +254,16 @@ internal class ConnectionDataSource(
     }
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
-        connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
+        connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
     }
 
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =
         wrapStorageRequest {
             conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                 // TODO(IMPORTANT!!!!!!): setting a default value for member role is incorrect and can lead to unexpected behaviour
-                member = Member(user = idMapper.toDaoModel(connection.qualifiedToId), Member.Role.Member),
+                member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
                 status = connectionStatusMapper.toDaoModel(connection.status),
-                conversationID = idMapper.toDaoModel(connection.qualifiedConversationId)
+                conversationID = connection.qualifiedConversationId.toDao()
             )
         }.onFailure {
             kaliumLogger.e("There was an error when trying to persist the connection: $connection")

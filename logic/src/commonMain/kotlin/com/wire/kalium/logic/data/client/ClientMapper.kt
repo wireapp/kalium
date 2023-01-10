@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
@@ -11,15 +13,18 @@ import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
+import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class ClientMapper(
+    private val idMapper: IdMapper,
     private val preyKeyMapper: PreKeyMapper,
     private val locationMapper: LocationMapper
 ) {
 
     fun toRegisterClientRequest(
         clientConfig: ClientConfig,
-        param: RegisterClientParam
+        param: RegisterClientParam,
     ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
@@ -29,6 +34,7 @@ class ClientMapper(
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
+        cookieLabel = param.cookieLabel
     )
 
     fun fromClientResponse(response: ClientResponse): Client = Client(
@@ -36,7 +42,7 @@ class ClientMapper(
         type = fromClientTypeDTO(response.type),
         registrationTime = response.registrationTime,
         location = response.location?.let { locationMapper.fromLocationResponse(it) } ?: run { null },
-        deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
+        deviceType = fromDeviceTypeDTO(response.deviceType),
         label = response.label,
         cookie = response.cookie,
         capabilities = response.capabilities?.let { capabilities ->
@@ -47,6 +53,17 @@ class ClientMapper(
         model = response.model,
         mlsPublicKeys = response.mlsPublicKeys ?: emptyMap()
     )
+
+    fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
+        simpleClientResponse.map {
+            with(it) {
+                InsertClientParam(
+                    userId = userIdDTO.toDao(),
+                    id = id,
+                    deviceType = toDeviceTypeEntity(deviceClass)
+                )
+            }
+        }
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
@@ -76,11 +93,6 @@ class ClientMapper(
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<SimpleClientResponse>): List<OtherUserClient> =
-        otherUsersClients.map {
-            OtherUserClient(DeviceType.valueOf(it.deviceClass.name), it.id)
-        }
-
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
         DeviceTypeDTO.Phone -> DeviceType.Phone
         DeviceTypeDTO.Tablet -> DeviceType.Tablet
@@ -103,5 +115,13 @@ class ClientMapper(
         DeviceType.Desktop -> DeviceTypeEntity.Desktop
         DeviceType.LegalHold -> DeviceTypeEntity.LegalHold
         DeviceType.Unknown -> DeviceTypeEntity.Unknown
+    }
+
+    fun toDeviceTypeEntity(deviceTypeDTO: DeviceTypeDTO): DeviceTypeEntity = when (deviceTypeDTO) {
+        DeviceTypeDTO.Phone -> DeviceTypeEntity.Phone
+        DeviceTypeDTO.Tablet -> DeviceTypeEntity.Tablet
+        DeviceTypeDTO.Desktop -> DeviceTypeEntity.Desktop
+        DeviceTypeDTO.LegalHold -> DeviceTypeEntity.LegalHold
+        DeviceTypeDTO.Unknown -> DeviceTypeEntity.Unknown
     }
 }

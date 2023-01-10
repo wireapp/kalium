@@ -1,14 +1,16 @@
+import com.wire.kalium.plugins.commonDokkaConfig
+
 plugins {
     kotlin("jvm")
     application
 }
 val mainFunctionClassName = "com.wire.kalium.cli.CLIApplicationKt"
 
-application{
+application {
     mainClass.set(mainFunctionClassName)
 }
 
-tasks.named("run", JavaExec::class){
+tasks.named("run", JavaExec::class) {
     isIgnoreExitValue = true
     standardInput = System.`in`
     standardOutput = System.out
@@ -24,14 +26,18 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+commonDokkaConfig()
+
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
     implementation(project(":logic"))
+    implementation(project(":util"))
 
     implementation(libs.cliKt)
     implementation(libs.ktor.utils)
     implementation(libs.ktor.okHttp)
     implementation(libs.okhttp.loggingInterceptor)
     implementation(libs.coroutines.core)
+    implementation(libs.ktxDateTime)
 }

@@ -103,6 +103,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return sessionIds.associateWith { sessionId ->
+            encrypt(message, sessionId)
+        }
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
@@ -113,6 +119,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
             val encryptedMessage = session.encrypt(message)
             session.save()
             encryptedMessage
+        }
+    }
+
+    override fun deleteSession(sessionId: CryptoSessionId) {
+        wrapException {
+            box.deleteSession(sessionId.value)
         }
     }
 

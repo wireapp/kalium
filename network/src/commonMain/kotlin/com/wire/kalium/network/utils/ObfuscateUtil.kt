@@ -16,15 +16,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
-fun obfuscatedJsonMessage(text: String): String {
-    var obfuscatedMessage = ""
-    try {
-        val obj = (Json.decodeFromString(text) as JsonElement)
-        obfuscatedMessage = obfuscatedJsonElement(obj).toString()
-    } catch (e: Exception) {
-        obfuscatedMessage = "\"Error while obfuscating. Content probably not json.\""
-    }
-    return obfuscatedMessage
+fun obfuscatedJsonMessage(text: String): String = try {
+    val obj = (Json.decodeFromString(text) as JsonElement)
+    obfuscatedJsonElement(obj).toString()
+} catch (e: Exception) {
+    "\"Error while obfuscating. Content probably not json.\""
 }
 
 fun obfuscatedJsonElement(element: JsonElement): JsonElement =

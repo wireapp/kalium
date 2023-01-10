@@ -1,4 +1,3 @@
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
@@ -24,15 +23,17 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
+    wireDetektRulesRepo()
     google()
     mavenCentral()
 }
 
 plugins {
-    val dokkaVersion = "1.6.10"
-    id("org.jetbrains.dokka") version "$dokkaVersion"
-    id("org.jetbrains.kotlinx.kover") version "0.5.1"
+    id("org.jetbrains.dokka")
+    id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
+    id("scripts.detekt")
 }
 
 dependencies {
@@ -47,9 +48,9 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
@@ -90,13 +91,4 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
 }
 
-tasks.create("dokkaClean") {
-    group = "documentation"
-    project.delete(file("build/dokka"))
-}
-
-tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
-tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
-
-apply(from = "$rootDir/gradle/detekt.gradle")
-apply(from = "$rootDir/gradle/dokka.gradle")
+tasks.dokkaHtmlMultiModule.configure {}

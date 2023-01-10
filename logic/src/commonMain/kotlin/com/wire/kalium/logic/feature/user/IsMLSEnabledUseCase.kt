@@ -1,15 +1,21 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Checks if the current user has enabled MLS support.
+ */
 interface IsMLSEnabledUseCase {
+    /**
+     * @return true if MLS is enabled, false otherwise.
+     */
     operator fun invoke(): Boolean
 }
 
-class IsMLSEnabledUseCaseImpl(
-    private val kaliumConfigs: KaliumConfigs,
+internal class IsMLSEnabledUseCaseImpl(
+    private val featureSupport: FeatureSupport,
     private val userConfigRepository: UserConfigRepository
 ) : IsMLSEnabledUseCase {
 
@@ -17,6 +23,6 @@ class IsMLSEnabledUseCaseImpl(
         userConfigRepository.isMLSEnabled().fold({
             false
         }, {
-            it && kaliumConfigs.isMLSSupportEnabled
+            it && featureSupport.isMLSSupported
         })
 }

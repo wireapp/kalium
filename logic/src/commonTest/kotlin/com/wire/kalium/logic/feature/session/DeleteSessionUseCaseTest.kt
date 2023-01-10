@@ -76,10 +76,10 @@ class DeleteSessionUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(classOf<SessionRepository>())
 
         @Mock
-        val userSessionScopeProvider: UserSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
+        val userSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
 
         val deleteSessionUseCase = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider)
 

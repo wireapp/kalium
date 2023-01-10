@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.config
 
-import com.russhwolf.settings.MockSettings
+import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
@@ -10,9 +10,10 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class UserConfigStorageTest {
-    private val settings: Settings = MockSettings()
+    private val settings: Settings = MapSettings()
 
     private val kaliumPreferences: KaliumPreferences = KaliumPreferencesSettings(settings)
     private lateinit var userConfigStorage: UserConfigStorage
@@ -53,4 +54,11 @@ class UserConfigStorageTest {
             userConfigStorage.isConferenceCallingEnabled()
         )
     }
+
+    @Test
+    fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
+        userConfigStorage.persistReadReceipts(true)
+        assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
+    }
+
 }

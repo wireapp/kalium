@@ -1,33 +1,34 @@
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
-import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * This use case is responsible for persisting the persistent web socket connection status of the current user.
+ */
 interface PersistPersistentWebSocketConnectionStatusUseCase {
-    operator fun invoke(enabled: Boolean): Unit
+    /**
+     * @param enabled true if the persistent web socket connection should be enabled, false otherwise
+     */
+    suspend operator fun invoke(enabled: Boolean)
 }
 
 internal class PersistPersistentWebSocketConnectionStatusUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
+    private val userId: UserId,
+    private val sessionRepository: SessionRepository
 ) : PersistPersistentWebSocketConnectionStatusUseCase {
-    override operator fun invoke(enabled: Boolean): Unit =
-        globalConfigRepository.persistPersistentWebSocketConnectionStatus(enabled).let {
-            it.fold({ storageFailure ->
-                when (storageFailure) {
-                    is StorageFailure.DataNotFound ->
-                        kaliumLogger.withFeatureId(LOCAL_STORAGE).e(
-                            "DataNotFound when persisting web socket status  : $storageFailure"
-                        )
-
-                    is StorageFailure.Generic ->
-                        kaliumLogger.withFeatureId(LOCAL_STORAGE).e(
-                            "Failure when persisting web socket status ", storageFailure.rootCause
-                        )
-                }
-            }, {}
+    override suspend operator fun invoke(enabled: Boolean) =
+        sessionRepository.updatePersistentWebSocketStatus(userId, enabled).fold({
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE).e(
+                "DataNotFound when persisting web socket status  : $it"
             )
-        }
+        }, {
+            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE).d(
+                "Persistent WebSocket Connection Status Persisted successfully"
+            )
+        })
+
 }

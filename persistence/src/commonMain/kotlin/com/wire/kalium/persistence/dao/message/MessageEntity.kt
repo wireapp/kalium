@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName
@@ -13,7 +14,8 @@ sealed class MessageEntity(
     open val date: String,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
-    open val visibility: Visibility
+    open val visibility: Visibility,
+    open val isSelfMessage: Boolean,
 ) {
 
     data class Regular(
@@ -24,10 +26,13 @@ sealed class MessageEntity(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
+        val expectsReadConfirmation: Boolean = false
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
         override val id: String,
@@ -36,8 +41,10 @@ sealed class MessageEntity(
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+        override val visibility: Visibility = Visibility.VISIBLE,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -116,7 +123,8 @@ sealed class MessageEntity(
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM
+        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
+        NEW_CONVERSATION_RECEIPT_MODE
     }
 
     enum class MemberChangeType {
@@ -125,6 +133,7 @@ sealed class MessageEntity(
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
+
         val isVisible get() = this == VISIBLE
     }
 
@@ -141,6 +150,7 @@ sealed class MessageEntityContent {
     sealed class Regular : MessageEntityContent()
 
     sealed class System : MessageEntityContent()
+    sealed class Signaling : MessageEntityContent()
 
     data class Text(
         val messageBody: String,
@@ -159,7 +169,7 @@ sealed class MessageEntityContent {
          * Details of the message being quoted.
          * Unused when inserting into the DB.
          */
-        val quotedMessage: QuotedMessage? = null
+        val quotedMessage: QuotedMessage? = null,
     ) : Regular() {
         data class QuotedMessage(
             val id: String,
@@ -170,7 +180,7 @@ sealed class MessageEntityContent {
              * matches the hash of the original message
              */
             val isVerified: Boolean,
-            val senderName: String,
+            val senderName: String?,
             val dateTime: String,
             val editTimestamp: String?,
             val visibility: MessageEntity.Visibility,
@@ -183,9 +193,7 @@ sealed class MessageEntityContent {
 
     data class Asset(
         val assetSizeInBytes: Long,
-        // TODO: Make it not-nullable, fallback to
-        //       message ID or something else if it comes
-        //       without a name from the protobuf models
+        // TODO: Make it not-nullable, fallback to message ID or something else if it comes without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
         val assetUploadStatus: MessageEntity.UploadStatus? = null,
@@ -213,7 +221,12 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
-    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
+    data class FailedDecryption(
+        val encodedData: ByteArray? = null,
+        val isDecryptionResolved: Boolean,
+        val senderUserId: QualifiedIDEntity,
+        val senderClientId: String?,
+    ) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
@@ -227,8 +240,70 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     object MissedCall : System()
+    object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
+    data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
+}
+
+/**
+ * Simplified model of [MessageEntity]
+ * used everywhere where there is no need to have all the fields
+ * for example in conversation list or notifications
+ */
+data class MessagePreviewEntity(
+    val id: String,
+    val conversationId: QualifiedIDEntity,
+    val content: MessagePreviewEntityContent,
+    val date: String,
+    val visibility: MessageEntity.Visibility,
+    val isSelfMessage: Boolean
+)
+
+data class NotificationMessageEntity(
+    val id: String,
+    val content: MessagePreviewEntityContent,
+    val conversationId: QualifiedIDEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type?,
+    val date: String
+)
+
+sealed class MessagePreviewEntityContent {
+
+    data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
+
+    data class MentionedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class QuotedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberChange(
+        val adminName: String?,
+        val count: Int, // TODO add usernames
+        val type: MessageEntity.MemberChangeType
+    ) : MessagePreviewEntityContent()
+
+    data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
+
+    data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
+
+    object CryptoSessionReset : MessagePreviewEntityContent()
+    object Unknown : MessagePreviewEntityContent()
+
+}
+
+enum class AssetTypeEntity {
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    ASSET,
+    FILE
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>

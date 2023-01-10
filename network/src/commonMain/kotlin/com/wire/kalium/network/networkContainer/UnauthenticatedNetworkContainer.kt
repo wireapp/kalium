@@ -4,6 +4,7 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
@@ -17,6 +18,7 @@ interface UnauthenticatedNetworkContainer {
     val loginApi: LoginApi
     val registerApi: RegisterApi
     val sso: SSOLoginApi
+    val appVersioningApi: AppVersioningApi
 
     companion object {
         fun create(
@@ -44,7 +46,7 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials
                 )
 
-                else -> throw error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
+                else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
             }
         }
     }

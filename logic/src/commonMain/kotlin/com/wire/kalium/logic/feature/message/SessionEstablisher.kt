@@ -8,8 +8,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
@@ -18,6 +18,10 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 
 internal interface SessionEstablisher {
 
@@ -33,8 +37,9 @@ internal interface SessionEstablisher {
 internal class SessionEstablisherImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val preKeyRepository: PreKeyRepository,
+    private val clientDAO: ClientDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) : SessionEstablisher, CryptoSessionMapper by CryptoSessionMapperImpl() {
+) : SessionEstablisher, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
@@ -52,11 +57,16 @@ internal class SessionEstablisherImpl internal constructor(
                 .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
         }
 
-    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<CoreFailure, Unit> =
+    private suspend fun establishSessions(preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>): Either<CoreFailure, Unit> =
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
+                val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
                 wrapCryptoRequest {
-                    proteusClient.createSessions(getMapOfSessionIdsToPreKeysAndIgnoreNull(preKeyInfoList))
+                    proteusClient.createSessions(valid)
+                }.also {
+                    wrapStorageRequest {
+                        clientDAO.tryMarkInvalid(invalid)
+                    }
                 }
             }
 
@@ -98,25 +108,45 @@ internal class SessionEstablisherImpl internal constructor(
 }
 
 internal interface CryptoSessionMapper {
-    fun getMapOfSessionIdsToPreKeysAndIgnoreNull(
-        preKeyInfoList: List<QualifiedUserPreKeyInfo>
-    ): Map<String, Map<String, Map<String, PreKeyCrypto>>>
+    fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(
+        preKeyInfoMap: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+    ): FilteredRecipient
 }
 
-internal class CryptoSessionMapperImpl internal constructor() : CryptoSessionMapper {
-    override fun getMapOfSessionIdsToPreKeysAndIgnoreNull(
-        preKeyInfoList: List<QualifiedUserPreKeyInfo>
-    ): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
-        val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
-        preKeyInfoList.forEach {
-            val userToClientsToPreKeyMap: Map<String, Map<String, PreKeyCrypto>> = preKeyInfoList.associate { userInfo ->
-                userInfo.userId.value to userInfo.clientsInfo
-                    .mapNotNull { clientPreKeyInfo ->
-                        clientPreKeyInfo.preKey?.let { preKey -> clientPreKeyInfo.clientId to preKey }
-                    }.toMap()
+data class FilteredRecipient(
+    val valid: Map<String, Map<String, Map<String, PreKeyCrypto>>>,
+    val invalid: List<Pair<QualifiedIDEntity, List<String>>>
+)
+
+internal class CryptoSessionMapperImpl internal constructor(
+    private val preKeyMapper: PreKeyMapper
+) : CryptoSessionMapper {
+    override fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(
+        preKeyInfoMap: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+    ): FilteredRecipient {
+        val invalidList: MutableList<Pair<QualifiedIDEntity, String>> = mutableListOf()
+        val validAccumulator: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
+            preKeyInfoMap.mapValues { (domain, userIdToClientToPrekeyMap) ->
+                userIdToClientToPrekeyMap.mapValues { (userId, clientIdToPreKeyMap) ->
+                    clientIdToPreKeyMap.filter { (clientId, prekey) ->
+                        if (prekey == null) {
+                            invalidList.add(QualifiedIDEntity(userId, domain) to clientId)
+                            false
+                        } else {
+                            true
+                        }
+                    }.mapValues { (_, prekeyDTO) ->
+                        preKeyMapper.fromPreKeyDTO(prekeyDTO!!) // null pre-keys are filtered in the step above
+                    }
+                }
             }
-            acc[it.userId.domain] = userToClientsToPreKeyMap
-        }
-        return acc
+        return FilteredRecipient(
+            validAccumulator,
+            invalidList.groupBy {
+                it.first
+            }.mapValues {
+                it.value.map { it.second }
+            }.toList()
+        )
     }
 }

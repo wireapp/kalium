@@ -16,10 +16,12 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
@@ -28,9 +30,18 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
+
+    /**
+     * Clear any cached token on the http clients. This will trigger a reloading
+     * of the access token from the session manager on the next request.
+     */
+    suspend fun clearCachedToken()
 
     val accessTokenApi: AccessTokenApi
 
@@ -68,9 +79,12 @@ interface AuthenticatedNetworkContainer {
 
     val mlsPublicKeyApi: MLSPublicKeyApi
 
+    val propertiesApi: PropertiesApi
+
     companion object {
         fun create(
-            sessionManager: SessionManager
+            sessionManager: SessionManager,
+            selfUserId: UserId
         ): AuthenticatedNetworkContainer {
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
@@ -82,14 +96,16 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
-                    sessionManager
+                    sessionManager,
+                    selfUserId
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
-                    sessionManager
+                    sessionManager,
+                    selfUserId
                 )
 
-                else -> throw error("Unsupported version: $version")
+                else -> error("Unsupported version: $version")
             }
         }
     }
@@ -100,6 +116,8 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
+
+    suspend fun clearCachedToken()
 }
 
 internal class AuthenticatedHttpClientProviderImpl(
@@ -107,19 +125,38 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
 ) : AuthenticatedHttpClientProvider {
+
+    override suspend fun clearCachedToken() {
+        bearerAuthProvider.clearToken()
+    }
+
+    private val loadToken: suspend () -> BearerTokens? = {
+        val session = sessionManager.session() ?: error("missing user session")
+        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+    }
+
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+        val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+        newSession?.let {
+            BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+        }
+    }
+
+    private val bearerAuthProvider: BearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
     override val backendConfig = sessionManager.serverConfig().links
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
             engine,
-            sessionManager,
-            accessTokenApi
+            sessionManager.serverConfig(),
+            bearerAuthProvider
         )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager, accessTokenApi)
+        AuthenticatedWebSocketClient(engine, bearerAuthProvider, sessionManager.serverConfig())
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, accessTokenApi, installCompression = false)
+        AuthenticatedNetworkClient(engine, sessionManager.serverConfig(), bearerAuthProvider, installCompression = false)
     }
 }

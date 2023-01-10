@@ -6,12 +6,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 interface UpdateConversationMutedStatusUseCase {
     /**
      * Use case that allows a conversation to change its muted status to:
-     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAllowed]
+     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAndRepliesAllowed]
      *
      * @param conversationId the id of the conversation where status wants to be changed
      * @param mutedConversationStatus new status to set the given conversation
@@ -20,7 +20,7 @@ interface UpdateConversationMutedStatusUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long = Clock.System.now().toEpochMilliseconds()
+        mutedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
     ): ConversationUpdateStatusResult
 }
 

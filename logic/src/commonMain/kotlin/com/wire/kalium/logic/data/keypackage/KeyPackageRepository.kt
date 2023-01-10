@@ -2,12 +2,13 @@ package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
@@ -31,7 +32,7 @@ interface KeyPackageRepository {
 }
 
 class KeyPackageDataSource(
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageApi: KeyPackageApi,
     private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
@@ -39,11 +40,11 @@ class KeyPackageDataSource(
 ) : KeyPackageRepository {
 
     override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
-        clientRepository.currentClientId().flatMap { selfClientId ->
+        currentClientIdProvider().flatMap { selfClientId ->
             userIds.map { userId ->
                 wrapApiRequest {
                     keyPackageApi.claimKeyPackages(
-                        KeyPackageApi.Param.SkipOwnClient(idMapper.toApiModel(userId), selfClientId.value)
+                        KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value)
                     )
                 }.flatMap {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {

@@ -56,7 +56,8 @@ class LoginApiV0Test : ApiTest {
                 userId = VALID_SELF_RESPONSE.serializableData.id,
                 accessToken = value,
                 tokenType = tokenType,
-                refreshToken = refreshToken
+                refreshToken = refreshToken,
+                cookieLabel = LOGIN_WITH_EMAIL_REQUEST.serializableData.label
             ) to userDTO
         }
         val loginApi: LoginApi = LoginApiV0(networkClient)

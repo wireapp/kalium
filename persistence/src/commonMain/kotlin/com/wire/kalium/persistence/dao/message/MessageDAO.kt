@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
@@ -10,18 +11,39 @@ interface MessageDAO {
     suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
-    suspend fun insertMessage(
+
+    /**
+     * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
+     *
+     * @see insertOrIgnoreMessages
+     */
+    suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean = false,
-        updateConversationModifiedDate: Boolean = false,
-        updateConversationNotificationsDate: Boolean = false
+        updateConversationModifiedDate: Boolean = false
     )
 
-    suspend fun insertMessages(messages: List<MessageEntity>)
+    /**
+     * Inserts the messages, or ignores messages if there already exists a message with the same [MessageEntity.id] and
+     * [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
+     *
+     * @see insertOrIgnoreMessage
+     */
+    suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
+    fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
+
+    /**
+     * Returns the most recent message sent from other users, _i.e._ not self user
+     */
+    suspend fun getLatestMessageFromOtherUsers(): MessageEntity?
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
@@ -32,7 +54,11 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
-    suspend fun getMessagesByConversationAndVisibilityAfterDate(
+    suspend fun getNotificationMessage(
+        filteredContent: List<MessageEntity.ContentType>
+    ): Flow<List<NotificationMessageEntity>>
+
+    suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
@@ -40,9 +66,11 @@ interface MessageDAO {
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
+        editTimeStamp: String,
         conversationId: QualifiedIDEntity,
-        messageId: String,
-        newTextContent: MessageEntityContent.Text
+        currentMessageId: String,
+        newTextContent: MessageEntityContent.Text,
+        newMessageId: String
     )
 
     suspend fun getConversationMessagesByContentType(
@@ -52,15 +80,27 @@ interface MessageDAO {
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
-    suspend fun observeLastUnreadMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?>
+    suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
-    suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
+    suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun resetAssetUploadStatus()
 
     suspend fun resetAssetDownloadStatus()
+
+    suspend fun markMessagesAsDecryptionResolved(
+        conversationId: QualifiedIDEntity,
+        userId: QualifiedIDEntity,
+        clientId: String,
+    )
+
+    suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+    ): List<MessageEntity>
+
+    suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 
     val platformExtensions: MessageExtensions
 }

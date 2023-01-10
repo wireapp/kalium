@@ -14,10 +14,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 
 // TODO(testing): create unit test
 class OnHttpRequest(
@@ -69,8 +69,8 @@ class OnHttpRequest(
         messageTarget: MessageTarget
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
-        val date = Clock.System.now().toString()
-        val message = Message.Regular(
+        val date = DateTimeUtil.currentIsoDateTimeString()
+        val message = Message.Signaling(
             id = uuid4().toString(),
             content = messageContent,
             conversationId = conversationId,
@@ -78,7 +78,6 @@ class OnHttpRequest(
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
         return messageSender.sendMessage(message, messageTarget)
     }

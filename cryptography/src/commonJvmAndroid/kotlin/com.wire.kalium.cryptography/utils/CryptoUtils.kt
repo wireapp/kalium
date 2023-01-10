@@ -2,14 +2,12 @@ package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
-import okio.BufferedSink
 import okio.HashingSink
 import okio.Sink
 import okio.Source
 import okio.blackholeSink
 import okio.buffer
 import java.security.MessageDigest
-import kotlin.io.use
 
 actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     val md = MessageDigest.getInstance("MD5")
@@ -26,7 +24,7 @@ actual fun calcSHA256(bytes: ByteArray): ByteArray {
 @Suppress("TooGenericExceptionCaught")
 actual fun calcFileMd5(dataSource: Source): String? =
     try {
-        dataSource.buffer().use { source ->
+        dataSource.buffer().peek().use { source ->
             HashingSink.md5(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray().encodeBase64()
@@ -40,7 +38,7 @@ actual fun calcFileMd5(dataSource: Source): String? =
 @Suppress("TooGenericExceptionCaught")
 actual fun calcFileSHA256(dataSource: Source): ByteArray? =
     try {
-        dataSource.buffer().use { source ->
+        dataSource.buffer().peek().use { source ->
             HashingSink.sha256(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray()

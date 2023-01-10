@@ -21,7 +21,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -67,7 +67,7 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message.Regular, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
+    suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
 
     /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
@@ -87,7 +87,6 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val messageSendingInterceptor: MessageSendingInterceptor,
-    private val timeParser: TimeParser,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -111,7 +110,7 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Regular, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
             attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
                 updateDatesOfMessagesWithServerTime(processedMessage, messageRemoteTime)
@@ -119,7 +118,7 @@ internal class MessageSenderImpl internal constructor(
         }
 
     private suspend fun updateDatesOfMessagesWithServerTime(
-        message: Message.Regular,
+        message: Message.Sendable,
         messageRemoteTime: String
     ) {
         messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
@@ -129,7 +128,7 @@ internal class MessageSenderImpl internal constructor(
                 // this should make sure that pending messages are ordered correctly after one of them is sent
                 messageRepository.updatePendingMessagesAddMillisToDate(
                     message.conversationId,
-                    timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                    DateTimeUtil.calculateMillisDifference(message.date, messageRemoteTime)
                 )
             }.onFailure {
                 val cause = (it as? CoreFailure.Unknown)?.rootCause ?: (it as? StorageFailure.Generic)?.rootCause
@@ -140,7 +139,7 @@ internal class MessageSenderImpl internal constructor(
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
     private suspend fun attemptToSend(
-        message: Message.Regular,
+        message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation
     ): Either<CoreFailure, String> {
         return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
@@ -158,7 +157,7 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private suspend fun attemptToSendWithProteus(
-        message: Message.Regular,
+        message: Message.Sendable,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
@@ -181,7 +180,7 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
-    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Regular): Either<CoreFailure, String> =
+    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, String> =
         mlsConversationRepository.commitPendingProposals(groupId).flatMap {
             mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
@@ -206,7 +205,7 @@ internal class MessageSenderImpl internal constructor(
      */
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
-        message: Message.Regular,
+        message: Message.Sendable,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
         messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({

@@ -7,7 +7,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapper
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -22,13 +21,13 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -53,8 +52,8 @@ interface CallRepository {
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type
     suspend fun updateOpenCallsToClosedStatus()
+    suspend fun persistMissedCall(conversationId: ConversationId)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -66,7 +65,6 @@ internal class CallDataSource(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val timeParser: TimeParser,
     private val callMapper: CallMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
@@ -219,23 +217,39 @@ internal class CallDataSource(
 
         callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                val establishedTime = if (status == CallStatus.ESTABLISHED) timeParser.currentTimeStamp()
+                val establishedTime = if (status == CallStatus.ESTABLISHED) DateTimeUtil.currentIsoDateTimeString()
                 else call.establishedTime
 
                 // Update Metadata
                 this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
-
-                // Persist Missed Call Message if necessary
-                if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
-                    callingLogger.i("[CallRepository][UpdateCallStatusById] -> Persist Missed Call Message")
-                    persistMissedCallMessageIfNeeded(conversationId = modifiedConversationId)
-                }
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
                 data = updatedCallMetadata
             )
         }
+    }
+
+    override suspend fun persistMissedCall(conversationId: ConversationId) {
+        callingLogger.i(
+            "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+        )
+        val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
+        val callerId = callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)
+
+        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
+
+        val message = Message.System(
+            uuid4().toString(),
+            MessageContent.MissedCall,
+            conversationId,
+            DateTimeUtil.currentIsoDateTimeString(),
+            qualifiedUserId,
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE
+        )
+        persistMessage(message)
     }
 
     override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
@@ -328,15 +342,6 @@ internal class CallDataSource(
             )
         )
 
-    override suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type =
-        callDAO.getLastCallConversationTypeByConversationId(
-            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                conversationId = conversationId
-            )
-        )?.let {
-            callMapper.toConversationType(conversationType = it)
-        } ?: Conversation.Type.ONE_ON_ONE
-
     override suspend fun updateOpenCallsToClosedStatus() {
         callDAO.updateOpenCallsToClosedStatus()
     }
@@ -348,29 +353,6 @@ internal class CallDataSource(
             .first()
             .firstOrNull()
             ?.conversationId
-
-    private suspend fun persistMissedCallMessageIfNeeded(
-        conversationId: ConversationId
-    ) {
-        val callerId = callDAO.getCallerIdByConversationId(
-            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                conversationId = conversationId
-            )
-        )
-
-        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
-
-        val message = Message.System(
-            uuid4().toString(),
-            MessageContent.MissedCall,
-            conversationId,
-            timeParser.currentTimeStamp(),
-            qualifiedUserId,
-            Message.Status.SENT,
-            Message.Visibility.VISIBLE
-        )
-        persistMessage(message)
-    }
 
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
         this.combine(_callMetadataProfile) { calls, metadata ->

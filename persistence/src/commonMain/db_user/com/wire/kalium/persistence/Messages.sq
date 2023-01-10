@@ -2,8 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
-import kotlin.Int;
 import kotlin.Boolean;
+import kotlin.Int;
 import kotlin.collections.List;
 
 CREATE TABLE Message (
@@ -16,6 +16,7 @@ CREATE TABLE Message (
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -116,6 +117,7 @@ CREATE TABLE MessageFailedToDecryptContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       unknown_encoded_data BLOB,
+      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -141,6 +143,16 @@ CREATE TABLE MessageConversationChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageNewConversationReceiptModeContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 CREATE VIEW IF NOT EXISTS MessageQuoteDetails
 AS SELECT
     MessageTextContent.message_id AS messageId,
@@ -148,10 +160,7 @@ AS SELECT
     MessageTextContent.quoted_message_id AS quotedMessageId,
     MessageTextContent.is_quote_verified AS isQuoteVerified,
     QuotedSender.qualified_id AS quotedSenderId,
-    CASE
-        WHEN (qualified_id = SelfUser.id) THEN 1
-        ELSE 0
-    END AS isQuotingSelfUser,
+    (qualified_id == SelfUser.id) AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
     QuotedMessage.date AS quotedMessageDateTime,
     QuotedMessage.last_edit_timestamp AS quotedMessageEditTimestamp,
@@ -178,6 +187,7 @@ Message.sender_client_id AS senderClientId,
 Message.status AS status,
 Message.last_edit_timestamp AS lastEditTimestamp,
 Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -191,6 +201,7 @@ User.user_availability_status AS senderAvailabilityStatus,
 User.user_type AS senderUserType,
 User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
@@ -216,6 +227,7 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
 '{' || IFNULL(
     (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
@@ -260,7 +272,8 @@ QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
 QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
-QuotedMessage.quotedAssetName AS quotedAssetName
+QuotedMessage.quotedAssetName AS quotedAssetName,
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -272,8 +285,90 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.date AS date,
+Message.visibility AS visibility,
+User.name AS senderName,
+User.connection_status AS senderConnectionStatus,
+User.deleted AS senderIsDeleted,
+SelfUser.id AS selfUserId,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
+ConversationNameChangedContent.conversation_name AS updateConversationName,
+Conversation.name AS conversationName,
+(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+TextContent.text_body AS text,
+AssetContent.asset_mime_type AS assetMimeType,
+(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
+IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ',IFNULL(  Conversation.last_notified_message_date, '1970-01-01T00:00:00.000Z' ))), FALSE) AS shouldNotify,
+Conversation.muted_status AS mutedStatus,
+Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+
+needsToBeNotified:
+WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
+SELECT isSelfMessage,
+ IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
+	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
+	mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
+SELECT (
+    CASE mutedStatus
+    WHEN 'ALL_MUTED' THEN 0
+    WHEN 'ALL_ALLOWED' THEN (
+        SELECT CASE (SELECT User.user_availability_status FROM SelfUser LEFT JOIN User ON SelfUser.id = User.qualified_id)
+            WHEN 'BUSY' THEN (SELECT
+                isSelfMessage == 0
+                AND isMentioningSelfUser == 1
+                OR  isQuotingSelfUser == 1
+                FROM targetMessage)
+            WHEN 'AWAY' THEN 0
+            WHEN 'NONE' THEN  (SELECT isSelfMessage == 0 FROM targetMessage)
+            WHEN 'AVAILABLE' THEN (SELECT isSelfMessage == 0 FROM targetMessage)
+            ELSE (SELECT isSelfMessage == 0 FROM targetMessage)  END
+        )
+    WHEN 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN (
+        SELECT CASE (SELECT User.user_availability_status FROM SelfUser LEFT JOIN User ON SelfUser.id = User.qualified_id)
+            WHEN 'AWAY' THEN 0
+            ELSE  (SELECT isSelfMessage == 0
+                  AND isMentioningSelfUser == 1
+                  OR isQuotingSelfUser== 1
+									FROM targetMessage)
+            END
+        )
+    ELSE (SELECT isSelfMessage == 0 FROM targetMessage) END)
+     AS needsToBeNotified FROM targetMessage;
+
+getLastMessages:
+SELECT * FROM MessagePreview AS message
+WHERE visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
+GROUP BY conversationId
+HAVING date = MAX(date)
+ORDER BY message.date ASC;
+
+getUnreadMessages:
+SELECT * FROM MessagePreview AS message
+WHERE isUnread AND isSelfMessage = 0
+AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 deleteAllMessages:
 DELETE FROM Message;
@@ -306,101 +401,59 @@ UPDATE Message
 SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
-insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(id, conversation_id) DO UPDATE SET
-id = excluded.id,
-content_type = excluded.content_type,
-date = excluded.date,
-sender_user_id = excluded.sender_user_id,
-sender_client_id = excluded.sender_client_id,
-status = excluded.status,
-visibility = excluded.visibility;
+insertOrIgnoreMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
-INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
-VALUES (?, ?, ?, ?, ?)
-ON CONFLICT(message_id, conversation_id, start) DO UPDATE SET
-message_id = excluded.message_id,
-start = excluded.start,
-length = excluded.length,
-user_id = excluded.user_id;
+INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)
+VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
-INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
-VALUES(?, ?, ?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-text_body = excluded.text_body;
+INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
+VALUES(?, ?, ?, ?, ?);
 
 insertMessageRestrictedAssetContent:
-INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
-VALUES(?, ?, ?,?,?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-asset_mime_type = excluded.asset_mime_type;
+INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
+VALUES(?, ?, ?,?,?);
 
 insertMessageAssetContent:
-INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-asset_size = excluded.asset_size,
-asset_name = excluded.asset_name,
-asset_mime_type = excluded.asset_mime_type,
-asset_upload_status = excluded.asset_upload_status,
-asset_download_status = excluded.asset_download_status,
-asset_otr_key = excluded.asset_otr_key,
-asset_sha256 = excluded.asset_sha256,
-asset_id = excluded.asset_id,
-asset_token = excluded.asset_token,
-asset_domain = excluded.asset_domain,
-asset_encryption_algorithm = excluded.asset_encryption_algorithm,
-asset_width = excluded.asset_width,
-asset_height = excluded.asset_height,
-asset_duration_ms = excluded.asset_duration_ms,
-asset_normalized_loudness = excluded.asset_normalized_loudness;
+INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMemberChangeMessage:
-INSERT INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
-VALUES(?, ?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-member_change_list = excluded.member_change_list,
-member_change_type = excluded.member_change_type;
+INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
+VALUES(?, ?, ?, ?);
 
 insertMessageUnknownContent:
-INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
-VALUES(?, ?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-unknown_type_name = excluded.unknown_type_name,
-unknown_encoded_data = excluded.unknown_encoded_data;
+INSERT OR IGNORE INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
+VALUES(?, ?, ?, ?);
 
 insertFailedDecryptionMessageContent:
-INSERT INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data)
-VALUES(?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-message_id = excluded.message_id,
-unknown_encoded_data = excluded.unknown_encoded_data;
+INSERT OR IGNORE INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data)
+VALUES(?, ?, ?);
 
 insertMissedCallMessage:
-INSERT INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
-VALUES(?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-caller_id = excluded.caller_id;
+INSERT OR IGNORE INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
+VALUES(?, ?, ?);
 
 insertConversationRenamedMessage:
-INSERT INTO MessageConversationChangedContent(message_id, conversation_id, conversation_name)
-VALUES(?, ?, ?)
-ON CONFLICT(message_id, conversation_id) DO UPDATE SET
-conversation_name = excluded.conversation_name;
+INSERT OR IGNORE INTO MessageConversationChangedContent(message_id, conversation_id, conversation_name)
+VALUES(?, ?, ?);
+
+insertNewConversationReceiptMode:
+INSERT OR IGNORE INTO MessageNewConversationReceiptModeContent(message_id, conversation_id, receipt_mode)
+VALUES(?, ?, ?);
 
 updateMessageStatus:
 UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
+
+updateQuotedMessageId:
+UPDATE MessageTextContent
+SET quoted_message_id = ?
+WHERE quoted_message_id = ? AND conversation_id = ?;
 
 updateAssetUploadStatus:
 UPDATE MessageAssetContent
@@ -411,6 +464,21 @@ updateAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
+
+updateAssetContent {
+    UPDATE MessageAssetContent
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
+    WHERE message_id = :messageId AND conversation_id = :conversationId;
+
+    UPDATE Message
+    SET visibility = :visibility
+    WHERE id = :messageId AND conversation_id = : conversationId;
+}
+
+getLatestMessageFromOtherUsers:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.isSelfMessage = FALSE
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', MessageDetailsView.date) DESC LIMIT 1;
 
 updateMessageDate:
 UPDATE Message
@@ -429,23 +497,23 @@ WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageId:
 UPDATE Message
-SET id = ?
-WHERE id = ? AND conversation_id = ?;
+SET id = :newId
+WHERE id = :oldId AND conversation_id = :conversationId;
 
 selectAllMessages:
-SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
@@ -458,22 +526,15 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
-getLastUnreadMessage:
-SELECT * FROM MessageDetailsView AS message
-WHERE message.conversationId
-IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-ORDER BY message.date ASC
-LIMIT  1;
+getNotificationsMessages:
+SELECT * FROM MessagePreview AS message
+WHERE shouldNotify == 1
+AND visibility = 'VISIBLE'
+AND isSelfMessage == 0
+AND contentType IN ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
-
-getUnreadMentionsCount:
-SELECT COUNT(DISTINCT message.id) FROM Message AS message
-WHERE message.conversation_id IS :conversation_id
-AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
-AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent
@@ -484,3 +545,23 @@ resetAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
+
+selectPendingMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = ?
+AND visibility IN ?
+AND (expectsReadConfirmation = 1)
+AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
+ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+
+selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
+SELECT id FROM MessageDetailsView
+WHERE conversationId = ?
+AND senderUserId = ?
+AND senderClientId = ?
+AND contentType = 'FAILED_DECRYPTION';
+
+markMessagesAsDecryptionResolved:
+UPDATE MessageFailedToDecryptContent
+SET is_decryption_resolved = 1
+WHERE message_id IN ?;

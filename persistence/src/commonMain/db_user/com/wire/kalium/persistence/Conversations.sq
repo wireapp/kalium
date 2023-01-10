@@ -21,7 +21,8 @@ CREATE TABLE Conversation (
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
     mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL,
-    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL
+    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
 );
 
 deleteAllConversations:
@@ -31,8 +32,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite, receipt_mode)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -49,7 +50,12 @@ last_modified_date = last_modified_date,
 last_notified_message_date = last_notified_message_date,
 last_read_date = last_read_date,
 mls_last_keying_material_update  = excluded.mls_last_keying_material_update,
-mls_cipher_suite = excluded.mls_cipher_suite;
+mls_cipher_suite = excluded.mls_cipher_suite,
+receipt_mode = excluded.receipt_mode;
+
+insertMigrationOnly:
+INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 updateConversation:
 UPDATE Conversation
@@ -65,6 +71,12 @@ updateConversationNotificationsDate:
 UPDATE Conversation
 SET last_notified_message_date = ?
 WHERE qualified_id = ?;
+
+updateAllUnNotifiedConversationsNotificationsDate:
+UPDATE Conversation
+SET last_notified_message_date = ?
+WHERE last_notified_message_date ISNULL
+OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date);
 
 updateConversationModifiedDate:
 UPDATE Conversation
@@ -129,27 +141,7 @@ CASE
     ELSE 0
     END AS isCreator,
 Conversation.last_notified_message_date AS lastNotifiedMessageDate,
-'{' || IFNULL(
-    (SELECT GROUP_CONCAT( singleUnreadContentTypeCount ) singleUnreadContentTypeCount FROM
-        (SELECT ('"' || message.content_type || '":' || Count(message.content_type)) singleUnreadContentTypeCount FROM Message AS message
-            WHERE message.conversation_id = Conversation.qualified_id
-            AND (DateTime(message.date) > DateTime(Conversation.last_read_date))
-            AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
-            AND message.visibility IS 'VISIBLE' GROUP BY message.content_type ) ),
-     '')
-|| '}' AS unreadContentTypeJson,
-(SELECT COUNT() FROM MessageMention
-    WHERE message_id IN (SELECT Message.id FROM Message WHERE Message.conversation_id = Conversation.qualified_id
-                 AND (DateTime(Message.date) >  DateTime(Conversation.last_read_date))
-                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE')
-         AND conversation_id = Conversation.qualified_id
-         AND user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1))
-    AS unreadMentionsCount,
-(SELECT COUNT() FROM Member
-    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
-    AND Member.conversation == Conversation.qualified_id
-    LIMIT 1)
-    AS isMember,
+memberRole. role AS selfRole,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
@@ -162,11 +154,14 @@ Conversation.team_id,
 Conversation.mls_proposal_timer,
 Conversation.muted_time,
 Conversation.creator_id,
-Conversation.last_modified_date
+Conversation.last_modified_date,
+Conversation.receipt_mode
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
     AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
 LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
@@ -190,6 +185,9 @@ SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER B
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
+selectReceiptModeFromGroupConversationByQualifiedId:
+SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
+
 selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
@@ -200,17 +198,13 @@ getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR DateTime(last_modified_date) > DateTime(lastNotifiedMessageDate));
+SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR strftime('%Y-%m-%d %H:%M:%f', last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', lastNotifiedMessageDate));
 
 updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-getUnreadConversationCount:
-SELECT COUNT() FROM Conversation AS conversation
- WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date)
-AND conversation.type IS NOT "SELF";
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
@@ -233,7 +227,7 @@ isUserMember:
 SELECT user FROM Member WHERE conversation = ? AND user = ?;
 
 whoDeletedMeInConversation:
-SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY DateTime(date) DESC LIMIT 1;
+SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT 1;
 
 updateConversationName:
 UPDATE Conversation
@@ -246,4 +240,9 @@ SET type = ?
 WHERE qualified_id = ?;
 
 selfConversationId:
-SELECT qualified_id FROM Conversation WHERE type = 'SELF' LIMIT 1;
+SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
+
+updateConversationReceiptMode:
+UPDATE Conversation
+SET receipt_mode = ?
+WHERE qualified_id = ?;

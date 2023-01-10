@@ -4,18 +4,22 @@ plugins {
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.sqldelight.get().pluginId)
+    id(libs.plugins.kalium.library.get().pluginId)
 }
 
-group = "com.wire.kalium"
-version = "0.0.1-SNAPSHOT"
+kaliumLibrary {
+    multiplatform {
+        enableJsTests.set(false)
+    }
+}
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
+    implementation(libs.kotlin.nativeUtils)
 }
 
 sqldelight {
     database("UserDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_user"
         sourceFolders = listOf(sourceFolderName)
@@ -23,7 +27,7 @@ sqldelight {
     }
 
     database("GlobalDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_global"
         sourceFolders = listOf(sourceFolderName)
@@ -31,61 +35,13 @@ sqldelight {
     }
 }
 
-android {
-    compileSdk = Android.Sdk.compile
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-proguard-rules.pro")
-    }
-    // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
-    sourceSets.remove(sourceSets["test"])
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-}
-
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-
-            testLogging {
-                showStandardStreams = true
-            }
-        }
-    }
-    android()
-    iosX64()
-    js(IR) {
-        browser {
-            testTask {
-                // TODO: Re-enable when JS persistence is supported
-                // Removed as it's currently not implemented
-                this.enabled = false
-                useMocha {
-                    timeout = "5s"
-                }
-            }
-        }
-    }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutinesExtension)
@@ -94,6 +50,7 @@ kotlin {
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
 
+                implementation(project(":util"))
                 api(project(":logger"))
             }
         }
@@ -125,16 +82,10 @@ kotlin {
             dependencies {
                 implementation(libs.securityCrypto)
                 implementation(libs.sqldelight.androidDriver)
+                implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
-                implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
-                implementation("androidx.sqlite:sqlite:2.0.1")
-            }
-        }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.core)
+                implementation(libs.sqlite.androidx)
+                implementation(libs.sql.android.cipher)
             }
         }
 

@@ -1,16 +1,16 @@
 package com.wire.kalium.persistence.dao
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration
@@ -19,7 +19,6 @@ import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
-        val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
         ConversationViewEntity(
             id = qualifiedId,
             name = name,
@@ -57,15 +56,13 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            unreadMentionsCount = unreadMentionsCount,
-            isMember = isMember,
-            unreadContentCountEntity = unreadContentType
+            selfRole = selfRole,
+            receiptMode = receipt_mode
         )
     }
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
-            val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
             ConversationViewEntity(
                 id = qualifiedId,
                 name = name,
@@ -103,9 +100,8 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                unreadMentionsCount = unreadMentionsCount,
-                isMember = isMember,
-                unreadContentCountEntity = unreadContentType
+                selfRole = selfRole,
+                receiptMode = receipt_mode
             )
         }
     }
@@ -139,9 +135,9 @@ class MemberMapper {
     }
 }
 
-private const val MLS_DEFAULT_EPOCH = 0L
-private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
-private val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+internal const val MLS_DEFAULT_EPOCH = 0L
+internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
 // TODO: Refactor. We can split this into smaller DAOs.
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
@@ -155,14 +151,15 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-    override suspend fun getSelfConversationId() = conversationQueries.selfConversationId().executeAsOneOrNull()
+    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) =
+        conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
+
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
     }
 
     override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
-
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
             }
@@ -195,7 +192,8 @@ class ConversationDAOImpl(
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
                 else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
-                else MLS_DEFAULT_CIPHER_SUITE
+                else MLS_DEFAULT_CIPHER_SUITE,
+                receiptMode
             )
         }
     }
@@ -222,11 +220,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: String) {
-        conversationQueries.transaction {
-            conversationQueries.selectConversationsWithUnnotifiedMessages()
-                .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualifiedId) }
-        }
+        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {
@@ -372,9 +366,6 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun getUnreadConversationCount(): Long =
-        conversationQueries.getUnreadConversationCount().executeAsOne()
-
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
@@ -390,7 +381,7 @@ class ConversationDAOImpl(
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
+            DateTimeUtil.currentInstant().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
 
     override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) {
@@ -428,6 +419,10 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> {
         return memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
+    }
+
+    override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) {
+        conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
     }
 
 }

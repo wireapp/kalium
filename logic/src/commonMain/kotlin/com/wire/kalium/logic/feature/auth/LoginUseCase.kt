@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -37,7 +38,8 @@ interface LoginUseCase {
     suspend operator fun invoke(
         userIdentifier: String,
         password: String,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        cookieLabel: String? = uuid4().toString()
     ): AuthenticationResult
 }
 
@@ -51,18 +53,19 @@ internal class LoginUseCaseImpl internal constructor(
     override suspend operator fun invoke(
         userIdentifier: String,
         password: String,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        cookieLabel: String?
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
         return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
-                loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient)
+                loginRepository.loginWithEmail(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
             }
 
             validateUserHandleUseCase(cleanUserIdentifier).isValidAllowingDots -> {
-                loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient)
+                loginRepository.loginWithHandle(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
@@ -72,7 +75,6 @@ internal class LoginUseCaseImpl internal constructor(
                     is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
                     is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                     is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-                    else -> AuthenticationResult.Failure.Generic(it)
                 }
             }, {
                 it

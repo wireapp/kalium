@@ -1,15 +1,18 @@
 package com.wire.kalium.persistence.daokaliumdb
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
 internal object ServerConfigMapper {
 
+    @Suppress("UNUSED_PARAMETER")
     fun fromServerConfiguration(
         id: String,
         title: String,
@@ -25,7 +28,8 @@ internal object ServerConfigMapper {
         federation: Boolean,
         apiProxyHost: String?,
         apiProxyNeedsAuthentication: Boolean?,
-        apiProxyPort: Int?
+        apiProxyPort: Int?,
+        lastBlackListCheck: String?
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -51,6 +55,46 @@ internal object ServerConfigMapper {
             domain = domain
         )
     )
+
+    fun serverConfigWithAccId(
+        id: String?,
+        title: String?,
+        apiBaseUrl: String?,
+        accountBaseUrl: String?,
+        webSocketBaseUrl: String?,
+        blackListUrl: String?,
+        teamsUrl: String?,
+        websiteUrl: String?,
+        isOnPremises: Boolean?,
+        domain: String?,
+        commonApiVersion: Int?,
+        federation: Boolean?,
+        apiProxyHost: String?,
+        apiProxyNeedsAuthentication: Boolean?,
+        apiProxyPort: Int?,
+        lastBlackListCheck: String?,
+        id_: QualifiedIDEntity,
+    ): ServerConfigWithUserIdEntity = ServerConfigWithUserIdEntity(
+        userId = id_,
+        serverConfig = fromServerConfiguration(
+            id = id!!,
+            title = title!!,
+            apiBaseUrl = apiBaseUrl!!,
+            accountBaseUrl = accountBaseUrl!!,
+            webSocketBaseUrl = webSocketBaseUrl!!,
+            blackListUrl = blackListUrl!!,
+            teamsUrl = teamsUrl!!,
+            websiteUrl = websiteUrl!!,
+            isOnPremises = isOnPremises!!,
+            domain = domain,
+            commonApiVersion = commonApiVersion!!,
+            federation = federation!!,
+            apiProxyHost = apiProxyHost,
+            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
+            apiProxyPort = apiProxyPort,
+            lastBlackListCheck = lastBlackListCheck
+        ),
+    )
 }
 
 interface ServerConfigurationDAO {
@@ -64,6 +108,8 @@ interface ServerConfigurationDAO {
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     fun configForUser(userId: UserIDEntity): ServerConfigEntity?
     fun setFederationToTrue(id: String)
+    fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
+    fun updateBlackListCheckDate(configIds: Set<String>, date: String)
 
     data class InsertData(
         val id: String,
@@ -143,5 +189,11 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
     override fun setFederationToTrue(id: String) = queries.setFederationToTrue(id)
+
+    override fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
+        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().mapToList()
+
+    override fun updateBlackListCheckDate(configIds: Set<String>, date: String) =
+        queries.updateLastBlackListCheckByIds(date, configIds)
 
 }

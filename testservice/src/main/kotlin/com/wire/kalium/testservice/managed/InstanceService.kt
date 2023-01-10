@@ -86,7 +86,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
-        val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs)
+        val coreLogic = CoreLogic("Kalium Testservice", kaliumConfigs)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
@@ -136,7 +136,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
-                    when (val result = client.register(
+                    when (val result = client.getOrRegister(
                         RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList(), ClientType.Permanent)
                     )) {
                         is RegisterClientResult.Failure ->

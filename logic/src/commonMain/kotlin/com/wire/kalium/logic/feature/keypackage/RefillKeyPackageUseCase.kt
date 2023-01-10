@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -16,6 +16,10 @@ sealed class RefillKeyPackagesResult {
 
 }
 
+/**
+ * This use case will check if the number of key packages is below the minimum threshold and will
+ * upload new key packages if needed.
+ */
 interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(): RefillKeyPackagesResult
@@ -25,10 +29,10 @@ interface RefillKeyPackagesUseCase {
 class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(): RefillKeyPackagesResult =
-        clientRepository.currentClientId().flatMap { selfClientId ->
+        currentClientIdProvider().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
                     if (keyPackageLimitsProvider.needsRefill(it.count)) {

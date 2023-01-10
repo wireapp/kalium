@@ -12,8 +12,8 @@ import androidx.work.WorkManager
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
@@ -40,7 +40,7 @@ internal actual class GlobalWorkSchedulerImpl(
         val scheduledHourOfDayToExecute = TIME_OF_EXECUTION // schedule at 4AM
         val repeatIntervalInHours = REPEAT_INTERVAL // execute every 24 hours
         val localTimeZone = TimeZone.currentSystemDefault()
-        val timeNow: Instant = Clock.System.now() // current time
+        val timeNow: Instant = DateTimeUtil.currentInstant() // current time
         val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
             .let { localDateTimeNow ->
                 LocalDateTime(

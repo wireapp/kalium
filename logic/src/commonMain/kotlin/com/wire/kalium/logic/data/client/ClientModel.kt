@@ -12,7 +12,8 @@ data class RegisterClientParam(
     val label: String?,
     val capabilities: List<ClientCapability>?,
     val clientType: ClientType?,
-    val model: String?
+    val model: String?,
+    val cookieLabel: String?
 )
 
 data class DeleteClientParam(
@@ -59,5 +60,6 @@ enum class ClientCapability {
 
 data class OtherUserClient(
     val deviceType: DeviceType,
-    val id: String
+    val id: String,
+    val isValid: Boolean
 )

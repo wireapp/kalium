@@ -7,10 +7,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
@@ -22,65 +24,90 @@ import kotlinx.serialization.json.putJsonObject
 object ConversationResponseJson {
 
     val conversationResponseSerializer = { it: ConversationResponse ->
-        buildJsonObject {
-            put("creator", it.creator)
-            putQualifiedId(it.id)
-            it.groupId?.let { put("group_id", it) }
-            putJsonObject("members") {
-                putSelfMember(it.members.self)
-                putJsonArray("others") {
-                    it.members.otherMembers.forEach { otherMember ->
-                        addJsonObject {
-                            putOtherMember(otherMember)
-                        }
-                    }
-                }
-            }
-            put("type", it.type.ordinal)
-            put("protocol", it.protocol.toString())
-            put("last_event_time", it.lastEventTime)
-            putAccessSet(it.access)
-            it.accessRole?.let { putAccessRoleSet(it) }
-            it.messageTimer?.let { put("message_timer", it) }
-            it.name?.let { put("name", it) }
-            it.teamId?.let { put("team", it) }
-            it.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
-        }.toString()
+        buildConversationResponse(it).toString()
     }
 
-    val validGroup = ValidJsonProvider(
-        ConversationResponse(
-            "fdf23116-42a5-472c-8316-e10655f5d11e",
-            ConversationMembersResponse(
-                ConversationMemberDTO.Self(
-                    QualifiedIDSamples.one,
-                    "wire_admin",
-                    otrMutedRef = "2022-04-11T14:15:48.044Z",
-                    otrMutedStatus = MutedStatus.fromOrdinal(0)
-                ),
-                listOf(ConversationMemberDTO.Other(id = QualifiedIDSamples.two, conversationRole = "wire_member"))
+    val conversationResponseSerializerWithDeprecatedAccessRole = { it: ConversationResponse ->
+        buildConversationResponse(it, useDeprecatedAccessRole = true).toString()
+    }
+
+    private val conversationResponse = ConversationResponse(
+        "fdf23116-42a5-472c-8316-e10655f5d11e",
+        ConversationMembersResponse(
+            ConversationMemberDTO.Self(
+                QualifiedIDSamples.one,
+                "wire_admin",
+                otrMutedRef = "2022-04-11T14:15:48.044Z",
+                otrMutedStatus = MutedStatus.fromOrdinal(0)
             ),
-            "group name",
-            QualifiedIDSamples.one,
-            "groupID",
-            0UL,
-            ConversationResponse.Type.GROUP,
-            null,
-            "teamID",
-            ConvProtocol.PROTEUS,
-            lastEventTime = "2022-03-30T15:36:00.000Z",
-            access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
-            accessRole = setOf(
-                ConversationAccessRoleDTO.GUEST,
-                ConversationAccessRoleDTO.TEAM_MEMBER,
-                ConversationAccessRoleDTO.NON_TEAM_MEMBER
-            ),
-            mlsCipherSuiteTag = null
-        ), conversationResponseSerializer
+            listOf(ConversationMemberDTO.Other(id = QualifiedIDSamples.two, conversationRole = "wire_member"))
+        ),
+        "group name",
+        QualifiedIDSamples.one,
+        "groupID",
+        0UL,
+        ConversationResponse.Type.GROUP,
+        null,
+        "teamID",
+        ConvProtocol.PROTEUS,
+        lastEventTime = "2022-03-30T15:36:00.000Z",
+        access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+        accessRole = setOf(
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER
+        ),
+        mlsCipherSuiteTag = null,
+        receiptMode = ReceiptMode.DISABLED
+    )
+
+    val v3 = ValidJsonProvider(
+        conversationResponse, conversationResponseSerializer
+    )
+
+    val v0 = ValidJsonProvider(
+        conversationResponse, conversationResponseSerializerWithDeprecatedAccessRole
     )
 }
 
-fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role_v2") {
+fun buildConversationResponse(
+    conversationResponse: ConversationResponse,
+    useDeprecatedAccessRole: Boolean = false
+): JsonObject =
+    buildJsonObject {
+        put("creator", conversationResponse.creator)
+        putQualifiedId(conversationResponse.id)
+        conversationResponse.groupId?.let { put("group_id", it) }
+        putJsonObject("members") {
+            putSelfMember(conversationResponse.members.self)
+            putJsonArray("others") {
+                conversationResponse.members.otherMembers.forEach { otherMember ->
+                    addJsonObject {
+                        putOtherMember(otherMember)
+                    }
+                }
+            }
+        }
+        put("type", conversationResponse.type.ordinal)
+        put("protocol", conversationResponse.protocol.toString())
+        put("last_event_time", conversationResponse.lastEventTime)
+        putAccessSet(conversationResponse.access)
+        if (useDeprecatedAccessRole) {
+            conversationResponse.accessRole?.let { putDeprecatedAccessRoleSet(it) }
+        } else {
+            conversationResponse.accessRole?.let { putAccessRoleSet(it) }
+        }
+        conversationResponse.messageTimer?.let { put("message_timer", it) }
+        conversationResponse.name?.let { put("name", it) }
+        conversationResponse.teamId?.let { put("team", it) }
+        conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
+    }
+
+fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role") {
+    accessRole.forEach { add(it.toString()) }
+}
+
+fun JsonObjectBuilder.putDeprecatedAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role_v2") {
     accessRole.forEach { add(it.toString()) }
 }
 

@@ -3,6 +3,7 @@ package com.wire.kalium.testservice.managed
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.debug.BrokenState
@@ -45,7 +46,7 @@ sealed class ConversationRepository {
             }
         }
 
-        fun sendConfirmation(instance: Instance, conversationId: ConversationId, type: Message.ConfirmationType, messageId: String) {
+        fun sendConfirmation(instance: Instance, conversationId: ConversationId, type: ReceiptType, messageId: String) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {

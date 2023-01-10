@@ -10,6 +10,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 
+@Suppress("TooManyFunctions")
 actual class KaliumFileSystemImpl actual constructor(
     private val dataStoragePaths: DataStoragePaths,
     private val dispatcher: KaliumDispatcher
@@ -19,6 +20,11 @@ actual class KaliumFileSystemImpl actual constructor(
      * Provides the root of the cache path, used to store temporary files
      */
     override val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()
+
+    /**
+     * Provides the root of the current user database path, used to store all the Database information.
+     */
+    override val rootDBPath: Path = dataStoragePaths.dbPath.value.toPath()
 
     /**
      * Opens an output stream that will be used to write the data on the given [outputPath]
@@ -54,6 +60,13 @@ actual class KaliumFileSystemImpl actual constructor(
     override fun delete(path: Path, mustExist: Boolean) = SYSTEM.delete(path, mustExist)
 
     /**
+     * This will delete recursively the given [dir] and all its content
+     * @param dir the directory to be deleted
+     * @param mustExist whether it is certain that [dir] exists before the deletion
+     */
+    override fun deleteContents(dir: Path, mustExist: Boolean) = SYSTEM.deleteRecursively(dir, mustExist)
+
+    /**
      * Checks whether the given [path] is already created and exists on the current file system
      * @return whether the given [path] exists in the current file system
      */
@@ -85,11 +98,9 @@ actual class KaliumFileSystemImpl actual constructor(
      * Reads the data of the given path as a byte array
      * @param inputPath the path pointing to the stored data
      */
-    override suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
-        withContext(dispatcher.io) {
-            it.buffer().use { bufferedFileSource ->
-                bufferedFileSource.readByteArray()
-            }
+    override suspend fun readByteArray(inputPath: Path): ByteArray = withContext(dispatcher.io) {
+        source(inputPath).buffer().use { bufferedFileSource ->
+            bufferedFileSource.readByteArray()
         }
     }
 
@@ -115,4 +126,11 @@ actual class KaliumFileSystemImpl actual constructor(
      * Fetches the persistent [Path] of the current user's avatar in the [KaliumFileSystem]
      */
     override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
+
+    /**
+     * Provides a list of paths found in the given [dir] path from where the call is being invoked.
+     * @param dir the path from where the list of paths will be fetched
+     * @return the list of paths found.
+     */
+    override suspend fun listDirectories(dir: Path): List<Path> = SYSTEM.list(dir)
 }

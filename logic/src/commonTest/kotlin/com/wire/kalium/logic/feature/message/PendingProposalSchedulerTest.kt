@@ -2,12 +2,14 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -24,7 +26,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
@@ -156,6 +157,9 @@ class PendingProposalSchedulerTest {
         val kaliumConfigs = KaliumConfigs()
 
         @Mock
+        val sessionRepository = mock(classOf<SessionRepository>())
+
+        @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
@@ -200,7 +204,7 @@ class PendingProposalSchedulerTest {
 
         companion object {
             val INSTANT_PAST = Instant.DISTANT_PAST
-            val INSTANT_NEAR_FUTURE = Clock.System.now().plus(5.seconds)
+            val INSTANT_NEAR_FUTURE = DateTimeUtil.currentInstant().plus(5.seconds)
             val INSTANT_FUTURE = Instant.DISTANT_FUTURE
             val PROPOSAL_TIMER = ProposalTimer(TestConversation.GROUP_ID, INSTANT_FUTURE)
         }

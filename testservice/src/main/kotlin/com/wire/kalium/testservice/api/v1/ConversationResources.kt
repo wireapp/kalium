@@ -2,6 +2,7 @@ package com.wire.kalium.testservice.api.v1
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
@@ -104,7 +105,7 @@ class ConversationResources(private val instanceService: InstanceService) {
             ConversationRepository.sendConfirmation(
                 instance,
                 ConversationId(conversationId, conversationDomain),
-                Message.ConfirmationType.DELIVERED,
+                ReceiptType.DELIVERED,
                 firstMessageId
             )
         }
@@ -120,7 +121,7 @@ class ConversationResources(private val instanceService: InstanceService) {
             ConversationRepository.sendConfirmation(
                 instance,
                 ConversationId(conversationId, conversationDomain),
-                Message.ConfirmationType.READ,
+                ReceiptType.READ,
                 firstMessageId
             )
         }

@@ -1,7 +1,6 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.call.CallEntity
-import com.wire.kalium.persistence.dao.message.UnreadContentCountEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -22,17 +21,19 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val receiptMode: ReceiptMode
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
-    enum class Access { PRIVATE, INVITE, LINK, CODE; }
+    enum class Access { PRIVATE, INVITE, SELF_INVITE, LINK, CODE; }
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING, GLOBAL_TEAM }
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
     enum class Protocol { PROTEUS, MLS }
+    enum class ReceiptMode { DISABLED, ENABLED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
@@ -51,7 +52,7 @@ data class ConversationEntity(
         }
     }
 
-    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
+    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
@@ -84,9 +85,7 @@ data class ConversationViewEntity(
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,
     val lastNotificationDate: String?,
-    val unreadContentCountEntity: UnreadContentCountEntity,
-    val unreadMentionsCount: Long,
-    val isMember: Long,
+    val selfRole: Member.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
     val accessRoleList: List<ConversationEntity.AccessRole>,
@@ -99,8 +98,11 @@ data class ConversationViewEntity(
     val mlsProposalTimer: String?,
     val mutedTime: Long,
     val creatorId: String,
-    val removedBy: UserIDEntity? = null, // TODO how to calculate?
-)
+    val removedBy: UserIDEntity? = null, // TODO how to calculate?,
+    val receiptMode: ConversationEntity.ReceiptMode
+) {
+    val isMember: Boolean get() = selfRole != null
+}
 
 // TODO: rename to MemberEntity
 data class Member(
@@ -120,7 +122,7 @@ data class ProposalTimerEntity(
 )
 
 interface ConversationDAO {
-    suspend fun getSelfConversationId(): QualifiedIDEntity?
+    suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
@@ -165,7 +167,6 @@ interface ConversationDAO {
         accessRoleList: List<ConversationEntity.AccessRole>
     )
 
-    suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
@@ -178,5 +179,6 @@ interface ConversationDAO {
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
+    suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
 
 }

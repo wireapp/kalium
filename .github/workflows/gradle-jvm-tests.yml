@@ -14,6 +14,7 @@ concurrency:
 jobs:
   gradle-run-tests:
     runs-on: ubuntu-22.04
+    # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: wirebot/cryptobox:1.1.1
     steps:
       - name: Checkout
@@ -28,6 +29,13 @@ jobs:
         run: |
           ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
 
+      - name: Build the samples
+        env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            ./gradlew :samples:compileKotlinJvm
+
       - name: Build the testservice
         env:
             GITHUB_USER: ${{ github.actor }}
@@ -35,15 +43,9 @@ jobs:
         run: |
             ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
 
-      - name: Verify DB schemas are all present
-        run: |
-          ./gradlew :persistence:generateCommonMainUserDatabaseSchema
-          ./gradlew :persistence:generateCommonMainGlobalDatabaseSchema
-          ./persistence/verifySchemas.sh
-
       - name: Verify DB Migrations
         run: |
-          ./gradlew :persistence:verifySqlDelightMigration
+            make db/verify-all-migrations
 
       - name: Test with Gradle
         run: |

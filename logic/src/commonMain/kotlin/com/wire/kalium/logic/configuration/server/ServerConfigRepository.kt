@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ServerConfigFailure
@@ -25,6 +26,7 @@ import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 internal interface ServerConfigRepository {
     /**
      * download an on premise server configuration from a json file
@@ -81,6 +83,16 @@ internal interface ServerConfigRepository {
      * Return the server links and metadata for the given userId
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
+
+    /**
+     * @return the list of [ServerConfigWithUserId] that were checked "if app needs to be updated" after the date
+     */
+    suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>>
+
+    /**
+     * updates lastBlackListCheckDate for the Set of configIds
+     */
+    suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -184,8 +196,16 @@ internal class ServerConfigDataSource(
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
+        wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
+
+    override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
+        wrapStorageRequest { dao.getServerConfigsWithAccIdWithLastCheckBeforeDate(date) }
+            .map { it.map { list -> list.map(serverConfigMapper::fromEntity) } }
+
+    override suspend fun updateAppBlackListCheckDate(configIds: Set<String>, date: String) {
+        wrapStorageRequest { dao.updateBlackListCheckDate(configIds, date) }
+    }
 
     private suspend fun fetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig.MetaData> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(serverLinks.api)) }

@@ -26,6 +26,11 @@ sealed class AccountInfo {
     }
 }
 
+data class PersistentWebSocketStatus(
+    val userId: UserId,
+    val isPersistentWebSocketEnabled: Boolean
+)
+
 data class Account(
     val info: AccountInfo,
     val serverConfig: ServerConfig,
@@ -36,5 +41,6 @@ data class AuthTokens(
     val userId: UserId,
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String
+    val tokenType: String,
+    val cookieLabel: String?
 )

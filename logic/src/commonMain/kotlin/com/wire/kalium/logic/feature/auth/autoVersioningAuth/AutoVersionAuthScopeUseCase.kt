@@ -6,10 +6,16 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * This use case is responsible for obtaining the authentication scope for the current version of the app.
+ * It will try to validate if the current client is able to talk to a specific backend version.
+ */
 class AutoVersionAuthScopeUseCase(
+    private val kaliumConfigs: KaliumConfigs,
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
 ) {
@@ -17,6 +23,12 @@ class AutoVersionAuthScopeUseCase(
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
+            // Backend team doesn't want any clients using the development APIs in production, so
+            // until they disable access to the APIs we'll have this safeguard in the client to
+            // prevent any accidental usage.
+            if (kaliumConfigs.developmentApiEnabled && serverConfig.links == ServerConfig.PRODUCTION) {
+                return Result.Failure.Generic(CoreFailure.DevelopmentAPINotAllowedOnProduction)
+            }
             val proxyCredentials = when (proxyAuthentication) {
                 is ProxyAuthentication.None -> null
                 is ProxyAuthentication.UsernameAndPassword -> proxyAuthentication.proxyCredentials

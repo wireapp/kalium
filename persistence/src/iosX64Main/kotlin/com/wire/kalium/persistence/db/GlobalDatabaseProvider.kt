@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 
+// TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(passphrase: String) {
 
     val database: GlobalDatabase
@@ -30,7 +31,7 @@ actual class GlobalDatabaseProvider(passphrase: String) {
             )
         )
 
-        driver.execute(null, "PRAGMA foreign_keys=ON", 0)
+        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

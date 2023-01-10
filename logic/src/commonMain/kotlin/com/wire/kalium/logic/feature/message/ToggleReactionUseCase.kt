@@ -16,9 +16,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
+/**
+ * Toggles a reaction on a message.
+ * If the reaction already exists it will be removed, if not it will be added.
+ */
 class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userId: UserId,
@@ -26,6 +30,14 @@ class ToggleReactionUseCase internal constructor(
     private val reactionRepository: ReactionRepository,
     private val messageSender: MessageSender
 ) {
+    /**
+     * Operation to toggle a reaction on a message
+     *
+     * @param conversationId the id of the conversation the message is in
+     * @param messageId the id of the message to toggle the reaction on/off
+     * @param reaction the reaction "emoji" to toggle
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
@@ -34,13 +46,13 @@ class ToggleReactionUseCase internal constructor(
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-        val date = Clock.System.now().toString()
+        val date = DateTimeUtil.currentIsoDateTimeString()
 
         return reactionRepository.getSelfUserReactionsForMessage(messageId, conversationId)
             .flatMap { reactions ->
                 currentClientIdProvider().map { it to reactions }
             }
-            .flatMap {(currentClientId, currentReactions) ->
+            .flatMap { (currentClientId, currentReactions) ->
                 if (currentReactions.contains(reaction)) {
                     // Remove reaction
                     removeReaction(
@@ -76,7 +88,7 @@ class ToggleReactionUseCase internal constructor(
 
         return reactionRepository
             .persistReaction(messageId, conversationId, userId, date, newReaction).flatMap {
-                val regularMessage = Message.Regular(
+                val regularMessage = Message.Signaling(
                     id = uuid4().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions + newReaction),
                     conversationId = conversationId,
@@ -84,7 +96,6 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited,
                 )
                 messageSender.sendMessage(regularMessage)
             }
@@ -103,7 +114,7 @@ class ToggleReactionUseCase internal constructor(
     ): Either<CoreFailure, Unit> {
         return reactionRepository.deleteReaction(messageId, conversationId, userId, removedReaction)
             .flatMap {
-                val regularMessage = Message.Regular(
+                val regularMessage = Message.Signaling(
                     id = uuid4().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions - removedReaction),
                     conversationId = conversationId,
@@ -111,7 +122,6 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited,
                 )
                 messageSender.sendMessage(regularMessage)
             }.flatMapLeft {

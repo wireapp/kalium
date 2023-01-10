@@ -5,7 +5,6 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -15,6 +14,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -44,7 +44,7 @@ class CallManagerTest {
     private val messageSender = mock(classOf<MessageSender>())
 
     @Mock
-    private val clientRepository = mock(classOf<ClientRepository>())
+    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
     @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
@@ -70,7 +70,7 @@ class CallManagerTest {
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository,
+            currentClientIdProvider = currentClientIdProvider,
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,
@@ -89,8 +89,8 @@ class CallManagerTest {
         val expectedConversationId = "conversationId"
 
         callManagerImpl.onCallingMessageReceived(
+            content = CALL_CONTENT,
             message = CALL_MESSAGE,
-            content = CALL_CONTENT
         )
 
         verify(calling)
@@ -112,7 +112,7 @@ class CallManagerTest {
         val CLIENT_ID = ClientId(value = "clientId")
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val CALL_CONTENT = MessageContent.Calling(value = "content")
-        val CALL_MESSAGE = Message.Regular(
+        val CALL_MESSAGE = Message.Signaling(
             id = "id",
             content = CALL_CONTENT,
             conversationId = ConversationId(value = "value", domain = "domain"),
@@ -120,7 +120,6 @@ class CallManagerTest {
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

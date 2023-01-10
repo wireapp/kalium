@@ -1,0 +1,4 @@
+import kotlin.Boolean;
+
+ALTER TABLE Client
+ADD COLUMN is_valid INTEGER AS Boolean NOT NULL DEFAULT 1;

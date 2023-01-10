@@ -151,6 +151,7 @@ class CallMapperImpl(
         CallStatus.ESTABLISHED -> CallEntity.Status.ESTABLISHED
         CallStatus.STILL_ONGOING -> CallEntity.Status.STILL_ONGOING
         CallStatus.CLOSED -> CallEntity.Status.CLOSED
+        CallStatus.REJECTED -> CallEntity.Status.REJECTED
     }
 
     private fun toCallStatus(callStatus: CallEntity.Status): CallStatus = when (callStatus) {
@@ -161,6 +162,7 @@ class CallMapperImpl(
         CallEntity.Status.ESTABLISHED -> CallStatus.ESTABLISHED
         CallEntity.Status.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallEntity.Status.CLOSED -> CallStatus.CLOSED
+        CallEntity.Status.REJECTED -> CallStatus.REJECTED
     }
 
     override fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity = QualifiedIDEntity(

@@ -6,25 +6,24 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 object RegisterAccountJson {
-    private val jsonProvider = { serializable: RegisterApi.RegisterParam ->
+    private val jsonProvider = { serializable: RegisterApi.RegisterParam.PersonalAccount ->
         buildJsonObject {
             put("name", serializable.name)
-            when (serializable) {
-                is RegisterApi.RegisterParam.PersonalAccount -> {
-                    put("password", serializable.password)
-                    put("email", serializable.email)
-                    put("email_code", serializable.emailCode)
-                }
-            }
+            put("password", serializable.password)
+            put("email", serializable.email)
+            put("email_code", serializable.emailCode)
+            serializable.cookieLabel?.let { put("label", it) }
         }.toString()
     }
 
     val validPersonalAccountRegister = ValidJsonProvider(
-        RegisterApi.RegisterParam.PersonalAccount(
+        serializableData = RegisterApi.RegisterParam.PersonalAccount(
             "test@email.com",
             "123456",
             "private user",
-            "password"
-        ), jsonProvider
+            "password",
+            "cookieLabel"
+        ),
+        jsonProvider = jsonProvider
     )
 }

@@ -3,52 +3,25 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.kalium.library.get().pluginId)
 }
 
-group = "com.wire.kalium"
-version = "0.0.1-SNAPSHOT"
-
-android {
-    compileSdk = Android.Sdk.compile
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
-        consumerProguardFiles("consumer-proguard-rules.pro")
+kaliumLibrary {
+    multiplatform {
+        enableJs.set(false)
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    // Remove instrumented tests as Network tests can run as Unit tests for Android
-    sourceSets.remove(sourceSets["androidTest"])
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-        }
-    }
-    android()
-    iosX64()
-
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(project(":protobuf"))
+                implementation(project(":util"))
                 api(project(":logger"))
 
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 // ktor
                 api(libs.ktor.core)
@@ -60,6 +33,9 @@ kotlin {
                 implementation(libs.ktor.webSocket)
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
+
+                // KTX
+                implementation(libs.ktxDateTime)
 
                 // Okio
                 implementation(libs.okio.core)
@@ -93,7 +69,6 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val androidTest by getting
         val iosX64Main by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)

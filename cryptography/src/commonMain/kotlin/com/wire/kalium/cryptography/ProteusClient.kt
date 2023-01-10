@@ -5,13 +5,34 @@ import kotlin.coroutines.cancellation.CancellationException
 
 data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
     val value: String = "${userId}_$cryptoClientId"
+
+    companion object {
+        private const val SESSION_ID_COMPONENT_COUNT = 2
+
+        fun fromEncodedString(value: String): CryptoSessionId? {
+            val components = value.split("_")
+            if (components.size != SESSION_ID_COMPONENT_COUNT) return null
+
+            val userId = CryptoUserID.fromEncodedString(components[0])
+            val clientId = CryptoClientId(components[1])
+
+            return if (userId != null) {
+                CryptoSessionId(userId, clientId)
+            } else {
+                null
+            }
+        }
+    }
 }
 
 data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
-
+@Suppress("TooManyFunctions")
+/**
+ * @sample samples.cryptography.ProteusClient.basicEncryption
+ */
 interface ProteusClient {
 
     @Throws(ProteusException::class)
@@ -50,7 +71,13 @@ interface ProteusClient {
     suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
+    suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray>
+
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
+
+    @Throws(ProteusException::class, CancellationException::class)
+    fun deleteSession(sessionId: CryptoSessionId)
 }
 
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {

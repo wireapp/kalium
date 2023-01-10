@@ -5,10 +5,12 @@ package com.wire.kalium.network.exceptions
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.GUEST_LINKS_DISABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
@@ -18,7 +20,11 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION_CODE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_TEAM
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
@@ -150,6 +156,26 @@ fun KaliumException.InvalidRequestError.isMlsCommitMissingReferences(): Boolean 
     return errorResponse.label == MLS_COMMIT_MISSING_REFERENCES
 }
 
+fun KaliumException.InvalidRequestError.isMlsMissingGroupInfo(): Boolean {
+    return errorResponse.label == MLS_MISSING_GROUP_INFO
+}
+
 fun KaliumException.ServerError.isFederationError(): Boolean {
     return errorResponse.label == FEDERATION_FAILURE
+}
+
+fun KaliumException.InvalidRequestError.isNotTeamMember(): Boolean {
+    return errorResponse.label == NOT_TEAM_MEMBER
+}
+
+fun KaliumException.InvalidRequestError.isConversationNotFound(): Boolean {
+    return errorResponse.label == NO_CONVERSATION || errorResponse.label == NO_CONVERSATION_CODE
+}
+
+fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
+    return errorResponse.label == GUEST_LINKS_DISABLED
+}
+
+fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
+    return errorResponse.label == ACCESS_DENIED
 }

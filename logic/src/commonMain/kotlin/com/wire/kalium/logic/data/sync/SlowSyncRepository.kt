@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.sync
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,8 @@ internal interface SlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)
     suspend fun clearLastSlowSyncCompletionInstant()
+    suspend fun setNeedsToRecoverMLSGroups(value: Boolean)
+    suspend fun needsToRecoverMLSGroups(): Boolean
     suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
 }
@@ -26,11 +29,23 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
 
     override suspend fun setLastSlowSyncCompletionInstant(instant: Instant) {
         logger.i("Updating last slow sync instant: $instant")
-        metadataDao.insertValue(value = instant.toString(), key = LAST_SLOW_SYNC_INSTANT_KEY)
+        metadataDao.insertValue(value = instant.toIsoDateTimeString(), key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
     override suspend fun clearLastSlowSyncCompletionInstant() {
         metadataDao.deleteValue(key = LAST_SLOW_SYNC_INSTANT_KEY)
+    }
+
+    override suspend fun setNeedsToRecoverMLSGroups(value: Boolean) {
+        if (value) {
+            metadataDao.insertValue(value = "true", key = MLS_NEEDS_RECOVERY_KEY)
+        } else {
+            metadataDao.deleteValue(key = MLS_NEEDS_RECOVERY_KEY)
+        }
+    }
+
+    override suspend fun needsToRecoverMLSGroups(): Boolean {
+        return metadataDao.valueByKey(key = MLS_NEEDS_RECOVERY_KEY).toBoolean()
     }
 
     override suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
@@ -46,5 +61,6 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
 
     private companion object {
         const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
+        const val MLS_NEEDS_RECOVERY_KEY = "mlsNeedsRecovery"
     }
 }

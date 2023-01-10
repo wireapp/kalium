@@ -2,6 +2,8 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.backup.DatabaseImporter
+import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -9,6 +11,8 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
+import com.wire.kalium.persistence.dao.MigrationDAO
+import com.wire.kalium.persistence.dao.MigrationDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -27,6 +31,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -72,8 +78,10 @@ class UserDatabaseBuilder internal constructor(
         MessageTextContentAdapter = TableMapper.messageTextContentAdapter,
         MessageUnknownContentAdapter = TableMapper.messageUnknownContentAdapter,
         ReactionAdapter = TableMapper.reactionAdapter,
+        ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
-        UserAdapter = TableMapper.userAdapter
+        UserAdapter = TableMapper.userAdapter,
+        MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter
     )
 
     init {
@@ -99,11 +107,14 @@ class UserDatabaseBuilder internal constructor(
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
 
+    val databaseImporter: DatabaseImporter
+        get() = DatabaseImporterImpl(sqlDriver)
+
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries)
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
@@ -114,8 +125,13 @@ class UserDatabaseBuilder internal constructor(
     val reactionDAO: ReactionDAO
         get() = ReactionDAOImpl(database.reactionsQueries)
 
+    val receiptDAO: ReceiptDAO
+        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter)
+
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries)
+
+    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
 
     /**
      * drops DB connection and delete the DB file

@@ -2,19 +2,22 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * This use case will return the current number of key packages.
+ */
 interface MLSKeyPackageCountUseCase {
     suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }
 
 class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
 ) : MLSKeyPackageCountUseCase {
     override suspend operator fun invoke(fromAPI: Boolean): MLSKeyPackageCountResult =
@@ -23,7 +26,7 @@ class MLSKeyPackageCountUseCaseImpl(
             false -> validKeyPackagesCountFromMLSClient()
         }
 
-    private suspend fun validKeyPackagesCountFromAPI() = clientRepository.currentClientId().fold({
+    private suspend fun validKeyPackagesCountFromAPI() = currentClientIdProvider().fold({
         MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
     }, { selfClient ->
         keyPackageRepository.getAvailableKeyPackageCount(selfClient).fold(
@@ -33,7 +36,7 @@ class MLSKeyPackageCountUseCaseImpl(
     })
 
     private suspend fun validKeyPackagesCountFromMLSClient() =
-        clientRepository.currentClientId().fold({
+        currentClientIdProvider().fold({
             MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)
         }, { selfClient ->
             keyPackageRepository.validKeyPackageCount(selfClient).fold(
