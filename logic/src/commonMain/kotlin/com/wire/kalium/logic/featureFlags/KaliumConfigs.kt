@@ -14,7 +14,6 @@ data class KaliumConfigs(
     val encryptProteusStorage: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
-    val fileRestrictionList: String = "",
     val certificate: String = "",
     val domain: String = "",
     val blacklistHost: String = "",
