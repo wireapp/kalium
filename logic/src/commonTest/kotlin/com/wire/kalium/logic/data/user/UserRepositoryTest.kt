@@ -8,6 +8,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
@@ -196,6 +197,50 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenANewDisplayName_whenUpdatingOk_thenShouldSucceedAndPersistTheNameLocally() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        val result = userRepository.updateSelfDisplayName("newDisplayName")
+
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSelf)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenANewDisplayName_whenUpdatingFails_thenShouldNotPersistLocallyTheName() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateDisplayNameApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        val result = userRepository.updateSelfDisplayName("newDisplayName")
+
+        with(result) {
+            shouldFail()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSelf)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
+                .with(any(), any())
+                .wasNotInvoked()
+        }
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -297,6 +342,14 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+            return this
+        }
+
+        fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::updateSelf)
+                .whenInvokedWith(any())
+                .thenReturn(response)
             return this
         }
 
