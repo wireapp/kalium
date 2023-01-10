@@ -88,39 +88,10 @@ kotlin {
                 implementation(libs.sql.android.cipher)
             }
         }
-
-        val darwinMain by creating {
-            dependsOn(commonMain)
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
-        }
-        val darwinTest by creating {
-            dependsOn(commonTest)
-        }
-        val iosX64Main by getting {
-            dependsOn(darwinMain)
-        }
-        val iosX64Test by getting {
-            dependsOn(darwinTest)
-        }
-        val iosArm64Main by getting {
-            dependsOn(darwinMain)
-        }
-        val iosArm64Test by getting {
-            dependsOn(darwinTest)
-        }
-        val iosSimulatorArm64Main by getting {
-            dependsOn(darwinMain)
-        }
-        val iosSimulatorArm64Test by getting {
-            dependsOn(darwinTest)
-        }
-        val macosX64Main by getting {
-            dependsOn(darwinMain)
-        }
-        val macosX64Test by getting {
-            dependsOn(darwinTest)
         }
     }
 }

@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  * @see commonDokkaConfig
  */
 fun Project.configureDefaultMultiplatform(
-    enableiOS: Boolean,
+    enableDarwin: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean
@@ -30,16 +30,8 @@ fun Project.configureDefaultMultiplatform(
             js { commonJsConfig(enableJsTests) }
         }
 
-        if (enableiOS) {
-            // TODO: check arch of current system (X64 or ARM64) and enable accordingly?
-            //       devs on Apple Silicon should be able to run ARM tests
-            //       devs on Intel Macbooks should be able to run X64 tests
-            //       this should require us moving iOS code from iOSX64Main to
-            //       another sourceSet (iOSMain/iOSCommon or similar)
-            iosX64()
-            iosArm64()
-            iosSimulatorArm64()
-            macosX64()
+        if (enableDarwin) {
+            commonDarwinMultiplatformConfig()
         }
     }
 

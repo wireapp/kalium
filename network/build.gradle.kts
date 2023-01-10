@@ -69,39 +69,10 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-
-        val darwinMain by creating {
-            dependsOn(commonMain)
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }
-        }
-        val darwinTest by creating {
-            dependsOn(commonTest)
-        }
-        val iosX64Main by sourceSets.getting {
-            dependsOn(darwinMain)
-        }
-        val iosX64Test by sourceSets.getting {
-            dependsOn(darwinTest)
-        }
-        val iosArm64Main by sourceSets.getting {
-            dependsOn(darwinMain)
-        }
-        val iosArm64Test by sourceSets.getting {
-            dependsOn(darwinTest)
-        }
-        val iosSimulatorArm64Main by sourceSets.getting {
-            dependsOn(darwinMain)
-        }
-        val iosSimulatorArm64Test by sourceSets.getting {
-            dependsOn(darwinTest)
-        }
-        val macosX64Main by sourceSets.getting {
-            dependsOn(darwinMain)
-        }
-        val macosX64Test by sourceSets.getting {
-            dependsOn(darwinTest)
         }
     }
 }
