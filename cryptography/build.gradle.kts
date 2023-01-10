@@ -3,7 +3,6 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.carthage.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -23,13 +22,6 @@ kotlin {
     android {
         dependencies {
             coreLibraryDesugaring(libs.desugarJdkLibs)
-        }
-    }
-
-    iosX64 {
-        carthage {
-            baseName = "Cryptography"
-            dependency("WireCryptobox")
         }
     }
 
