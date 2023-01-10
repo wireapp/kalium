@@ -2,8 +2,12 @@
 rootProject.gradle.afterProject {
     allprojects {
         repositories {
-            maven {
-                url = uri("$rootDir/avs/localrepo/")
+            val avsLocal = maven(url = uri("$rootDir/avs/localrepo/"))
+            exclusiveContent {
+                forRepositories(avsLocal)
+                filter {
+                    includeModule("com.wire", "avs")
+                }
             }
         }
     }
