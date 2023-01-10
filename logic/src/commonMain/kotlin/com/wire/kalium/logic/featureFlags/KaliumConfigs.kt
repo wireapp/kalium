@@ -3,7 +3,6 @@ package com.wire.kalium.logic.featureFlags
 data class KaliumConfigs(
     val isChangeEmailEnabled: Boolean = false,
     val forceConstantBitrateCalls: Boolean = false,
-    val submitCrashReports: Boolean = false,
     val developerFeaturesEnabled: Boolean = false,
     val isLoggingEnabled: Boolean = false,
     val isSafeLoggingEnabled: Boolean = false,
