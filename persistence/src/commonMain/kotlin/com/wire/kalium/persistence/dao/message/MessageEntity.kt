@@ -254,7 +254,8 @@ data class MessagePreviewEntity(
     val content: MessagePreviewEntityContent,
     val date: String,
     val visibility: MessageEntity.Visibility,
-    val isSelfMessage: Boolean
+    val isSelfMessage: Boolean,
+    val senderUserId: QualifiedIDEntity,
 )
 
 data class NotificationMessageEntity(
@@ -280,12 +281,21 @@ sealed class MessagePreviewEntityContent {
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
 
-    data class MemberChange(
+    data class MembersAdded(
         val senderName: String?,
-        val otherUserIdList: List<UserIDEntity>, // TODO add usernames
+        val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,
-        val type: MessageEntity.MemberChangeType
     ) : MessagePreviewEntityContent()
+
+    data class MembersRemoved(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class MemberJoined(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 

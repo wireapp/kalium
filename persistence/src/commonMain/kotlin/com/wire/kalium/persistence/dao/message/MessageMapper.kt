@@ -28,7 +28,8 @@ object MessageMapper {
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
-        selfUserId: QualifiedIDEntity?
+        selfUserId: QualifiedIDEntity?,
+        senderUserId: QualifiedIDEntity?
     ) = when (contentType) {
         MessageEntity.ContentType.TEXT -> when {
             isSelfMessage -> MessagePreviewEntityContent.Text(
@@ -60,13 +61,35 @@ object MessageMapper {
         )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
-        MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
-            senderName = senderName,
-            isContainSelfUserId = memberChangeList.requireField("memberChangeList")
-                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
-            otherUserIdList = memberChangeList.requireField("memberChangeList").filterNot { it == selfUserId },
-            type = memberChangeType.requireField("memberChangeType")
-        )
+        MessageEntity.ContentType.MEMBER_CHANGE -> {
+            val userIdList = memberChangeList.requireField("memberChangeList")
+            when (memberChangeType.requireField("memberChangeType")) {
+                MessageEntity.MemberChangeType.ADDED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberJoined(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersAdded(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+                MessageEntity.MemberChangeType.REMOVED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberLeft(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersRemoved(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+            }
+        }
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
@@ -120,7 +143,8 @@ object MessageMapper {
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType,
-            selfUserId = selfUserId
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return MessagePreviewEntity(
@@ -129,7 +153,8 @@ object MessageMapper {
             content = content,
             date = date,
             visibility = visibility,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            senderUserId = senderUserId
         )
 
     }
@@ -170,7 +195,8 @@ object MessageMapper {
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
             assetMimeType = assetMimeType,
-            selfUserId = selfUserId
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return NotificationMessageEntity(

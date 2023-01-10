@@ -1141,7 +1141,8 @@ class ConversationRepositoryTest {
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 isSelfMessage = false,
-                visibility = MessageEntity.Visibility.VISIBLE
+                visibility = MessageEntity.Visibility.VISIBLE,
+                senderUserId = TestUser.ENTITY_ID
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")

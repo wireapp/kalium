@@ -216,6 +216,10 @@ sealed class MessagePreviewContent {
 
         data class Knock(override val username: String?) : WithUser(username)
 
+        data class MemberLeft(override val username: String?) : WithUser(username)
+
+        data class MemberJoined(override val username: String?) : WithUser(username)
+
         data class MembersAdded(
             val senderName: String?,
             val isSelfUserAdded: Boolean,
