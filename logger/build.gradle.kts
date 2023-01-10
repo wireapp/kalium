@@ -16,6 +16,7 @@ kotlin {
                 api(libs.kermit)
             }
         }
+        val commonTest by getting
 
         val androidTest by getting {
             dependencies {

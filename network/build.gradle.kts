@@ -69,7 +69,7 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val iosX64Main by getting {
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }
