@@ -9,7 +9,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableiOS.set(false)
+        enableDarwin.set(false)
         enableJs.set(false)
     }
 }

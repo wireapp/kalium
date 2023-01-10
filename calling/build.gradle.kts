@@ -7,7 +7,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableiOS.set(false)
+        enableDarwin.set(false)
         enableJs.set(false)
     }
 }
@@ -23,7 +23,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api(project(":avs")) // TODO temporary until avs9.0.2 is available on Maven-central
+                api(libs.avs)
                 api(libs.jna.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         artifact {
