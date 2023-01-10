@@ -47,6 +47,12 @@ android {
 //    sourceSets { map { it.java.srcDir("src/${it.name}/kotlin") } }
 }
 
+repositories {
+    maven {
+        url = uri("$rootDir/avs/localrepo/")
+    }
+}
+
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
