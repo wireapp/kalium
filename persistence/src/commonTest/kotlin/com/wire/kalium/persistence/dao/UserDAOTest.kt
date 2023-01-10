@@ -577,6 +577,20 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expected, persistedUsers)
     }
 
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheDisplayName_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewDisplayName = "new user display name"
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateUserDisplayName(user1.id, expectedNewDisplayName)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedNewDisplayName, persistedUser?.name)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
