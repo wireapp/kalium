@@ -20,7 +20,6 @@ class KaliumApplication : Application(), Configuration.Provider {
         val rootDir = File(this.filesDir, "accounts")
         coreLogic = CoreLogic(
             appContext = applicationContext,
-            clientLabel = "kalium",
             rootPath = rootDir.absolutePath,
             kaliumConfigs = KaliumConfigs()
         )
