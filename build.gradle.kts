@@ -58,6 +58,14 @@ allprojects {
                 password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
             }
         }
+        // deleteme: we should remove this and "avs" dir after avs version is updated to proper artifactory on sonatype =)
+        val avsLocal = maven(url = uri("$rootDir/avs/localrepo/"))
+        exclusiveContent {
+            forRepositories(avsLocal)
+            filter {
+                includeModule("com.wire", "avs")
+            }
+        }
     }
 }
 
