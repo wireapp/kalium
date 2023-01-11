@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -77,6 +76,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
     suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
@@ -145,7 +145,6 @@ class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val selfUserId: UserId,

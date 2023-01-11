@@ -125,16 +125,17 @@ class MessageMapperImpl(
             content = message.content.toMessageContent(),
             date = message.date,
             visibility = message.visibility.toModel(),
-            isSelfMessage = message.isSelfMessage
+            isSelfMessage = message.isSelfMessage,
+            senderUserId = message.senderUserId.toModel()
         )
     }
 
+    @Suppress("ComplexMethod")
     override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
         return when (message.content) {
             is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
             is MessagePreviewEntityContent.ConversationNameChange -> null
             is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
-            is MessagePreviewEntityContent.MemberChange -> null
             is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
             is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
             is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
@@ -142,6 +143,10 @@ class MessageMapperImpl(
             is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
             is MessagePreviewEntityContent.CryptoSessionReset -> null
             MessagePreviewEntityContent.Unknown -> null
+            is MessagePreviewEntityContent.MembersRemoved -> null
+            is MessagePreviewEntityContent.MemberJoined -> null
+            is MessagePreviewEntityContent.MemberLeft -> null
+            is MessagePreviewEntityContent.MembersAdded -> null
         }
     }
 
@@ -365,15 +370,23 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
 }
 
+@Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
     is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
-    is MessagePreviewEntityContent.MemberChange -> when (type) {
-        MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
-        MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
-    }
-
+    is MessagePreviewEntityContent.MemberJoined -> MessagePreviewContent.WithUser.MemberJoined(senderName)
+    is MessagePreviewEntityContent.MemberLeft -> MessagePreviewContent.WithUser.MemberLeft(senderName)
+    is MessagePreviewEntityContent.MembersAdded -> MessagePreviewContent.WithUser.MembersAdded(
+        senderName = senderName,
+        isSelfUserAdded = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+    is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

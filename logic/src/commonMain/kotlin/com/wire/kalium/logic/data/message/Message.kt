@@ -347,7 +347,8 @@ data class MessagePreview(
     val content: MessagePreviewContent,
     val date: String,
     val visibility: Message.Visibility,
-    val isSelfMessage: Boolean
+    val isSelfMessage: Boolean,
+    val senderUserId: UserId
 )
 
 enum class AssetType {
