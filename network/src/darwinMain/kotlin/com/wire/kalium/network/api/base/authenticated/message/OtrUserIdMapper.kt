@@ -7,9 +7,9 @@ import kotlinx.cinterop.usePinned
 import pbandk.ByteArr
 import platform.Foundation.NSUUID
 
-class OtrUserIdMapper {
+class OtrUserIdMapperImpl: OtrUserIdMapper {
 
-    fun toOtrUserId(userId: String): UserId {
+    override fun toOtrUserId(userId: String): UserId {
         val uuid = NSUUID(userId)
 
         val nativeBytes = ByteArray(USER_UID_BYTE_COUNT)
@@ -19,7 +19,7 @@ class OtrUserIdMapper {
         return UserId(uuid = (ByteArr(nativeBytes)))
     }
 
-    fun fromOtrUserId(otrUserId: UserId): String {
+    override fun fromOtrUserId(otrUserId: UserId): String {
         val uuid = otrUserId.uuid.array.usePinned {
             NSUUID(it.addressOf(0).reinterpret())
         }
@@ -30,3 +30,5 @@ class OtrUserIdMapper {
         private const val USER_UID_BYTE_COUNT = 16
     }
 }
+
+actual fun provideOtrUserIdMapper(): OtrUserIdMapper = OtrUserIdMapperImpl()

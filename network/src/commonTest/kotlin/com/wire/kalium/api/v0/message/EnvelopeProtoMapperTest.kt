@@ -1,9 +1,9 @@
 package com.wire.kalium.api.v0.message
 
+import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToClientToEncMsgMap
-import com.wire.kalium.network.api.base.authenticated.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class EnvelopeProtoMapperTest {
 
-    private val envelopeProtoMapper = provideEnvelopeProtoMapper()
+    private val envelopeProtoMapper = EnvelopeProtoMapperImpl()
 
     @Test
     fun givenEnvelopeWithData_whenMappingToProtobuf_thenBlobShouldMatch() {
