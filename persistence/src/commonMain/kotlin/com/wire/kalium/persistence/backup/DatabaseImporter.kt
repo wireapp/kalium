@@ -1,25 +1,16 @@
 package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
-import com.wire.kalium.persistence.db.UserDBSecret
 
 interface DatabaseImporter {
-    suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
+    suspend fun importFromFile(filePath: String, fromOtherClient: Boolean)
 }
 
 class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter {
 
-    override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
-        val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
-        if (isDBSQLCiphered) {
-            sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
-                bindString(0, filePath)
-                bindBytes(1, userDBSecret!!.value)
-            }
-        } else {
-            sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
-                bindString(0, filePath)
-            }
+    override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
+        sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
+            bindString(0, filePath)
         }
         sqlDriver.execute("""BEGIN""")
         restoreTable("Team")

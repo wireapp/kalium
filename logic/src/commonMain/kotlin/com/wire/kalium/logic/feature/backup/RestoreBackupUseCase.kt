@@ -68,9 +68,8 @@ internal class RestoreBackupUseCaseImpl(
                             if (isPasswordProtected) {
                                 decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
                             } else {
-                                val userDBSecret: UserDBSecret? = userDBSecret(extractedBackupRootPath)
                                 val isFromOtherClient = isFromOtherClient(extractedBackupRootPath)
-                                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient, userDBSecret)
+                                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
                             }
                         }
                 }
@@ -127,10 +126,9 @@ internal class RestoreBackupUseCaseImpl(
                 kaliumLogger.e("Failed to extract encrypted backup files")
                 Failure(BackupIOFailure("Failed to extract encrypted backup files"))
             }, {
-                val userDBSecret = userDBSecret(extractedBackupRootPath)
                 val isFromOtherClient = isFromOtherClient(extractedBackupRootPath)
                 kaliumFileSystem.delete(extractedBackupPath)
-                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient, userDBSecret)
+                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
             })
         } else {
             Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
@@ -171,16 +169,15 @@ internal class RestoreBackupUseCaseImpl(
 
     private suspend fun getDbPathAndImport(
         extractedBackupRootPath: Path,
-        isFromOtherClient: Boolean,
-        userDBSecret: UserDBSecret?
+        isFromOtherClient: Boolean
     ): RestoreBackupResult {
         return getBackupDBPath(extractedBackupRootPath)?.let { dbPath ->
-            importDBFile(dbPath, isFromOtherClient, userDBSecret)
+            importDBFile(dbPath, isFromOtherClient)
         } ?: Failure(BackupIOFailure("No valid db file found in the backup"))
     }
 
-    private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean, userDBSecret: UserDBSecret?) = wrapStorageRequest {
-        databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient, userDBSecret)
+    private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean) = wrapStorageRequest {
+        databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient)
     }.fold({ Failure(BackupIOFailure("There was an error when importing the DB")) }, { RestoreBackupResult.Success })
 
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
@@ -197,11 +194,6 @@ internal class RestoreBackupUseCaseImpl(
 
     private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean =
         backupMetadata(extractedBackupPath)?.userId == userId.toString()
-
-    private suspend fun userDBSecret(extractedBackupPath: Path): UserDBSecret? =
-        backupMetadata(extractedBackupPath)?.userDBPassphrase?.let { dbPassphrase ->
-            if (dbPassphrase.isEmpty()) null else UserDBSecret(dbPassphrase.decodeBase64Bytes())
-        }
 
     private suspend fun isFromOtherClient(extractedBackupPath: Path): Boolean =
         backupMetadata(extractedBackupPath)?.clientId != currentClientIdProvider().fold({ "" }, { it.value })

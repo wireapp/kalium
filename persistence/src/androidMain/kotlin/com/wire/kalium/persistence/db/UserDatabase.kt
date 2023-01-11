@@ -21,8 +21,7 @@ sealed interface DatabaseCredentials {
  * in the future like [nuke]
  */
 internal actual class PlatformDatabaseData(
-    val context: Context,
-    val databaseCredentials: DatabaseCredentials
+    val context: Context
 )
 
 fun userDatabaseBuilder(
@@ -53,7 +52,7 @@ fun userDatabaseBuilder(
     } else {
         DatabaseCredentials.NotSet
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context, credentials))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context))
 }
 
 fun inMemoryDatabase(
@@ -69,11 +68,7 @@ fun inMemoryDatabase(
         factory = SupportFactory(passphrase)
     )
     return UserDatabaseBuilder(
-        userId, driver, dispatcher, PlatformDatabaseData(
-            context, DatabaseCredentials.Passphrase(
-                UserDBSecret(passphrase)
-            )
-        )
+        userId, driver, dispatcher, PlatformDatabaseData(context)
     )
 }
 
