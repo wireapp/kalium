@@ -5,7 +5,7 @@ import pbandk.ByteArr
 import java.nio.ByteBuffer
 import java.util.UUID
 
-class OtrUserIdMapperImpl : OtrUserIdMapper {
+internal class OtrUserIdMapperImpl : OtrUserIdMapper {
 
     override fun toOtrUserId(userId: String): UserId {
         val bytes = ByteArray(USER_UID_BYTE_COUNT)
@@ -27,4 +27,4 @@ class OtrUserIdMapperImpl : OtrUserIdMapper {
     }
 }
 
-actual fun provideOtrUserIdMapper(): OtrUserIdMapper = OtrUserIdMapperImpl()
+internal actual fun provideOtrUserIdMapper(): OtrUserIdMapper = OtrUserIdMapperImpl()

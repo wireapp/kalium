@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.protobuf.otr.ClientId
 
-class OtrClientIdMapper {
+internal class OtrClientIdMapper {
     fun toOtrClientId(clientId: String): ClientId = ClientId(clientId.decodeHexToLong())
 }
 

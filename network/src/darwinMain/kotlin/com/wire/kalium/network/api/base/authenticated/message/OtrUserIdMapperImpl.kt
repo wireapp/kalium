@@ -7,7 +7,7 @@ import kotlinx.cinterop.usePinned
 import pbandk.ByteArr
 import platform.Foundation.NSUUID
 
-class OtrUserIdMapperImpl : OtrUserIdMapper {
+internal class OtrUserIdMapperImpl : OtrUserIdMapper {
 
     override fun toOtrUserId(userId: String): UserId {
         val uuid = NSUUID(userId)
@@ -31,4 +31,4 @@ class OtrUserIdMapperImpl : OtrUserIdMapper {
     }
 }
 
-actual fun provideOtrUserIdMapper(): OtrUserIdMapper = OtrUserIdMapperImpl()
+internal actual fun provideOtrUserIdMapper(): OtrUserIdMapper = OtrUserIdMapperImpl()

@@ -12,7 +12,7 @@ interface EnvelopeProtoMapper {
     fun encodeToProtobuf(envelopeParameters: MessageApi.Parameters.QualifiedDefaultParameters): ByteArray
 }
 
-class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
+internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
 
     private val otrClientEntryMapper = OtrClientEntryMapper()
     private val otrUserIdMapper = provideOtrUserIdMapper()
