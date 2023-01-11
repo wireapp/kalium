@@ -263,14 +263,16 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
-            val receiptMode: ReceiptMode
+            val receiptMode: ReceiptMode,
+            val senderUserId: UserId
         ) : Conversation(id, transient, conversationId) {
 
             override fun toString(): String {
                 val properties = mapOf(
                     "id" to id.obfuscateId(),
                     "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "receiptMode" to receiptMode.name
+                    "receiptMode" to receiptMode.name,
+                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
                 )
 
                 return "${properties.toJsonElement()}"
