@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -16,7 +17,7 @@ object MessageMapper {
 
     private val serializer = JsonSerializer()
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun toMessagePreviewEntityContent(
         contentType: MessageEntity.ContentType,
         senderName: String?,
@@ -26,7 +27,9 @@ object MessageMapper {
         isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
-        assetMimeType: String?
+        assetMimeType: String?,
+        selfUserId: QualifiedIDEntity?,
+        senderUserId: QualifiedIDEntity?
     ) = when (contentType) {
         MessageEntity.ContentType.TEXT -> when {
             isSelfMessage -> MessagePreviewEntityContent.Text(
@@ -58,11 +61,35 @@ object MessageMapper {
         )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
-        MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
-            adminName = senderName,
-            count = memberChangeList.requireField("memberChangeList").size,
-            type = memberChangeType.requireField("memberChangeType")
-        )
+        MessageEntity.ContentType.MEMBER_CHANGE -> {
+            val userIdList = memberChangeList.requireField("memberChangeList")
+            when (memberChangeType.requireField("memberChangeType")) {
+                MessageEntity.MemberChangeType.ADDED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberJoined(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersAdded(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+                MessageEntity.MemberChangeType.REMOVED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberLeft(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersRemoved(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+            }
+        }
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
@@ -87,6 +114,7 @@ object MessageMapper {
         contentType: MessageEntity.ContentType,
         date: String,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -114,7 +142,9 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return MessagePreviewEntity(
@@ -123,7 +153,8 @@ object MessageMapper {
             content = content,
             date = date,
             visibility = visibility,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            senderUserId = senderUserId
         )
 
     }
@@ -135,6 +166,7 @@ object MessageMapper {
         contentType: MessageEntity.ContentType,
         date: String,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -162,7 +194,9 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return NotificationMessageEntity(
