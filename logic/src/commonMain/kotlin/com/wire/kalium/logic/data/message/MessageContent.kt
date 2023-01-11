@@ -188,7 +188,6 @@ sealed class MessageContent {
     ) : System()
 
     data class ConversationReceiptModeChanged(
-        val userName: String,
         val receiptMode: Boolean
     ) : System()
 

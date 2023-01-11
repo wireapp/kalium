@@ -6,7 +6,6 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -26,7 +25,6 @@ interface ReceiptModeUpdateEventHandler {
 internal class ReceiptModeUpdateEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
     private val persistMessage: PersistMessageUseCase,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ReceiptModeUpdateEventHandler {
 
@@ -35,11 +33,9 @@ internal class ReceiptModeUpdateEventHandlerImpl(
     override suspend fun handle(event: Event.Conversation.ConversationReceiptMode) {
         updateReceiptMode(event)
             .onSuccess {
-                // todo: handle system message, we need to add it to db, see: conversation renamed
-                logger.d("The Conversation receipt mode was updated: ${event.conversationId.toString().obfuscateId()}")
                 val message = Message.System(
                     uuid4().toString(),
-                    MessageContent.NewConversationReceiptMode( // ConversationReceiptModeChanged
+                    MessageContent.ConversationReceiptModeChanged(
                         receiptMode = event.receiptMode == Conversation.ReceiptMode.ENABLED
                     ),
                     event.conversationId,
@@ -50,9 +46,12 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
+                logger.d("[ReceiptModeUpdateEventHandler][Success] - Receipt Mode: [${event.receiptMode}]")
             }
             .onFailure { coreFailure ->
-                logger.e("Error updating receipt mode for conversation [${event.conversationId.toString().obfuscateId()}] $coreFailure")
+                logger.d("[ReceiptModeUpdateEventHandler][Error] - Receipt Mode: [${event.receiptMode}] " +
+                        "| Conversation: [${event.conversationId.toString().obfuscateId()}] " +
+                        "| CoreFailure: [$coreFailure]")
             }
     }
 
