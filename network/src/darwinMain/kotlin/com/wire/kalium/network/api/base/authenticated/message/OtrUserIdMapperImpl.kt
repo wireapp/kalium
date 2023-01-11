@@ -7,7 +7,7 @@ import kotlinx.cinterop.usePinned
 import pbandk.ByteArr
 import platform.Foundation.NSUUID
 
-class OtrUserIdMapperImpl: OtrUserIdMapper {
+class OtrUserIdMapperImpl : OtrUserIdMapper {
 
     override fun toOtrUserId(userId: String): UserId {
         val uuid = NSUUID(userId)
