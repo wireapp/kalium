@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
@@ -260,9 +259,6 @@ class MessageRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val idMapper = mock(IdMapper::class)
-
-        @Mock
         val assetMapper = mock(AssetMapper::class)
 
         @Mock
@@ -326,7 +322,6 @@ class MessageRepositoryTest {
             mlsMessageApi = mlsMessageApi,
             messageDAO = messageDAO,
             messageMapper = messageMapper,
-            idMapper = idMapper,
             assetMapper = assetMapper,
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper
