@@ -130,6 +130,7 @@ class MessageMapperImpl(
         )
     }
 
+    @Suppress("ComplexMethod")
     override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
         return when (message.content) {
             is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
@@ -370,6 +371,7 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
 }
 
+@Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
     is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
