@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.backup
 
-import android.content.Context
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -13,7 +12,6 @@ actual class DatabaseExporter internal actual constructor(
 ) {
 
     private val appContext get() = platformDBData.context
-
 
     /**
      * Create a new plain database to be used for
@@ -28,7 +26,7 @@ actual class DatabaseExporter internal actual constructor(
             bindString(0, dbFile.absolutePath)
         }
         sqlDriver.execute(null, """SELECT sqlcipher_export('plain_text');""", 0)
-        sqlDriver.execute(null, """DETACH DATABASE plaintext;""", 0);
+        sqlDriver.execute(null, """DETACH DATABASE plaintext;""", 0)
         return dbFile.absolutePath
     }
 

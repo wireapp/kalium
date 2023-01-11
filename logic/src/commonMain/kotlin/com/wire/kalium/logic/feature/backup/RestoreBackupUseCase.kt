@@ -26,10 +26,8 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.backup.DatabaseImporter
-import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json

@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
 import com.wire.kalium.logic.functional.Either
@@ -20,8 +19,10 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
+import com.wire.kalium.persistence.backup.DatabaseExporter
+import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -33,8 +34,6 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.use
-import com.wire.kalium.persistence.backup.DatabaseExporter
-import com.wire.kalium.util.KaliumDispatcher
 
 interface CreateBackupUseCase {
     /**
