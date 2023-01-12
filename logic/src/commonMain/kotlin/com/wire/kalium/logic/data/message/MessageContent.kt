@@ -220,15 +220,21 @@ sealed class MessagePreviewContent {
 
         data class Knock(override val username: String?) : WithUser(username)
 
+        data class MemberLeft(override val username: String?) : WithUser(username)
+
+        data class MemberJoined(override val username: String?) : WithUser(username)
+
         data class MembersAdded(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserAdded: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class MembersRemoved(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class ConversationNameChange(val adminName: String?) : WithUser(adminName)
 
