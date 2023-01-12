@@ -53,22 +53,20 @@ class MessageDAOImpl(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
-    ) {
-        withContext(coroutineContext) {
-            queries.transaction {
-                if (updateConversationReadDate) {
-                    conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
-                }
+    ) = withContext(coroutineContext) {
+        queries.transaction {
+            if (updateConversationReadDate) {
+                conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+            }
 
-                insertInDB(message)
+            insertInDB(message)
 
-                if (!needsToBeNotified(message.id, message.conversationId)) {
-                    conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
-                }
+            if (!needsToBeNotified(message.id, message.conversationId)) {
+                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+            }
 
-                if (updateConversationModifiedDate) {
-                    conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
-                }
+            if (updateConversationModifiedDate) {
+                conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
             }
         }
     }
@@ -77,7 +75,8 @@ class MessageDAOImpl(
         queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
-    private fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
+    private fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+        queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
@@ -483,13 +482,11 @@ class MessageDAOImpl(
             .executeAsList()
     }
 
-
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =
         withContext(coroutineContext) {
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
                 .executeAsOneOrNull()
         }
-
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
