@@ -79,10 +79,8 @@ class MessageDAOImpl(
         nonSuspendNeedsToBeNotified(id, conversationId)
     }
 
-
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
-
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
