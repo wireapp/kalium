@@ -104,7 +104,7 @@ class MessageDAOImpl(
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
