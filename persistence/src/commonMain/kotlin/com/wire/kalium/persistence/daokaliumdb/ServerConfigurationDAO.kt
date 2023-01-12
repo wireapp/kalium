@@ -178,7 +178,6 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override fun configById(id: String): ServerConfigEntity? =
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
-
     override suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = withContext(queriesContext) {
         with(links) {
             queries.getByLinks(
