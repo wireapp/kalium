@@ -8,6 +8,9 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
 internal object ServerConfigMapper {
@@ -98,18 +101,18 @@ internal object ServerConfigMapper {
 }
 
 interface ServerConfigurationDAO {
-    fun deleteById(id: String)
-    fun insert(insertData: InsertData)
-    fun allConfigFlow(): Flow<List<ServerConfigEntity>>
-    fun allConfig(): List<ServerConfigEntity>
-    fun configById(id: String): ServerConfigEntity?
-    fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
-    fun updateApiVersion(id: String, commonApiVersion: Int)
-    fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
-    fun configForUser(userId: UserIDEntity): ServerConfigEntity?
-    fun setFederationToTrue(id: String)
-    fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
-    fun updateBlackListCheckDate(configIds: Set<String>, date: String)
+    suspend fun deleteById(id: String)
+    suspend fun insert(insertData: InsertData)
+    suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>>
+    suspend fun allConfig(): List<ServerConfigEntity>
+    suspend fun configById(id: String): ServerConfigEntity?
+    suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
+    suspend fun updateApiVersion(id: String, commonApiVersion: Int)
+    suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
+    suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
+    suspend fun setFederationToTrue(id: String)
+    suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
+    suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
 
     data class InsertData(
         val id: String,
@@ -132,68 +135,85 @@ interface ServerConfigurationDAO {
 
 internal class ServerConfigurationDAOImpl internal constructor(
     private val queries: ServerConfigurationQueries,
+    private val queriesContext: CoroutineContext,
     private val mapper: ServerConfigMapper = ServerConfigMapper
 ) :
     ServerConfigurationDAO {
 
-    override fun deleteById(id: String) = queries.deleteById(id)
-
-    override fun insert(
-        insertData: ServerConfigurationDAO.InsertData
-    ) = with(insertData) {
-        queries.insert(
-            id,
-            apiBaseUrl,
-            accountBaseUrl,
-            webSocketBaseUrl,
-            blackListUrl,
-            teamsUrl,
-            websiteUrl,
-            title,
-            isOnPremises,
-            federation,
-            domain,
-            commonApiVersion,
-            apiProxyHost,
-            apiProxyNeedsAuthentication,
-            apiProxyPort
-        )
+    override suspend fun deleteById(id: String) = withContext(queriesContext) {
+        queries.deleteById(id)
     }
 
-    override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
-        queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().mapToList()
+    override suspend fun insert(
+        insertData: ServerConfigurationDAO.InsertData
+    ) = withContext(queriesContext) {
+        with(insertData) {
+            queries.insert(
+                id,
+                apiBaseUrl,
+                accountBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                title,
+                isOnPremises,
+                federation,
+                domain,
+                commonApiVersion,
+                apiProxyHost,
+                apiProxyNeedsAuthentication,
+                apiProxyPort
+            )
+        }
+    }
 
-    override fun allConfig(): List<ServerConfigEntity> =
+    override suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
+        queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
+
+    override suspend fun allConfig(): List<ServerConfigEntity> = withContext(queriesContext) {
         queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
+    }
 
-    override fun configById(id: String): ServerConfigEntity? =
+    override suspend fun configById(id: String): ServerConfigEntity? = withContext(queriesContext) {
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+    }
 
-    override fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = with(links) {
-        queries.getByLinks(
-            apiBaseUrl = api,
-            webSocketBaseUrl = webSocket,
-            title = title,
-            api_proxy_host = apiProxy?.host,
-            api_proxy_port = apiProxy?.port,
-            mapper = mapper::fromServerConfiguration
-        )
-    }.executeAsOneOrNull()
+    override suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = withContext(queriesContext) {
+        with(links) {
+            queries.getByLinks(
+                apiBaseUrl = api,
+                webSocketBaseUrl = webSocket,
+                title = title,
+                api_proxy_host = apiProxy?.host,
+                api_proxy_port = apiProxy?.port,
+                mapper = mapper::fromServerConfiguration
+            )
+        }.executeAsOneOrNull()
+    }
 
-    override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
+    override suspend fun updateApiVersion(id: String, commonApiVersion: Int) = withContext(queriesContext) {
+        queries.updateApiVersion(commonApiVersion, id)
+    }
 
-    override fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
-        queries.updateApiVersionAndDomain(commonApiVersion, domain, id)
+    override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
+        withContext(queriesContext) {
+            queries.updateApiVersionAndDomain(commonApiVersion, domain, id)
+        }
 
-    override fun configForUser(userId: UserIDEntity): ServerConfigEntity? =
+    override suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity? = withContext(queriesContext) {
         queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+    }
 
-    override fun setFederationToTrue(id: String) = queries.setFederationToTrue(id)
+    override suspend fun setFederationToTrue(id: String) = withContext(queriesContext) {
+        queries.setFederationToTrue(id)
+    }
 
-    override fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
-        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().mapToList()
+    override suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
+        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().flowOn(queriesContext)
+            .mapToList()
 
-    override fun updateBlackListCheckDate(configIds: Set<String>, date: String) =
+    override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
-
+    }
 }
