@@ -61,7 +61,7 @@ class MessageDAOImpl(
 
             insertInDB(message)
 
-            if (!needsToBeNotified(message.id, message.conversationId)) {
+            if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
             }
 
@@ -75,8 +75,14 @@ class MessageDAOImpl(
         queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
-    private fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+    override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        nonSuspendNeedsToBeNotified(id, conversationId)
+    }
+
+
+    private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
+
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
