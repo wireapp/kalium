@@ -6,7 +6,10 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {
@@ -76,13 +79,15 @@ private class ConnectionMapper {
 
 class ConnectionDAOImpl(
     private val connectionsQueries: ConnectionsQueries,
-    private val conversationsQueries: ConversationsQueries
+    private val conversationsQueries: ConversationsQueries,
+    private val coroutineContext: CoroutineContext
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
     override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
             .map { it.map(connectionMapper::toModel) }
     }
@@ -90,10 +95,11 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
     }
 
-    override suspend fun insertConnection(connectionEntity: ConnectionEntity) {
+    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(coroutineContext) {
         connectionsQueries.insertConnection(
             from_id = connectionEntity.from,
             conversation_id = connectionEntity.conversationId,
@@ -105,7 +111,7 @@ class ConnectionDAOImpl(
         )
     }
 
-    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) {
+    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) = withContext(coroutineContext) {
         connectionsQueries.transaction {
             for (connectionEntity: ConnectionEntity in conversationList) {
                 connectionsQueries.insertConnection(
@@ -121,11 +127,11 @@ class ConnectionDAOImpl(
         }
     }
 
-    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) {
+    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(coroutineContext) {
         connectionsQueries.updateConnectionLastUpdated(lastUpdate, id)
     }
 
-    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) {
+    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         connectionsQueries.transaction {
             connectionsQueries.deleteConnection(conversationId)
             conversationsQueries.deleteConversation(conversationId)
@@ -135,14 +141,15 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
     }
 
-    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {
+    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(coroutineContext) {
         connectionsQueries.updateNotificationFlag(flag, userId)
     }
 
-    override suspend fun updateAllNotificationFlags(flag: Boolean) {
+    override suspend fun updateAllNotificationFlags(flag: Boolean) = withContext(coroutineContext) {
         connectionsQueries.transaction {
             connectionsQueries.selectConnectionRequests()
                 .executeAsList()
@@ -150,7 +157,7 @@ class ConnectionDAOImpl(
         }
     }
 
-    override suspend fun setAllConnectionsAsNotified() {
+    override suspend fun setAllConnectionsAsNotified() = withContext(coroutineContext) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
 }
