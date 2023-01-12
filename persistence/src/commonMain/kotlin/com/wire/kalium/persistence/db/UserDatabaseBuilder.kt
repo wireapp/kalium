@@ -36,7 +36,6 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
@@ -60,11 +59,9 @@ class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
-    private val platformDatabaseData: PlatformDatabaseData
+    private val platformDatabaseData: PlatformDatabaseData,
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io.limitedParallelism(4)
 
     internal val database: UserDatabase = UserDatabase(
         driver = sqlDriver,
