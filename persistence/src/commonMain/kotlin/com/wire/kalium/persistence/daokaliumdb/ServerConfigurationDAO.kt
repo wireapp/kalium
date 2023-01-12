@@ -105,7 +105,7 @@ interface ServerConfigurationDAO {
     suspend fun insert(insertData: InsertData)
     suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     suspend fun allConfig(): List<ServerConfigEntity>
-    suspend fun configById(id: String): ServerConfigEntity?
+    fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
     suspend fun updateApiVersion(id: String, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
@@ -175,9 +175,9 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
     }
 
-    override suspend fun configById(id: String): ServerConfigEntity? = withContext(queriesContext) {
+    override fun configById(id: String): ServerConfigEntity? =
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
-    }
+
 
     override suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = withContext(queriesContext) {
         with(links) {
