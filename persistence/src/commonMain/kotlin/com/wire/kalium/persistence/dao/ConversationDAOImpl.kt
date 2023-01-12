@@ -304,17 +304,21 @@ class ConversationDAOImpl(
 
     override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
         withContext(coroutineContext) {
+            nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
+        }
+
+    private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
             memberQueries.transaction {
                 for (member: Member in memberList) {
                     userQueries.insertOrIgnoreUserId(member.user)
                     memberQueries.insertMember(member.user, conversationID, member.role)
                 }
             }
-        }
-
-    override suspend fun insertMembers(memberList: List<Member>, groupId: String) = withContext(coroutineContext) {
-        getConversationByGroupID(groupId).firstOrNull()?.let {
-            insertMembersWithQualifiedId(memberList, it.id)
+    override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
+        withContext(coroutineContext) {
+            getConversationByGroupID(groupId).firstOrNull()?.let {
+                nonSuspendInsertMembersWithQualifiedId(memberList, it.id)
+            }
         }
     }
 
