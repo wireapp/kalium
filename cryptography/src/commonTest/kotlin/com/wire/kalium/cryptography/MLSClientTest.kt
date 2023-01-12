@@ -6,7 +6,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @IgnoreJS
-@IgnoreIOS
 class MLSClientTest : BaseMLSClientTest() {
 
     data class SampleUser(val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String) {
@@ -36,6 +35,8 @@ class MLSClientTest : BaseMLSClientTest() {
         assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
     }
 
+    // TODO figure out why this test crashes on iosX64
+    @IgnoreIOS
     @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
         val aliceClient = createClient(ALICE1)

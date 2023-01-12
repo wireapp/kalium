@@ -25,6 +25,12 @@ kotlin {
         }
     }
 
+    ios() {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -76,6 +82,11 @@ kotlin {
                 implementation(libs.cryptoboxAndroid)
                 implementation(libs.javaxCrypto)
                 implementation(libs.coreCryptoAndroid)
+            }
+        }
+        val darwinMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
             }
         }
     }
