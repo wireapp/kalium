@@ -38,7 +38,7 @@ internal interface ServerConfigRepository {
     /**
      * @return list of all locally stored server configurations
      */
-    fun configList(): Either<StorageFailure, List<ServerConfig>>
+    suspend fun configList(): Either<StorageFailure, List<ServerConfig>>
 
     /**
      * @return observable list of all locally stored server configurations
@@ -110,7 +110,7 @@ internal class ServerConfigDataSource(
         wrapApiRequest { api.fetchServerConfig(serverConfigUrl) }
             .map { serverConfigMapper.fromDTO(it) }
 
-    override fun configList(): Either<StorageFailure, List<ServerConfig>> =
+    override suspend fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
 
     override fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>> =
