@@ -80,14 +80,14 @@ private class ConnectionMapper {
 class ConnectionDAOImpl(
     private val connectionsQueries: ConnectionsQueries,
     private val conversationsQueries: ConversationsQueries,
-    private val coroutineContext: CoroutineContext
+    private val queriesContext: CoroutineContext
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
     override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
-            .flowOn(coroutineContext)
+            .flowOn(queriesContext)
             .mapToList()
             .map { it.map(connectionMapper::toModel) }
     }
@@ -95,11 +95,11 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
-            .flowOn(coroutineContext)
+            .flowOn(queriesContext)
             .mapToList()
     }
 
-    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(coroutineContext) {
+    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(queriesContext) {
         connectionsQueries.insertConnection(
             from_id = connectionEntity.from,
             conversation_id = connectionEntity.conversationId,
@@ -111,7 +111,7 @@ class ConnectionDAOImpl(
         )
     }
 
-    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) = withContext(coroutineContext) {
+    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) = withContext(queriesContext) {
         connectionsQueries.transaction {
             for (connectionEntity: ConnectionEntity in conversationList) {
                 connectionsQueries.insertConnection(
@@ -127,11 +127,11 @@ class ConnectionDAOImpl(
         }
     }
 
-    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(coroutineContext) {
+    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
         connectionsQueries.updateConnectionLastUpdated(lastUpdate, id)
     }
 
-    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {
         connectionsQueries.transaction {
             connectionsQueries.deleteConnection(conversationId)
             conversationsQueries.deleteConversation(conversationId)
@@ -141,15 +141,15 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
-            .flowOn(coroutineContext)
+            .flowOn(queriesContext)
             .mapToList()
     }
 
-    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(queriesContext) {
         connectionsQueries.updateNotificationFlag(flag, userId)
     }
 
-    override suspend fun updateAllNotificationFlags(flag: Boolean) = withContext(coroutineContext) {
+    override suspend fun updateAllNotificationFlags(flag: Boolean) = withContext(queriesContext) {
         connectionsQueries.transaction {
             connectionsQueries.selectConnectionRequests()
                 .executeAsList()
@@ -157,7 +157,7 @@ class ConnectionDAOImpl(
         }
     }
 
-    override suspend fun setAllConnectionsAsNotified() = withContext(coroutineContext) {
+    override suspend fun setAllConnectionsAsNotified() = withContext(queriesContext) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
 }
