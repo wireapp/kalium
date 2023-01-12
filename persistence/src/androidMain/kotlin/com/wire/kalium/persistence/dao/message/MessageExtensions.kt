@@ -5,7 +5,6 @@ import androidx.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 actual interface MessageExtensions {
@@ -35,10 +34,10 @@ actual class MessageExtensionsImpl actual constructor(
         )
     }
 
-    private suspend fun getPagingSource(
+    private fun getPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>
-    ) = withContext(coroutineContext) {
+    ) =
         QueryPagingSource(
             countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
             transacter = messagesQueries,
@@ -52,5 +51,4 @@ actual class MessageExtensionsImpl actual constructor(
                 )
             }
         )
-    }
 }

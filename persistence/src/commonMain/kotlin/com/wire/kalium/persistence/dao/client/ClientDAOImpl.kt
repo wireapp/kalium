@@ -21,7 +21,7 @@ internal object ClientMapper {
 
 internal class ClientDAOImpl internal constructor(
     private val clientsQueries: ClientsQueries,
-    private val queriesContext: CoroutineContext
+    private val queriesContext: CoroutineContext,
     private val mapper: ClientMapper = ClientMapper
 ) : ClientDAO {
 

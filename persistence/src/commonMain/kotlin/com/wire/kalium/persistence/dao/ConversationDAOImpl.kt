@@ -341,16 +341,21 @@ class ConversationDAOImpl(
 
     override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
         withContext(coroutineContext) {
-            memberQueries.transaction {
-                userIDList.forEach {
-                    memberQueries.deleteMember(conversationID, it)
-                }
+            nonSuspendDeleteMembersByQualifiedID(userIDList, conversationID)
+        }
+
+    private fun nonSuspendDeleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
+        memberQueries.transaction {
+            userIDList.forEach {
+                memberQueries.deleteMember(conversationID, it)
             }
         }
 
-    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) = withContext(coroutineContext) {
-        getConversationByGroupID(groupId).firstOrNull()?.let {
-            deleteMembersByQualifiedID(userIDList, it.id)
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
+        withContext(coroutineContext) {
+            getConversationByGroupID(groupId).firstOrNull()?.let {
+                nonSuspendDeleteMembersByQualifiedID(userIDList, it.id)
+            }
         }
     }
 

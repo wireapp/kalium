@@ -225,7 +225,7 @@ class UserDAOImpl internal constructor(
             .shareIn(databaseScope, Lazily, 1)
     }
 
-    override fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
+    override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
         userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
             mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
         }.executeAsOneOrNull()
