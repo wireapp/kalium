@@ -9,26 +9,45 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import platform.Foundation.NSFileManager
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: String) : DatabaseCredentials
     object NotSet : DatabaseCredentials
 }
 
-internal actual class PlatformDatabaseData(val credentials: DatabaseCredentials)
+// TODO encrypt database using sqlcipher
+internal actual class PlatformDatabaseData(val storePath: String)
 
 fun userDatabaseBuilder(
     userId: UserIDEntity,
-    passphrase: String,
+    storePath: String,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
-    val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
+    NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
+
+    val schema = UserDatabase.Schema
+    val driver = NativeSqliteDriver(
+        DatabaseConfiguration(
+            name = FileNameUtil.userDBName(userId),
+            version = schema.version,
+            create = { connection ->
+                wrapConnection(connection) { schema.create(it) }
+            },
+            upgrade = { connection, oldVersion, newVersion ->
+                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+            },
+            extendedConfig = DatabaseConfiguration.Extended(
+                basePath = storePath
+            )
+        )
+    )
 
     return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(DatabaseCredentials.Passphrase(passphrase))
+        PlatformDatabaseData(storePath)
     )
 }
 
@@ -54,7 +73,7 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(DatabaseCredentials.NotSet)
+        PlatformDatabaseData("inMemory")
     )
 }
 
@@ -62,4 +81,6 @@ internal actual fun nuke(
     userId: UserIDEntity,
     database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
-): Boolean = TODO()
+): Boolean {
+    return NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storePath, null)
+}

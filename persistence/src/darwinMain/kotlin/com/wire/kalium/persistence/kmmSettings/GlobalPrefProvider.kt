@@ -2,15 +2,29 @@ package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
+import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.config.GlobalAppConfigStorage
+import com.wire.kalium.persistence.config.GlobalAppConfigStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
-actual class GlobalPrefProvider {
+actual class GlobalPrefProvider(
+    rootPath: String,
+    shouldEncryptData: Boolean = true
+) {
+    private val kaliumPref =
+        KaliumPreferencesSettings(
+            encryptedSettingsBuilder(
+                SettingOptions.AppSettings(shouldEncryptData),
+                EncryptedSettingsPlatformParam(rootPath)
+            )
+        )
+
     actual val authTokenStorage: AuthTokenStorage
-        get() = TODO("Not yet implemented")
+        get() = AuthTokenStorage(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
-        get() = TODO("Not yet implemented")
+        get() = PassphraseStorageImpl(kaliumPref)
     actual val tokenStorage: TokenStorage
-        get() = TODO("Not yet implemented")
-    actual val globalAppConfigStorage: GlobalAppConfigStorage = TODO("Not yet implemented")
+        get() = TokenStorageImpl(kaliumPref)
+    actual val globalAppConfigStorage: GlobalAppConfigStorage = GlobalAppConfigStorageImpl(kaliumPref)
 }
