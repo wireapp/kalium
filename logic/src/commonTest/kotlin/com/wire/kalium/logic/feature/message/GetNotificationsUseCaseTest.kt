@@ -242,7 +242,7 @@ class GetNotificationsUseCaseTest {
         fun withConversationsForNotifications(list: List<LocalNotificationConversation>?): Arrangement {
             given(messageRepository)
                 .suspendFunction(messageRepository::getNotificationMessage)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(list?.let { flowOf(it) } ?: flowOf())
 
             return this
