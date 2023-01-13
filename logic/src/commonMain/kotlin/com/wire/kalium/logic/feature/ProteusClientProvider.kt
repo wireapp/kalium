@@ -39,15 +39,13 @@ class ProteusClientProviderImpl(
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
 
-    @Throws(ProteusException::class)
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             _proteusClient?.clearLocalFiles()
             _proteusClient = null
         }
     }
-
-    @Throws(ProteusException::class, CancellationException::class)
+    
     override suspend fun getOrCreate(): ProteusClient {
         mutex.withLock {
             return _proteusClient ?: createProteusClient().also {

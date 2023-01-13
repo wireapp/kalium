@@ -7,7 +7,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableDarwin.set(false)
+//         enableDarwin.set(false)
         enableJs.set(false)
     }
 }
