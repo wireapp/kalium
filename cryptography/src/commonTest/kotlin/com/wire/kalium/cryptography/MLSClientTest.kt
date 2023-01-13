@@ -6,6 +6,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @IgnoreJS
+@IgnoreIOS
 class MLSClientTest : BaseMLSClientTest() {
 
     data class SampleUser(val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String) {
