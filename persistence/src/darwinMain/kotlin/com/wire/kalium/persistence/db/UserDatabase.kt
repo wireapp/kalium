@@ -11,8 +11,6 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
 
-private const val DATABASE_NAME = "main.db"
-
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: String) : DatabaseCredentials
     object NotSet : DatabaseCredentials
@@ -31,7 +29,7 @@ fun userDatabaseBuilder(
     val schema = UserDatabase.Schema
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
-            name = DATABASE_NAME,
+            name = FileNameUtil.userDBName(userId),
             version = schema.version,
             create = { connection ->
                 wrapConnection(connection) { schema.create(it) }
