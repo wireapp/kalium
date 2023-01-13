@@ -34,6 +34,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
     id("scripts.detekt")
+    alias(libs.plugins.completeKotlin)
 }
 
 dependencies {
