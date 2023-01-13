@@ -55,7 +55,7 @@ class RejectCallUseCaseTest {
 
         verify(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId.toString()),  eq(CallStatus.REJECTED))
+            .with(eq(conversationId.toString()), eq(CallStatus.REJECTED))
             .wasInvoked(once)
     }
 

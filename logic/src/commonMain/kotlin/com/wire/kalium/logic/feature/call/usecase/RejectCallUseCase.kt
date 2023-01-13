@@ -19,7 +19,7 @@ class RejectCallUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.io) {
-        callingLogger.d("[RejectCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
+        callingLogger.d("[RejectCallUseCase] -> Updating call status to REJECTED")
         callRepository.updateCallStatusById(conversationId.toString(), CallStatus.REJECTED)
 
         callManager.value.rejectCall(conversationId)
