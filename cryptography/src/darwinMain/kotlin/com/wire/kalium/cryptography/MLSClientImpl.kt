@@ -72,7 +72,7 @@ actual class MLSClientImpl actual constructor(
     override fun clearLocalFiles(): Boolean {
         memScoped {
             val error = alloc<ObjCObjectVar<NSError?>>()
-            val result =  NSFileManager.defaultManager.removeItemAtPath(rootDir, error.ptr)
+            val result = NSFileManager.defaultManager.removeItemAtPath(rootDir, error.ptr)
 
             if (error.value != null) {
                 kaliumLogger.e("failed to clear local files: ${error.value}")

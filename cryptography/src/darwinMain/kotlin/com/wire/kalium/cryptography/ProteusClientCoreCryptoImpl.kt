@@ -25,7 +25,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     override fun clearLocalFiles(): Boolean {
         memScoped {
             val error = alloc<ObjCObjectVar<NSError?>>()
-            val result =  NSFileManager.defaultManager.removeItemAtPath(path, error.ptr)
+            val result = NSFileManager.defaultManager.removeItemAtPath(path, error.ptr)
 
             if (error.value != null) {
                 kaliumLogger.e("failed to clear local files: ${error.value}")
