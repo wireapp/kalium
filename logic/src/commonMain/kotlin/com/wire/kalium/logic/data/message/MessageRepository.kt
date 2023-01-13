@@ -88,7 +88,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -169,7 +169,7 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -186,7 +186,8 @@ class MessageDataSource(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
-                    messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                    messages = messages.take(messageSizePerConversation)
+                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
                     } ?: false
