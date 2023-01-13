@@ -18,6 +18,7 @@ sealed class NetworkResponse<out T : Any> {
             // small issue here where keys are converted to small case letters
             // this is an issue for ktor to solve
             httpResponse.headers.toMap()
+                .mapKeys { headerEntry -> headerEntry.key.lowercase() }
                 .mapValues { headerEntry -> headerEntry.value.firstOrNull() }, // Ignore header duplication on purpose
             httpResponse.status.value
         )

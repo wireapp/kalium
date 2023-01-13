@@ -34,6 +34,7 @@ turbine = "0.12.1"
 avs = "9.0.2-rc1"
 jna = "5.6.0"
 core-crypto = "0.6.0-rc.3"
+completeKotlin = "1.1.0"
 desugar-jdk = "1.1.5"
 kermit = "1.2.2"
 detekt = "1.19.0"
@@ -47,9 +48,9 @@ annotation = "1.2.0"
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
-
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin"}
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

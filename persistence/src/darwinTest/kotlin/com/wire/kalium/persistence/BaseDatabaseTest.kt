@@ -8,23 +8,28 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import platform.Foundation.NSCachesDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSUserDomainMask
 
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
+    private var storePath = NSFileManager.defaultManager.URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!.path!!
+
     actual fun databasePath(
         userId: UserIDEntity
     ): String {
-        return databasePath(FileNameUtil.userDBName(userId), null)
+        return databasePath(FileNameUtil.userDBName(userId), storePath)
     }
 
     actual fun deleteDatabase(userId: UserIDEntity) {
-        deleteDatabase(FileNameUtil.userDBName(userId))
+        deleteDatabase(FileNameUtil.userDBName(userId), storePath)
     }
 
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return userDatabaseBuilder(userId, "123456789", dispatcher)
+        return userDatabaseBuilder(userId, storePath, dispatcher)
     }
 
 }
