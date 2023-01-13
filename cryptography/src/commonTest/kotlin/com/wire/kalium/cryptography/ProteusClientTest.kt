@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@IgnoreIOS
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProteusClientTest : BaseProteusClientTest() {
 
@@ -20,6 +19,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     private val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
 
     @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrError_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)
@@ -36,6 +36,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     }
 
     @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrCreate_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)

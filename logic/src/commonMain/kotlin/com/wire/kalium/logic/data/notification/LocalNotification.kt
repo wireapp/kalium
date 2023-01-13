@@ -31,6 +31,11 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
         val type: LocalNotificationCommentType
     ) : LocalNotificationMessage(author, time)
 
+    data class Knock(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String
+    ) : LocalNotificationMessage(author, time)
+
     data class ConnectionRequest(
         override val author: LocalNotificationMessageAuthor,
         override val time: String,
@@ -46,5 +51,5 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)
 
 enum class LocalNotificationCommentType {
-    PICTURE, FILE, REACTION, MISSED_CALL, KNOCK, NOT_SUPPORTED_YET
+    PICTURE, FILE, REACTION, MISSED_CALL, NOT_SUPPORTED_YET
 }
