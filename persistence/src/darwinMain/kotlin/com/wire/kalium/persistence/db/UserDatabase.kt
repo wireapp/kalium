@@ -40,8 +40,7 @@ fun userDatabaseBuilder(
                 wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
             },
             extendedConfig = DatabaseConfiguration.Extended(
-                basePath = storePath,
-                foreignKeyConstraints = true
+                basePath = storePath
             )
         )
     )
@@ -69,10 +68,7 @@ fun inMemoryDatabase(
             },
             upgrade = { connection, oldVersion, newVersion ->
                 wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
-            },
-            extendedConfig = DatabaseConfiguration.Extended(
-                foreignKeyConstraints = true
-            )
+            }
         )
     )
     return UserDatabaseBuilder(

@@ -23,8 +23,6 @@ actual class GlobalDatabaseProvider(private val storePath: String) {
     private val database: GlobalDatabase
 
     init {
-        println("global store path: $storePath")
-
         NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
 
         val schema = GlobalDatabase.Schema
@@ -39,8 +37,7 @@ actual class GlobalDatabaseProvider(private val storePath: String) {
                     wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
                 },
                 extendedConfig = DatabaseConfiguration.Extended(
-                    basePath = storePath,
-                    foreignKeyConstraints = true
+                    basePath = storePath
                 )
             )
         )
