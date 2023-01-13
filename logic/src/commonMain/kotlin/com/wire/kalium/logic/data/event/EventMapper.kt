@@ -76,7 +76,8 @@ class EventMapper(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
-        receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode)
+        receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 
     private fun updateUserProperties(

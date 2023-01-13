@@ -1021,6 +1021,39 @@ class MessageDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "ConversationReceiptModeChanged Message"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.ConversationReceiptModeChanged(
+                        receiptMode = true
+                    )
+                )
+            )
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+        assertTrue {
+            result.first()?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
+        }
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)

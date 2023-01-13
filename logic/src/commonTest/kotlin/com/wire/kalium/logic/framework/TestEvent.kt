@@ -88,7 +88,8 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         false,
-        receiptMode = Conversation.ReceiptMode.ENABLED
+        receiptMode = Conversation.ReceiptMode.ENABLED,
+        senderUserId = TestUser.USER_ID
     )
 
     fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(
