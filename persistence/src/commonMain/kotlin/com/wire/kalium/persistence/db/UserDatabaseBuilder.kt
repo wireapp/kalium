@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
+import com.wire.kalium.persistence.backup.PlatformDatabaseExporter
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -112,10 +113,11 @@ class UserDatabaseBuilder internal constructor(
         get() = DatabaseImporterImpl(sqlDriver)
 
     val exporter: DatabaseExporter
-        get() = DatabaseExporter(
+        get() = PlatformDatabaseExporter(
             platformDatabaseData,
             userId,
-            sqlDriver
+            sqlDriver,
+            isLocalDatabaseEncrypted =
         )
 
     val callDAO: CallDAO
