@@ -82,7 +82,7 @@ class CallsScope internal constructor(
 
     val endCall: EndCallUseCase get() = EndCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
 
-    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
+    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
 
     val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager, callRepository)
 
