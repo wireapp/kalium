@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Confirmation
@@ -215,6 +216,7 @@ class ProtoContentMapperTest {
         assertIs<MessageContent.Ignored>(decoded.messageContent)
     }
 
+    @IgnoreIOS // TODO generateRandomAES256Key is not implemented for darwin
     @Test
     fun givenExternalMessageInstructions_whenEncodingToProtoAndBack_thenTheResultContentShouldEqualTheOriginal() {
         val messageUid = TEST_MESSAGE_UUID

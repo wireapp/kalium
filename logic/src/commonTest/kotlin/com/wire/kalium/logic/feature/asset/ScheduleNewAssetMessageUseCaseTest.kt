@@ -23,6 +23,7 @@ import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -48,6 +49,7 @@ import okio.use
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when asset support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleNewAssetMessageUseCaseTest {
 

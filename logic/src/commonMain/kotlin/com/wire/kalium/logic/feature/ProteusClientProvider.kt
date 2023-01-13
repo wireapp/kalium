@@ -45,7 +45,7 @@ class ProteusClientProviderImpl(
             _proteusClient = null
         }
     }
-    
+
     override suspend fun getOrCreate(): ProteusClient {
         mutex.withLock {
             return _proteusClient ?: createProteusClient().also {
