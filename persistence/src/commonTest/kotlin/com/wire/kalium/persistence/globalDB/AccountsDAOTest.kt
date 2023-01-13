@@ -23,7 +23,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     lateinit var db: GlobalDatabaseProvider
 
     @BeforeTest
-    fun setUp() {
+    fun setUp() = runTest {
         deleteDatabase()
         db = createDatabase()
 

@@ -5,9 +5,12 @@ import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.ReceiptsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.coroutines.CoroutineContext
 
 interface ReceiptDAO {
     suspend fun insertReceipts(
@@ -27,7 +30,8 @@ interface ReceiptDAO {
 
 class ReceiptDAOImpl(
     private val receiptsQueries: ReceiptsQueries,
-    private val receiptAdapter: Receipt.Adapter
+    private val receiptAdapter: Receipt.Adapter,
+    private val queriesContext: CoroutineContext
 ) : ReceiptDAO {
 
     override suspend fun insertReceipts(
@@ -36,7 +40,7 @@ class ReceiptDAOImpl(
         date: Instant,
         type: ReceiptTypeEntity,
         messageIds: List<String>
-    ) {
+    ) = withContext(queriesContext) {
         receiptsQueries.transaction {
             messageIds.forEach { messageId ->
                 receiptsQueries.insertReceipt(
@@ -60,7 +64,8 @@ class ReceiptDAOImpl(
             conversationId = conversationId,
             type = type,
             mapper = ReceiptMapper::fromDetailedReceiptView
-        ).asFlow().map {
-            it.executeAsList()
-        }
+        ).asFlow()
+            .flowOn(queriesContext)
+            .mapToList()
+
 }
