@@ -173,10 +173,9 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
+            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Knock(
                 LocalNotificationMessageAuthor(content.senderName ?: "", null),
-                message.date,
-                LocalNotificationCommentType.KNOCK
+                message.date
             )
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
