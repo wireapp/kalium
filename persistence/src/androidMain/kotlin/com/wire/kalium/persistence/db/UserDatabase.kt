@@ -10,11 +10,6 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import net.sqlcipher.database.SupportFactory
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
-    object NotSet : DatabaseCredentials
-}
-
 /**
  * Platform-specific data used to create the database
  * that might be necessary for future operations
@@ -47,12 +42,7 @@ fun userDatabaseBuilder(
             name = dbName
         )
     }
-    val credentials = if (encrypt) {
-        DatabaseCredentials.Passphrase(passphrase)
-    } else {
-        DatabaseCredentials.NotSet
-    }
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context), encrypt)
 }
 
 fun inMemoryDatabase(
@@ -68,7 +58,7 @@ fun inMemoryDatabase(
         factory = SupportFactory(passphrase)
     )
     return UserDatabaseBuilder(
-        userId, driver, dispatcher, PlatformDatabaseData(context)
+        userId, driver, dispatcher, PlatformDatabaseData(context), true
     )
 }
 

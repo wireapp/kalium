@@ -32,8 +32,8 @@ actual class PlatformDatabaseExporter internal actual constructor(
         sqlDriver.execute(null, """ATTACH ? AS plain_text KEY '';""", 1) {
             bindString(0, dbFile.absolutePath)
         }
-        sqlDriver.execute(null, """SELECT sqlcipher_export('plain_text');""", 0)
-        sqlDriver.execute(null, """DETACH DATABASE plaintext;""", 0)
+        sqlDriver.executeQuery(null, """SELECT sqlcipher_export('plain_text');""", { _ -> }, 0, null )
+        sqlDriver.execute(null, """DETACH DATABASE plain_text;""", 0)
         return dbFile.absolutePath
     }
 

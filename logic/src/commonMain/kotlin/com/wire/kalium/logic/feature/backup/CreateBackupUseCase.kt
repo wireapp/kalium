@@ -54,19 +54,21 @@ internal class CreateBackupUseCaseImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
 
-    override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
-        val backupFilePath = databaseExporter.backupToPlainText().toPath()
+    override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.default) {
+        try {
+            val backupFilePath = kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_FILE_NAME)
 
-        deletePreviousBackupFiles(backupFilePath)
-
-        createBackupFile(userId, backupFilePath).fold(
-            { error -> CreateBackupResult.Failure(error) },
-            { (backupFilePath, backupSize) ->
-                val isBackupEncrypted = password.isNotEmpty()
-                if (isBackupEncrypted) {
-                    encryptAndCompressFile(backupFilePath, password)
-                } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
-            }).also {
+            deletePreviousBackupFiles(backupFilePath)
+            val userDBData = databaseExporter.backupToPlainText().toPath()
+            createBackupFile(userId, userDBData, backupFilePath).fold(
+                { error -> CreateBackupResult.Failure(error) },
+                { (backupFilePath, backupSize) ->
+                    val isBackupEncrypted = password.isNotEmpty()
+                    if (isBackupEncrypted) {
+                        encryptAndCompressFile(backupFilePath, password)
+                    } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
+                })
+        } finally {
             databaseExporter.deleteBackupDB()
         }
     }
@@ -133,11 +135,10 @@ internal class CreateBackupUseCaseImpl(
         return metadataFilePath
     }
 
-    private suspend fun createBackupFile(userId: UserId, backupFilePath: Path): Either<CoreFailure, Pair<Path, Long>> {
+    private suspend fun createBackupFile(userId: UserId, userDBData: Path, backupFilePath: Path): Either<CoreFailure, Pair<Path, Long>> {
         return try {
             val backupSink = kaliumFileSystem.sink(backupFilePath)
             val backupMetadataPath = createMetadataFile(userId)
-            val userDBData = getUserDbDataPath()
             val filesList = listOf(
                 kaliumFileSystem.source(backupMetadataPath) to BACKUP_METADATA_FILE_NAME,
                 kaliumFileSystem.source(userDBData) to BACKUP_USER_DB_NAME

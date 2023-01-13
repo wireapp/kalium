@@ -59,7 +59,8 @@ class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
-    private val platformDatabaseData: PlatformDatabaseData
+    private val platformDatabaseData: PlatformDatabaseData,
+    private val isEncrypted: Boolean
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -117,7 +118,7 @@ class UserDatabaseBuilder internal constructor(
             platformDatabaseData,
             userId,
             sqlDriver,
-            isLocalDatabaseEncrypted =
+            isEncrypted
         )
 
     val callDAO: CallDAO
