@@ -1,20 +1,30 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
+import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorageImpl
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.UserConfigStorageImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 
-actual class UserPrefBuilder {
+actual class UserPrefBuilder(
+    userId: UserIDEntity,
+    rootPath: String,
+    shouldEncryptData: Boolean = true
+) {
 
-    // TODO: Implement the preferences for iOS.
-    private val kaliumPreferences = KaliumPreferencesSettings(TODO())
+    private val kaliumPreferences =
+        KaliumPreferencesSettings(
+            encryptedSettingsBuilder(SettingOptions.UserSettings(shouldEncryptData, userId), EncryptedSettingsPlatformParam(rootPath))
+        )
+
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
-        get() = TODO("Not yet implemented")
+        get() = LastRetrievedNotificationEventStorageImpl(kaliumPreferences)
 
     actual fun clear() {
-        TODO("Not yet implemented")
+        kaliumPreferences.nuke()
     }
 
-    actual val userConfigStorage: UserConfigStorage
-        get() = TODO("Not yet implemented")
+    actual val userConfigStorage: UserConfigStorage =
+        UserConfigStorageImpl(kaliumPreferences)
 
 }
