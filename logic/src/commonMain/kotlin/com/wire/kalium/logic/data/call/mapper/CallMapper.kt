@@ -150,6 +150,7 @@ class CallMapperImpl(
         CallStatus.ANSWERED -> CallEntity.Status.ANSWERED
         CallStatus.ESTABLISHED -> CallEntity.Status.ESTABLISHED
         CallStatus.STILL_ONGOING -> CallEntity.Status.STILL_ONGOING
+        CallStatus.CLOSED_INTERNALLY -> CallEntity.Status.CLOSED_INTERNALLY
         CallStatus.CLOSED -> CallEntity.Status.CLOSED
         CallStatus.REJECTED -> CallEntity.Status.REJECTED
     }
@@ -161,6 +162,7 @@ class CallMapperImpl(
         CallEntity.Status.ANSWERED -> CallStatus.ANSWERED
         CallEntity.Status.ESTABLISHED -> CallStatus.ESTABLISHED
         CallEntity.Status.STILL_ONGOING -> CallStatus.STILL_ONGOING
+        CallEntity.Status.CLOSED_INTERNALLY -> CallStatus.CLOSED_INTERNALLY
         CallEntity.Status.CLOSED -> CallStatus.CLOSED
         CallEntity.Status.REJECTED -> CallStatus.REJECTED
     }
