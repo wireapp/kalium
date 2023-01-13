@@ -72,7 +72,7 @@ class EndCallUseCaseTest {
     }
 
     @Test
-    fun givenNonEstablishedCall_whenEndCallIsInvoked_thenSaveMissedCall() = runTest {
+    fun givenNoEstablishedCall_whenEndCallIsInvoked_thenSaveMissedCall() = runTest {
         given(callRepository)
             .suspendFunction(callRepository::persistMissedCall)
             .whenInvokedWith(eq(conversationId))
@@ -80,7 +80,7 @@ class EndCallUseCaseTest {
 
         given(callRepository)
             .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then { flowOf(listOf(call.copy(status = CallStatus.INCOMING))) }
+            .whenInvoked().then { flowOf(listOf()) }
 
         given(callManager)
             .suspendFunction(callManager::endCall)
