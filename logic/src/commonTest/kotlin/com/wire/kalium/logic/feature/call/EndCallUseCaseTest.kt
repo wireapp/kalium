@@ -107,7 +107,7 @@ class EndCallUseCaseTest {
         verify(callRepository)
             .suspendFunction(callRepository::persistMissedCall)
             .with(any())
-            .wasNotInvoked()
+            .wasInvoked(once)
     }
 
     companion object {
