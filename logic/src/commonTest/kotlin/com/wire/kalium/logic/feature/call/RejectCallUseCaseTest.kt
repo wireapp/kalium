@@ -28,7 +28,7 @@ class RejectCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        rejectCallUseCase = RejectCallUseCase(lazy{ callManager }, callRepository)
+        rejectCallUseCase = RejectCallUseCase(lazy { callManager }, callRepository)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
