@@ -111,9 +111,9 @@ class ConnectionDAOImpl(
         )
     }
 
-    override suspend fun insertConnections(conversationList: List<ConnectionEntity>) = withContext(queriesContext) {
+    override suspend fun insertConnections(users: List<ConnectionEntity>) = withContext(queriesContext) {
         connectionsQueries.transaction {
-            for (connectionEntity: ConnectionEntity in conversationList) {
+            for (connectionEntity: ConnectionEntity in users) {
                 connectionsQueries.insertConnection(
                     from_id = connectionEntity.from,
                     conversation_id = connectionEntity.conversationId,
