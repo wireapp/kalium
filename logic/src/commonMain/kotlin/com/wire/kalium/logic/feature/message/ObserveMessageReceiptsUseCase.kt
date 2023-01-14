@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -35,5 +38,8 @@ internal class ObserveMessageReceiptsUseCaseImpl(
             conversationId = conversationId,
             messageId = messageId,
             type
-        )
+        ).also {
+            kaliumLogger.i("[ObserveMessageReceiptsUseCase] - Observing read receipts for " +
+                    "Conversation: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}")
+        }
 }

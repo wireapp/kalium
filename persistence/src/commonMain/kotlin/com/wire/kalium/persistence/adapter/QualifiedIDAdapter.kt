@@ -1,8 +1,9 @@
-package com.wire.kalium.persistence.dao
+package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-object QualifiedIDAdapter: ColumnAdapter<QualifiedIDEntity, String> {
+internal object QualifiedIDAdapter : ColumnAdapter<QualifiedIDEntity, String> {
 
     override fun decode(databaseValue: String): QualifiedIDEntity {
         val components = databaseValue.split("@")
@@ -15,7 +16,7 @@ object QualifiedIDAdapter: ColumnAdapter<QualifiedIDEntity, String> {
 
 }
 
-class QualifiedIDListAdapter : ColumnAdapter<List<QualifiedIDEntity>, String> {
+internal class QualifiedIDListAdapter : ColumnAdapter<List<QualifiedIDEntity>, String> {
 
     override fun decode(databaseValue: String): List<QualifiedIDEntity> =
         if (databaseValue.isEmpty()) listOf()

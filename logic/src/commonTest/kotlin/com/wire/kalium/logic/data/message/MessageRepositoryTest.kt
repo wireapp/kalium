@@ -234,8 +234,33 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenASystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+    fun givenANewConversationSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val message = TEST_SYSTEM_MESSAGE
+        val mappedEntity = TEST_MESSAGE_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
+
+        messageRepository.persistMessage(message)
+
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
+                .with(eq(mappedEntity), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationReceiptModeChangedSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val message = TEST_SYSTEM_MESSAGE.copy(
+            content = TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT
+        )
         val mappedEntity = TEST_MESSAGE_ENTITY
         val (arrangement, messageRepository) = Arrangement()
             .withMappedMessageEntity(mappedEntity)
@@ -360,6 +385,9 @@ class MessageRepositoryTest {
             editStatus = Message.EditStatus.NotEdited
         )
         val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
+            receiptMode = true
+        )
+        val TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT = MessageContent.ConversationReceiptModeChanged(
             receiptMode = true
         )
         val TEST_SYSTEM_MESSAGE = Message.System(
