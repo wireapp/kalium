@@ -313,6 +313,7 @@ class UserDAOImpl internal constructor(
         userQueries.selectUsersByTeam(teamId)
             .executeAsList()
             .map(mapper::toModel)
+    }
 
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
