@@ -149,14 +149,6 @@ class ConnectionDAOImpl(
         connectionsQueries.updateNotificationFlag(flag, userId)
     }
 
-    override suspend fun updateAllNotificationFlags(flag: Boolean) = withContext(queriesContext) {
-        connectionsQueries.transaction {
-            connectionsQueries.selectConnectionRequests()
-                .executeAsList()
-                .forEach { connectionsQueries.updateNotificationFlag(flag, it.qualified_to) }
-        }
-    }
-
     override suspend fun setAllConnectionsAsNotified() = withContext(queriesContext) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
