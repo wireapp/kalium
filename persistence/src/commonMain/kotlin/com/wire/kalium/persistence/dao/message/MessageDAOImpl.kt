@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
@@ -121,7 +122,7 @@ class MessageDAOImpl(
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
@@ -200,6 +201,12 @@ class MessageDAOImpl(
             )
 
             is MessageEntityContent.NewConversationReceiptMode -> queries.insertNewConversationReceiptMode(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                receipt_mode = content.receiptMode
+            )
+
+            is MessageEntityContent.ConversationReceiptModeChanged -> queries.insertConversationReceiptModeChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
@@ -461,6 +468,7 @@ class MessageDAOImpl(
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
         is MessageEntityContent.NewConversationReceiptMode -> NEW_CONVERSATION_RECEIPT_MODE
+        is MessageEntityContent.ConversationReceiptModeChanged -> CONVERSATION_RECEIPT_MODE_CHANGED
     }
 
     override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {

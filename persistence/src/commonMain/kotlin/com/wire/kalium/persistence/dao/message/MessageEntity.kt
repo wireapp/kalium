@@ -121,7 +121,7 @@ sealed class MessageEntity(
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
-        NEW_CONVERSATION_RECEIPT_MODE
+        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED
     }
 
     enum class MemberChangeType {
@@ -241,6 +241,7 @@ sealed class MessageEntityContent {
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
+    data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
 }
 
 /**
