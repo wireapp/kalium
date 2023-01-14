@@ -3,6 +3,7 @@ package com.wire.kalium.network
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
 import com.wire.kalium.network.utils.toJsonElement
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -27,30 +28,25 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
 import io.ktor.util.InternalAPI
-import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.readText
-import io.ktor.utils.io.readRemaining
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 /**
  * A client's logging plugin.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("TooGenericExceptionCaught", "EmptyFinallyBlock")
 public class KaliumKtorCustomLogging private constructor(
     public val logger: Logger,
     public var level: LogLevel,
+    private val singleThreadContext: CoroutineContext = KaliumDispatcherImpl.default.limitedParallelism(1),
     public var filters: List<(HttpRequestBuilder) -> Boolean> = emptyList()
 ) {
-
-    private val mutex = Mutex()
-
     /**
      * [Logging] plugin configuration
      */
@@ -78,15 +74,7 @@ public class KaliumKtorCustomLogging private constructor(
         }
     }
 
-    private suspend fun beginLogging() {
-        mutex.lock()
-    }
-
-    private fun doneLogging() {
-        mutex.unlock()
-    }
-
-    private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
+    private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? = withContext(singleThreadContext) {
 
         val properties = mutableMapOf<String, Any>(
             "method" to request.method.value,
@@ -103,11 +91,8 @@ public class KaliumKtorCustomLogging private constructor(
                 obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
                 properties["headers"] = obfuscatedHeaders.toMap()
-
                 val jsonElement = properties.toJsonElement()
-
                 kaliumLogger.v("REQUEST: $jsonElement")
-
             }
 
             level.headers -> {
@@ -137,7 +122,7 @@ public class KaliumKtorCustomLogging private constructor(
                 kaliumLogger.v("REQUEST: $jsonElement")
             }
         }
-        return null
+        return@withContext null
     }
 
     private fun logResponse(response: HttpResponse) {
@@ -173,46 +158,37 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
         headers.associate {
-                it.first to it.second.joinToString(",")
+            it.first to it.second.joinToString(",")
         }
 
-    private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {
-        val text = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "\"response body omitted\""
-        kaliumLogger.v("RESPONSE BODY: {\"Content-Type\":\"${contentType}\", \"Content\":${obfuscatedJsonMessage(text)}}")
+    private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel) {
+        content.tryReadText(contentType?.charset() ?: Charsets.UTF_8)?.also {
+            kaliumLogger.v("RESPONSE BODY: {\"Content-Type\":\"${contentType}\", \"Content\":${obfuscatedJsonMessage(it)}}")
+        } ?: kaliumLogger.v("RESPONSE BODY: {\"Content-Type\":\"${contentType}\", \"Content\":\"response body omitted\"}")
     }
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("""REQUEST FAILURE: {
+            kaliumLogger.v(
+                """REQUEST FAILURE: {
                         |"endpoint":"${obfuscatePath(Url(context.url))}",
                         | "method":"${context.method.value}",
-                        |  "cause":"$cause"}
-                        |  """.trimMargin())
+                        |  "cause":"$cause"
+                        |  """.trimMargin()
+            )
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("""RESPONSE FAILURE: 
+            kaliumLogger.v(
+                """RESPONSE FAILURE: 
                             |{"endpoint":"${obfuscatePath(request.url)}\",
                             | "method":"${request.method.value}",
                             |  "cause":"$cause"}
-                            |  """.trimMargin())
+                            |  """.trimMargin()
+            )
         }
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
-
-        val charset = content.contentType?.charset() ?: Charsets.UTF_8
-
-        val channel = ByteChannel()
-        GlobalScope.launch(Dispatchers.Unconfined) {
-            val text = channel.tryReadText(charset) ?: "\"request body omitted\""
-            kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
-        }
-
-        return content.observe(channel)
     }
 
     public companion object : HttpClientPlugin<Config, KaliumKtorCustomLogging> {
@@ -220,7 +196,11 @@ public class KaliumKtorCustomLogging private constructor(
 
         override fun prepare(block: Config.() -> Unit): KaliumKtorCustomLogging {
             val config = Config().apply(block)
-            return KaliumKtorCustomLogging(config.logger, config.level, config.filters)
+            return KaliumKtorCustomLogging(
+                logger = config.logger,
+                level = config.level,
+                filters = config.filters
+            )
         }
 
         @OptIn(InternalAPI::class)
@@ -228,12 +208,9 @@ public class KaliumKtorCustomLogging private constructor(
             scope.sendPipeline.intercept(HttpSendPipeline.Monitoring) {
                 val response = if (plugin.filters.isEmpty() || plugin.filters.any { it(context) }) {
                     try {
-                        plugin.beginLogging()
                         plugin.logRequest(context)
                     } catch (_: Throwable) {
                         null
-                    } finally {
-                        plugin.doneLogging()
                     }
                 } else null
 
@@ -248,16 +225,11 @@ public class KaliumKtorCustomLogging private constructor(
 
             scope.receivePipeline.intercept(HttpReceivePipeline.State) { response ->
                 try {
-                    plugin.beginLogging()
                     plugin.logResponse(response.call.response)
                     proceedWith(subject)
                 } catch (cause: Throwable) {
                     plugin.logResponseException(response.call.request, cause)
                     throw cause
-                } finally {
-                    if (!plugin.level.body) {
-                        plugin.doneLogging()
-                    }
                 }
             }
 
@@ -278,8 +250,6 @@ public class KaliumKtorCustomLogging private constructor(
                 try {
                     plugin.logResponseBody(it.contentType(), it.content)
                 } catch (_: Throwable) {
-                } finally {
-                    plugin.doneLogging()
                 }
             }
             ResponseObserver.install(ResponseObserver(observer), scope)
