@@ -20,7 +20,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -90,7 +89,6 @@ class CallRepositoryTest {
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
-            timeParser = TimeParserImpl(),
             persistMessage = persistMessage,
             callMapper = callMapper
         )
@@ -760,11 +758,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn("callerId@domain")
 
-        given(persistMessage)
-            .suspendFunction(persistMessage::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-
         // when
         callRepository.createCall(
             conversationId = conversationId,
@@ -780,11 +773,6 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(callDAO).suspendFunction(callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(persistMessage)
-            .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -1263,6 +1251,33 @@ class CallRepositoryTest {
         )
     }
 
+    @Test
+    fun givenAMissedCall_whenPersistMissedCallInvoked_thenStoreTheMissedCallInDatabase() = runTest {
+
+        val qualifiedIdEntity = QualifiedIDEntity(conversationId.value, conversationId.domain)
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(eq(qualifiedIdEntity))
+            .thenReturn(callerIdString)
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        callRepository.persistMissedCall(conversationId)
+
+        verify(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .with(eq(qualifiedIdEntity))
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1306,6 +1321,7 @@ class CallRepositoryTest {
         private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
         private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
         private val callerId = UserId(value = "callerId", domain = "domain")
+        private const val callerIdString = "callerId@domain"
 
         private val oneOnOneConversationDetails = ConversationDetails.OneOne(
             conversation = oneOnOneConversation,

@@ -3,7 +3,6 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.carthage.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -26,10 +25,9 @@ kotlin {
         }
     }
 
-    iosX64 {
-        carthage {
-            baseName = "Cryptography"
-            dependency("WireCryptobox")
+    ios() {
+        binaries.all {
+            linkerOpts("-framework", "Security")
         }
     }
 
@@ -84,6 +82,11 @@ kotlin {
                 implementation(libs.cryptoboxAndroid)
                 implementation(libs.javaxCrypto)
                 implementation(libs.coreCryptoAndroid)
+            }
+        }
+        val darwinMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
             }
         }
     }

@@ -234,6 +234,12 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+                is MessageContent.NewConversationReceiptMode -> mutableMapOf(
+                    typeKey to "newConversationReceiptMode"
+                )
+                is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
+                    typeKey to "conversationReceiptModeChanged"
+                )
             }
 
             val standardProperties = mapOf(
@@ -344,7 +350,8 @@ data class MessagePreview(
     val content: MessagePreviewContent,
     val date: String,
     val visibility: Message.Visibility,
-    val isSelfMessage: Boolean
+    val isSelfMessage: Boolean,
+    val senderUserId: UserId
 )
 
 enum class AssetType {

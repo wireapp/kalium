@@ -10,10 +10,12 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
+import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
+import com.wire.kalium.persistence.MessageNewConversationReceiptModeContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
@@ -21,13 +23,13 @@ import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.User
-import com.wire.kalium.persistence.dao.BotServiceAdapter
-import com.wire.kalium.persistence.dao.ContentTypeAdapter
-import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
-import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
-import com.wire.kalium.persistence.dao.MemberRoleAdapter
-import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.dao.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.BotServiceAdapter
+import com.wire.kalium.persistence.adapter.ContentTypeAdapter
+import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
+import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.MemberRoleAdapter
+import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -125,5 +127,11 @@ internal object TableMapper {
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
         bot_serviceAdapter = BotServiceAdapter()
+    )
+    val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+    val messageConversationReceiptModeChangedContentAdapter = MessageConversationReceiptModeChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
     )
 }

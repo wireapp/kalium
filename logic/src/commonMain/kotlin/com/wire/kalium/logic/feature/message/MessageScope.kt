@@ -37,7 +37,6 @@ import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -62,7 +61,6 @@ class MessageScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val timeParser: TimeParser,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
     private val userPropertyRepository: UserPropertyRepository,
@@ -112,7 +110,6 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingScheduler,
             messageSendingInterceptor,
-            timeParser,
             scope
         )
 
@@ -200,7 +197,8 @@ class MessageScope internal constructor(
             messageSender
         )
 
-    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
+        get() = MarkMessagesAsNotifiedUseCase(conversationRepository, messageRepository)
 
     val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
         get() = UpdateAssetMessageUploadStatusUseCaseImpl(
@@ -216,10 +214,6 @@ class MessageScope internal constructor(
         get() = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
-            userRepository = userRepository,
-            conversationRepository = conversationRepository,
-            timeParser = timeParser,
-            selfUserId = selfUserId,
             ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 

@@ -111,8 +111,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
-import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -229,8 +229,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.SecurityHelper
-import com.wire.kalium.logic.util.TimeParser
-import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -273,6 +271,7 @@ class UserSessionScope internal constructor(
     )
 
     private var _clientId: ClientId? = null
+
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
     private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
         clientRepository.currentClientId().onSuccess {
@@ -371,19 +370,18 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            renamedConversationHandler
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
-            userRepository,
             mlsConversationRepository,
             memberJoinHandler,
             memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            userId
+            userId,
+            selfTeamId
         )
 
     private val messageRepository: MessageRepository
@@ -461,7 +459,8 @@ class UserSessionScope internal constructor(
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
-            userId
+            userId,
+            clientIdProvider
         )
 
     val persistMessage: PersistMessageUseCase
@@ -475,14 +474,16 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
-            timeParser = timeParser,
             persistMessage = persistMessage,
             callMapper = callMapper
         )
     }
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
+        get() = ClientRemoteDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            clientConfig
+        )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
@@ -658,8 +659,6 @@ class UserSessionScope internal constructor(
             sessionManager.serverConfig().metaData.commonApiVersion.version, userStorage.database.metadataDAO, apiMigrations
         )
 
-    private val timeParser: TimeParser = TimeParserImpl()
-
     private val eventRepository: EventRepository
         get() = EventDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
@@ -783,6 +782,9 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
+            persistMessage,
+            qualifiedIdMapper,
+            team.isSelfATeamMember
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
@@ -807,7 +809,10 @@ class UserSessionScope internal constructor(
         )
 
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
-        get() = ReceiptModeUpdateEventHandlerImpl(userStorage.database.conversationDAO)
+        get() = ReceiptModeUpdateEventHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO,
+            persistMessage = persistMessage
+        )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
@@ -891,7 +896,10 @@ class UserSessionScope internal constructor(
             persistMessage,
             updateKeyingMaterialThresholdProvider,
             selfTeamId,
-            messages.sendConfirmation
+            messages.sendConfirmation,
+            renamedConversationHandler,
+            qualifiedIdMapper,
+            team.isSelfATeamMember
         )
 
     val migration get() = MigrationScope(userStorage.database)
@@ -911,7 +919,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            timeParser,
             userStorage,
             this,
         )
@@ -935,7 +942,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            timeParser,
             applicationMessageHandler,
             userStorage,
             userPropertyRepository,
@@ -1011,8 +1017,8 @@ class UserSessionScope internal constructor(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
-    val getSecurityClassificationType: GetSecurityClassificationTypeUseCase
-        get() = GetSecurityClassificationTypeUseCaseImpl(userId, conversationRepository, userConfigRepository)
+    val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(userId, conversationRepository, userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories

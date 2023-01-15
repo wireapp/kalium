@@ -5,7 +5,6 @@ import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
@@ -151,7 +150,7 @@ class SessionManagerTest {
         val tempPath = "some-dummy-path".toPath()
         val tempOutputSink = kaliumFileSystem.sink(tempPath)
 
-        assetApi.downloadAsset(AssetId("asset_id", "asset_domain"), null, tempFileSink = tempOutputSink)
+        assetApi.downloadAsset("asset_id", "asset_domain", null, tempFileSink = tempOutputSink)
         assertEquals(2, callCount)
     }
 

@@ -50,6 +50,7 @@ kotlin {
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
 
+                implementation(project(":util"))
                 api(project(":logger"))
             }
         }
@@ -87,12 +88,10 @@ kotlin {
                 implementation(libs.sql.android.cipher)
             }
         }
-
-        val iosX64Main by getting {
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
-        val iosX64Test by getting
     }
 }

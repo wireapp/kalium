@@ -7,11 +7,20 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.first
 
+/**
+ * Saves the push notification token for the users registered in the device.
+ */
 interface SaveNotificationTokenUseCase {
+    /**
+     * @param token the push notification token
+     * @param type the type being ie: "GCM, APNS"
+     * @param applicationId the application id (ie, internal) for which the token is valid
+     * @return the [Result] with the result of the operation
+     */
     suspend operator fun invoke(token: String, type: String, applicationId: String): Result
 }
 
-class SaveNotificationTokenUseCaseImpl(
+internal class SaveNotificationTokenUseCaseImpl(
     private val notificationTokenRepository: NotificationTokenRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider

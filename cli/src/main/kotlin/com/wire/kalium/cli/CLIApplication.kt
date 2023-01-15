@@ -36,7 +36,6 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     override fun run() = runBlocking {
         currentContext.findOrSetObject {
             CoreLogic(
-                clientLabel = "Kalium CLI",
                 rootPath = "$HOME_DIRECTORY/.kalium/accounts",
                 kaliumConfigs = KaliumConfigs(
                     developmentApiEnabled = developmentApiEnabled,

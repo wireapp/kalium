@@ -11,7 +11,14 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
+/**
+ * This use case will observe and return the list of members of a given conversation.
+ */
 interface ObserveConversationMembersUseCase {
+    /**
+     * @param conversationId the id of the conversation to observe
+     * @return a flow of [Result] with the list of [MemberDetails] of the conversation
+     */
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>>
 }
 

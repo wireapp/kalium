@@ -17,6 +17,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":protobuf"))
+                implementation(project(":util"))
                 api(project(":logger"))
 
                 // coroutines
@@ -68,7 +69,7 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val iosX64Main by getting {
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }

@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
@@ -46,7 +45,6 @@ class MessageRepositoryTest {
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf())
-            .withMappedId(mappedId)
             .withMappedMessageModel(TEST_MESSAGE)
             .arrange()
 
@@ -70,7 +68,6 @@ class MessageRepositoryTest {
         val mappedMessage = TEST_MESSAGE
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf(entity))
-            .withMappedId(mappedId)
             .withMappedMessageModel(mappedMessage)
             .arrange()
 
@@ -94,7 +91,6 @@ class MessageRepositoryTest {
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedId(mappedId)
             .withMappedMessageEntity(mappedEntity)
             .arrange()
 
@@ -120,7 +116,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -138,7 +133,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -162,7 +156,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -195,7 +188,6 @@ class MessageRepositoryTest {
         val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
@@ -221,7 +213,6 @@ class MessageRepositoryTest {
 
         val (arrangement, messageRepository) = Arrangement()
             .withMockedMessages(listOf(entity))
-            .withMappedId(mappedId)
             .withMappedMessageModel(mappedMessage)
             .arrange()
 
@@ -242,10 +233,55 @@ class MessageRepositoryTest {
         }
     }
 
-    private class Arrangement {
+    @Test
+    fun givenANewConversationSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val message = TEST_SYSTEM_MESSAGE
+        val mappedEntity = TEST_MESSAGE_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
 
-        @Mock
-        val idMapper = mock(IdMapper::class)
+        messageRepository.persistMessage(message)
+
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
+                .with(eq(mappedEntity), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationReceiptModeChangedSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val message = TEST_SYSTEM_MESSAGE.copy(
+            content = TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT
+        )
+        val mappedEntity = TEST_MESSAGE_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
+
+        messageRepository.persistMessage(message)
+
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
+                .with(eq(mappedEntity), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    private class Arrangement {
 
         @Mock
         val assetMapper = mock(AssetMapper::class)
@@ -273,22 +309,6 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
                 .whenInvokedWith(anything(), anything(), anything())
                 .then { _, _, _ -> messages }
-            return this
-        }
-
-        fun withMappedId(mappedId: QualifiedIDEntity): Arrangement {
-            given(idMapper)
-                .function(idMapper::toDaoModel)
-                .whenInvokedWith(anything())
-                .then { mappedId }
-            return this
-        }
-
-        fun withMappedApiModelId(mappedId: NetworkQualifiedId): Arrangement {
-            given(idMapper)
-                .function(idMapper::toApiModel)
-                .whenInvokedWith(anything())
-                .then { mappedId }
             return this
         }
 
@@ -327,7 +347,6 @@ class MessageRepositoryTest {
             mlsMessageApi = mlsMessageApi,
             messageDAO = messageDAO,
             messageMapper = messageMapper,
-            idMapper = idMapper,
             assetMapper = assetMapper,
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper
@@ -364,6 +383,20 @@ class MessageRepositoryTest {
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
+        )
+        val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
+            receiptMode = true
+        )
+        val TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT = MessageContent.ConversationReceiptModeChanged(
+            receiptMode = true
+        )
+        val TEST_SYSTEM_MESSAGE = Message.System(
+            id = "uid",
+            content = TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT,
+            conversationId = TEST_CONVERSATION_ID,
+            date = TEST_DATETIME,
+            senderUserId = TEST_USER_ID,
+            status = Message.Status.SENT,
         )
     }
 }

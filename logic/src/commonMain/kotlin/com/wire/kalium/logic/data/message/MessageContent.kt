@@ -92,7 +92,7 @@ sealed class MessageContent {
 
     data class QuotedMessageDetails(
         val senderId: UserId,
-        val senderName: String,
+        val senderName: String?,
         val isQuotingSelfUser: Boolean,
         /**
          * Indicates that the hash of the quote
@@ -183,6 +183,14 @@ sealed class MessageContent {
 
     data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling()
 
+    data class NewConversationReceiptMode(
+        val receiptMode: Boolean
+    ) : System()
+
+    data class ConversationReceiptModeChanged(
+        val receiptMode: Boolean
+    ) : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
@@ -212,15 +220,21 @@ sealed class MessagePreviewContent {
 
         data class Knock(override val username: String?) : WithUser(username)
 
+        data class MemberLeft(override val username: String?) : WithUser(username)
+
+        data class MemberJoined(override val username: String?) : WithUser(username)
+
         data class MembersAdded(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserAdded: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class MembersRemoved(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class ConversationNameChange(val adminName: String?) : WithUser(adminName)
 

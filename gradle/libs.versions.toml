@@ -11,7 +11,7 @@ compose-material = "1.3.1"
 cryptobox4j = "1.1.1"
 cryptobox-android = "1.1.3"
 javax-crypto = "1.1.0-alpha03"
-ktor = "2.2.1"
+ktor = "2.2.2"
 okio = "3.2.0"
 ok-http = "4.9.3"
 mockative = "1.2.6"
@@ -31,24 +31,27 @@ sqldelight = "2.0.0-alpha04"
 sqlcipher-android = "4.5.2"
 pbandk = "0.14.2"
 turbine = "0.12.1"
-avs = "9.0.1"
+avs = "9.0.2-rc1"
 jna = "5.6.0"
-core-crypto = "0.6.0-pre.4"
+core-crypto = "0.6.0-rc.3"
+core-crypto-multiplatform = "0.6.0-rc.3-multiplatform"
+completeKotlin = "1.1.0"
 desugar-jdk = "1.1.5"
 kermit = "1.2.2"
 detekt = "1.19.0"
 agp = "7.3.1"
 dokka = "1.7.20"
 carthage = "0.0.1"
-libsodiumBindings = "0.8.5"
+libsodiumBindings = "0.8.6"
 protobufCodegen = "0.9.1"
+annotation = "1.2.0"
 
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
-
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin"}
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -81,6 +84,7 @@ ktor = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-paging3" }
 securityCrypto = { module = "androidx.security:security-crypto", version.ref = "android-security" }
 desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
+annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 
 # kmp Settings (shared pref)
 settings-kmp = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
@@ -101,6 +105,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
 cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "javax-crypto" }
+coreCrypto = { module = "com.wire:core-crypto", version.ref = "core-crypto-multiplatform" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }

@@ -10,6 +10,7 @@ import com.wire.kalium.logic.functional.distinct
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -89,7 +89,7 @@ internal class PendingProposalSchedulerImpl(
             .collect { timer ->
                 ensureActive()
                 launch() {
-                    val secondsUntilFiring = timer.timestamp.minus(Clock.System.now())
+                    val secondsUntilFiring = timer.timestamp.minus(DateTimeUtil.currentInstant())
                     if (secondsUntilFiring.inWholeSeconds > 0) {
                         delay(secondsUntilFiring)
                         ensureActive()

@@ -23,6 +23,8 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
+    wireDetektRulesRepo()
     google()
     mavenCentral()
 }
@@ -31,6 +33,8 @@ plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
+    id("scripts.detekt")
+    alias(libs.plugins.completeKotlin)
 }
 
 dependencies {
@@ -45,14 +49,22 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
                 username = getLocalProperty("github.package_registry.user", System.getenv("GITHUB_USER"))
                 password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
+            }
+        }
+        // deleteme: we should remove this and "avs" dir after avs version is updated to proper artifactory on sonatype =)
+        val avsLocal = maven(url = uri("$rootDir/avs/localrepo/"))
+        exclusiveContent {
+            forRepositories(avsLocal)
+            filter {
+                includeModule("com.wire", "avs")
             }
         }
     }
@@ -89,5 +101,3 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
-
-apply(from = "$rootDir/gradle/detekt.gradle")

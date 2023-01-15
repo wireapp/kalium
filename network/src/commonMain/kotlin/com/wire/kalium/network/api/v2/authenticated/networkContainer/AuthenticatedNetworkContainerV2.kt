@@ -10,9 +10,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -20,6 +20,7 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.api.v2.authenticated.CallApiV2
@@ -48,6 +49,7 @@ import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV2 internal constructor(
     private val sessionManager: SessionManager,
+    private val selfUserId: UserId,
     engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
@@ -62,7 +64,7 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
 
     override val clientApi: ClientApi get() = ClientApiV2(networkClient)
 
-    override val messageApi: MessageApi get() = MessageApiV2(networkClient, provideEnvelopeProtoMapper())
+    override val messageApi: MessageApi get() = MessageApiV2(networkClient, EnvelopeProtoMapperImpl())
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV2(networkClient)
 
@@ -72,7 +74,7 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
 
     override val preKeyApi: PreKeyApi get() = PreKeyApiV2(networkClient)
 
-    override val assetApi: AssetApi get() = AssetApiV2(networkClientWithoutCompression)
+    override val assetApi: AssetApi get() = AssetApiV2(networkClientWithoutCompression, selfUserId)
 
     override val notificationApi: NotificationApi get() = NotificationApiV2(networkClient, websocketClient, backendConfig)
 

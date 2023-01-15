@@ -6,8 +6,11 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Clock
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
 internal object CallMapper {
@@ -38,11 +41,12 @@ internal object CallMapper {
 
 internal class CallDAOImpl(
     private val callsQueries: CallsQueries,
+    private val queriesContext: CoroutineContext,
     private val mapper: CallMapper = CallMapper
 ) : CallDAO {
 
-    override suspend fun insertCall(call: CallEntity) {
-        val createdTime: Long = Clock.System.now().toEpochMilliseconds()
+    override suspend fun insertCall(call: CallEntity) = withContext(queriesContext) {
+        val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
 
         callsQueries.insertCall(
             conversation_id = call.conversationId,
@@ -57,48 +61,58 @@ internal class CallDAOImpl(
     override suspend fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
     override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
     override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
-    override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) {
-        callsQueries.updateLastCallStatusByConversationId(
-            status,
-            conversationId
-        )
+    override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) =
+        withContext(queriesContext) {
+            callsQueries.updateLastCallStatusByConversationId(
+                status,
+                conversationId
+            )
+        }
+
+    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String = withContext(queriesContext) {
+        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOne()
     }
 
-    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String =
-        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOne()
-
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
-        callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
+        withContext(queriesContext) {
+            callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
+        }
 
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToOneOrNull()
 
     override suspend fun getLastCallConversationTypeByConversationId(
         conversationId: QualifiedIDEntity
-    ): ConversationEntity.Type? =
+    ): ConversationEntity.Type? = withContext(queriesContext) {
         callsQueries.selectLastCallConversionTypeByConversationId(conversationId)
             .executeAsOneOrNull()
+    }
 
-    override suspend fun updateOpenCallsToClosedStatus() {
+    override suspend fun updateOpenCallsToClosedStatus() = withContext(queriesContext) {
         callsQueries.updateOpenCallsToClosedStatus()
     }
 }

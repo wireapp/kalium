@@ -32,7 +32,7 @@ data class GlobalTeamConversationResponse(
     val mlsCipherSuiteTag: Int?,
 
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode?,
+    val receiptMode: ReceiptMode,
 
     @SerialName("access")
     val access: Set<ConversationAccessDTO>
@@ -83,7 +83,7 @@ data class ConversationResponse(
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode?,
+    val receiptMode: ReceiptMode,
 ) {
 
     val isOneOnOneConversation: Boolean
@@ -143,11 +143,11 @@ data class ConversationResponseV3(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
-    @SerialName("access_role")
+    @SerialName("access_role_v2")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode?,
+    val receiptMode: ReceiptMode,
 )
 
 @Serializable

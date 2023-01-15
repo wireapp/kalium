@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -119,7 +120,8 @@ sealed class MessageEntity(
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET
+        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
+        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED
     }
 
     enum class MemberChangeType {
@@ -175,7 +177,7 @@ sealed class MessageEntityContent {
              * matches the hash of the original message
              */
             val isVerified: Boolean,
-            val senderName: String,
+            val senderName: String?,
             val dateTime: String,
             val editTimestamp: String?,
             val visibility: MessageEntity.Visibility,
@@ -188,9 +190,7 @@ sealed class MessageEntityContent {
 
     data class Asset(
         val assetSizeInBytes: Long,
-        // TODO: Make it not-nullable, fallback to
-        //       message ID or something else if it comes
-        //       without a name from the protobuf models
+        // TODO: Make it not-nullable, fallback to message ID or something else if it comes without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
         val assetUploadStatus: MessageEntity.UploadStatus? = null,
@@ -240,6 +240,8 @@ sealed class MessageEntityContent {
     object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
+    data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
+    data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
 }
 
 /**
@@ -253,7 +255,8 @@ data class MessagePreviewEntity(
     val content: MessagePreviewEntityContent,
     val date: String,
     val visibility: MessageEntity.Visibility,
-    val isSelfMessage: Boolean
+    val isSelfMessage: Boolean,
+    val senderUserId: QualifiedIDEntity,
 )
 
 data class NotificationMessageEntity(
@@ -279,11 +282,21 @@ sealed class MessagePreviewEntityContent {
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
 
-    data class MemberChange(
-        val adminName: String?,
-        val count: Int, // TODO add usernames
-        val type: MessageEntity.MemberChangeType
+    data class MembersAdded(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
+
+    data class MembersRemoved(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class MemberJoined(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 

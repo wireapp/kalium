@@ -11,7 +11,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists
 import com.wire.kalium.network.exceptions.isInvalidHandle
 
-
 sealed class SetUserHandleResult {
     object Success : SetUserHandleResult()
     sealed class Failure : SetUserHandleResult() {
@@ -21,16 +20,23 @@ sealed class SetUserHandleResult {
     }
 }
 
+/**
+ * Sets the user's handle remotely and locally.
+ */
 class SetUserHandleUseCase internal constructor(
     private val userRepository: UserRepository,
     private val validateUserHandle: ValidateUserHandleUseCase,
     private val syncManager: SyncManager
 ) {
-    suspend operator fun invoke(_handle: String): SetUserHandleResult {
+    /**
+     * @param handle the handle to set for the user
+     * @return the [SetUserHandleResult.Success] if successful, otherwise a mapped failure.
+     */
+    suspend operator fun invoke(handle: String): SetUserHandleResult {
         if (syncManager.isSlowSyncOngoing()) {
             syncManager.waitUntilLive()
         }
-        return validateUserHandle(_handle).let { handleState ->
+        return validateUserHandle(handle).let { handleState ->
             when (handleState) {
                 is ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handleState.handle).fold(
                     {
@@ -42,6 +48,7 @@ class SetUserHandleUseCase internal constructor(
                         SetUserHandleResult.Success
                     }
                 )
+
                 else -> SetUserHandleResult.Failure.InvalidHandle
             }
         }

@@ -11,6 +11,8 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -34,6 +36,10 @@ sealed class RegisterClientResult {
     }
 }
 
+/**
+ * This use case is responsible for registering the client.
+ * The client will be registered on the backend and the local storage.
+ */
 interface RegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientParam
@@ -60,19 +66,25 @@ interface RegisterClientUseCase {
     }
 }
 
+@Suppress("LongParameterList")
 class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val mlsClientProvider: MLSClientProvider
+    private val mlsClientProvider: MLSClientProvider,
+    private val sessionRepository: SessionRepository,
+    private val selfUserId: UserId
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
         with(registerClientParam) {
-            generateProteusPreKeys(preKeysToSend, password, capabilities, clientType).fold({
+              sessionRepository.cookieLabel(selfUserId)
+                  .flatMap { cookieLabel ->
+                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
+            }.fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
@@ -115,7 +127,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
         preKeysToSend: Int,
         password: String?,
         capabilities: List<ClientCapability>?,
-        clientType: ClientType? = null
+        clientType: ClientType? = null,
+        cookieLabel: String?
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
             Either.Right(
@@ -127,7 +140,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
                     deviceType = null,
                     label = null,
                     model = null,
-                    clientType = clientType
+                    clientType = clientType,
+                    cookieLabel = cookieLabel
                 )
             )
         }

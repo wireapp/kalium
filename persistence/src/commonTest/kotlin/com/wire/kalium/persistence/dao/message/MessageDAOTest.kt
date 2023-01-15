@@ -4,10 +4,12 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -21,6 +23,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
@@ -119,6 +123,8 @@ class MessageDAOTest : BaseDatabaseTest() {
             date = "replacementDate",
             visibility = MessageEntity.Visibility.DELETED
         )
+
+        messageDAO.insertOrIgnoreMessage(replacementMessage)
 
         val result = messageDAO.getMessageById(originalMessage.id, originalMessage.conversationId).first()
 
@@ -652,12 +658,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "textMessage"
-        conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-            )
-        )
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -680,10 +681,382 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
     }
 
+    @Test
+    @IgnoreIOS
+    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAValidUpdateAssetMessage_ThenTheKeysAndVisibilityShouldBeCorrect() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "assetMessageId"
+        val senderClientId = "someClient"
+        val dummyOtrKey = byteArrayOf(1, 2, 3, 4, 5)
+        val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
+        val previewAssetMessage = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderClientId = senderClientId,
+            visibility = MessageEntity.Visibility.HIDDEN,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 1000,
+                assetName = "some-asset.zip",
+                assetMimeType = "application/zip",
+                assetOtrKey = byteArrayOf(),
+                assetSha256Key = byteArrayOf(),
+                assetId = "some-asset-id",
+                assetEncryptionAlgorithm = "AES/GCM"
+            )
+        )
+        val finalAssetMessage = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:05.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderClientId = senderClientId,
+            visibility = MessageEntity.Visibility.VISIBLE,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 0,
+                assetMimeType = "*/*",
+                assetOtrKey = dummyOtrKey,
+                assetSha256Key = dummySha256Key,
+                assetId = "some-asset-id",
+                assetEncryptionAlgorithm = "AES/GCM"
+            )
+        )
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        userDAO.insertUser(userEntity1)
+        messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
+
+        // when
+        messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
+
+        // then
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        assertTrue((updatedMessage?.content as MessageEntityContent.Asset).assetOtrKey.contentEquals(dummyOtrKey))
+        assertTrue((updatedMessage.content as MessageEntityContent.Asset).assetSha256Key.contentEquals(dummySha256Key))
+        assertTrue((updatedMessage.visibility == MessageEntity.Visibility.VISIBLE))
+    }
+
+    @Test
+    @IgnoreIOS
+    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateWithWrongKey_ThenTheMessageVisibilityShouldBeHidden() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "assetMessageId"
+        val senderClientId = "someClient"
+        val invalidOtrKey = byteArrayOf()
+        val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
+        val previewAssetMessage = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderClientId = senderClientId,
+            visibility = MessageEntity.Visibility.HIDDEN,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 1000,
+                assetName = "some-asset.zip",
+                assetMimeType = "application/zip",
+                assetOtrKey = byteArrayOf(),
+                assetSha256Key = byteArrayOf(),
+                assetId = "some-asset-id",
+                assetEncryptionAlgorithm = "AES/GCM"
+            )
+        )
+        val finalAssetMessage = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:05.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderClientId = senderClientId,
+            visibility = MessageEntity.Visibility.VISIBLE,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = 0,
+                assetMimeType = "*/*",
+                assetOtrKey = invalidOtrKey,
+                assetSha256Key = dummySha256Key,
+                assetId = "some-asset-id",
+                assetEncryptionAlgorithm = "AES/GCM"
+            )
+        )
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        userDAO.insertUser(userEntity1)
+        messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
+
+        // when
+        messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
+
+        // then
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
+    }
+
+    @Test
+    @IgnoreIOS
+    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateFromDifferentSender_ThenTheMessageVisibilityShouldBeHidden() =
+        runTest {
+            // given
+            val conversationId = QualifiedIDEntity("1", "someDomain")
+            val messageId = "assetMessageId"
+            val senderClientId = "someClient"
+            val dummyOtrKey = byteArrayOf(1, 2, 3)
+            val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
+            val previewAssetMessage = newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z",
+                conversationId = conversationId,
+                senderUserId = userEntity1.id,
+                senderClientId = senderClientId,
+                visibility = MessageEntity.Visibility.HIDDEN,
+                content = MessageEntityContent.Asset(
+                    assetSizeInBytes = 1000,
+                    assetName = "some-asset.zip",
+                    assetMimeType = "application/zip",
+                    assetOtrKey = byteArrayOf(),
+                    assetSha256Key = byteArrayOf(),
+                    assetId = "some-asset-id",
+                    assetEncryptionAlgorithm = "AES/GCM"
+                )
+            )
+            val finalAssetMessage = newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:05.000Z",
+                conversationId = conversationId,
+                senderUserId = userEntity2.id,
+                senderClientId = "impostorSenderClientId",
+                visibility = MessageEntity.Visibility.VISIBLE,
+                content = MessageEntityContent.Asset(
+                    assetSizeInBytes = 0,
+                    assetMimeType = "*/*",
+                    assetOtrKey = dummyOtrKey,
+                    assetSha256Key = dummySha256Key,
+                    assetId = "some-asset-id",
+                    assetEncryptionAlgorithm = "AES/GCM"
+                )
+            )
+            conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+            userDAO.insertUser(userEntity1)
+            messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
+
+            // when
+            messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
+
+            // then
+            val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+            assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
+        }
+
+    @Suppress("LongMethod")
+    @Test
+    @IgnoreIOS
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "assetMessageId"
+        val senderClientId = "someClient"
+        val dummyOtrKey = byteArrayOf(1, 2, 3)
+        val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
+        val initialUploadStatus = MessageEntity.UploadStatus.IN_PROGRESS
+        val updatedUploadStatus = MessageEntity.UploadStatus.UPLOADED
+        val initialDownloadStatus = MessageEntity.DownloadStatus.IN_PROGRESS
+        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
+        val initialAssetSize = 1000L
+        val updatedAssetSize = 2000L
+        val initialAssetName = "Some asset name.zip"
+        val updatedAssetName = "updated asset name.svg"
+        val initialAssetId = "some-id-124567"
+        val updatedAssetId = "some-updated-id-0000"
+        val initialDomain = "some@domain.com"
+        val updatedAssetDomain = "some@future-domain.com"
+        val initialMimeType = "application/zip"
+        val updatedMimeType = "image/svg"
+        val initialAssetEncryption = "AES/GCM"
+        val updatedAssetEncryption = "AES/CBC"
+        val initialAssetToken = "Some-token"
+        val updatedAssetToken = "updated-token"
+        val initialMetadataWidth = 100
+        val initialMetadataHeight = 300
+        val updatedMetadataHeight = null
+        val updatedMetadataWidth = null
+
+        val initialAssetMessage = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderClientId = senderClientId,
+            visibility = MessageEntity.Visibility.VISIBLE,
+            content = MessageEntityContent.Asset(
+                assetSizeInBytes = initialAssetSize,
+                assetName = initialAssetName,
+                assetMimeType = initialMimeType,
+                assetOtrKey = dummyOtrKey,
+                assetSha256Key = dummySha256Key,
+                assetId = initialAssetId,
+                assetDomain = initialDomain,
+                assetEncryptionAlgorithm = initialAssetEncryption,
+                assetUploadStatus = initialUploadStatus,
+                assetDownloadStatus = initialDownloadStatus,
+                assetToken = initialAssetToken,
+                assetWidth = initialMetadataWidth,
+                assetHeight = initialMetadataHeight
+            )
+        )
+        val updatedAssetMessage = initialAssetMessage.copy(
+            content = (initialAssetMessage.content as MessageEntityContent.Asset).copy(
+                assetSizeInBytes = updatedAssetSize,
+                assetName = updatedAssetName,
+                assetMimeType = updatedMimeType,
+                assetOtrKey = dummyOtrKey,
+                assetSha256Key = dummySha256Key,
+                assetId = updatedAssetId,
+                assetDomain = updatedAssetDomain,
+                assetEncryptionAlgorithm = updatedAssetEncryption,
+                assetUploadStatus = updatedUploadStatus,
+                assetDownloadStatus = updatedDownloadStatus,
+                assetToken = updatedAssetToken,
+                assetWidth = updatedMetadataWidth,
+                assetHeight = updatedMetadataHeight
+            )
+        )
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        userDAO.insertUser(userEntity1)
+        messageDAO.insertOrIgnoreMessage(initialAssetMessage)
+
+        // when
+        messageDAO.insertOrIgnoreMessage(updatedAssetMessage)
+
+        // then
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        val updatedMessageContent = updatedMessage?.content
+
+        // asset values that should not be updated
+        assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
+        assertTrue(updatedMessageContent is MessageEntityContent.Asset)
+        assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(initialAssetName, updatedMessageContent.assetName)
+        assertEquals(initialMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(initialAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(initialAssetToken, updatedMessageContent.assetToken)
+        assertEquals(initialAssetId, updatedMessageContent.assetId)
+        assertEquals(initialDomain, updatedMessageContent.assetDomain)
+        assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
+        assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
+        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
+        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
+    }
+
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromTheSameUser_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+
+        val message1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val message2 = message1.copy(content = MessageEntityContent.Text("new message content", emptyList()))
+        messageDAO.insertOrIgnoreMessages(
+            listOf(message1, message2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(message1, it)
+        }
+    }
+
+    @Test
+    fun givenMultipleMessagesWithTheSameIdFromDifferentUsers_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "textMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+        userDAO.insertUser(userEntity1)
+        userDAO.insertUser(userEntity2)
+
+        val messageFromUser1 = newRegularMessageEntity(
+            id = messageId,
+            date = "2000-01-01T13:00:00.000Z",
+            conversationId = conversationId,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!,
+            senderClientId = "someClient",
+            content = MessageEntityContent.Text("hello, world!", emptyList())
+        )
+
+        val messageFromUser2 = messageFromUser1.copy(
+            senderName = userEntity2.name!!,
+            senderUserId = userEntity2.id,
+            content = MessageEntityContent.Text("new message content", emptyList())
+        )
+        messageDAO.insertOrIgnoreMessages(
+            listOf(messageFromUser1, messageFromUser2)
+        )
+
+        // when
+        messageDAO.getMessageById(messageId, conversationId).first().also {
+            assertEquals(messageFromUser1, it)
+        }
+    }
+
+    @Test
+    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "ConversationReceiptModeChanged Message"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.ConversationReceiptModeChanged(
+                        receiptMode = true
+                    )
+                )
+            )
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+        assertTrue {
+            result.first()?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
+        }
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
     }
-
 }

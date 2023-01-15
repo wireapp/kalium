@@ -11,12 +11,13 @@ interface MessageDAO {
     suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
 
     /**
-     * Inserts the message, or ignores if there's already a message
-     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
      *
      * @see insertOrIgnoreMessages
      */
@@ -27,14 +28,21 @@ interface MessageDAO {
     )
 
     /**
-     * Inserts the messages, or ignores messages if there already exists a message
-     * with the same [MessageEntity.id] and [MessageEntity.conversationId].
+     * Inserts the messages, or ignores messages if there already exists a message with the same [MessageEntity.id] and
+     * [MessageEntity.conversationId].
+     * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
+     * preview message. In this case, the second message containing the valid encryption keys will be updating and completing the encryption
+     * keys and the visibility of the first one.
      *
      * @see insertOrIgnoreMessage
      */
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
+    suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
+    /**
+     * Returns the most recent message sent from other users, _i.e._ not self user
+     */
+    suspend fun getLatestMessageFromOtherUsers(): MessageEntity?
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
@@ -57,9 +65,11 @@ interface MessageDAO {
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
+        editTimeStamp: String,
         conversationId: QualifiedIDEntity,
-        messageId: String,
-        newTextContent: MessageEntityContent.Text
+        currentMessageId: String,
+        newTextContent: MessageEntityContent.Text,
+        newMessageId: String
     )
 
     suspend fun getConversationMessagesByContentType(

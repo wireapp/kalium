@@ -10,6 +10,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -20,7 +21,6 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -151,7 +151,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = Clock.System.now(),
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id1", "domain"))
@@ -161,7 +161,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = Clock.System.now(),
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))

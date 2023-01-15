@@ -7,12 +7,15 @@ import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
 import com.wire.kalium.persistence.Member as SQLDelightMember
@@ -146,19 +149,21 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
-    private val memberQueries: MembersQueries
+    private val memberQueries: MembersQueries,
+    private val coroutineContext: CoroutineContext
 ) : ConversationDAO {
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) =
+    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(coroutineContext) {
         conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
+    }
 
-    override suspend fun insertConversation(conversationEntity: ConversationEntity) {
+    override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
         nonSuspendingInsertConversation(conversationEntity)
     }
 
-    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
@@ -198,7 +203,7 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun updateConversation(conversationEntity: ConversationEntity) {
+    override suspend fun updateConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
         conversationQueries.updateConversation(
             conversationEntity.name,
             conversationEntity.type,
@@ -207,19 +212,20 @@ class ConversationDAOImpl(
         )
     }
 
-    override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) {
-        conversationQueries.updateConversationGroupState(groupState, groupId)
-    }
+    override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) =
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationGroupState(groupState, groupId)
+        }
 
-    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) {
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
         conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String) {
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
         conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
     }
 
-    override suspend fun updateAllConversationsNotificationDate(date: String) {
+    override suspend fun updateAllConversationsNotificationDate(date: String) = withContext(coroutineContext) {
         conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
     }
 
@@ -227,6 +233,7 @@ class ConversationDAOImpl(
         return conversationQueries.selectAllConversations()
             .asFlow()
             .mapToList()
+            .flowOn(coroutineContext)
             .map { it.map(conversationMapper::toModel) }
     }
 
@@ -234,6 +241,7 @@ class ConversationDAOImpl(
         return conversationQueries.selectAllConversationDetails()
             .asFlow()
             .mapToList()
+            .flowOn(coroutineContext)
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
@@ -241,64 +249,76 @@ class ConversationDAOImpl(
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
+            .flowOn(coroutineContext)
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity {
-        return conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
-            conversationMapper.toModel(it)
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
+        withContext(coroutineContext) {
+            conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
+                conversationMapper.toModel(it)
+            }
         }
-    }
 
     override suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
         return memberQueries.selectConversationByMember(userId)
             .asFlow()
             .mapToOneOrNull()
+            .flowOn(coroutineContext)
             .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationIdByGroupID(groupID: String) =
+    override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
+    }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
-        conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
-            .executeAsList()
-            .map(conversationMapper::toModel)
+        withContext(coroutineContext) {
+            conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+                .executeAsList()
+                .map(conversationMapper::toModel)
+        }
 
-    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
+    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.deleteConversation(qualifiedID)
     }
 
-    override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID, member.role)
         }
     }
 
-    override suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity) {
+    override suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.updateMemberRole(member.role, member.user, conversationID)
     }
 
-    override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {
-        memberQueries.transaction {
-            for (member: Member in memberList) {
-                userQueries.insertOrIgnoreUserId(member.user)
-                memberQueries.insertMember(member.user, conversationID, member.role)
-            }
+    override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
         }
-    }
 
+    private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
+            memberQueries.transaction {
+                for (member: Member in memberList) {
+                    userQueries.insertOrIgnoreUserId(member.user)
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                }
+            }
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
-        getConversationByGroupID(groupId).firstOrNull()?.let {
-            insertMembersWithQualifiedId(memberList, it.id)
+        withContext(coroutineContext) {
+            getConversationByGroupID(groupId).firstOrNull()?.let {
+                nonSuspendInsertMembersWithQualifiedId(memberList, it.id)
+            }
         }
     }
 
@@ -306,7 +326,7 @@ class ConversationDAOImpl(
         member: Member,
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
-    ) {
+    ) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.updateUserConnectionStatus(status, member.user)
             val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -318,27 +338,35 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) {
-        memberQueries.deleteMember(conversationID, userID)
-    }
+    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            memberQueries.deleteMember(conversationID, userID)
+        }
 
-    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) {
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            nonSuspendDeleteMembersByQualifiedID(userIDList, conversationID)
+        }
+
+    private fun nonSuspendDeleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
             userIDList.forEach {
                 memberQueries.deleteMember(conversationID, it)
             }
         }
-    }
 
     override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
-        getConversationByGroupID(groupId).firstOrNull()?.let {
-            deleteMembersByQualifiedID(userIDList, it.id)
+        withContext(coroutineContext) {
+            getConversationByGroupID(groupId).firstOrNull()?.let {
+                nonSuspendDeleteMembersByQualifiedID(userIDList, it.id)
+            }
         }
     }
 
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
             .map { it.map(memberMapper::toModel) }
     }
@@ -347,13 +375,14 @@ class ConversationDAOImpl(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
-    ) {
+    ) = withContext(coroutineContext) {
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 
     override suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>> {
         return conversationQueries.selectConversationsWithUnnotifiedMessages()
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
@@ -362,67 +391,80 @@ class ConversationDAOImpl(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
-    ) {
+    ) = withContext(coroutineContext) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
-        memberQueries.updateMemberRole(role, userId, conversationId)
+        withContext(coroutineContext) {
+            memberQueries.updateMemberRole(role, userId, conversationId)
+        }
 
-    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
+    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) = withContext(coroutineContext) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
     }
 
-    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> =
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
+            DateTimeUtil.currentInstant().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
+    }
 
-    override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) {
+    override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) = withContext(coroutineContext) {
         conversationQueries.updateProposalTimer(proposalTimer.firingDate.toString(), proposalTimer.groupID)
     }
 
-    override suspend fun clearProposalTimer(groupID: String) {
+    override suspend fun clearProposalTimer(groupID: String) = withContext(coroutineContext) {
         conversationQueries.clearProposalTimer(groupID)
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
         return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
             .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
     }
 
     override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
-        conversationQueries.isUserMember(conversationId, userId).asFlow().mapToOneOrNull().map { it != null }
+        conversationQueries.isUserMember(conversationId, userId)
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToOneOrNull()
+            .map { it != null }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
-        conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+        withContext(coroutineContext) {
+            conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+        }
 
-    override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) {
-        conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
-    }
+    override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) =
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
+        }
 
-    override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) {
-        conversationQueries.updateConversationType(type, conversationID)
-    }
+    override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) =
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationType(type, conversationID)
+        }
 
-    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) {
+    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
         memberQueries.deleteUserFromGroupConversations(userId, userId)
     }
 
-    override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> {
-        return memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
+    override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
     }
 
-    override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) {
-        conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
-    }
+    override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) =
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
+        }
 
 }

@@ -2,8 +2,10 @@ package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 
+@OptIn(ExperimentalCoroutinesApi::class)
 expect open class BaseDatabaseTest() {
 
     protected val dispatcher: TestDispatcher

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -43,7 +44,7 @@ class KeyPackageDataSource(
             userIds.map { userId ->
                 wrapApiRequest {
                     keyPackageApi.claimKeyPackages(
-                        KeyPackageApi.Param.SkipOwnClient(idMapper.toApiModel(userId), selfClientId.value)
+                        KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value)
                     )
                 }.flatMap {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
