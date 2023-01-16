@@ -4,6 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class SSOSettingsResult {
     data class Success(val ssoSettings: SSOSettingsResponse) : SSOSettingsResult()
@@ -27,6 +29,7 @@ internal class SSOSettingsUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository
 ) : SSOSettingsUseCase {
 
-    override suspend fun invoke(): SSOSettingsResult =
+    override suspend fun invoke(): SSOSettingsResult = withContext(KaliumDispatcherImpl.default) {
         ssoLoginRepository.settings().fold({ SSOSettingsResult.Failure.Generic(it) }, { SSOSettingsResult.Success(it) })
+    }
 }

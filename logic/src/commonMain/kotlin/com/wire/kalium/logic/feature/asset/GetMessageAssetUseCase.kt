@@ -14,10 +14,12 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import okio.Path
 
 interface GetMessageAssetUseCase {
@@ -48,7 +50,7 @@ internal class GetMessageAssetUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Deferred<MessageAssetResult> =
+    ): Deferred<MessageAssetResult> = withContext(KaliumDispatcherImpl.default) {
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             CompletableDeferred(MessageAssetResult.Failure(it))
@@ -103,6 +105,7 @@ internal class GetMessageAssetUseCaseImpl(
                 })
             }
         })
+    }
 }
 
 sealed class MessageAssetResult {

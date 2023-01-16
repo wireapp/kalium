@@ -30,9 +30,11 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.Path
 
 fun interface ScheduleNewAssetMessageUseCase {
@@ -85,7 +87,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?
-    ): ScheduleNewAssetMessageResult {
+    ): ScheduleNewAssetMessageResult = withContext(KaliumDispatcherImpl.default) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -106,7 +108,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         )
         lateinit var message: Message.Regular
 
-        return currentClientIdProvider().flatMap { currentClientId ->
+        return@withContext currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
             val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
@@ -202,6 +204,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
+
                     else -> null
                 },
                 remoteData = AssetContent.RemoteData(

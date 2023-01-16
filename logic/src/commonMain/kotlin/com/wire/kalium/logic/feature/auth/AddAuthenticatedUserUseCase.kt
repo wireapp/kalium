@@ -8,6 +8,8 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Adds an authenticated user to the session
@@ -31,7 +33,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         authTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
-    ): Result =
+    ): Result = withContext(KaliumDispatcherImpl.default) {
         sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
@@ -42,6 +44,7 @@ class AddAuthenticatedUserUseCase internal constructor(
                 }
             }
         )
+    }
 
     private suspend fun storeUser(
         serverConfigId: String,

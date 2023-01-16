@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Clears the user data from the local storage, except for the client id
@@ -13,7 +15,7 @@ internal class ClearUserDataUseCaseImpl internal constructor(
     private val userStorage: UserStorage
 ) : ClearUserDataUseCase {
 
-    override suspend operator fun invoke() {
+    override suspend operator fun invoke() = withContext(KaliumDispatcherImpl.default) {
         clearUserStorage()
     }
 

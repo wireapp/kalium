@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
 
 /**
  *
@@ -40,11 +40,11 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
 ) : ObserveIfAppUpdateRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
+    override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> = withContext(KaliumDispatcherImpl.default) {
         val currentDate = DateTimeUtil.currentIsoDateTimeString()
         val dateForChecking = DateTimeUtil.minusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
 
-        return intervalFlow(CHECK_APP_VERSION_FREQUENCY_MS)
+        return@withContext intervalFlow(CHECK_APP_VERSION_FREQUENCY_MS)
             .flatMapLatest {
                 serverConfigRepository.getServerConfigsWithUserIdAfterTheDate(dateForChecking)
                     .onFailure { kaliumLogger.e("$TAG: error while getting configs for checking $it") }

@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message.UploadStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface UpdateAssetMessageUploadStatusUseCase {
     /**
@@ -31,8 +33,8 @@ internal class UpdateAssetMessageUploadStatusUseCaseImpl(
         uploadStatus: UploadStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateUploadStatusResult {
-        return messageRepository.updateAssetMessageUploadStatus(uploadStatus, conversationId, messageId).fold({
+    ): UpdateUploadStatusResult = withContext(KaliumDispatcherImpl.default) {
+        messageRepository.updateAssetMessageUploadStatus(uploadStatus, conversationId, messageId).fold({
             UpdateUploadStatusResult.Failure(it)
         }, {
             UpdateUploadStatusResult.Success

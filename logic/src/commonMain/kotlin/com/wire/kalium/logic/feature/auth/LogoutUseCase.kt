@@ -9,8 +9,10 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Logs out the user from the current session
@@ -37,7 +39,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason) {
+    override suspend operator fun invoke(reason: LogoutReason) = withContext(KaliumDispatcherImpl.default) {
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)

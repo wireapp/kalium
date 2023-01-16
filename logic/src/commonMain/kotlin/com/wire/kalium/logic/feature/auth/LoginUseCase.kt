@@ -12,6 +12,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class AuthenticationResult {
     data class Success(
@@ -55,11 +57,11 @@ internal class LoginUseCaseImpl internal constructor(
         password: String,
         shouldPersistClient: Boolean,
         cookieLabel: String?
-    ): AuthenticationResult {
+    ): AuthenticationResult = withContext(KaliumDispatcherImpl.default) {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
-        return when {
+        return@withContext when {
             validateEmailUseCase(cleanUserIdentifier) -> {
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
             }
@@ -68,7 +70,7 @@ internal class LoginUseCaseImpl internal constructor(
                 loginRepository.loginWithHandle(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
             }
 
-            else -> return AuthenticationResult.Failure.InvalidUserIdentifier
+            else -> return@withContext AuthenticationResult.Failure.InvalidUserIdentifier
         }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials) }
             .fold({
                 when (it) {

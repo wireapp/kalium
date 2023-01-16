@@ -9,6 +9,8 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for obtaining the authentication scope for the current version of the app.
@@ -20,21 +22,23 @@ class AutoVersionAuthScopeUseCase(
     private val coreLogic: CoreLogicCommon,
 ) {
     suspend operator fun invoke(proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None): Result =
-        coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
-            handleError(it)
-        }, { serverConfig ->
-            // Backend team doesn't want any clients using the development APIs in production, so
-            // until they disable access to the APIs we'll have this safeguard in the client to
-            // prevent any accidental usage.
-            if (kaliumConfigs.developmentApiEnabled && serverConfig.links == ServerConfig.PRODUCTION) {
-                return Result.Failure.Generic(CoreFailure.DevelopmentAPINotAllowedOnProduction)
-            }
-            val proxyCredentials = when (proxyAuthentication) {
-                is ProxyAuthentication.None -> null
-                is ProxyAuthentication.UsernameAndPassword -> proxyAuthentication.proxyCredentials
-            }
-            Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials))
-        })
+        withContext(KaliumDispatcherImpl.default) {
+            coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
+                handleError(it)
+            }, { serverConfig ->
+                // Backend team doesn't want any clients using the development APIs in production, so
+                // until they disable access to the APIs we'll have this safeguard in the client to
+                // prevent any accidental usage.
+                if (kaliumConfigs.developmentApiEnabled && serverConfig.links == ServerConfig.PRODUCTION) {
+                    return@fold Result.Failure.Generic(CoreFailure.DevelopmentAPINotAllowedOnProduction)
+                }
+                val proxyCredentials = when (proxyAuthentication) {
+                    is ProxyAuthentication.None -> null
+                    is ProxyAuthentication.UsernameAndPassword -> proxyAuthentication.proxyCredentials
+                }
+                Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials))
+            })
+        }
 
     private fun handleError(coreFailure: CoreFailure): Result.Failure =
         when (coreFailure) {

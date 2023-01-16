@@ -7,7 +7,9 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.withContext
 
 sealed class SSOInitiateLoginResult {
     data class Success(val requestUrl: String) : SSOInitiateLoginResult()
@@ -51,31 +53,33 @@ internal class SSOInitiateLoginUseCaseImpl(
     private val serverConfig: ServerConfig
 ) : SSOInitiateLoginUseCase {
 
-    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = with(param) {
-        val validUuid = validateSSOCodeUseCase(ssoCode).let {
-            when (it) {
-                is ValidateSSOCodeResult.Valid -> it.uuid
-                ValidateSSOCodeResult.Invalid -> return@with SSOInitiateLoginResult.Failure.InvalidCodeFormat
+    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = withContext(KaliumDispatcherImpl.default) {
+        with(param) {
+            val validUuid = validateSSOCodeUseCase(ssoCode).let {
+                when (it) {
+                    is ValidateSSOCodeResult.Valid -> it.uuid
+                    ValidateSSOCodeResult.Invalid -> return@with SSOInitiateLoginResult.Failure.InvalidCodeFormat
+                }
             }
+            when (this) {
+                is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid)
+                is SSOInitiateLoginUseCase.Param.WithRedirect -> {
+                    val redirects = SSORedirects(serverConfig.id)
+                    ssoLoginRepository.initiate(
+                        validUuid, redirects.success, redirects.error
+                    )
+                }
+            }.fold({
+                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                    if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                        return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
+                    if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
+                        return@fold SSOInitiateLoginResult.Failure.InvalidCode
+                }
+                SSOInitiateLoginResult.Failure.Generic(it)
+            }, {
+                SSOInitiateLoginResult.Success(it)
+            })
         }
-        when (this) {
-            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid)
-            is SSOInitiateLoginUseCase.Param.WithRedirect -> {
-                val redirects = SSORedirects(serverConfig.id)
-                ssoLoginRepository.initiate(
-                    validUuid, redirects.success, redirects.error
-                )
-            }
-        }.fold({
-            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
-                    return@fold SSOInitiateLoginResult.Failure.InvalidCode
-            }
-            SSOInitiateLoginResult.Failure.Generic(it)
-        }, {
-            SSOInitiateLoginResult.Success(it)
-        })
     }
 }

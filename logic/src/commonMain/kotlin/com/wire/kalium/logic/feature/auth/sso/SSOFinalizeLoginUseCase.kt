@@ -5,7 +5,9 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.withContext
 
 sealed class SSOFinalizeLoginResult {
     data class Success(val requestUrl: String) : SSOFinalizeLoginResult()
@@ -31,7 +33,7 @@ internal class SSOFinalizeLoginUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository
 ) : SSOFinalizeLoginUseCase {
 
-    override suspend fun invoke(cookie: String): SSOFinalizeLoginResult =
+    override suspend fun invoke(cookie: String): SSOFinalizeLoginResult = withContext(KaliumDispatcherImpl.default) {
         ssoLoginRepository.finalize(cookie).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
@@ -41,4 +43,5 @@ internal class SSOFinalizeLoginUseCaseImpl(
         }, {
             SSOFinalizeLoginResult.Success(it)
         })
+    }
 }
