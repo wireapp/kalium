@@ -38,5 +38,12 @@ kotlin {
                 implementation(project(":calling"))
             }
         }
+
+        val darwinMain by getting {
+            dependencies {
+                implementation(project(":logic"))
+                implementation(project(":calling"))
+            }
+        }
     }
 }
