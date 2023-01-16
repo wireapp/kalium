@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -15,10 +14,9 @@ import kotlinx.coroutines.withContext
 class RejectCallUseCase(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.io) {
+    suspend operator fun invoke(conversationId: ConversationId) = withContext(KaliumDispatcherImpl.default) {
         callingLogger.d("[RejectCallUseCase] -> Updating call status to REJECTED")
         callRepository.updateCallStatusById(conversationId.toString(), CallStatus.REJECTED)
 

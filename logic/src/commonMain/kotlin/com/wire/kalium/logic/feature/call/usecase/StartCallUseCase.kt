@@ -7,8 +7,9 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
-import kotlin.Boolean
-import kotlin.Lazy
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Attempts to start a call.
@@ -17,7 +18,9 @@ import kotlin.Lazy
  */
 class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+
 ) {
 
     suspend operator fun invoke(
@@ -25,17 +28,19 @@ class StartCallUseCase internal constructor(
         callType: CallType = CallType.AUDIO,
         conversationType: ConversationType,
         isAudioCbr: Boolean = false
-    ) = syncManager.waitUntilLiveOrFailure().fold({
-        Result.SyncFailure
-    }, {
-        callManager.value.startCall(
-            conversationId = conversationId,
-            callType = callType,
-            conversationType = conversationType,
-            isAudioCbr = isAudioCbr
-        )
-        Result.Success
-    })
+    ) = withContext(dispatcher.default) {
+        syncManager.waitUntilLiveOrFailure().fold({
+            Result.SyncFailure
+        }, {
+            callManager.value.startCall(
+                conversationId = conversationId,
+                callType = callType,
+                conversationType = conversationType,
+                isAudioCbr = isAudioCbr
+            )
+            Result.Success
+        })
+    }
 
     sealed interface Result {
         /**

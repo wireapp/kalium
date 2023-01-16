@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.withContext
 
 /**
  * Use case that is responsible for observing the incoming calls.
@@ -40,8 +42,8 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
     private val logger
         get() = kaliumLogger.withFeatureId(CALLING)
 
-    override suspend operator fun invoke(): Flow<List<Call>> {
-        return observeIncomingCallsIfUserStatusAllows()
+    override suspend operator fun invoke(): Flow<List<Call>> = withContext(KaliumDispatcherImpl.default) {
+        observeIncomingCallsIfUserStatusAllows()
             .onlyCallsInNotMutedConversations()
             .distinctUntilChanged()
             .onEach { calls ->

@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * @return the [Boolean] for if the user's team has conference calling enabled in its plan.
@@ -18,18 +20,19 @@ internal class IsEligibleToStartCallUseCaseImpl(
     private val callRepository: CallRepository
 ) : IsEligibleToStartCallUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult {
-        val establishedCallConversationId = callRepository.establishedCallConversationId()
+    override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult =
+        withContext(KaliumDispatcherImpl.default) {
+            val establishedCallConversationId = callRepository.establishedCallConversationId()
 
-        val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||
-                (conversationType == Conversation.Type.GROUP && isConferenceCallingEnabled()))
+            val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||
+                    (conversationType == Conversation.Type.GROUP && isConferenceCallingEnabled()))
 
-        return establishedCallConversationId?.let {
-            callIsEstablished(it, conversationId, canStartCall)
-        } ?: run {
-            if (canStartCall) ConferenceCallingResult.Enabled else ConferenceCallingResult.Disabled.Unavailable
+            establishedCallConversationId?.let {
+                callIsEstablished(it, conversationId, canStartCall)
+            } ?: run {
+                if (canStartCall) ConferenceCallingResult.Enabled else ConferenceCallingResult.Disabled.Unavailable
+            }
         }
-    }
 
     private fun callIsEstablished(
         establishedCallConversationId: ConversationId,

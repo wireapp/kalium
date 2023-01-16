@@ -2,7 +2,9 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for observing the ongoing calls.
@@ -19,7 +21,7 @@ internal class ObserveOngoingCallsUseCaseImpl(
     private val callRepository: CallRepository
 ) : ObserveOngoingCallsUseCase {
 
-    override suspend fun invoke(): Flow<List<Call>> {
-        return callRepository.ongoingCallsFlow()
+    override suspend fun invoke(): Flow<List<Call>> = withContext(KaliumDispatcherImpl.default) {
+        callRepository.ongoingCallsFlow()
     }
 }

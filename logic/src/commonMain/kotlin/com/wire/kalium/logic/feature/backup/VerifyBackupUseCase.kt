@@ -4,6 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.checkIfCompressedFileContainsFileTypes
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 import okio.Path
 
 interface VerifyBackupUseCase {
@@ -19,7 +21,7 @@ internal class VerifyBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem
 ) : VerifyBackupUseCase {
 
-    override suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult =
+    override suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult = withContext(KaliumDispatcherImpl.default) {
         checkIfCompressedFileContainsFileTypes(
             compressedBackupFilePath,
             kaliumFileSystem,
@@ -42,6 +44,7 @@ internal class VerifyBackupUseCaseImpl(
                     VerifyBackupResult.Failure.InvalidBackupFile
             }
         })
+    }
 }
 
 sealed class VerifyBackupResult {

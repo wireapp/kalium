@@ -19,10 +19,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.first
@@ -51,11 +50,10 @@ internal class CreateBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val userDBSecret: UserDBSecret,
     private val isUserDBSQLCipher: Boolean,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : CreateBackupUseCase {
 
-    override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.io) {
+    override suspend operator fun invoke(password: String): CreateBackupResult = withContext(KaliumDispatcherImpl.default) {
         val backupFilePath = kaliumFileSystem.tempFilePath(BACKUP_FILE_NAME)
         deletePreviousBackupFiles(backupFilePath)
 
