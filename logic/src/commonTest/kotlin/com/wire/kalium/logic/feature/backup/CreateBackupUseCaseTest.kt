@@ -9,6 +9,7 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
@@ -28,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when backup support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 

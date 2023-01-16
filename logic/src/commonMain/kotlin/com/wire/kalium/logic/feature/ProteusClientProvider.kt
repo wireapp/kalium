@@ -13,7 +13,6 @@ import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.cancellation.CancellationException
 
 interface ProteusClientProvider {
     suspend fun clearLocalFiles()
@@ -39,7 +38,6 @@ class ProteusClientProviderImpl(
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
 
-    @Throws(ProteusException::class)
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             _proteusClient?.clearLocalFiles()
@@ -47,7 +45,6 @@ class ProteusClientProviderImpl(
         }
     }
 
-    @Throws(ProteusException::class, CancellationException::class)
     override suspend fun getOrCreate(): ProteusClient {
         mutex.withLock {
             return _proteusClient ?: createProteusClient().also {
