@@ -32,6 +32,11 @@ sealed class CoreFailure {
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
+
+    /**
+     * It's only allowed to insert system messages as bulk for all conversations.
+     */
+    object OnlySystemMessageAllowed : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure() {

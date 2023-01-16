@@ -106,6 +106,7 @@ object MessageMapper {
         MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
         MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -412,6 +413,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
                 receiptMode = conversationReceiptModeChanged ?: false
             )
+            MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
         }
 
         return createMessageEntity(

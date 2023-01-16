@@ -277,6 +277,7 @@ class MessageMapperImpl(
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
         is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
         is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -357,6 +358,7 @@ class MessageMapperImpl(
         is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
     }
 }
 
