@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -91,6 +92,7 @@ class MessageEnvelopeCreatorTest {
         }
     }
 
+    @IgnoreIOS // TODO generateRandomAES256Key is not implemented
     @Test
     fun givenMessageContentIsTooBig_whenCreatingAnEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
         // Given

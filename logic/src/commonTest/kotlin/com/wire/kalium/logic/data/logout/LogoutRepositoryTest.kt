@@ -51,7 +51,7 @@ class LogoutRepositoryTest {
 
         logoutRepository.onLogout(LogoutReason.DELETED_ACCOUNT)
         try {
-            logoutRepository.observeLogout().collect { throw StackOverflowError() }
+            logoutRepository.observeLogout().collect { throw IllegalStateException() }
         } catch (ignored: Throwable) {
             // Ignored, really
         }

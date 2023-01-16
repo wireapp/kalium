@@ -16,6 +16,7 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -61,6 +62,7 @@ class ProteusMessageUnpackerTest {
             .wasInvoked(exactly = once)
     }
 
+    @IgnoreIOS // TODO generateRandomAES256Key is not implemented
     @Test
     fun givenNewMessageEventWithExternalContent_whenUnpacking_shouldReturnDecryptedExternalMessage() = runTest {
         val aesKey = generateRandomAES256Key()
