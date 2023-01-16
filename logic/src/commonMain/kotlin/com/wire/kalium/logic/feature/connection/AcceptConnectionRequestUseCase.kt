@@ -9,6 +9,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use Case that allows a user accept a connection request to connect with another User
@@ -26,10 +29,11 @@ fun interface AcceptConnectionRequestUseCase {
 internal class AcceptConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : AcceptConnectionRequestUseCase {
 
-    override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
+    override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult = withContext(dispatcher.default) {
+        connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .flatMap {
                 conversationRepository.fetchConversation(it.qualifiedConversationId)
                 conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentIsoDateTimeString())

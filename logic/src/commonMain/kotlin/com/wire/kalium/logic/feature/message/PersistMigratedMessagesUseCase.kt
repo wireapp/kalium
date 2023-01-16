@@ -8,6 +8,9 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Persist migrated messages from old datasource
@@ -19,8 +22,9 @@ fun interface PersistMigratedMessagesUseCase {
 internal class PersistMigratedMessagesUseCaseImpl(
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val protoContentMapper: ProtoContentMapper,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : PersistMigratedMessagesUseCase {
-    override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> {
+    override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> = withContext(dispatchers.default) {
         messages.filter { it.encryptedProto != null }
             .map { migratedMessage ->
                 migratedMessage to protoContentMapper.decodeFromProtobuf(PlainMessageBlob(migratedMessage.encryptedProto!!))
@@ -38,6 +42,6 @@ internal class PersistMigratedMessagesUseCaseImpl(
                     }
                 }
             }
-        return Either.Right(Unit)
+        Either.Right(Unit)
     }
 }

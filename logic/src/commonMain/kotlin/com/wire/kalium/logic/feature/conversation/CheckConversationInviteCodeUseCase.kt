@@ -13,8 +13,11 @@ import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.network.exceptions.isGuestLinkDisabled
 import com.wire.kalium.network.exceptions.isNotTeamMember
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Checks if the conversation invite code is valid
@@ -26,9 +29,10 @@ import kotlinx.coroutines.flow.first
 class CheckConversationInviteCodeUseCase internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    suspend operator fun invoke(code: String, key: String, domain: String?) =
+    suspend operator fun invoke(code: String, key: String, domain: String?) = withContext(dispatcher.default) {
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key).fold(
             { failure ->
                 when (failure) {
@@ -42,6 +46,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
                 handleSuccess(response, domain)
             }
         )
+    }
 
     private suspend fun handleSuccess(response: LimitedConversationInfo, domain: String?): Result.Success {
         val conversationId = ConversationId(

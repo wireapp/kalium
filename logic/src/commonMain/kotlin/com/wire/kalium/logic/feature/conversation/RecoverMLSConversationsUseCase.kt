@@ -14,6 +14,9 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RecoverMLSConversationsResult {
     object Success : RecoverMLSConversationsResult()
@@ -35,8 +38,9 @@ class RecoverMLSConversationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RecoverMLSConversationsUseCase {
-    override suspend operator fun invoke(): RecoverMLSConversationsResult =
+    override suspend operator fun invoke(): RecoverMLSConversationsResult = withContext(dispatcher.default) {
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -52,6 +56,7 @@ class RecoverMLSConversationsUseCaseImpl(
                     { RecoverMLSConversationsResult.Success }
                 )
         }
+    }
 
     private suspend fun recoverMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {

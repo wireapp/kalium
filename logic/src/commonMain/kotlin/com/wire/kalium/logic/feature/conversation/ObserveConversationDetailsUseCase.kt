@@ -5,8 +5,11 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will observe and return the conversation details for a specific conversation.
@@ -14,6 +17,7 @@ import kotlinx.coroutines.flow.map
  */
 class ObserveConversationDetailsUseCase(
     private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     sealed class Result {
         data class Success(val conversationDetails: ConversationDetails) : Result()
@@ -24,8 +28,8 @@ class ObserveConversationDetailsUseCase(
      * @param conversationId the id of the conversation to observe
      * @return a flow of [Result] with the [ConversationDetails] of the conversation
      */
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Result> {
-        return conversationRepository.observeConversationDetailsById(conversationId)
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Result> = withContext(dispatcher.default) {
+        conversationRepository.observeConversationDetailsById(conversationId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }
 }

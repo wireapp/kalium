@@ -8,6 +8,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Persists a list of conversations migrated from old clients
@@ -28,13 +31,14 @@ fun interface PersistMigratedConversationUseCase {
 
 internal class PersistMigratedConversationUseCaseImpl(
     private val migrationDAO: MigrationDAO,
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : PersistMigratedConversationUseCase {
 
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
 
-    override suspend fun invoke(conversations: List<Conversation>): Boolean {
-        return conversations.map { conversationMapper.fromMigrationModel(it) }.let {
+    override suspend fun invoke(conversations: List<Conversation>): Boolean = withContext(dispatcher.default) {
+        conversations.map { conversationMapper.fromMigrationModel(it) }.let {
             wrapStorageRequest { migrationDAO.insertConversation(it) }.fold({
                 logger.e("Error while persisting migrated conversations $it")
                 false

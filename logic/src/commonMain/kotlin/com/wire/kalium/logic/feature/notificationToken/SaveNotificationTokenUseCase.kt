@@ -5,7 +5,10 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Saves the push notification token for the users registered in the device.
@@ -23,10 +26,11 @@ interface SaveNotificationTokenUseCase {
 internal class SaveNotificationTokenUseCaseImpl(
     private val notificationTokenRepository: NotificationTokenRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : SaveNotificationTokenUseCase {
 
-    override suspend operator fun invoke(token: String, type: String, applicationId: String): Result =
+    override suspend operator fun invoke(token: String, type: String, applicationId: String): Result = withContext(dispatchers.default) {
         notificationTokenRepository.persistNotificationToken(token, type, applicationId).fold({
             Result.Failure.Generic(it)
         }, {
@@ -40,7 +44,7 @@ internal class SaveNotificationTokenUseCaseImpl(
                 }
             Result.Success
         })
-
+    }
 }
 
 sealed class Result {

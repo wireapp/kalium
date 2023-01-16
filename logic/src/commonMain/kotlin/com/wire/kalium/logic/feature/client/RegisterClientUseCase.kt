@@ -24,6 +24,9 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -75,44 +78,47 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
-        with(registerClientParam) {
-              sessionRepository.cookieLabel(selfUserId)
-                  .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
-            }.fold({
-                RegisterClientResult.Failure.Generic(it)
-            }, { registerClientParam ->
-                clientRepository.registerClient(registerClientParam)
-                    .flatMap { registeredClient ->
-                        if (isAllowedToRegisterMLSClient()) {
-                            createMLSClient(registeredClient)
-                        } else {
-                            Either.Right(registeredClient)
-                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
-                    }.flatMap { (client, otrLastKeyId) ->
-                        otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
-                        Either.Right(client)
-                    }.fold({ failure ->
-                        if (failure is NetworkFailure.ServerMiscommunication &&
-                            failure.kaliumException is KaliumException.InvalidRequestError
-                        )
-                            when {
-                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
-                                failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
-                                failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
-                                else -> RegisterClientResult.Failure.Generic(failure)
-                            }
-                        else RegisterClientResult.Failure.Generic(failure)
-                    }, { client ->
-                        RegisterClientResult.Success(client)
+        withContext(dispatcher.default) {
+            with(registerClientParam) {
+                sessionRepository.cookieLabel(selfUserId)
+                    .flatMap { cookieLabel ->
+                        generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
+                    }.fold({
+                        RegisterClientResult.Failure.Generic(it)
+                    }, { registerClientParam ->
+                        clientRepository.registerClient(registerClientParam)
+                            .flatMap { registeredClient ->
+                                if (isAllowedToRegisterMLSClient()) {
+                                    createMLSClient(registeredClient)
+                                } else {
+                                    Either.Right(registeredClient)
+                                }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                            }.flatMap { (client, otrLastKeyId) ->
+                                otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
+                                Either.Right(client)
+                            }.fold({ failure ->
+                                if (failure is NetworkFailure.ServerMiscommunication &&
+                                    failure.kaliumException is KaliumException.InvalidRequestError
+                                )
+                                    when {
+                                        failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+                                        failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+                                        failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
+                                        failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
+                                        else -> RegisterClientResult.Failure.Generic(failure)
+                                    }
+                                else RegisterClientResult.Failure.Generic(failure)
+                            }, { client ->
+                                RegisterClientResult.Success(client)
+                            })
                     })
-            })
+            }
         }
 
     // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we

@@ -5,6 +5,9 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface RemoveMemberFromConversationUseCase {
 
@@ -24,10 +27,12 @@ interface RemoveMemberFromConversationUseCase {
 }
 
 class RemoveMemberFromConversationUseCaseImpl(
-    private val conversationGroupRepository: ConversationGroupRepository
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RemoveMemberFromConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {
-        return conversationGroupRepository.deleteMember(userIdToRemove, conversationId).fold({
+    override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId):
+            RemoveMemberFromConversationUseCase.Result = withContext(dispatcher.default) {
+        conversationGroupRepository.deleteMember(userIdToRemove, conversationId).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
             RemoveMemberFromConversationUseCase.Result.Success

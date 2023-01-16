@@ -3,6 +3,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface LeaveConversationUseCase {
 
@@ -19,11 +22,13 @@ interface LeaveConversationUseCase {
 class LeaveConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : LeaveConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result {
-        return RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository).invoke(
-            conversationId,
-            selfUserId
-        )
-    }
+    override suspend fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result =
+        withContext(dispatcher.default) {
+            RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository).invoke(
+                conversationId,
+                selfUserId
+            )
+        }
 }

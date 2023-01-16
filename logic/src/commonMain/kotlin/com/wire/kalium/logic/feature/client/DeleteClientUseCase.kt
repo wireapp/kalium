@@ -9,6 +9,9 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for deleting the client.
@@ -18,14 +21,19 @@ interface DeleteClientUseCase {
     suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
 }
 
-class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : DeleteClientUseCase {
+class DeleteClientUseCaseImpl(
+    private val clientRepository: ClientRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : DeleteClientUseCase {
     override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult =
-        clientRepository.deleteClient(param).fold(
-            {
-                handleError(it)
-            }, {
-                DeleteClientResult.Success
-            })
+        withContext(dispatcher.default) {
+            clientRepository.deleteClient(param).fold(
+                {
+                    handleError(it)
+                }, {
+                    DeleteClientResult.Success
+                })
+        }
 
     private fun handleError(failure: NetworkFailure): DeleteClientResult.Failure =
         if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)

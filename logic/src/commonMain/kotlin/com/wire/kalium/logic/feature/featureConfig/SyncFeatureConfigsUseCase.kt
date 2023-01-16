@@ -18,6 +18,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is to get the file sharing status of the team management settings from the server and
@@ -32,9 +35,10 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
     private val kaliumConfigs: KaliumConfigs,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncFeatureConfigsUseCase {
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = withContext(dispatcher.default) {
         featureConfigRepository.getFeatureConfigs().flatMap {
             // TODO handle other feature flags
             checkFileSharingStatus(it.fileSharingModel)
@@ -56,6 +60,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 kaliumLogger.d("$networkFailure")
             }
         }
+    }
 
     private fun checkConferenceCalling(model: ConferenceCallingModel) {
         val conferenceCallingEnabled = model.status == Status.ENABLED

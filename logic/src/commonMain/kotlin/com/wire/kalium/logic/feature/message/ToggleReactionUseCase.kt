@@ -17,7 +17,10 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Toggles a reaction on a message.
@@ -28,7 +31,8 @@ class ToggleReactionUseCase internal constructor(
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
     private val reactionRepository: ReactionRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * Operation to toggle a reaction on a message
@@ -42,13 +46,13 @@ class ToggleReactionUseCase internal constructor(
         conversationId: ConversationId,
         messageId: String,
         reaction: String
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.default) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
         val date = DateTimeUtil.currentIsoDateTimeString()
 
-        return reactionRepository.getSelfUserReactionsForMessage(messageId, conversationId)
+        reactionRepository.getSelfUserReactionsForMessage(messageId, conversationId)
             .flatMap { reactions ->
                 currentClientIdProvider().map { it to reactions }
             }

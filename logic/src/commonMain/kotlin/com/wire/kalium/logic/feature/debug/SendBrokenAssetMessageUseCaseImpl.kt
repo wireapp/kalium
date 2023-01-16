@@ -1,4 +1,5 @@
 @file:Suppress("MaximumLineLength")
+
 package com.wire.kalium.logic.feature.debug
 
 import com.benasher44.uuid.uuid4
@@ -25,7 +26,10 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import okio.Path
 
 @Suppress("MaxLineLength")
@@ -62,7 +66,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SendBrokenAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
@@ -72,7 +77,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         assetName: String,
         assetMimeType: String,
         brokenState: BrokenState
-    ): SendBrokenAssetMessageResult {
+    ): SendBrokenAssetMessageResult = withContext(dispatcher.default) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -93,7 +98,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         )
         lateinit var message: Message.Regular
 
-        return currentClientIdProvider().flatMap { currentClientId ->
+        currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 

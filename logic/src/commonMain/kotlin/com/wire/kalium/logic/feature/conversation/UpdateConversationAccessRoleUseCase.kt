@@ -7,6 +7,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will update the access role configuration of a conversation.
@@ -19,15 +22,16 @@ import com.wire.kalium.logic.functional.map
  * @see Conversation.AccessRole
  */
 class UpdateConversationAccessRoleUseCase internal constructor(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     suspend operator fun invoke(
         conversationId: ConversationId,
         allowGuest: Boolean,
         allowServices: Boolean,
         allowNonTeamMember: Boolean
-    ): Result {
-        return conversationRepository.detailsById(conversationId)
+    ): Result = withContext(dispatcher.default) {
+        conversationRepository.detailsById(conversationId)
             .map { conversation ->
                 // TODO: handle edge case where accessRole is null
                 val newAccessRoles: List<Conversation.AccessRole> = conversation.accessRole.toMutableSet().apply {

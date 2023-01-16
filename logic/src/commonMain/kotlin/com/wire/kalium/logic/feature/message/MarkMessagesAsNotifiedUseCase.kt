@@ -8,6 +8,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
@@ -15,7 +18,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
  */
 class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
@@ -23,16 +27,18 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
      * or null for marking all notifications as notified.
      */
     @Deprecated("This will be removed in order to use a more explicit input", ReplaceWith("invoke(UpdateTarget)"))
-    suspend operator fun invoke(conversationId: ConversationId?): Result = if (conversationId == null) {
-        invoke(UpdateTarget.AllConversations)
-    } else {
-        invoke(UpdateTarget.SingleConversation(conversationId))
+    suspend operator fun invoke(conversationId: ConversationId?): Result = withContext(dispatchers.default) {
+        if (conversationId == null) {
+            invoke(UpdateTarget.AllConversations)
+        } else {
+            invoke(UpdateTarget.SingleConversation(conversationId))
+        }
     }
 
     /**
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
-    suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
+    suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result = withContext(dispatchers.default) {
         messageRepository.getInstantOfLatestMessageFromOtherUsers().map {
             it.toIsoDateTimeString()
         }.flatMap { date ->
@@ -43,6 +49,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
                     conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId, date)
             }
         }.fold({ Result.Failure(it) }) { Result.Success }
+    }
 
     /**
      * Specifies which conversations should be marked as notified

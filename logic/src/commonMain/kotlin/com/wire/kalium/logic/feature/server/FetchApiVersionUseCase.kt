@@ -5,6 +5,9 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Fetches the server api version, for the given server backend.
@@ -18,14 +21,17 @@ interface FetchApiVersionUseCase {
 }
 
 class FetchApiVersionUseCaseImpl internal constructor(
-    private val configRepository: ServerConfigRepository
+    private val configRepository: ServerConfigRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FetchApiVersionUseCase {
     override suspend operator fun invoke(serverLinks: ServerConfig.Links): FetchApiVersionResult =
-        configRepository.fetchApiVersionAndStore(serverLinks)
-            .fold(
-                { handleError(it) },
-                { FetchApiVersionResult.Success(it) }
-            )
+        withContext(dispatchers.default) {
+            configRepository.fetchApiVersionAndStore(serverLinks)
+                .fold(
+                    { handleError(it) },
+                    { FetchApiVersionResult.Success(it) }
+                )
+        }
 
     private fun handleError(coreFailure: CoreFailure): FetchApiVersionResult.Failure =
         when (coreFailure) {

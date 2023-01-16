@@ -5,9 +5,12 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 fun interface ObserveSecurityClassificationLabelUseCase {
     /**
@@ -23,11 +26,12 @@ fun interface ObserveSecurityClassificationLabelUseCase {
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveSecurityClassificationLabelUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> {
-        return conversationRepository.observeConversationMembers(conversationId)
+    override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> = withContext(dispatcher.default) {
+        conversationRepository.observeConversationMembers(conversationId)
             .map { participantsIds ->
                 val trustedDomains = getClassifiedDomainsStatus()
                 if (trustedDomains == null) {

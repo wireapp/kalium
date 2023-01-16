@@ -12,6 +12,9 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.persistence.dao.message.LocalId
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Renames a conversation by its ID.
@@ -29,22 +32,24 @@ internal class RenameConversationUseCaseImpl(
     val persistMessage: PersistMessageUseCase,
     private val renamedConversationEventHandler: RenamedConversationEventHandler,
     val selfUserId: UserId,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RenameConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, conversationName: String): RenamingResult {
-        return conversationRepository.changeConversationName(conversationId, conversationName)
-            .onSuccess { response ->
-                if (response is ConversationRenameResponse.Changed)
-                    renamedConversationEventHandler.handle(
-                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true)
-                    )
-            }
-            .fold({
-                RenamingResult.Failure(it)
-            }, {
-                RenamingResult.Success
-            })
-    }
+    override suspend fun invoke(conversationId: ConversationId, conversationName: String): RenamingResult =
+        withContext(dispatcher.default) {
+            conversationRepository.changeConversationName(conversationId, conversationName)
+                .onSuccess { response ->
+                    if (response is ConversationRenameResponse.Changed)
+                        renamedConversationEventHandler.handle(
+                            eventMapper.conversationRenamed(LocalId.generate(), response.event, true)
+                        )
+                }
+                .fold({
+                    RenamingResult.Failure(it)
+                }, {
+                    RenamingResult.Success
+                })
+        }
 }
 
 sealed class RenamingResult {

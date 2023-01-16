@@ -19,6 +19,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Creates a group conversation.
@@ -33,7 +36,8 @@ class CreateGroupConversationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
@@ -42,26 +46,28 @@ class CreateGroupConversationUseCase internal constructor(
      * @param options settings that customise the conversation
      */
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): Result =
-        syncManager.waitUntilLiveOrFailure().flatMap {
-            currentClientIdProvider()
-        }.flatMap { clientId ->
-            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
-        }.flatMap { conversation ->
-            conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentIsoDateTimeString())
-                .map { conversation }
-        }.fold({
-            if (it is NetworkFailure.NoNetworkConnection) {
-                Result.SyncFailure
-            } else {
-                Result.UnknownFailure(it)
-            }
-        }, {
-            handleSystemMessage(
-                conversation = it,
-                receiptMode = options.readReceiptsEnabled
-            )
-            Result.Success(it)
-        })
+        withContext(dispatcher.default) {
+            syncManager.waitUntilLiveOrFailure().flatMap {
+                currentClientIdProvider()
+            }.flatMap { clientId ->
+                conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
+            }.flatMap { conversation ->
+                conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentIsoDateTimeString())
+                    .map { conversation }
+            }.fold({
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    Result.SyncFailure
+                } else {
+                    Result.UnknownFailure(it)
+                }
+            }, {
+                handleSystemMessage(
+                    conversation = it,
+                    receiptMode = options.readReceiptsEnabled
+                )
+                Result.Success(it)
+            })
+        }
 
     private suspend fun handleSystemMessage(
         conversation: Conversation,

@@ -5,6 +5,9 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will add a member(s) to a given conversation.
@@ -24,13 +27,15 @@ interface AddMemberToConversationUseCase {
 }
 
 class AddMemberToConversationUseCaseImpl(
-    private val conversationGroupRepository: ConversationGroupRepository
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : AddMemberToConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {
-        return conversationGroupRepository.addMembers(userIdList, conversationId).fold({
-            AddMemberToConversationUseCase.Result.Failure(it)
-        }, {
-            AddMemberToConversationUseCase.Result.Success
-        })
-    }
+    override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result =
+        withContext(dispatcher.default) {
+            conversationGroupRepository.addMembers(userIdList, conversationId).fold({
+                AddMemberToConversationUseCase.Result.Failure(it)
+            }, {
+                AddMemberToConversationUseCase.Result.Success
+            })
+        }
 }

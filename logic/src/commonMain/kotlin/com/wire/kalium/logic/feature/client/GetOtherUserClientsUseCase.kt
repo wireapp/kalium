@@ -5,6 +5,9 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use case to fetch all the other user clients (devices) information from the local db for specific user
@@ -14,14 +17,16 @@ interface GetOtherUserClientsUseCase {
 }
 
 internal class GetOtherUserClientsUseCaseImpl(
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetOtherUserClientsUseCase {
-    override suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult =
+    override suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult = withContext(dispatcher.default) {
         clientRepository.getClientsByUserId(userId).fold({
             GetOtherUserClientsResult.Failure.UserNotFound
         }, {
             GetOtherUserClientsResult.Success(it)
         })
+    }
 }
 
 sealed class GetOtherUserClientsResult {

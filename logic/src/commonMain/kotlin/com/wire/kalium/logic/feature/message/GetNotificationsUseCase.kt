@@ -6,11 +6,14 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.withContext
 
 /**
  * Get notifications for the current user
@@ -34,12 +37,13 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper(),
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
-    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return merge(
+    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> = withContext(dispatchers.default) {
+        merge(
             messageRepository.getNotificationMessage(),
             observeConnectionRequests(),
             ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }

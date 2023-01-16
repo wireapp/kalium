@@ -16,6 +16,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 /**
@@ -29,13 +32,14 @@ class UpdateConversationReadDateUseCase internal constructor(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
      */
-    suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
+    suspend operator fun invoke(conversationId: QualifiedID, time: Instant) = withContext(dispatcher.default) {
         selfConversationIdProvider().flatMap { selfConversationIds ->
             sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
@@ -43,7 +47,6 @@ class UpdateConversationReadDateUseCase internal constructor(
                 sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
             }
         }
-        return
     }
 
     private suspend fun sendLastReadMessageToOtherClients(

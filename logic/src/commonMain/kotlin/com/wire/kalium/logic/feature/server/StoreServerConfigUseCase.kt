@@ -4,7 +4,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.URLBuilder
+import kotlinx.coroutines.withContext
 
 /**
  * Stores the server configuration metadata, like main urls and flags for this server.
@@ -19,20 +22,22 @@ fun interface StoreServerConfigUseCase {
 }
 
 internal class StoreServerConfigUseCaseImpl(
-    private val configRepository: ServerConfigRepository
+    private val configRepository: ServerConfigRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : StoreServerConfigUseCase {
 
-    override suspend fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult {
-        val cleanWsLink = URLBuilder(links.webSocket).apply {
-            pathSegments = pathSegments.toMutableList().apply {
-                if (lastOrNull() == "await") removeLast()
-            }
-        }.buildString()
+    override suspend fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult =
+        withContext(dispatchers.default) {
+            val cleanWsLink = URLBuilder(links.webSocket).apply {
+                pathSegments = pathSegments.toMutableList().apply {
+                    if (lastOrNull() == "await") removeLast()
+                }
+            }.buildString()
 
-        val cleanLinks = links.copy(webSocket = cleanWsLink)
-        return configRepository.storeConfig(cleanLinks, versionInfo)
-            .fold({ StoreServerConfigResult.Failure.Generic(it) }, { StoreServerConfigResult.Success(it) })
-    }
+            val cleanLinks = links.copy(webSocket = cleanWsLink)
+            configRepository.storeConfig(cleanLinks, versionInfo)
+                .fold({ StoreServerConfigResult.Failure.Generic(it) }, { StoreServerConfigResult.Success(it) })
+        }
 }
 
 sealed class StoreServerConfigResult {

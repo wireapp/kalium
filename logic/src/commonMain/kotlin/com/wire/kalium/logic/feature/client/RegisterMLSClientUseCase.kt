@@ -8,6 +8,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Register an MLS client with an existing client already registered on the backend.
@@ -22,10 +25,12 @@ class RegisterMLSClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RegisterMLSClientUseCase {
 
-    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> = withContext(dispatcher.default) {
         mlsClientProvider.getMLSClient(clientId)
             .flatMap { clientRepository.registerMLSClient(clientId, it.getPublicKey()) }
             .flatMap { keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount()) }
+    }
 }

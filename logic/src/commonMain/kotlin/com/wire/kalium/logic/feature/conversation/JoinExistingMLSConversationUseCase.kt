@@ -42,22 +42,23 @@ class JoinExistingMLSConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationUseCase {
-    private val dispatcher = kaliumDispatcher.io
 
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        if (!featureSupport.isMLSSupported ||
-            !clientRepository.hasRegisteredMLSClient().getOrElse(false)
-        ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
-            Either.Right(Unit)
-        } else {
-            conversationRepository.getConversationById(conversationId)?.let { conversation ->
-                withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(conversation)
-                }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+        withContext(dispatcher.default) {
+            if (!featureSupport.isMLSSupported ||
+                !clientRepository.hasRegisteredMLSClient().getOrElse(false)
+            ) {
+                kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+                Either.Right(Unit)
+            } else {
+                conversationRepository.getConversationById(conversationId)?.let { conversation ->
+                    withContext(dispatcher.io) {
+                        joinOrEstablishMLSGroupAndRetry(conversation)
+                    }
+                } ?: Either.Left(StorageFailure.DataNotFound)
+            }
         }
 
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {

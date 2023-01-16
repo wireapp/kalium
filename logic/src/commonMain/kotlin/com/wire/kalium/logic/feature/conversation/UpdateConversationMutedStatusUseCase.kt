@@ -7,6 +7,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface UpdateConversationMutedStatusUseCase {
     /**
@@ -25,14 +28,15 @@ interface UpdateConversationMutedStatusUseCase {
 }
 
 internal class UpdateConversationMutedStatusUseCaseImpl(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UpdateConversationMutedStatusUseCase {
 
     override suspend operator fun invoke(
         conversationId: ConversationId,
         mutedConversationStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
-    ): ConversationUpdateStatusResult =
+    ): ConversationUpdateStatusResult = withContext(dispatcher.default) {
         conversationRepository.updateMutedStatusRemotely(conversationId, mutedConversationStatus, mutedStatusTimestamp)
             .flatMap {
                 conversationRepository.updateMutedStatusLocally(conversationId, mutedConversationStatus, mutedStatusTimestamp)
@@ -42,7 +46,7 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
             }, {
                 ConversationUpdateStatusResult.Success
             })
-
+    }
 }
 
 sealed class ConversationUpdateStatusResult {

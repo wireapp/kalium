@@ -10,6 +10,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -24,23 +27,26 @@ class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
-    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
+    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationsUseCase {
 
     override suspend operator fun invoke(keepRetryingOnFailure: Boolean): Either<CoreFailure, Unit> =
-        if (!featureSupport.isMLSSupported ||
-            !clientRepository.hasRegisteredMLSClient().getOrElse(false)
-        ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
-            Either.Right(Unit)
-        } else {
-            conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-                kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
+        withContext(dispatcher.default) {
+            if (!featureSupport.isMLSSupported ||
+                !clientRepository.hasRegisteredMLSClient().getOrElse(false)
+            ) {
+                kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+                Either.Right(Unit)
+            } else {
+                conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+                    kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
 
-                return pendingConversations.map { conversation ->
-                    joinExistingMLSConversationUseCase(conversation.id)
-                }.foldToEitherWhileRight(Unit) { value, _ ->
-                    value
+                    pendingConversations.map { conversation ->
+                        joinExistingMLSConversationUseCase(conversation.id)
+                    }.foldToEitherWhileRight(Unit) { value, _ ->
+                        value
+                    }
                 }
             }
         }

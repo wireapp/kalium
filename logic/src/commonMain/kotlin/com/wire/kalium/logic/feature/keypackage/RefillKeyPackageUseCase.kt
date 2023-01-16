@@ -8,6 +8,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RefillKeyPackagesResult {
 
@@ -30,8 +33,9 @@ class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefillKeyPackagesUseCase {
-    override suspend operator fun invoke(): RefillKeyPackagesResult =
+    override suspend operator fun invoke(): RefillKeyPackagesResult = withContext(dispatcher.default) {
         currentClientIdProvider().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
@@ -51,5 +55,5 @@ class RefillKeyPackagesUseCaseImpl(
         }, {
             RefillKeyPackagesResult.Success
         })
-
+    }
 }

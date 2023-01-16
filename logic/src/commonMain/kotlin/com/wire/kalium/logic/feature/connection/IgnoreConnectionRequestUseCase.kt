@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use Case that allows a user to ignore a connection request from given user
@@ -21,11 +24,12 @@ fun interface IgnoreConnectionRequestUseCase {
 }
 
 internal class IgnoreConnectionRequestUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : IgnoreConnectionRequestUseCase {
 
-    override suspend fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.IGNORED)
+    override suspend fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult = withContext(dispatcher.default) {
+        connectionRepository.updateConnectionStatus(userId, ConnectionState.IGNORED)
             .fold({
                 kaliumLogger.e("An error occurred when ignoring the connection request to $userId")
                 IgnoreConnectionRequestUseCaseResult.Failure(it)

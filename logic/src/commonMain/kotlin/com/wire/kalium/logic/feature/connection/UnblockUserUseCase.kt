@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use Case that allows the current self user to unblock another previously blocked user
@@ -21,10 +24,11 @@ fun interface UnblockUserUseCase {
 }
 
 internal class UnblockUserUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UnblockUserUseCase {
 
-    override suspend fun invoke(userId: UserId): UnblockUserResult =
+    override suspend fun invoke(userId: UserId): UnblockUserResult = withContext(dispatcher.default) {
         connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .fold({
                 kaliumLogger.e("An error occurred when unblocking a user $userId")
@@ -32,6 +36,7 @@ internal class UnblockUserUseCaseImpl(
             }, {
                 UnblockUserResult.Success
             })
+    }
 }
 
 sealed class UnblockUserResult {

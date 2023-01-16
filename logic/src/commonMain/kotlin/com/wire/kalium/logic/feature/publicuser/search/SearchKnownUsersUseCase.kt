@@ -55,7 +55,7 @@ internal class SearchKnownUsersUseCaseImpl(
             )
         }
             .map { SearchUsersResult.Success(excludeSelfUserAndDeletedUsers(it)) }
-            .flowOn(dispatcher.io)
+            .flowOn(dispatcher.default)
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')

@@ -2,6 +2,9 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use Case that listen to any user connection changes
@@ -17,10 +20,11 @@ fun interface MarkConnectionRequestAsNotifiedUseCase {
 }
 
 internal class MarkConnectionRequestAsNotifiedUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MarkConnectionRequestAsNotifiedUseCase {
 
-    override suspend operator fun invoke(userId: UserId?) {
+    override suspend operator fun invoke(userId: UserId?) = withContext(dispatcher.default) {
         if (userId == null) {
             connectionRepository.setAllConnectionsAsNotified()
         } else {

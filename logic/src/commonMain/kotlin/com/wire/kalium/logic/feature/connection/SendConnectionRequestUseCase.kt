@@ -5,6 +5,9 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use Case that allows a user send a connection request to connect with another User
@@ -20,11 +23,12 @@ fun interface SendConnectionRequestUseCase {
 }
 
 internal class SendConnectionRequestUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SendConnectionRequestUseCase {
 
-    override suspend fun invoke(userId: UserId): SendConnectionRequestResult {
-        return connectionRepository.sendUserConnection(userId)
+    override suspend fun invoke(userId: UserId): SendConnectionRequestResult = withContext(dispatcher.default) {
+        connectionRepository.sendUserConnection(userId)
             .fold({ coreFailure ->
                 kaliumLogger.e("An error occurred when sending a connection request to $userId")
                 SendConnectionRequestResult.Failure(coreFailure)

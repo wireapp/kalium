@@ -42,7 +42,7 @@ class SendTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.default) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }

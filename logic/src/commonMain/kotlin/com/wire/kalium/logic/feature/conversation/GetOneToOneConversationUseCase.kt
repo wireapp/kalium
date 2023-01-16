@@ -25,11 +25,10 @@ class GetOneToOneConversationUseCase internal constructor(
     suspend operator fun invoke(otherUserId: UserId): Flow<Result> =
         conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
             .map { result -> result.fold({ Result.Failure }, { Result.Success(it) }) }
-            .flowOn(dispatchers.io)
+            .flowOn(dispatchers.default)
 
     sealed class Result {
         data class Success(val conversation: Conversation) : Result()
         object Failure : Result()
     }
-
 }

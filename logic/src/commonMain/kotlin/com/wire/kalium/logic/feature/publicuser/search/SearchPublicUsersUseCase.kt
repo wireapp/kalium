@@ -81,6 +81,6 @@ internal class SearchPublicUsersUseCaseImpl(
                     SearchUsersResult.Success(usersWithConnectionStatus)
                 })
             }
-            .flowOn(dispatcher.io)
+            .flowOn(dispatcher.default)
     }
 }

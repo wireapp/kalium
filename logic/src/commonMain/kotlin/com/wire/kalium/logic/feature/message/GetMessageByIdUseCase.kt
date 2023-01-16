@@ -21,7 +21,7 @@ class GetMessageByIdUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Result = withContext(dispatchers.io) {
+    ): Result = withContext(dispatchers.default) {
         messageRepository.getMessageById(conversationId, messageId).fold({
             Result.Failure(it)
         }, {

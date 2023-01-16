@@ -7,6 +7,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will return the current number of key packages.
@@ -19,12 +22,14 @@ class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSKeyPackageCountUseCase {
-    override suspend operator fun invoke(fromAPI: Boolean): MLSKeyPackageCountResult =
+    override suspend operator fun invoke(fromAPI: Boolean): MLSKeyPackageCountResult = withContext(dispatcher.default) {
         when (fromAPI) {
             true -> validKeyPackagesCountFromAPI()
             false -> validKeyPackagesCountFromMLSClient()
         }
+    }
 
     private suspend fun validKeyPackagesCountFromAPI() = currentClientIdProvider().fold({
         MLSKeyPackageCountResult.Failure.FetchClientIdFailure(it)

@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProv
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -24,16 +27,18 @@ interface UpdateKeyingMaterialsUseCase {
 
 class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
-    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UpdateKeyingMaterialsUseCase {
-    override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
-        .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
-        .flatMap { groups ->
-            groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
-                .foldToEitherWhileRight(Unit) { value, _ -> value }
-        }.fold(
-            { UpdateKeyingMaterialsResult.Failure(it) },
-            { UpdateKeyingMaterialsResult.Success }
-        )
-
+    override suspend fun invoke(): UpdateKeyingMaterialsResult = withContext(dispatcher.default) {
+        mlsConversationRepository
+            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
+            .flatMap { groups ->
+                groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
+                    .foldToEitherWhileRight(Unit) { value, _ -> value }
+            }.fold(
+                { UpdateKeyingMaterialsResult.Failure(it) },
+                { UpdateKeyingMaterialsResult.Success }
+            )
+    }
 }

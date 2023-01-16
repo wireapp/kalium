@@ -7,6 +7,9 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Use case for joining a conversation via a code invite code.
@@ -17,9 +20,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
  */
 class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    suspend operator fun invoke(code: String, key: String, domain: String?): Result =
+    suspend operator fun invoke(code: String, key: String, domain: String?): Result = withContext(dispatcher.default) {
         // the swagger docs say that the URI is optional, without explaining what uri need to be used
         // nevertheless the request works fine without the uri, so we are not going to use it
         conversionsGroupRepository.joinViaInviteCode(code, key, null)
@@ -31,6 +35,7 @@ class JoinConversationViaCodeUseCase internal constructor(
                     ConversationMemberAddedResponse.Unchanged -> onConversationUnChanged(code, key, domain)
                 }
             })
+    }
 
     private fun onConversationChanged(response: ConversationMemberAddedResponse.Changed): Result =
         Result.Success.Changed(response.event.qualifiedConversation.toModel())

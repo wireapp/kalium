@@ -16,6 +16,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 internal interface ClearConversationContent {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -23,11 +26,12 @@ internal interface ClearConversationContent {
 
 internal class ClearConversationContentImpl(
     private val conversationRepository: ConversationRepository,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ClearConversationContent {
 
-    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
+    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> = withContext(dispatcher.default) {
+        conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
             conversationAssetMessages.forEach { message ->
                 val messageContent: MessageContent = message.content
 

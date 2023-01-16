@@ -18,6 +18,9 @@ import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RegisterParam(
     firstName: String,
@@ -56,7 +59,8 @@ sealed class RegisterParam(
 class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
+    private val proxyCredentials: ProxyCredentials?,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * @see [RegisterParam.PrivateAccount] and [RegisterParam.Team]
@@ -66,43 +70,45 @@ class RegisterAccountUseCase internal constructor(
      */
     suspend operator fun invoke(
         param: RegisterParam
-    ): RegisterResult = when (param) {
-        is RegisterParam.PrivateAccount -> {
-            with(param) {
-                registerAccountRepository.registerPersonalAccountWithEmail(
-                    email = email,
-                    code = emailActivationCode,
-                    name = name,
-                    password = password,
-                    cookieLabel = cookieLabel
-                )
+    ): RegisterResult = withContext(dispatchers.default) {
+        when (param) {
+            is RegisterParam.PrivateAccount -> {
+                with(param) {
+                    registerAccountRepository.registerPersonalAccountWithEmail(
+                        email = email,
+                        code = emailActivationCode,
+                        name = name,
+                        password = password,
+                        cookieLabel = cookieLabel
+                    )
+                }
             }
-        }
 
-        is RegisterParam.Team -> {
-            with(param) {
-                registerAccountRepository.registerTeamWithEmail(
-                    email = email,
-                    code = emailActivationCode,
-                    name = name,
-                    password = password,
-                    teamName = teamName,
-                    teamIcon = teamIcon,
-                    cookieLabel = cookieLabel
-                )
+            is RegisterParam.Team -> {
+                with(param) {
+                    registerAccountRepository.registerTeamWithEmail(
+                        email = email,
+                        code = emailActivationCode,
+                        name = name,
+                        password = password,
+                        teamName = teamName,
+                        teamIcon = teamIcon,
+                        cookieLabel = cookieLabel
+                    )
+                }
             }
-        }
-    }.map { (ssoId, authTokens) ->
-        RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
-    }.fold({
-        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-            handleSpecialErrors(it.kaliumException)
-        } else {
-            RegisterResult.Failure.Generic(it)
-        }
-    }, {
-        it
-    })
+        }.map { (ssoId, authTokens) ->
+            RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
+        }.fold({
+            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                handleSpecialErrors(it.kaliumException)
+            } else {
+                RegisterResult.Failure.Generic(it)
+            }
+        }, {
+            it
+        })
+    }
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
         when {
