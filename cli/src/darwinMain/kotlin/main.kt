@@ -1,6 +1,5 @@
-package com.wire.kalium.cli
-
 import com.github.ajalt.clikt.core.subcommands
+import com.wire.kalium.cli.CLIApplication
 import com.wire.kalium.cli.commands.AddMemberToGroupCommand
 import com.wire.kalium.cli.commands.CreateGroupCommand
 import com.wire.kalium.cli.commands.DeleteClientCommand
