@@ -204,6 +204,8 @@ sealed class MessageContent {
     object ClientAction : Signaling()
 
     object CryptoSessionReset : System()
+
+    object HistoryLost: System()
 }
 
 sealed class MessagePreviewContent {

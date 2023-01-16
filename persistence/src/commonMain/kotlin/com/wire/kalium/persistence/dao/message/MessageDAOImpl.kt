@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERS
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.HISTORY_LOST
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
@@ -89,6 +90,19 @@ class MessageDAOImpl(
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
+    }
+
+    override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
+        queries.insertOrIgnoreBullkSystemMessage(
+            id = message.id,
+            date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = null,
+            visibility = message.visibility,
+            status = message.status,
+            content_type = contentTypeOf(message.content),
+            expects_read_confirmation = false
+        )
     }
 
     /**
@@ -229,6 +243,10 @@ class MessageDAOImpl(
             }
 
             is MessageEntityContent.CryptoSessionReset -> {
+                // NOTHING TO DO
+            }
+
+            is MessageEntityContent.HistoryLost -> {
                 // NOTHING TO DO
             }
         }
@@ -469,6 +487,7 @@ class MessageDAOImpl(
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
         is MessageEntityContent.NewConversationReceiptMode -> NEW_CONVERSATION_RECEIPT_MODE
         is MessageEntityContent.ConversationReceiptModeChanged -> CONVERSATION_RECEIPT_MODE_CHANGED
+        is MessageEntityContent.HistoryLost -> HISTORY_LOST
     }
 
     override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {

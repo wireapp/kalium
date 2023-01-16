@@ -418,6 +418,10 @@ insertOrIgnoreMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertOrIgnoreBullkSystemMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+SELECT ?, ?, conversation_id, ?, ?, ?, ?, ?, ? FROM Conversation;
+
 insertMessageMention:
 INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)
 VALUES (?, ?, ?, ?, ?);
