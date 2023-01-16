@@ -205,7 +205,7 @@ sealed class MessageContent {
 
     object CryptoSessionReset : System()
 
-    object HistoryLost: System()
+    object HistoryLost : System()
 }
 
 sealed class MessagePreviewContent {

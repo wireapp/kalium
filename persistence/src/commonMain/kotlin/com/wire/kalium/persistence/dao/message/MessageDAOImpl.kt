@@ -473,6 +473,7 @@ class MessageDAOImpl(
         queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
     }
 
+    @Suppress("ComplexMethod")
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
