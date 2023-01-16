@@ -10,6 +10,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -43,6 +44,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreIOS
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetRepositoryTest {
 

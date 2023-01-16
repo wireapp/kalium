@@ -7,6 +7,7 @@ fun KotlinMultiplatformExtension.commonDarwinMultiplatformConfig() {
     iosArm64()
     iosSimulatorArm64()
     macosX64()
+    macosArm64()
 
     val commonMain = sourceSets.getByName("commonMain")
     val commonTest = sourceSets.getByName("commonTest")
@@ -38,6 +39,12 @@ fun KotlinMultiplatformExtension.commonDarwinMultiplatformConfig() {
         dependsOn(darwinMain)
     }
     val macosX64Test = sourceSets.getByName("macosX64Test") {
+        dependsOn(darwinTest)
+    }
+    val macosArm64Main = sourceSets.getByName("macosArm64Main") {
+        dependsOn(darwinMain)
+    }
+    val macosArm64Test = sourceSets.getByName("macosArm64Test") {
         dependsOn(darwinTest)
     }
 }
