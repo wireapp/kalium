@@ -1,8 +1,9 @@
-package com.wire.kalium.persistence.dao
+package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
+import com.wire.kalium.persistence.dao.ConversationEntity
 
-class ConversationAccessRoleListAdapter : ColumnAdapter<List<ConversationEntity.AccessRole>, String> {
+internal class ConversationAccessRoleListAdapter : ColumnAdapter<List<ConversationEntity.AccessRole>, String> {
     override fun decode(databaseValue: String): List<ConversationEntity.AccessRole> =
         if (databaseValue.isEmpty()) {
             listOf()
@@ -17,7 +18,7 @@ class ConversationAccessRoleListAdapter : ColumnAdapter<List<ConversationEntity.
     }
 }
 
-class ConversationAccessListAdapter : ColumnAdapter<List<ConversationEntity.Access>, String> {
+internal class ConversationAccessListAdapter : ColumnAdapter<List<ConversationEntity.Access>, String> {
     override fun decode(databaseValue: String): List<ConversationEntity.Access> =
         if (databaseValue.isEmpty()) {
             listOf()

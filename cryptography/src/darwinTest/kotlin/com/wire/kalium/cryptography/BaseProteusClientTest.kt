@@ -6,15 +6,15 @@ import platform.Foundation.NSURL
 actual open class BaseProteusClientTest actual constructor() {
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
-        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/proteus/${userId.value}", isDirectory = true)
-        return ProteusStoreRef(rootDir.absoluteString!!)
+        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
+        return ProteusStoreRef(rootDir.path!!)
     }
 
     actual fun createProteusClient(
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value)
+        return ProteusClientImpl(proteusStore.value, ProteusDBSecret("secret"))
     }
 
 }

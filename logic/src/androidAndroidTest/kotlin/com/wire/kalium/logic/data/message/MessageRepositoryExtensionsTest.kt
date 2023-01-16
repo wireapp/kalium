@@ -18,9 +18,12 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageRepositoryExtensionsTest {
 
     private val fakePagingSource = object : PagingSource<Int, MessageEntity>() {
@@ -35,7 +38,7 @@ class MessageRepositoryExtensionsTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
 
-        val kaliumPager = KaliumPager(pager, fakePagingSource)
+        val kaliumPager = KaliumPager(pager, fakePagingSource, StandardTestDispatcher())
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()

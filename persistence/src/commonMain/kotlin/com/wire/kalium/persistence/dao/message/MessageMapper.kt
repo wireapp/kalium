@@ -105,6 +105,7 @@ object MessageMapper {
         MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
         MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
         MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -330,7 +331,8 @@ object MessageMapper {
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
-        newConversationReceiptMode: Boolean?
+        newConversationReceiptMode: Boolean?,
+        conversationReceiptModeChanged: Boolean?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -406,6 +408,9 @@ object MessageMapper {
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(
                 receiptMode = newConversationReceiptMode ?: false
+            )
+            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
+                receiptMode = conversationReceiptModeChanged ?: false
             )
         }
 

@@ -1,8 +1,6 @@
 package com.wire.kalium.persistence.daokaliumdb
 
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AccountsQueries
 import com.wire.kalium.persistence.CurrentAccountQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -12,6 +10,9 @@ import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 data class AccountInfoEntity(
     val userIDEntity: UserIDEntity,
@@ -108,18 +109,20 @@ interface AccountsDAO {
 internal class AccountsDAOImpl internal constructor(
     private val queries: AccountsQueries,
     private val currentAccountQueries: CurrentAccountQueries,
+    private val queriesContext: CoroutineContext,
     private val mapper: AccountMapper = AccountMapper
 ) : AccountsDAO {
-    override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? =
+    override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = withContext(queriesContext) {
         queries.ssoId(userIDEntity).executeAsOneOrNull()
             ?.let { mapper.toSsoIdEntity(scim_external_id = it.scim_external_id, subject = it.subject, tenant = it.tenant) }
+    }
 
     override suspend fun insertOrReplace(
         userIDEntity: UserIDEntity,
         ssoIdEntity: SsoIdEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean
-    ) {
+    ) = withContext(queriesContext) {
         queries.insertOrReplace(
             scimExternalId = ssoIdEntity?.scimExternalId,
             subject = ssoIdEntity?.subject,
@@ -134,29 +137,35 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
         queries.accountInfo(userIDEntity, mapper = mapper::fromAccount)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToOneOrNull()
 
-    override suspend fun allAccountList(): List<AccountInfoEntity> =
+    override suspend fun allAccountList(): List<AccountInfoEntity> = withContext(queriesContext) {
         queries.allAccounts(mapper = mapper::fromAccount).executeAsList()
+    }
 
-    override suspend fun allValidAccountList(): List<AccountInfoEntity> =
+    override suspend fun allValidAccountList(): List<AccountInfoEntity> = withContext(queriesContext) {
         queries.allValidAccounts(mapper = mapper::fromAccount).executeAsList()
+    }
 
     override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allValidAccounts(mapper = mapper::fromAccount)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
     override suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allAccounts(mapper = mapper::fromAccount)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
 
     override fun isFederated(userIDEntity: UserIDEntity): Boolean? =
         queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
 
-    override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
+    override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
+    }
 
     override fun currentAccount(): AccountInfoEntity? =
         currentAccountQueries.currentAccountInfo(mapper = mapper::fromAccount).executeAsOneOrNull()
@@ -164,13 +173,14 @@ internal class AccountsDAOImpl internal constructor(
     override fun observerCurrentAccount(): Flow<AccountInfoEntity?> =
         currentAccountQueries.currentAccountInfo(mapper = mapper::fromAccount)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToOneOrNull()
 
-    override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
+    override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) = withContext(queriesContext) {
         currentAccountQueries.update(userIDEntity)
     }
 
-    override suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?) {
+    override suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?) = withContext(queriesContext) {
         queries.updateSsoId(
             scimExternalId = ssoIdEntity?.scimExternalId,
             subject = ssoIdEntity?.subject,
@@ -179,26 +189,32 @@ internal class AccountsDAOImpl internal constructor(
         )
     }
 
-    override suspend fun deleteAccount(userIDEntity: UserIDEntity) {
-        queries.delete(userIDEntity)
-    }
+    override suspend fun deleteAccount(userIDEntity: UserIDEntity) =
+        withContext(queriesContext) {
+            queries.delete(userIDEntity)
+        }
 
-    override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
-        queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
-    }
+    override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) =
+        withContext(queriesContext) {
+            queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
+        }
 
-    override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) {
-        queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
-    }
+    override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) =
+        withContext(queriesContext) {
+            queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
+        }
 
-    override suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean =
+    override suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
         queries.persistentWebSocketStatus(userIDEntity).executeAsOne()
+    }
 
     override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
-        queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus).asFlow().mapToList()
+        queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus).asFlow().flowOn(queriesContext)
+            .mapToList()
 
-    override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
+    override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? = withContext(queriesContext) {
         queries.accountInfo(userIDEntity, mapper = mapper::fromAccount).executeAsOneOrNull()
+    }
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).executeAsOneOrNull()
