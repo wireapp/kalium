@@ -72,7 +72,7 @@ class StoreServerConfigUseCaseTest {
             result: Either<StorageFailure, ServerConfig>
         ) = apply {
             given(configRepository)
-                .function(
+                .suspendFunction(
                     configRepository::storeConfig,
                     fun2<ServerConfig.Links, ServerConfig.VersionInfo>())
                 .whenInvokedWith(eq(links), eq(versionInfo))

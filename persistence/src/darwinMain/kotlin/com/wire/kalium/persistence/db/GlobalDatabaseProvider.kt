@@ -8,17 +8,22 @@ import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
-import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
+import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.util.KaliumDispatcherImpl
 import platform.Foundation.NSFileManager
+import kotlin.coroutines.CoroutineContext
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
-actual class GlobalDatabaseProvider(private val storePath: String) {
+actual class GlobalDatabaseProvider(
+    private val storePath: String,
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+) {
     private val dbName = FileNameUtil.globalDBName()
     private val database: GlobalDatabase
 
@@ -56,10 +61,10 @@ actual class GlobalDatabaseProvider(private val storePath: String) {
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO
-        get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
+        get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries, queriesContext)
 
     actual val accountsDAO: AccountsDAO
-        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
+        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
 
     actual fun nuke(): Boolean {
         return NSFileManager.defaultManager.removeItemAtPath(storePath, null)

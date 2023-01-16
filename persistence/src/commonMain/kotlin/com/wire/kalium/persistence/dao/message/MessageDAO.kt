@@ -37,8 +37,7 @@ interface MessageDAO {
      * @see insertOrIgnoreMessage
      */
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
-    fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
-
+    suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     /**
      * Returns the most recent message sent from other users, _i.e._ not self user
      */
