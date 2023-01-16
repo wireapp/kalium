@@ -75,6 +75,10 @@ interface MessageRepository {
         updateConversationModifiedDate: Boolean = false,
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
@@ -228,6 +232,18 @@ class MessageDataSource(
             updateConversationReadDate,
             updateConversationModifiedDate
         )
+    }
+
+    override suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit> {
+        messageMapper.fromMessageToEntity(message).let {
+            return if (it is MessageEntity.System) {
+                wrapStorageRequest {
+                    messageDAO.persistSystemMessageToAllConversations(it)
+                }
+            } else Either.Left(CoreFailure.OnlySystemMessageAllowed)
+        }
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =

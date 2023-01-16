@@ -138,7 +138,7 @@ sealed class MessageEntity(
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET
+        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET, HISTORY_LOST
     }
 
     enum class MemberChangeType {
@@ -257,6 +257,7 @@ sealed class MessageEntityContent {
     object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
+    object HistoryLost : System()
 }
 
 /**
