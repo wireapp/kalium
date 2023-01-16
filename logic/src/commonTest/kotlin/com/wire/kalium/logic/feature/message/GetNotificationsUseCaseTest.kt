@@ -32,10 +32,14 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,16 +48,17 @@ import kotlin.test.assertEquals
 class GetNotificationsUseCaseTest {
 
     @Test
-    fun givenSyncStateIsPending_thenOnlyEphemeralNotificationsObserved() = runTest {
+    fun givenSyncStateChangedToLive_thenAllNotificationsObserved() = runTest {
+        val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
-            .withIncrementalSyncState(IncrementalSyncStatus.FetchingPendingEvents)
+            .withIncrementalSyncState(syncStatusFlow)
             .withConnectionList(listOf())
             .withConversationsForNotifications(listOf())
             .arrange()
 
         getNotifications().test {
-            awaitComplete()
+            syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
 
             verify(arrange.messageRepository)
                 .suspendFunction(arrange.messageRepository::getNotificationMessage)
@@ -67,6 +72,23 @@ class GetNotificationsUseCaseTest {
             verify(arrange.ephemeralNotifications)
                 .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
                 .wasInvoked(exactly = once)
+
+            syncStatusFlow.emit(IncrementalSyncStatus.Live)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(atLeast = once)
+
+            awaitItem()
         }
     }
 
@@ -208,11 +230,11 @@ class GetNotificationsUseCaseTest {
             return this
         }
 
-        fun withIncrementalSyncState(vararg states: IncrementalSyncStatus): Arrangement {
+        fun withIncrementalSyncState(statusFlow: Flow<IncrementalSyncStatus>): Arrangement {
             given(incrementalSyncRepository)
                 .getter(incrementalSyncRepository::incrementalSyncState)
                 .whenInvoked()
-                .then { states.asFlow() }
+                .then { statusFlow }
 
             return this
         }
