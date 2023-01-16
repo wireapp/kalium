@@ -28,7 +28,7 @@ class AddSystemMessageToAllConversationsUseCase internal constructor(
         val message = Message.System(
             id = generatedMessageUuid,
             content = MessageContent.HistoryLost,
-            //the conversation id will be ignored in the repo level!
+            // the conversation id will be ignored in the repo level!
             conversationId = ConversationId("", ""),
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
