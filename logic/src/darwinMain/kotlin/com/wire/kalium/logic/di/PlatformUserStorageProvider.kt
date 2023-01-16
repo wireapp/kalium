@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.di
 
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.userDatabaseBuilder

@@ -38,7 +38,10 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope.sessionRepository, userId,
             tokenStorage = globalPreferences.authTokenStorage
         )
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager, UserIdDTO(userId.value, userId.domain))
+        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
+            sessionManager,
+            UserIdDTO(userId.value, userId.domain)
+        )
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.serverConfig().metaData.commonApiVersion.version)
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
 

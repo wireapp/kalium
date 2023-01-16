@@ -10,7 +10,6 @@ import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
-import platform.Foundation.URLByAppendingPathComponent
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
     return inMemoryDatabase(userId, dispatcher)

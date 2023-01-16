@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.kaliumLogger
 
-class CallManagerImpl: CallManager {
+class CallManagerImpl : CallManager {
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {
         kaliumLogger.w("Ignoring call message since calling is not supported")
     }
