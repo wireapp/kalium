@@ -14,6 +14,7 @@ import platform.darwin.sysctlbyname
 
 actual class ClientConfigImpl : ClientConfig {
     override fun deviceType(): DeviceType {
+        // TODO: Figure out the actual darwin device type
         return DeviceType.Desktop
     }
 
