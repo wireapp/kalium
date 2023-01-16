@@ -57,6 +57,7 @@ class GetNotificationsUseCaseTest {
 
             verify(arrange.messageRepository)
                 .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
                 .wasNotInvoked()
 
             verify(arrange.connectionRepository)

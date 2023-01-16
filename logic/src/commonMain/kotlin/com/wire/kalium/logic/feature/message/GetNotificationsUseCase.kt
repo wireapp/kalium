@@ -88,8 +88,12 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             .scan(false to false) { prevPair, isLive -> prevPair.second to isLive }
             .drop(1) // initial value of scan
             .debounce { (prevValue, newValue) ->
-                if (prevValue && !newValue) 100L
+                if (prevValue && !newValue) AFTER_LIVE_DELAY_MS
                 else 0
             }
             .map { it.second }
+
+    companion object {
+        private const val AFTER_LIVE_DELAY_MS = 100L
+    }
 }
