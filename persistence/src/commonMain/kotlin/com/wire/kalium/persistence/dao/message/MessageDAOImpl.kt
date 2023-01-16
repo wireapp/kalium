@@ -93,7 +93,7 @@ class MessageDAOImpl(
     }
 
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
-        queries.insertOrIgnoreBullkSystemMessage(
+        queries.insertOrIgnoreBulkSystemMessage(
             id = message.id,
             date = message.date,
             sender_user_id = message.senderUserId,

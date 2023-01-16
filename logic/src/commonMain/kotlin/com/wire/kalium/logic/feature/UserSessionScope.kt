@@ -130,6 +130,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
+import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
@@ -468,7 +469,7 @@ class UserSessionScope internal constructor(
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
-        get() = AddSystemMessageToAllConversationsUseCase(messageRepository, slowSyncRepository, userId)
+        get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, slowSyncRepository, userId)
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(

@@ -12,15 +12,19 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 
+interface AddSystemMessageToAllConversationsUseCase {
+    suspend operator fun invoke()
+}
+
 /**
  * persist a local system message to all conversations
  */
-class AddSystemMessageToAllConversationsUseCase internal constructor(
+class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId
-) {
-    suspend operator fun invoke() {
+) : AddSystemMessageToAllConversationsUseCase {
+    override suspend operator fun invoke() {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }

@@ -217,9 +217,13 @@ class MessageDataSource(
 
     override suspend fun persistSystemMessageToAllConversations(
         message: Message.System
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> {
         messageMapper.fromMessageToEntity(message).let {
-            if (it is MessageEntity.System) messageDAO.persistSystemMessageToAllConversations(it)
+            return if (it is MessageEntity.System) {
+                wrapStorageRequest {
+                    messageDAO.persistSystemMessageToAllConversations(it)
+                }
+            } else Either.Left(CoreFailure.OnlySystemMessageAllowed)
         }
     }
 
