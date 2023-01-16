@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
@@ -44,7 +45,8 @@ internal object TableMapper {
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
         qualified_toAdapter = QualifiedIDAdapter,
-        statusAdapter = EnumColumnAdapter()
+        statusAdapter = EnumColumnAdapter(),
+        last_update_instantAdapter = InstantTypeAdapter,
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
@@ -55,7 +57,11 @@ internal object TableMapper {
         access_listAdapter = ConversationAccessListAdapter(),
         access_role_listAdapter = ConversationAccessRoleListAdapter(),
         mls_cipher_suiteAdapter = EnumColumnAdapter(),
-        receipt_modeAdapter = EnumColumnAdapter()
+        receipt_modeAdapter = EnumColumnAdapter(),
+        last_read_instantAdapter = InstantTypeAdapter,
+        last_modified_instantAdapter = InstantTypeAdapter,
+        last_notified_instantAdapter = InstantTypeAdapter,
+        mls_last_keying_material_update_instantAdapter = InstantTypeAdapter,
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -68,6 +74,8 @@ internal object TableMapper {
         statusAdapter = EnumColumnAdapter(),
         content_typeAdapter = ContentTypeAdapter(),
         visibilityAdapter = EnumColumnAdapter(),
+        creation_instantAdapter = InstantTypeAdapter,
+        last_edit_instantAdapter = InstantTypeAdapter,
     )
     val messageAssetContentAdapter = MessageAssetContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

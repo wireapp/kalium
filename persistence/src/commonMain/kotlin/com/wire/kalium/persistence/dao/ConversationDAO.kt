@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -16,10 +17,10 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val removedBy: UserIDEntity? = null,
     val creatorId: String,
-    val lastNotificationDate: String?,
-    val lastModifiedDate: String,
+    val lastNotificationInstant: Instant?,
+    val lastModifiedInstant: Instant,
     // Date that indicates when the user has seen the conversation,
-    val lastReadDate: String,
+    val lastReadInstant: Instant,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val receiptMode: ReceiptMode
@@ -75,8 +76,8 @@ data class ConversationViewEntity(
     val previewAssetId: QualifiedIDEntity?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val teamId: String?,
-    val lastModifiedDate: String?,
-    val lastReadDate: String,
+    val lastModifiedInstant: Instant?,
+    val lastReadInstant: Instant,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,
     val botService: BotEntity?,
@@ -84,7 +85,7 @@ data class ConversationViewEntity(
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,
-    val lastNotificationDate: String?,
+    val lastNotificationInstant: Instant?,
     val selfRole: Member.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
@@ -93,7 +94,7 @@ data class ConversationViewEntity(
     val mlsCipherSuite: ConversationEntity.CipherSuite,
     val mlsEpoch: Long,
     val mlsGroupId: String?,
-    val mlsLastKeyingMaterialUpdate: Long,
+    val mlsLastKeyingMaterialUpdateInstant: Instant,
     val mlsGroupState: ConversationEntity.GroupState,
     val mlsProposalTimer: String?,
     val mutedTime: Long,
@@ -102,6 +103,34 @@ data class ConversationViewEntity(
     val receiptMode: ConversationEntity.ReceiptMode
 ) {
     val isMember: Boolean get() = selfRole != null
+
+    @Deprecated(
+        message = "All dates have been normalised to use Instant",
+        replaceWith = ReplaceWith("lastReadInstant.toIsoDateTimeString()")
+    )
+    val lastReadDate: String
+        get() = lastReadInstant.toIsoDateTimeString()
+
+    @Deprecated(
+        message = "All dates have been normalised to use Instant",
+        replaceWith = ReplaceWith("lastModifiedInstant?.toIsoDateTimeString()")
+    )
+    val lastModifiedDate: String?
+        get() = lastModifiedInstant?.toIsoDateTimeString()
+
+    @Deprecated(
+        message = "All dates have been normalised to use Instant",
+        replaceWith = ReplaceWith("lastNotificationInstant?.toIsoDateTimeString()")
+    )
+    val lastNotificationDate: String?
+        get() = lastNotificationInstant?.toIsoDateTimeString()
+
+    @Deprecated(
+        message = "All dates have been normalised to use Instant",
+        replaceWith = ReplaceWith("mlsLastKeyingMaterialUpdateInstant.epochSeconds")
+    )
+    val mlsLastKeyingMaterialUpdate: Long
+        get() = mlsLastKeyingMaterialUpdateInstant.epochSeconds
 }
 
 // TODO: rename to MemberEntity

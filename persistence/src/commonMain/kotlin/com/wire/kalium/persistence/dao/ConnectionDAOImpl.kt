@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
@@ -16,7 +18,7 @@ private class ConnectionMapper {
     fun toModel(state: SQLDelightConnection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversation_id,
         from = state.from_id,
-        lastUpdate = state.last_update,
+        lastUpdateInstant = state.last_update_instant,
         qualifiedConversationId = state.qualified_conversation,
         qualifiedToId = state.qualified_to,
         status = state.status,
@@ -30,7 +32,7 @@ private class ConnectionMapper {
         conversation_id: String,
         qualified_conversation: QualifiedIDEntity,
         to_id: String,
-        last_update: String,
+        last_update_instant: Instant,
         qualified_to: QualifiedIDEntity,
         status: ConnectionEntity.State,
         should_notify: Boolean?,
@@ -51,7 +53,7 @@ private class ConnectionMapper {
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
-        lastUpdate = last_update,
+        lastUpdateInstant = last_update_instant,
         qualifiedConversationId = qualified_conversation,
         qualifiedToId = qualified_to,
         status = status,
@@ -105,7 +107,7 @@ class ConnectionDAOImpl(
             conversation_id = connectionEntity.conversationId,
             qualified_conversation = connectionEntity.qualifiedConversationId,
             to_id = connectionEntity.toId,
-            last_update = connectionEntity.lastUpdate,
+            last_update_instant = connectionEntity.lastUpdateInstant,
             qualified_to = connectionEntity.qualifiedToId,
             status = connectionEntity.status
         )
@@ -119,7 +121,7 @@ class ConnectionDAOImpl(
                     conversation_id = connectionEntity.conversationId,
                     qualified_conversation = connectionEntity.qualifiedConversationId,
                     to_id = connectionEntity.toId,
-                    last_update = connectionEntity.lastUpdate,
+                    last_update_instant = connectionEntity.lastUpdateInstant,
                     qualified_to = connectionEntity.qualifiedToId,
                     status = connectionEntity.status
                 )
@@ -128,7 +130,7 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
-        connectionsQueries.updateConnectionLastUpdated(lastUpdate, id)
+        connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
     }
 
     override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {

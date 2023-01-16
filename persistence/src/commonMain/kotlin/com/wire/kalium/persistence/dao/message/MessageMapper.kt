@@ -10,6 +10,9 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.decodeFromString
 
 @Suppress("LongParameterList")
@@ -114,7 +117,7 @@ object MessageMapper {
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        creationInstant: Instant,
         visibility: MessageEntity.Visibility,
         senderUserId: UserIDEntity,
         senderName: String?,
@@ -153,7 +156,7 @@ object MessageMapper {
             id = id,
             conversationId = conversationId,
             content = content,
-            date = date,
+            date = creationInstant.toIsoDateTimeString(),
             visibility = visibility,
             isSelfMessage = isSelfMessage,
             senderUserId = senderUserId
@@ -166,7 +169,7 @@ object MessageMapper {
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        creationInstant: Instant,
         visibility: MessageEntity.Visibility,
         senderUserId: UserIDEntity,
         senderName: String?,
@@ -207,7 +210,7 @@ object MessageMapper {
             conversationId = conversationId,
             conversationName = conversationName,
             conversationType = conversationType,
-            date = date
+            date = creationInstant.toIsoDateTimeString()
         )
 
     }
@@ -232,7 +235,7 @@ object MessageMapper {
             content = content,
             id = id,
             conversationId = conversationId,
-            date = date,
+            creationInstant = date.toInstant(),
             senderUserId = senderUserId,
             senderClientId = senderClientId!!,
             status = status,
@@ -251,7 +254,7 @@ object MessageMapper {
             content = content,
             id = id,
             conversationId = conversationId,
-            date = date,
+            creationInstant = date.toInstant(),
             senderUserId = senderUserId,
             status = status,
             visibility = visibility,
@@ -269,11 +272,11 @@ object MessageMapper {
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        creationInstant: Instant,
         senderUserId: QualifiedIDEntity,
         senderClientId: String?,
         status: MessageEntity.Status,
-        lastEditTimestamp: String?,
+        lastEditInstant: Instant?,
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean?,
         senderName: String?,
@@ -325,8 +328,8 @@ object MessageMapper {
         isQuotingSelfUser: Boolean?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
-        quotedMessageDateTime: String?,
-        quotedMessageEditTimestamp: String?,
+        quotedMessageCreationInstant: Instant?,
+        quotedMessageEditInstant: Instant?,
         quotedMessageVisibility: MessageEntity.Visibility?,
         quotedMessageContentType: MessageEntity.ContentType?,
         quotedTextBody: String?,
@@ -350,8 +353,8 @@ object MessageMapper {
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
                         senderName = quotedSenderName,
-                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
-                        editTimestamp = quotedMessageEditTimestamp,
+                        dateTime = quotedMessageCreationInstant.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                        editTimestamp = quotedMessageEditInstant?.toIsoDateTimeString(),
                         visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
                         contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
                         textBody = quotedTextBody,
@@ -419,11 +422,11 @@ object MessageMapper {
         return createMessageEntity(
             id,
             conversationId,
-            date,
+            creationInstant.toIsoDateTimeString(),
             senderUserId,
             senderClientId,
             status,
-            lastEditTimestamp,
+            lastEditInstant?.toIsoDateTimeString(),
             visibility,
             content,
             allReactionsJson,

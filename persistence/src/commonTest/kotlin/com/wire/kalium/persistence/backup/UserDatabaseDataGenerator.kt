@@ -19,6 +19,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Instant
 
 class UserDatabaseDataGenerator(
     private val userDatabaseBuilder: UserDatabaseBuilder,
@@ -26,6 +27,7 @@ class UserDatabaseDataGenerator(
 ) {
     companion object {
         const val DEFAULT_DATE_STRING = "2000-01-01T12:00:00.000Z"
+        val DEFAULT_INSTANT = Instant.parse(DEFAULT_DATE_STRING)
         val DEFAULT_RECEIPT_MODE = ConversationEntity.ReceiptMode.DISABLED
     }
 
@@ -242,9 +244,9 @@ class UserDatabaseDataGenerator(
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${conversationPrefix}CreatorId$index",
-                    lastNotificationDate = DEFAULT_DATE_STRING,
-                    lastModifiedDate = DEFAULT_DATE_STRING,
-                    lastReadDate = DEFAULT_DATE_STRING,
+                    lastNotificationInstant = DEFAULT_INSTANT,
+                    lastModifiedInstant = DEFAULT_INSTANT,
+                    lastReadInstant = DEFAULT_INSTANT,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE
@@ -316,9 +318,9 @@ class UserDatabaseDataGenerator(
                 mutedTime = 0,
                 removedBy = null,
                 creatorId = "${groupConversationPrefix}CreatorId$index",
-                lastNotificationDate = DEFAULT_DATE_STRING,
-                lastModifiedDate = DEFAULT_DATE_STRING,
-                lastReadDate = DEFAULT_DATE_STRING,
+                lastNotificationInstant = DEFAULT_INSTANT,
+                lastModifiedInstant = DEFAULT_INSTANT,
+                lastReadInstant = DEFAULT_INSTANT,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                 receiptMode = DEFAULT_RECEIPT_MODE
@@ -379,9 +381,9 @@ class UserDatabaseDataGenerator(
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${groupConversationPrefix}CreatorId$index",
-                    lastNotificationDate = DEFAULT_DATE_STRING,
-                    lastModifiedDate = DEFAULT_DATE_STRING,
-                    lastReadDate = DEFAULT_DATE_STRING,
+                    lastNotificationInstant = DEFAULT_INSTANT,
+                    lastModifiedInstant = DEFAULT_INSTANT,
+                    lastReadInstant = DEFAULT_INSTANT,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE
@@ -420,9 +422,9 @@ class UserDatabaseDataGenerator(
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${groupConversationPrefix}CreatorId$index",
-                    lastNotificationDate = DEFAULT_DATE_STRING,
-                    lastModifiedDate = DEFAULT_DATE_STRING,
-                    lastReadDate = DEFAULT_DATE_STRING,
+                    lastNotificationInstant = DEFAULT_INSTANT,
+                    lastModifiedInstant = DEFAULT_INSTANT,
+                    lastReadInstant = DEFAULT_INSTANT,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE
@@ -530,9 +532,9 @@ class UserDatabaseDataGenerator(
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${conversationPrefix}CreatorId$index",
-                    lastNotificationDate = DEFAULT_DATE_STRING,
-                    lastModifiedDate = DEFAULT_DATE_STRING,
-                    lastReadDate = DEFAULT_DATE_STRING,
+                    lastNotificationInstant = DEFAULT_INSTANT,
+                    lastModifiedInstant = DEFAULT_INSTANT,
+                    lastReadInstant = DEFAULT_INSTANT,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE

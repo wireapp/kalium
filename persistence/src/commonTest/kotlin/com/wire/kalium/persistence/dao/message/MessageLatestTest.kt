@@ -55,7 +55,7 @@ class MessageLatestTest : BaseMessageTest() {
         id = Random.nextBytes(10).decodeToString(),
         conversationId = conversationId,
         senderUserId = senderUserId,
-        date = instant.toString()
+        creationInstant = instant
     ).also { messageDAO.insertOrIgnoreMessage(it) }
 
 }

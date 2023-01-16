@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.datetime.Instant
 
 @Suppress("LongParameterList")
 fun newRegularMessageEntity(
@@ -14,7 +15,7 @@ fun newRegularMessageEntity(
     senderClientId: String = "senderClientId",
     status: MessageEntity.Status = MessageEntity.Status.PENDING,
     editStatus: MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
-    date: String = "2022-03-30T15:36:00.000Z",
+    creationInstant: Instant = Instant.parse("2022-03-30T15:36:00.000Z"),
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
     senderName: String = "senderName",
     expectsReadConfirmation: Boolean = false,
@@ -22,7 +23,7 @@ fun newRegularMessageEntity(
     id = id,
     content = content,
     conversationId = conversationId,
-    date = date,
+    creationInstant = creationInstant,
     senderUserId = senderUserId,
     senderClientId = senderClientId,
     status = status,
@@ -42,13 +43,13 @@ fun newSystemMessageEntity(
     conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"),
     senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"),
     status: MessageEntity.Status = MessageEntity.Status.PENDING,
-    date: String = "2022-03-30T15:36:00.000Z",
+    creationInstant: Instant = Instant.parse("2022-03-30T15:36:00.000Z"),
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE
 ) = MessageEntity.System(
     id = id,
     content = content,
     conversationId = conversationId,
-    date = date,
+    creationInstant = creationInstant,
     senderUserId = senderUserId,
     status = status,
     visibility = visibility,

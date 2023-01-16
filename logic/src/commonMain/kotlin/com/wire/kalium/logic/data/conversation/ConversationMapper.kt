@@ -14,7 +14,6 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -30,7 +29,9 @@ import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
@@ -82,9 +83,9 @@ internal class ConversationMapperImpl(
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
         creatorId = apiModel.creator,
-        lastReadDate = EPOCH_FIRST_DAY,
-        lastNotificationDate = null,
-        lastModifiedDate = apiModel.lastEventTime,
+        lastReadInstant = Instant.UNIX_FIRST_DATE,
+        lastNotificationInstant = null,
+        lastModifiedInstant = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
@@ -96,7 +97,7 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) EPOCH_FIRST_DAY else lastReadDate
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE else lastReadDate
 
         Conversation(
             id = id.toModel(),
@@ -295,9 +296,9 @@ internal class ConversationMapperImpl(
             mutedTime = 0,
             removedBy = null,
             creatorId = creatorId.orEmpty(),
-            lastNotificationDate = "",
-            lastModifiedDate = "",
-            lastReadDate = "",
+            lastNotificationInstant = null,
+            lastModifiedInstant = Instant.UNIX_FIRST_DATE,
+            lastReadInstant = Instant.UNIX_FIRST_DATE,
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)

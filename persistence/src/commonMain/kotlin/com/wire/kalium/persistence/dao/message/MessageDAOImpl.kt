@@ -27,6 +27,8 @@ import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
@@ -58,18 +60,19 @@ class MessageDAOImpl(
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
         queries.transaction {
+            val messageCreationInstant = message.date.toInstant()
             if (updateConversationReadDate) {
-                conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+                conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
             }
 
             insertInDB(message)
 
             if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
-                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+                conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
             }
 
             if (updateConversationModifiedDate) {
-                conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
+                conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
             }
         }
     }
@@ -95,7 +98,7 @@ class MessageDAOImpl(
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
         queries.insertOrIgnoreBulkSystemMessage(
             id = message.id,
-            date = message.date,
+            creation_instant = message.creationInstant,
             sender_user_id = message.senderUserId,
             sender_client_id = null,
             visibility = message.visibility,
@@ -126,7 +129,7 @@ class MessageDAOImpl(
         queries.insertOrIgnoreMessage(
             id = message.id,
             conversation_id = message.conversationId,
-            date = message.date,
+            creation_instant = message.date.toInstant(),
             sender_user_id = message.senderUserId,
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
@@ -315,7 +318,7 @@ class MessageDAOImpl(
             queries.selectByConversationIdAndSenderIdAndTimeAndType(
                 message.conversationId,
                 message.senderUserId,
-                message.date,
+                message.date.toInstant(),
                 contentTypeOf(messageContent)
             )
                 .executeAsList()
@@ -360,12 +363,12 @@ class MessageDAOImpl(
 
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
         withContext(coroutineContext) {
-            queries.updateMessageDate(date, id, conversationId)
+            queries.updateMessageDate(date.toInstant(), id, conversationId)
         }
 
     override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
         withContext(coroutineContext) {
-            queries.updateMessagesAddMillisToDate(millis, conversationId, status)
+            queries.updateMessagesAddMillisToDate(Instant.fromEpochMilliseconds(millis), conversationId, status)
         }
 
     // TODO: mark internal since it is used for tests only
@@ -408,7 +411,7 @@ class MessageDAOImpl(
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(
-            conversationId, visibility, date,
+            conversationId, visibility, date.toInstant(),
             mapper::toEntityMessageFromView
         )
             .asFlow()
@@ -432,7 +435,7 @@ class MessageDAOImpl(
         newMessageId: String
     ): Unit = withContext(coroutineContext) {
         queries.transaction {
-            queries.markMessageAsEdited(editTimeStamp, currentMessageId, conversationId)
+            queries.markMessageAsEdited(editTimeStamp.toInstant(), currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
@@ -517,9 +520,12 @@ class MessageDAOImpl(
         date: String,
         visibility: List<MessageEntity.Visibility>
     ): List<MessageEntity> = withContext(coroutineContext) {
-        queries
-            .selectPendingMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
-            .executeAsList()
+        queries.selectPendingMessagesByConversationIdAndVisibilityAfterDate(
+            conversationId,
+            visibility,
+            date.toInstant(),
+            mapper::toEntityMessageFromView
+        ).executeAsList()
     }
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =

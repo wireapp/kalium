@@ -3,9 +3,11 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.turbine.test
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -21,7 +23,7 @@ class MessageTextEditTest : BaseMessageTest() {
         insertInitialData()
 
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = "Howdy"),
@@ -41,7 +43,7 @@ class MessageTextEditTest : BaseMessageTest() {
         val newMessageBody = "newBody"
 
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = newMessageBody),
@@ -64,7 +66,7 @@ class MessageTextEditTest : BaseMessageTest() {
         val newMessageBody = "newBody"
 
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = newMessageBody),
@@ -85,7 +87,7 @@ class MessageTextEditTest : BaseMessageTest() {
 
         val mentions = listOf(MessageEntity.Mention(0, 1, OTHER_USER_2.id))
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(
@@ -108,7 +110,7 @@ class MessageTextEditTest : BaseMessageTest() {
         insertInitialData()
 
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = "Howdy"),
@@ -128,7 +130,7 @@ class MessageTextEditTest : BaseMessageTest() {
         receiptDAO.insertReceipts(OTHER_USER.id, CONVERSATION_ID, instant, ReceiptTypeEntity.READ, listOf(ORIGINAL_MESSAGE_ID))
 
         messageDAO.updateTextMessageContent(
-            editTimeStamp = "newDate",
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = "Howdy"),
@@ -148,7 +150,7 @@ class MessageTextEditTest : BaseMessageTest() {
     fun givenTextWasInserted_whenUpdatingContent_thenShouldMarkAsEditedWithNewDate() = runTest {
         insertInitialData()
 
-        val editDate = "newDate"
+        val editDate = Instant.DISTANT_FUTURE.toIsoDateTimeString()
         messageDAO.updateTextMessageContent(
             editTimeStamp = editDate,
             conversationId = CONVERSATION_ID,

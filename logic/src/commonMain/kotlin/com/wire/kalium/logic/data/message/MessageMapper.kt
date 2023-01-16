@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -49,7 +50,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                creationInstant = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
@@ -67,7 +68,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                creationInstant = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 status = status,
                 visibility = visibility,

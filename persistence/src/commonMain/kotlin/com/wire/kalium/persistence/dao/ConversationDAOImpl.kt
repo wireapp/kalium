@@ -32,23 +32,23 @@ private class ConversationMapper {
                 mls_group_id,
                 mls_group_state,
                 mls_epoch,
-                mls_last_keying_material_update,
+                mls_last_keying_material_update_instant.epochSeconds,
                 mls_cipher_suite
             ),
             isCreator = isCreator,
             mutedStatus = mutedStatus,
             mutedTime = muted_time,
             creatorId = creator_id,
-            lastNotificationDate = lastNotifiedMessageDate,
-            lastModifiedDate = last_modified_date,
-            lastReadDate = lastReadDate,
+            lastNotificationInstant = lastNotifiedMessageInstant,
+            lastModifiedInstant = last_modified_instant,
+            lastReadInstant = lastReadInstant,
             accessList = access_list,
             accessRoleList = access_role_list,
             protocol = protocol,
             mlsCipherSuite = mls_cipher_suite,
             mlsEpoch = mls_epoch,
             mlsGroupId = mls_group_id,
-            mlsLastKeyingMaterialUpdate = mls_last_keying_material_update,
+            mlsLastKeyingMaterialUpdateInstant = mls_last_keying_material_update_instant,
             mlsGroupState = mls_group_state,
             mlsProposalTimer = mls_proposal_timer,
             callStatus = callStatus,
@@ -76,23 +76,23 @@ private class ConversationMapper {
                     mls_group_id,
                     mls_group_state,
                     mls_epoch,
-                    mls_last_keying_material_update,
+                    mls_last_keying_material_update_instant.epochSeconds,
                     mls_cipher_suite
                 ),
                 isCreator = isCreator,
                 mutedStatus = mutedStatus,
                 mutedTime = muted_time,
                 creatorId = creator_id,
-                lastNotificationDate = lastNotifiedMessageDate,
-                lastModifiedDate = last_modified_date,
-                lastReadDate = lastReadDate,
+                lastNotificationInstant = lastNotifiedMessageInstant,
+                lastModifiedInstant = last_modified_instant,
+                lastReadInstant = lastReadInstant,
                 accessList = access_list,
                 accessRoleList = access_role_list,
                 protocol = protocol,
                 mlsCipherSuite = mls_cipher_suite,
                 mlsEpoch = mls_epoch,
                 mlsGroupId = mls_group_id,
-                mlsLastKeyingMaterialUpdate = mls_last_keying_material_update,
+                mlsLastKeyingMaterialUpdateInstant = mls_last_keying_material_update_instant,
                 mlsGroupState = mls_group_state,
                 mlsProposalTimer = mls_proposal_timer,
                 callStatus = callStatus,
@@ -139,7 +139,7 @@ class MemberMapper {
 }
 
 internal const val MLS_DEFAULT_EPOCH = 0L
-internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI = 0L
 internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
 // TODO: Refactor. We can split this into smaller DAOs.
@@ -189,13 +189,13 @@ class ConversationDAOImpl(
                 mutedStatus,
                 mutedTime,
                 creatorId,
-                lastModifiedDate,
-                lastNotificationDate,
+                lastModifiedInstant,
+                lastNotificationInstant,
                 access,
                 accessRole,
-                lastReadDate,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
-                else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
+                lastReadInstant,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
+                else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode
@@ -218,15 +218,15 @@ class ConversationDAOImpl(
         }
 
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
+        conversationQueries.updateConversationModifiedDate(date.toInstant(), qualifiedID)
     }
 
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
+        conversationQueries.updateConversationNotificationsDate(date.toInstant(), qualifiedID)
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: String) = withContext(coroutineContext) {
-        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
+        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date.toInstant())
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {
@@ -396,7 +396,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationReadDate(date, conversationID)
+        conversationQueries.updateConversationReadDate(date.toInstant(), conversationID)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
@@ -405,14 +405,14 @@ class ConversationDAOImpl(
         }
 
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
+        conversationQueries.updateKeyingMaterialDate(timestamp, groupId)
     }
 
     override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            DateTimeUtil.currentInstant().epochSeconds.minus(threshold.inWholeSeconds)
+            DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
 
@@ -446,7 +446,7 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) =
         withContext(coroutineContext) {
-            conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
+            conversationQueries.updateConversationName(conversationName, timestamp.toInstant(), conversationId)
         }
 
     override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) =

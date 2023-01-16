@@ -1,11 +1,14 @@
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 data class ConnectionEntity(
     val conversationId: String,
     val from: String,
-    val lastUpdate: String,
+    val lastUpdateInstant: Instant,
     val qualifiedConversationId: ConversationIDEntity,
     val qualifiedToId: QualifiedIDEntity,
     val status: State,
@@ -13,6 +16,32 @@ data class ConnectionEntity(
     val shouldNotify: Boolean? = null,
     val otherUser: UserEntity? = null
 ) {
+
+    @Deprecated("Dates should be stored using Instant. Use the primary constructor")
+    constructor(
+        conversationId: String,
+        from: String,
+        lastUpdate: String,
+        qualifiedConversationId: ConversationIDEntity,
+        qualifiedToId: QualifiedIDEntity,
+        status: State,
+        toId: String,
+        shouldNotify: Boolean? = null,
+        otherUser: UserEntity? = null
+    ) : this(
+        conversationId,
+        from,
+        lastUpdate.toInstant(),
+        qualifiedConversationId,
+        qualifiedToId,
+        status,
+        toId,
+        shouldNotify,
+        otherUser,
+    )
+
+    @Deprecated("Date formats are being standardised using Instant", ReplaceWith("lastUpdateInstant"))
+    val lastUpdate: String get() = lastUpdateInstant.toIsoDateTimeString()
 
     enum class State {
         /** Default - No connection state */

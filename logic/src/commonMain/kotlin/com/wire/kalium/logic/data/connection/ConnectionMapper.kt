@@ -12,6 +12,9 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
@@ -30,7 +33,7 @@ internal class ConnectionMapperImpl(
     override fun fromApiToDao(state: ConnectionDTO): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdate = state.lastUpdate,
+        lastUpdateInstant = state.lastUpdate.takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE,
         qualifiedConversationId = idMapper.fromApiToDao(state.qualifiedConversationId),
         qualifiedToId = idMapper.fromApiToDao(state.qualifiedToId),
         status = statusMapper.fromApiToDao(state.status),
@@ -77,7 +80,7 @@ internal class ConnectionMapperImpl(
     override fun modelToDao(state: Connection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdate = state.lastUpdate,
+        lastUpdateInstant = state.lastUpdate.takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE,
         qualifiedConversationId = state.qualifiedConversationId.toDao(),
         qualifiedToId = state.qualifiedToId.toDao(),
         status = statusMapper.toDaoModel(state.status),

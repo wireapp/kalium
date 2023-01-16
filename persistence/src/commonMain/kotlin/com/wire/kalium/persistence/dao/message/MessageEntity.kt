@@ -4,6 +4,9 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,17 +15,23 @@ sealed class MessageEntity(
     open val id: String,
     open val content: MessageEntityContent,
     open val conversationId: QualifiedIDEntity,
-    open val date: String,
+    open val creationInstant: Instant,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
     open val visibility: Visibility,
     open val isSelfMessage: Boolean,
 ) {
+    @Deprecated(
+        message = "All dates formats are being standardised using Instant",
+        replaceWith = ReplaceWith("creationInstant.toIsoDateTimeString()")
+    )
+    open val date: String
+        get() = creationInstant.toIsoDateTimeString()
 
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val creationInstant: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -33,19 +42,79 @@ sealed class MessageEntity(
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(id, content, conversationId, creationInstant, senderUserId, status, visibility, isSelfMessage) {
+
+        @Deprecated(
+            message = "All date formats are being standardised using Instant. Use the primary constructor that uses Instant."
+        )
+        constructor(
+            id: String,
+            conversationId: QualifiedIDEntity,
+            date: String,
+            senderUserId: QualifiedIDEntity,
+            status: Status,
+            visibility: Visibility = Visibility.VISIBLE,
+            content: MessageEntityContent.Regular,
+            isSelfMessage: Boolean = false,
+            senderName: String?,
+            senderClientId: String,
+            editStatus: EditStatus,
+            reactions: ReactionsEntity = ReactionsEntity.EMPTY,
+            expectsReadConfirmation: Boolean = false
+        ) : this(
+            id,
+            conversationId,
+            date.toInstant(),
+            senderUserId,
+            status,
+            visibility,
+            content,
+            isSelfMessage,
+            senderName,
+            senderClientId,
+            editStatus,
+            reactions,
+            expectsReadConfirmation
+        )
+    }
 
     data class System(
         override val id: String,
         override val content: MessageEntityContent.System,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val creationInstant: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(id, content, conversationId, creationInstant, senderUserId, status, visibility, isSelfMessage) {
+
+        @Deprecated(
+            message = "All date formats are being standardised using Instant. Use the primary constructor that uses Instant."
+        )
+        constructor(
+            id: String,
+            content: MessageEntityContent.System,
+            conversationId: QualifiedIDEntity,
+            date: String,
+            senderUserId: QualifiedIDEntity,
+            status: Status,
+            visibility: Visibility = Visibility.VISIBLE,
+            isSelfMessage: Boolean = false,
+            senderName: String?,
+        ) : this(
+            id,
+            content,
+            conversationId,
+            date.toInstant(),
+            senderUserId,
+            status,
+            visibility,
+            isSelfMessage,
+            senderName,
+        )
+    }
 
     enum class Status {
         PENDING, SENT, READ, FAILED
