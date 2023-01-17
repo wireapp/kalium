@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -18,10 +19,11 @@ interface ObserveOngoingCallsUseCase {
 }
 
 internal class ObserveOngoingCallsUseCaseImpl(
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveOngoingCallsUseCase {
 
-    override suspend fun invoke(): Flow<List<Call>> = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(): Flow<List<Call>> = withContext(dispatcher.default) {
         callRepository.ongoingCallsFlow()
     }
 }

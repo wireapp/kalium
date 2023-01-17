@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -37,12 +38,13 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetIncomingCallsUseCase {
 
     private val logger
         get() = kaliumLogger.withFeatureId(CALLING)
 
-    override suspend operator fun invoke(): Flow<List<Call>> = withContext(KaliumDispatcherImpl.default) {
+    override suspend operator fun invoke(): Flow<List<Call>> = withContext(dispatcher.default) {
         observeIncomingCallsIfUserStatusAllows()
             .onlyCallsInNotMutedConversations()
             .distinctUntilChanged()

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -17,11 +18,12 @@ interface IsEligibleToStartCallUseCase {
 
 internal class IsEligibleToStartCallUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : IsEligibleToStartCallUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult =
-        withContext(KaliumDispatcherImpl.default) {
+        withContext(dispatcher.default) {
             val establishedCallConversationId = callRepository.establishedCallConversationId()
 
             val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||

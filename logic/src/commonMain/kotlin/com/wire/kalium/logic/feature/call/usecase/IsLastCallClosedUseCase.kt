@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,11 +21,12 @@ interface IsLastCallClosedUseCase {
 }
 
 internal class IsLastCallClosedUseCaseImpl(
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : IsLastCallClosedUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, startedTime: Long): Flow<Boolean> =
-        withContext(KaliumDispatcherImpl.default) {
+        withContext(dispatcher.default) {
             callRepository
                 .getLastClosedCallCreatedByConversationId(conversationId = conversationId)
                 .map {

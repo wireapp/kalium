@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -13,13 +14,14 @@ interface AnswerCallUseCase {
 }
 
 internal class AnswerCallUseCaseImpl(
-    private val callManager: Lazy<CallManager>
+    private val callManager: Lazy<CallManager>,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : AnswerCallUseCase {
 
     /**
      * @param conversationId the id of the conversation.
      */
-    override suspend fun invoke(conversationId: ConversationId) = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(conversationId: ConversationId) = withContext(dispatcher.default) {
         callManager.value.answerCall(
             conversationId = conversationId
         )
