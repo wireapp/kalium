@@ -1,11 +1,19 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -18,23 +26,28 @@ class IncrementalSyncRecoveryHandlerTest {
         val arrangement = Arrangement().arrange()
 
         // when
-        arrangement.recoverWithFailure(CoreFailure.Unknown(IllegalStateException()))
+        arrangement.recoverWithFailure(NetworkFailure.ServerMiscommunication(TestNetworkException.notFound))
 
         // then
         with(arrangement) {
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
-                .wasNotInvoked()
+                .wasInvoked(once)
 
             verify(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
-                .with(any())
-                .wasNotInvoked()
+                .with(eq(true))
+                .wasInvoked(once)
+
+            verify(addSystemMessageToAllConversationsUseCase)
+                .function(addSystemMessageToAllConversationsUseCase::invoke)
+                .with()
+                .wasInvoked()
 
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasNotInvoked()
         }
     }
 
@@ -63,6 +76,11 @@ class IncrementalSyncRecoveryHandlerTest {
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
                 .wasInvoked()
+
+            verify(addSystemMessageToAllConversationsUseCase)
+                .function(addSystemMessageToAllConversationsUseCase::invoke)
+                .with()
+                .wasNotInvoked()
         }
     }
 
@@ -72,10 +90,14 @@ class IncrementalSyncRecoveryHandlerTest {
         val onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback = mock(classOf<OnIncrementalSyncRetryCallback>())
 
         @Mock
+        val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase =
+            mock(classOf<AddSystemMessageToAllConversationsUseCase>())
+
+        @Mock
         val slowSyncRepository: SlowSyncRepository = mock(classOf<SlowSyncRepository>())
 
         private val incrementalSyncRecoveryHandler by lazy {
-            IncrementalSyncRecoveryHandlerImpl(slowSyncRepository)
+            IncrementalSyncRecoveryHandlerImpl(slowSyncRepository, addSystemMessageToAllConversationsUseCase)
         }
 
         suspend fun recoverWithFailure(failure: CoreFailure) {

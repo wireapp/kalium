@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -11,6 +12,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when backup support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class VerifyBackupUseCaseTest {
 
