@@ -951,6 +951,7 @@ class UserSessionScope internal constructor(
             applicationMessageHandler,
             userStorage,
             userPropertyRepository,
+            incrementalSyncRepository,
             this
         )
     val users: UserScope
