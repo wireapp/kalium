@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Checks if the current requires password to authenticate operations.
@@ -14,15 +17,19 @@ import com.wire.kalium.logic.functional.map
 class IsPasswordRequiredUseCase internal constructor(
     private val selfUserId: UserId,
     private val sessionRepository: SessionRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * @return [Result] with [Boolean] true if the user requires password, false otherwise.
      */
-    suspend operator fun invoke(): Result = eitherInvoke().fold({
-        Result.Failure(it)
-    }, {
-        Result.Success(it)
-    })
+    suspend operator fun invoke(): Result =
+        withContext(dispatchers.default) {
+            eitherInvoke().fold({
+                Result.Failure(it)
+            }, {
+                Result.Success(it)
+            })
+        }
 
     internal suspend fun eitherInvoke(): Either<StorageFailure, Boolean> = sessionRepository.ssoId(selfUserId).map {
         it?.subject == null

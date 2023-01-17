@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.featureFlags
 
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will observe and return the build configs.
@@ -13,9 +16,10 @@ interface GetBuildConfigsUseCase {
 
 internal class GetBuildConfigsUseCaseImpl(
     private val kaliumConfigs: KaliumConfigs,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetBuildConfigsUseCase {
 
-    override suspend operator fun invoke(): Flow<KaliumConfigs> {
-        return flowOf(kaliumConfigs)
+    override suspend operator fun invoke(): Flow<KaliumConfigs> = withContext(dispatchers.default) {
+        flowOf(kaliumConfigs)
     }
 }

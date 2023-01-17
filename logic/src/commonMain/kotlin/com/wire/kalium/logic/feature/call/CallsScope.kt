@@ -80,7 +80,7 @@ class CallsScope internal constructor(
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 
-    val endCall: EndCallUseCase get() = EndCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
+    val endCall: EndCallUseCase get() = EndCallUseCase(callManager, callRepository)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
 
@@ -108,7 +108,7 @@ class CallsScope internal constructor(
 
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
 
-    val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
+    val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager)
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 }

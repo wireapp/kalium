@@ -34,7 +34,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId
-    ): ResetSessionResult = withContext(dispatchers.io) {
+    ): ResetSessionResult = withContext(dispatchers.default) {
         return@withContext proteusClientProvider.getOrError().fold({
             return@fold ResetSessionResult.Failure(it)
         }, { proteusClient ->

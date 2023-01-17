@@ -10,7 +10,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 
 /**
  * Use case that allows getting the user details of a user, either locally or externally
@@ -27,11 +30,12 @@ fun interface GetUserInfoUseCase {
 
 internal class GetUserInfoUseCaseImpl(
     private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetUserInfoUseCase {
 
-    override suspend fun invoke(userId: UserId): GetUserInfoResult {
-        return getOtherUser(userId).fold(
+    override suspend fun invoke(userId: UserId): GetUserInfoResult = withContext(dispatchers.default) {
+        getOtherUser(userId).fold(
             { GetUserInfoResult.Failure },
             { otherUser ->
                 getOtherUserTeam(otherUser).fold(

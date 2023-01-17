@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -20,7 +21,7 @@ import kotlinx.coroutines.withContext
 interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
-     * @see  [LogoutReason]
+     * @see [LogoutReason]
      */
     suspend operator fun invoke(reason: LogoutReason)
 }
@@ -34,12 +35,13 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val pushTokenRepository: PushTokenRepository
+    private val pushTokenRepository: PushTokenRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason) = withContext(KaliumDispatcherImpl.default) {
+    override suspend operator fun invoke(reason: LogoutReason) = withContext(dispatcher.default) {
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)

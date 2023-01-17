@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 import okio.Path
 
 interface UploadUserAvatarUseCase {
@@ -21,11 +24,12 @@ interface UploadUserAvatarUseCase {
 
 internal class UploadUserAvatarUseCaseImpl(
     private val userDataSource: UserRepository,
-    private val assetDataSource: AssetRepository
+    private val assetDataSource: AssetRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : UploadUserAvatarUseCase {
 
-    override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {
-        return assetDataSource.uploadAndPersistPublicAsset("image/jpg", imageDataPath, imageDataSize).flatMap { asset ->
+    override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult = withContext(dispatchers.default) {
+        assetDataSource.uploadAndPersistPublicAsset("image/jpg", imageDataPath, imageDataSize).flatMap { asset ->
             userDataSource.updateSelfUser(newAssetId = asset.key)
         }.fold({
             UploadAvatarResult.Failure(it)

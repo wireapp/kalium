@@ -3,6 +3,9 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Syncs the current user's contacts.
@@ -15,11 +18,12 @@ interface SyncContactsUseCase {
 }
 
 class SyncContactsUseCaseImpl internal constructor(
-    private val userDataSource: UserRepository
+    private val userDataSource: UserRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncContactsUseCase {
 
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return userDataSource.fetchKnownUsers()
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = withContext(dispatchers.default) {
+        userDataSource.fetchKnownUsers()
     }
 
 }

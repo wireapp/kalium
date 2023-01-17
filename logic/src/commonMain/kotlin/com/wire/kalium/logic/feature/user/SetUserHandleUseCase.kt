@@ -10,6 +10,9 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists
 import com.wire.kalium.network.exceptions.isInvalidHandle
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class SetUserHandleResult {
     object Success : SetUserHandleResult()
@@ -26,17 +29,18 @@ sealed class SetUserHandleResult {
 class SetUserHandleUseCase internal constructor(
     private val userRepository: UserRepository,
     private val validateUserHandle: ValidateUserHandleUseCase,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * @param handle the handle to set for the user
      * @return the [SetUserHandleResult.Success] if successful, otherwise a mapped failure.
      */
-    suspend operator fun invoke(handle: String): SetUserHandleResult {
+    suspend operator fun invoke(handle: String): SetUserHandleResult = withContext(dispatchers.default) {
         if (syncManager.isSlowSyncOngoing()) {
             syncManager.waitUntilLive()
         }
-        return validateUserHandle(handle).let { handleState ->
+        validateUserHandle(handle).let { handleState ->
             when (handleState) {
                 is ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handleState.handle).fold(
                     {

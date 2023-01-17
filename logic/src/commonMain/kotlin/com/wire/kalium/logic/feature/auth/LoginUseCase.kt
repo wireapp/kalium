@@ -12,6 +12,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -50,14 +51,15 @@ internal class LoginUseCaseImpl internal constructor(
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
     private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
+    private val proxyCredentials: ProxyCredentials?,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
         cookieLabel: String?
-    ): AuthenticationResult = withContext(KaliumDispatcherImpl.default) {
+    ): AuthenticationResult = withContext(dispatcher.default) {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 

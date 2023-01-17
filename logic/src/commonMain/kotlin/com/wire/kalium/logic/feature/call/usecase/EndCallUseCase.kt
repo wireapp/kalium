@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -15,12 +16,13 @@ import kotlinx.coroutines.withContext
 class EndCallUseCase(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.
      */
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(KaliumDispatcherImpl.default) {
+    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         persistMissedCallIfNeeded(conversationId)
 
         callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")

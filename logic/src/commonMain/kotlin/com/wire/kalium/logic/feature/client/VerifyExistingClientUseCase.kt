@@ -41,7 +41,6 @@ internal class VerifyExistingClientUseCaseImpl(
     }
 }
 
-
 sealed class VerifyExistingClientResult {
     class Success(val client: Client) : VerifyExistingClientResult()
 

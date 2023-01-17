@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message.UploadStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -26,14 +27,15 @@ interface UpdateAssetMessageUploadStatusUseCase {
 }
 
 internal class UpdateAssetMessageUploadStatusUseCaseImpl(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UpdateAssetMessageUploadStatusUseCase {
 
     override suspend operator fun invoke(
         uploadStatus: UploadStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateUploadStatusResult = withContext(KaliumDispatcherImpl.default) {
+    ): UpdateUploadStatusResult = withContext(dispatcher.default) {
         messageRepository.updateAssetMessageUploadStatus(uploadStatus, conversationId, messageId).fold({
             UpdateUploadStatusResult.Failure(it)
         }, {

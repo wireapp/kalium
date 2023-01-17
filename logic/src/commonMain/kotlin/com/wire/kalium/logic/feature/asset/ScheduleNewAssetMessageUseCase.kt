@@ -76,7 +76,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope,
-    private val dispatcher: KaliumDispatcher,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ScheduleNewAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
@@ -87,7 +87,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?
-    ): ScheduleNewAssetMessageResult = withContext(KaliumDispatcherImpl.default) {
+    ): ScheduleNewAssetMessageResult = withContext(dispatcher.default) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }

@@ -6,7 +6,10 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /**
  * Observes the persistent web socket connection configuration status, for all accounts.
@@ -27,15 +30,18 @@ interface ObservePersistentWebSocketConnectionStatusUseCase {
 }
 
 internal class ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObservePersistentWebSocketConnectionStatusUseCase {
     override suspend operator fun invoke(): ObservePersistentWebSocketConnectionStatusUseCase.Result =
-        sessionRepository.getAllValidAccountPersistentWebSocketStatus().fold({
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC)
-                .i("Error while fetching valid accounts persistent web socket status ")
-            ObservePersistentWebSocketConnectionStatusUseCase.Result.Failure.StorageFailure
+        withContext(dispatchers.default) {
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus().fold({
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC)
+                    .i("Error while fetching valid accounts persistent web socket status ")
+                ObservePersistentWebSocketConnectionStatusUseCase.Result.Failure.StorageFailure
 
-        }, {
-            ObservePersistentWebSocketConnectionStatusUseCase.Result.Success(it)
-        })
+            }, {
+                ObservePersistentWebSocketConnectionStatusUseCase.Result.Success(it)
+            })
+        }
 }

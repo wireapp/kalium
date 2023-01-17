@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.withContext
@@ -50,10 +51,11 @@ interface SSOInitiateLoginUseCase {
 internal class SSOInitiateLoginUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase,
-    private val serverConfig: ServerConfig
+    private val serverConfig: ServerConfig,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SSOInitiateLoginUseCase {
 
-    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = withContext(dispatcher.default) {
         with(param) {
             val validUuid = validateSSOCodeUseCase(ssoCode).let {
                 when (it) {

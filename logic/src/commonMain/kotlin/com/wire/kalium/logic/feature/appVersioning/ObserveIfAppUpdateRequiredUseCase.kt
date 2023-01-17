@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -36,11 +37,12 @@ interface ObserveIfAppUpdateRequiredUseCase {
 class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveIfAppUpdateRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> = withContext(dispatcher.default) {
         val currentDate = DateTimeUtil.currentIsoDateTimeString()
         val dateForChecking = DateTimeUtil.minusMilliseconds(currentDate, CHECK_APP_VERSION_FREQUENCY_MS)
 

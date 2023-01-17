@@ -45,12 +45,12 @@ internal class GetMessageAssetUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
     private val scope: CoroutineScope,
-    private val dispatcher: KaliumDispatcher
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Deferred<MessageAssetResult> = withContext(KaliumDispatcherImpl.default) {
+    ): Deferred<MessageAssetResult> = withContext(dispatcher.default) {
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             CompletableDeferred(MessageAssetResult.Failure(it))

@@ -8,6 +8,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will deregister the current push notification token.
@@ -26,21 +29,24 @@ interface DeregisterTokenUseCase {
 
 class DeregisterTokenUseCaseImpl(
     private val clientRepository: ClientRepository,
-    private val notificationTokenRepository: NotificationTokenRepository
+    private val notificationTokenRepository: NotificationTokenRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : DeregisterTokenUseCase {
 
     override suspend operator fun invoke(): DeregisterTokenUseCase.Result =
-        notificationTokenRepository.getNotificationToken().flatMap { notiToken ->
-            clientRepository.deregisterToken(notiToken.token)
-        }.fold({
-            if (it is NetworkFailure.ServerMiscommunication &&
-                it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.isNotFound()
-            ) {
-                DeregisterTokenUseCase.Result.Failure.NotFound
-            }
-            DeregisterTokenUseCase.Result.Failure.Generic(it)
-        }, {
-            DeregisterTokenUseCase.Result.Success
-        })
+        withContext(dispatchers.default) {
+            notificationTokenRepository.getNotificationToken().flatMap { notiToken ->
+                clientRepository.deregisterToken(notiToken.token)
+            }.fold({
+                if (it is NetworkFailure.ServerMiscommunication &&
+                    it.kaliumException is KaliumException.InvalidRequestError &&
+                    it.kaliumException.isNotFound()
+                ) {
+                    DeregisterTokenUseCase.Result.Failure.NotFound
+                }
+                DeregisterTokenUseCase.Result.Failure.Generic(it)
+            }, {
+                DeregisterTokenUseCase.Result.Success
+            })
+        }
 }

@@ -14,10 +14,13 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Use case that allows observing the user details of a user locally,
@@ -35,11 +38,12 @@ fun interface ObserveUserInfoUseCase {
 
 internal class ObserveUserInfoUseCaseImpl(
     private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveUserInfoUseCase {
 
-    override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
-        return observeOtherUser(userId)
+    override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> = withContext(dispatchers.default) {
+        observeOtherUser(userId)
             .flatMapRightWithEither { otherUser ->
                 observeOtherUserTeam(otherUser)
                     .mapRight { team -> GetUserInfoResult.Success(otherUser, team) }

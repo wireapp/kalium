@@ -11,6 +11,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.withContext
@@ -39,10 +40,11 @@ internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val proxyCredentials: ProxyCredentials?,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : GetSSOLoginSessionUseCase {
 
-    override suspend fun invoke(cookie: String): SSOLoginSessionResult = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(cookie: String): SSOLoginSessionResult = withContext(dispatcher.default) {
         ssoLoginRepository.provideLoginSession(cookie).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)

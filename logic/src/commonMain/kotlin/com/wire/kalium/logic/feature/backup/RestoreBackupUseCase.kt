@@ -27,6 +27,7 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.withContext
@@ -54,11 +55,12 @@ internal class RestoreBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
-        withContext(KaliumDispatcherImpl.default) {
+        withContext(dispatcher.default) {
             extractCompressedBackup(backupFilePath)
                 .flatMap { extractedBackupRootPath ->
                     runSanityChecks(extractedBackupRootPath, password)

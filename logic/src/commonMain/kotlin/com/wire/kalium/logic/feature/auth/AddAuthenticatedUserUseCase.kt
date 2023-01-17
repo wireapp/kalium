@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -17,7 +18,8 @@ import kotlinx.coroutines.withContext
  */
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository
+    private val serverConfigRepository: ServerConfigRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -33,7 +35,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         authTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
-    ): Result = withContext(KaliumDispatcherImpl.default) {
+    ): Result = withContext(dispatcher.default) {
         sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)

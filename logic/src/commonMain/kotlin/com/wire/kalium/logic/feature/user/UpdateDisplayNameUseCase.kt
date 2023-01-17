@@ -22,7 +22,7 @@ internal class UpdateDisplayNameUseCaseImpl(
     private val userRepository: UserRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : UpdateDisplayNameUseCase {
-    override suspend fun invoke(displayName: String): DisplayNameUpdateResult = withContext(dispatchers.io) {
+    override suspend fun invoke(displayName: String): DisplayNameUpdateResult = withContext(dispatchers.default) {
         userRepository.updateSelfDisplayName(displayName)
             .fold(
                 { DisplayNameUpdateResult.Failure(it) },

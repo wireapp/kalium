@@ -25,6 +25,7 @@ import kotlinx.datetime.Instant
  * This use case will update last read date for a conversation.
  * After that, will sync against other user's registered clients, using the self conversation.
  */
+@Suppress("LongParameterList")
 class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,

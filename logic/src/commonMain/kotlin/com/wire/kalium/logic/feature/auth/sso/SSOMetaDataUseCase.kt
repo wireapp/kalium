@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -25,10 +26,11 @@ interface SSOMetaDataUseCase {
 }
 
 internal class SSOMetaDataUseCaseImpl(
-    private val ssoLoginRepository: SSOLoginRepository
+    private val ssoLoginRepository: SSOLoginRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SSOMetaDataUseCase {
 
-    override suspend fun invoke(): SSOMetaDataResult = withContext(KaliumDispatcherImpl.default) {
+    override suspend fun invoke(): SSOMetaDataResult = withContext(dispatcher.default) {
         ssoLoginRepository.metaData().fold({
             SSOMetaDataResult.Failure.Generic(it)
         }, {

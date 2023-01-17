@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -12,10 +13,11 @@ interface ClearUserDataUseCase {
 }
 
 internal class ClearUserDataUseCaseImpl internal constructor(
-    private val userStorage: UserStorage
+    private val userStorage: UserStorage,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ClearUserDataUseCase {
 
-    override suspend operator fun invoke() = withContext(KaliumDispatcherImpl.default) {
+    override suspend operator fun invoke() = withContext(dispatcher.default) {
         clearUserStorage()
     }
 

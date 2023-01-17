@@ -9,6 +9,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
@@ -20,9 +21,10 @@ class AutoVersionAuthScopeUseCase(
     private val kaliumConfigs: KaliumConfigs,
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     suspend operator fun invoke(proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None): Result =
-        withContext(KaliumDispatcherImpl.default) {
+        withContext(dispatcher.default) {
             coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
                 handleError(it)
             }, { serverConfig ->
