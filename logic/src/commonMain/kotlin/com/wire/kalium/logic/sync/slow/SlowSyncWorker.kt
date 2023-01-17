@@ -7,6 +7,7 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -40,6 +41,7 @@ internal class SlowSyncWorkerImpl(
     private val syncSelfTeam: SyncSelfTeamUseCase,
     private val syncContacts: SyncContactsUseCase,
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase,
 ) : SlowSyncWorker {
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
@@ -60,6 +62,7 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+            .continueWithStep(SlowSyncStep.PERSIST_HISTORY_LOST_MESSAGES, addSystemMessageToAllConversationsUseCase::invoke)
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
             }
