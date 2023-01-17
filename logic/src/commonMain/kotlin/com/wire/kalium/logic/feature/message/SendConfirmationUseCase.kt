@@ -21,6 +21,9 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case allows to send a confirmation type [ReceiptType.READ]
@@ -37,6 +40,7 @@ internal class SendConfirmationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val userPropertyRepository: UserPropertyRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     private companion object {
         const val TAG = "[SendConfirmationUseCase]"
@@ -44,16 +48,16 @@ internal class SendConfirmationUseCase internal constructor(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
 
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> = withContext(dispatcher.default) {
         syncManager.waitUntilLive()
 
         val messageIds = getPendingUnreadMessagesIds(conversationId)
         if (messageIds.isEmpty()) {
             logger.d("$TAG skipping, NO messages to send confirmation signal")
-            return Either.Right(Unit)
+            return@withContext Either.Right(Unit)
         }
 
-        return currentClientIdProvider().flatMap { currentClientId ->
+        return@withContext currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.READ, messageIds),

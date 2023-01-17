@@ -22,7 +22,10 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Deletes a message from the conversation
@@ -35,7 +38,8 @@ class DeleteMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val selfConversationIdProvider: SelfConversationIdProvider
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
@@ -46,43 +50,46 @@ class DeleteMessageUseCase internal constructor(
      * @param deleteForEveryone either delete the message for everyone or just for the current user
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean
+    ): Either<CoreFailure, Unit> {
+        return withContext(dispatcher.default) {
+            slowSyncRepository.slowSyncStatus.first {
+                it is SlowSyncStatus.Complete
+            } // todo: what is this doing ?
 
-        return messageRepository.getMessageById(conversationId, messageId).map { message ->
-            when (message.status) {
-                Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
-                else -> {
-                    return currentClientIdProvider().flatMap { currentClientId ->
-                        selfConversationIdProvider().flatMap { selfConversationIds ->
-                            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                                val regularMessage = Message.Signaling(
-                                    id = uuid4().toString(),
-                                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else
-                                        MessageContent.DeleteForMe(
-                                            messageId,
-                                            conversationId = conversationId
-                                        ),
-                                    conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                    date = DateTimeUtil.currentIsoDateTimeString(),
-                                    senderUserId = selfUserId,
-                                    senderClientId = currentClientId,
-                                    status = Message.Status.PENDING,
-                                )
-                                messageSender.sendMessage(regularMessage)
+            messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
+                when (message.status) {
+                    Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
+                    else -> {
+                        currentClientIdProvider().flatMap { currentClientId ->
+                            selfConversationIdProvider().flatMap { selfConversationIds ->
+                                selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                                    val regularMessage = Message.Signaling(
+                                        id = uuid4().toString(),
+                                        content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else
+                                            MessageContent.DeleteForMe(
+                                                messageId,
+                                                conversationId = conversationId
+                                            ),
+                                        conversationId = if (deleteForEveryone) conversationId else selfConversationId,
+                                        date = DateTimeUtil.currentIsoDateTimeString(),
+                                        senderUserId = selfUserId,
+                                        senderClientId = currentClientId,
+                                        status = Message.Status.PENDING,
+                                    )
+                                    messageSender.sendMessage(regularMessage)
+                                }
                             }
                         }
+                            .onSuccess { deleteMessageAsset(message) }
+                            .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
+                            .onFailure {
+                                kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $it")
+                            }
                     }
-                        .onSuccess { deleteMessageAsset(message) }
-                        .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
-                        .onFailure { failure ->
-                            kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
-                            if (failure is CoreFailure.Unknown) {
-                                failure.rootCause?.printStackTrace()
-                            }
-                        }
                 }
             }
         }

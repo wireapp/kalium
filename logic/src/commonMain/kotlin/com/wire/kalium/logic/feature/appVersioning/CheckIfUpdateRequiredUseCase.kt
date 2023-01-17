@@ -16,7 +16,7 @@ interface CheckIfUpdateRequiredUseCase {
 internal class CheckIfUpdateRequiredUseCaseImpl(
     private val appVersionRepository: AppVersionRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-    ) : CheckIfUpdateRequiredUseCase {
+) : CheckIfUpdateRequiredUseCase {
 
     override suspend fun invoke(currentAppVersion: Int, blackListUrl: String): Boolean = withContext(dispatcher.default) {
         appVersionRepository.isUpdateRequired(currentAppVersion, blackListUrl)

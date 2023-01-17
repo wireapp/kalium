@@ -8,6 +8,9 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 fun interface DeleteTeamConversationUseCase {
 
@@ -25,12 +28,13 @@ internal class DeleteTeamConversationUseCaseImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
     private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : DeleteTeamConversationUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Result {
-        return selfTeamIdProvider()
+    override suspend fun invoke(conversationId: ConversationId): Result = withContext(dispatcher.default) {
+        selfTeamIdProvider()
             .map {
-                it ?: return Result.Failure.NoTeamFailure
+                it ?: return@withContext Result.Failure.NoTeamFailure
             }
             .flatMap { teamId ->
                 teamRepository.deleteConversation(conversationId, teamId)
