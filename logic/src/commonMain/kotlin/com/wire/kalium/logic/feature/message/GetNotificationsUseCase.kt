@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.withContext
 
 /**
  * Get notifications for the current user
@@ -43,26 +43,14 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
-<<<<<<< HEAD
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : GetNotificationsUseCase {
-
-    @Suppress("LongMethod")
-    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> = withContext(dispatchers.default) {
-        merge(
-            messageRepository.getNotificationMessage(),
-            observeConnectionRequests(),
-            ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
-        )
-=======
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
-    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return incrementalSyncRepository.incrementalSyncState
+    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> = withContext(dispatcher.default) {
+        incrementalSyncRepository.incrementalSyncState
             .isLiveDebounced()
             .flatMapLatest { isLive ->
                 if (isLive) {
@@ -76,7 +64,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                 }
                     .map { list -> list.filter { it.messages.isNotEmpty() } }
             }
->>>>>>> dbe58a2bb6de2af52ce69765b1ff6c6d652b75dc
             .distinctUntilChanged()
             .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
     }
