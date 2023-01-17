@@ -237,6 +237,13 @@ sealed interface Message {
                 is MessageContent.NewConversationReceiptMode -> mutableMapOf(
                     typeKey to "newConversationReceiptMode"
                 )
+                is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
+                    typeKey to "conversationReceiptModeChanged"
+                )
+
+                MessageContent.HistoryLost -> mutableMapOf(
+                    typeKey to "conversationMightLostHistory"
+                )
             }
 
             val standardProperties = mapOf(

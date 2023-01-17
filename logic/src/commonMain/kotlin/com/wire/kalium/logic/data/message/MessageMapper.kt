@@ -173,10 +173,9 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
+            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Knock(
                 LocalNotificationMessageAuthor(content.senderName ?: "", null),
-                message.date,
-                LocalNotificationCommentType.KNOCK
+                message.date
             )
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
@@ -277,6 +276,8 @@ class MessageMapperImpl(
         is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
         is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
+        is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -356,6 +357,8 @@ class MessageMapperImpl(
         is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
         is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
+        is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
     }
 }
 

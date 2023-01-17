@@ -57,6 +57,10 @@ interface MessageRepository {
         updateConversationModifiedDate: Boolean = false,
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
@@ -88,7 +92,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -169,7 +173,7 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -186,7 +190,8 @@ class MessageDataSource(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
-                    messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                    messages = messages.take(messageSizePerConversation)
+                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
                     } ?: false
@@ -208,6 +213,18 @@ class MessageDataSource(
             updateConversationReadDate,
             updateConversationModifiedDate
         )
+    }
+
+    override suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit> {
+        messageMapper.fromMessageToEntity(message).let {
+            return if (it is MessageEntity.System) {
+                wrapStorageRequest {
+                    messageDAO.persistSystemMessageToAllConversations(it)
+                }
+            } else Either.Left(CoreFailure.OnlySystemMessageAllowed)
+        }
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =

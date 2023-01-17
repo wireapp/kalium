@@ -27,7 +27,7 @@ jobs:
             GITHUB_USER: ${{ github.actor }}
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
 
       - name: Build the samples
         env:

@@ -8,9 +8,11 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.HISTORY_LOST
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
@@ -23,28 +25,38 @@ import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val conversationsQueries: ConversationsQueries,
     private val selfUserId: UserIDEntity,
-    private val reactionsQueries: ReactionsQueries
+    private val reactionsQueries: ReactionsQueries,
+    private val coroutineContext: CoroutineContext
 ) : MessageDAO {
     private val mapper = MessageMapper
 
-    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
+    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = withContext(coroutineContext) {
+        queries.deleteMessage(id, conversationsId)
+    }
 
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
-        queries.markMessageAsDeleted(id, conversationsId)
+        withContext(coroutineContext) {
+            queries.markMessageAsDeleted(id, conversationsId)
+        }
 
-    override suspend fun deleteAllMessages() = queries.deleteAllMessages()
+    override suspend fun deleteAllMessages() = withContext(coroutineContext) {
+        queries.deleteAllMessages()
+    }
 
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
-    ) {
+    ) = withContext(coroutineContext) {
         queries.transaction {
             if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
@@ -52,7 +64,7 @@ class MessageDAOImpl(
 
             insertInDB(message)
 
-            if (!needsToBeNotified(message.id, message.conversationId)) {
+            if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
             }
 
@@ -62,22 +74,42 @@ class MessageDAOImpl(
         }
     }
 
-    override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? =
+    override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? = withContext(coroutineContext) {
         queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
+    }
 
-    override fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+    override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        nonSuspendNeedsToBeNotified(id, conversationId)
+    }
+
+    private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
     @Deprecated("For test only!")
-    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) =
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
+    }
+
+    override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
+        queries.insertOrIgnoreBulkSystemMessage(
+            id = message.id,
+            date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = null,
+            visibility = message.visibility,
+            status = message.status,
+            content_type = contentTypeOf(message.content),
+            expects_read_confirmation = false
+        )
+    }
 
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
     private fun insertInDB(message: MessageEntity) {
+        // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
             if (isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
@@ -90,6 +122,7 @@ class MessageDAOImpl(
     }
 
     private fun insertBaseMessage(message: MessageEntity) {
+        // do not add withContext
         queries.insertOrIgnoreMessage(
             id = message.id,
             conversation_id = message.conversationId,
@@ -103,7 +136,7 @@ class MessageDAOImpl(
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
@@ -187,6 +220,12 @@ class MessageDAOImpl(
                 receipt_mode = content.receiptMode
             )
 
+            is MessageEntityContent.ConversationReceiptModeChanged -> queries.insertConversationReceiptModeChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                receipt_mode = content.receiptMode
+            )
+
             is MessageEntityContent.Knock -> {
                 /** NO-OP. No need to insert any content for Knock messages */
             }
@@ -204,6 +243,10 @@ class MessageDAOImpl(
             }
 
             is MessageEntityContent.CryptoSessionReset -> {
+                // NOTHING TO DO
+            }
+
+            is MessageEntityContent.HistoryLost -> {
                 // NOTHING TO DO
             }
         }
@@ -298,26 +341,38 @@ class MessageDAOImpl(
         uploadStatus: MessageEntity.UploadStatus,
         id: String,
         conversationId: QualifiedIDEntity
-    ) = queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
+    ) = withContext(coroutineContext) {
+        queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
+    }
 
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
         id: String,
         conversationId: QualifiedIDEntity
-    ) = queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+    ) = withContext(coroutineContext) {
+        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+    }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
-        queries.updateMessageStatus(status, id, conversationId)
+        withContext(coroutineContext) {
+            queries.updateMessageStatus(status, id, conversationId)
+        }
 
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
-        queries.updateMessageDate(date, id, conversationId)
+        withContext(coroutineContext) {
+            queries.updateMessageDate(date, id, conversationId)
+        }
 
     override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
-        queries.updateMessagesAddMillisToDate(millis, conversationId, status)
+        withContext(coroutineContext) {
+            queries.updateMessagesAddMillisToDate(millis, conversationId, status)
+        }
 
+    // TODO: mark internal since it is used for tests only
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToOneOrNull()
 
     override suspend fun getMessagesByConversationAndVisibility(
@@ -332,7 +387,10 @@ class MessageDAOImpl(
             limit.toLong(),
             offset.toLong(),
             mapper::toEntityMessageFromView
-        ).asFlow().mapToList()
+        )
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToList()
 
     override suspend fun getNotificationMessage(
         filteredContent: List<MessageEntity.ContentType>
@@ -340,7 +398,9 @@ class MessageDAOImpl(
         queries.getNotificationsMessages(
             filteredContent,
             mapper::toNotificationEntity
-        ).asFlow().mapToList()
+        ).asFlow()
+            .flowOn(coroutineContext)
+            .mapToList()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -352,14 +412,17 @@ class MessageDAOImpl(
             mapper::toEntityMessageFromView
         )
             .asFlow()
+            .flowOn(coroutineContext)
             .mapToList()
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
-        queries.selectMessagesFromUserByStatus(
-            userId, MessageEntity.Status.PENDING,
-            mapper::toEntityMessageFromView
-        )
-            .executeAsList()
+        withContext(coroutineContext) {
+            queries.selectMessagesFromUserByStatus(
+                userId, MessageEntity.Status.PENDING,
+                mapper::toEntityMessageFromView
+            )
+                .executeAsList()
+        }
 
     override suspend fun updateTextMessageContent(
         editTimeStamp: String,
@@ -367,41 +430,50 @@ class MessageDAOImpl(
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
-    ): Unit = queries.transaction {
-        queries.markMessageAsEdited(editTimeStamp, currentMessageId, conversationId)
-        reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
-        queries.deleteMessageMentions(currentMessageId, conversationId)
-        queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
-        newTextContent.mentions.forEach {
-            queries.insertMessageMention(
-                message_id = currentMessageId,
-                conversation_id = conversationId,
-                start = it.start,
-                length = it.length,
-                user_id = it.userId
-            )
+    ): Unit = withContext(coroutineContext) {
+        queries.transaction {
+            queries.markMessageAsEdited(editTimeStamp, currentMessageId, conversationId)
+            reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
+            queries.deleteMessageMentions(currentMessageId, conversationId)
+            queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+            newTextContent.mentions.forEach {
+                queries.insertMessageMention(
+                    message_id = currentMessageId,
+                    conversation_id = conversationId,
+                    start = it.start,
+                    length = it.length,
+                    user_id = it.userId
+                )
+            }
+            queries.updateMessageId(newMessageId, currentMessageId, conversationId)
+            queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
         }
-        queries.updateMessageId(newMessageId, currentMessageId, conversationId)
-        queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
     }
 
     override suspend fun getConversationMessagesByContentType(
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType
-    ): List<MessageEntity> =
+    ): List<MessageEntity> = withContext(coroutineContext) {
         queries.getConversationMessagesByContentType(conversationId, contentType, mapper::toEntityMessageFromView)
             .executeAsList()
+    }
 
     override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
-        queries.deleteAllConversationMessages(conversationId)
+        withContext(coroutineContext) {
+            queries.deleteAllConversationMessages(conversationId)
+        }
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
+        withContext(coroutineContext) {
+            queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
+        }
 
-    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
+    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> = withContext(coroutineContext) {
         queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
+    }
 
+    @Suppress("ComplexMethod")
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
@@ -415,36 +487,48 @@ class MessageDAOImpl(
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
         is MessageEntityContent.NewConversationReceiptMode -> NEW_CONVERSATION_RECEIPT_MODE
+        is MessageEntityContent.ConversationReceiptModeChanged -> CONVERSATION_RECEIPT_MODE_CHANGED
+        is MessageEntityContent.HistoryLost -> HISTORY_LOST
     }
 
-    override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+    override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {
+        queries.resetAssetDownloadStatus()
+    }
+
     override suspend fun markMessagesAsDecryptionResolved(
         conversationId: QualifiedIDEntity,
         userId: QualifiedIDEntity,
         clientId: String,
-    ) = queries.transaction {
-        val messages = queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
-        queries.markMessagesAsDecryptionResolved(messages)
+    ) = withContext(coroutineContext) {
+        // TODO: mark all messages form the user client as resolved regardless of the conversation
+        queries.transaction {
+            val messages =
+                queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
+            queries.markMessagesAsDecryptionResolved(messages)
+        }
     }
 
-    override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
+    override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
+        queries.resetAssetUploadStatus()
+    }
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
-    ): List<MessageEntity> {
-        return queries
+    ): List<MessageEntity> = withContext(coroutineContext) {
+        queries
             .selectPendingMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date, mapper::toEntityMessageFromView)
             .executeAsList()
     }
 
-    override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? {
-        return conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
-            .executeAsOneOrNull()
-    }
+    override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =
+        withContext(coroutineContext) {
+            conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
+                .executeAsOneOrNull()
+        }
 
-    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
+    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
     private fun MessageEntityContent.Asset.hasValidRemoteData() =
         assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()

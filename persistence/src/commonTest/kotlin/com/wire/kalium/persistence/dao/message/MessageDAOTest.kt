@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.IgnoreIOS
@@ -1018,6 +1019,138 @@ class MessageDAOTest : BaseDatabaseTest() {
         // when
         messageDAO.getMessageById(messageId, conversationId).first().also {
             assertEquals(messageFromUser1, it)
+        }
+    }
+
+    @Test
+    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "ConversationReceiptModeChanged Message"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.ConversationReceiptModeChanged(
+                        receiptMode = true
+                    )
+                )
+            )
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+        assertTrue {
+            result.first()?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
+        }
+    }
+
+    @Test
+    fun givenOneOnOneConversations_WhenPersistSystemMessageInBulk_ThenPersistedForAllConversations() = runTest {
+        // given
+        val conversationId1 = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId1))
+        val conversationId2 = QualifiedIDEntity("2", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId2))
+
+        val messageId = "systemMessage"
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.persistSystemMessageToAllConversations(
+            newSystemMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z",
+                conversationId = conversationId1,
+                senderUserId = userEntity1.id,
+                content = MessageEntityContent.HistoryLost
+            )
+        )
+
+        // then
+        val result1 = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId1)
+        val result2 = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId2)
+        assertTrue {
+            result1.first()?.content == MessageEntityContent.HistoryLost &&
+            result2.first()?.content == MessageEntityContent.HistoryLost
+        }
+    }
+
+    @Test
+    fun givenMixedTypeOfConversations_WhenPersistSystemMessageInBulk_ThenMessageShouldPersistedOnlyForOneOnOneAndGroups() = runTest {
+        // given
+        val selfConversation = QualifiedIDEntity("selfConversation", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = selfConversation).copy(
+            type = ConversationEntity.Type.SELF
+        ))
+        val oneOnOneConversation = QualifiedIDEntity("oneOnOneConversation", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = oneOnOneConversation).copy(
+            type = ConversationEntity.Type.ONE_ON_ONE
+        ))
+        val groupConversation = QualifiedIDEntity("groupConversation", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = groupConversation).copy(
+            type = ConversationEntity.Type.GROUP
+        ))
+        val connectionPendingConversation = QualifiedIDEntity("connectionPendingConversation", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = connectionPendingConversation).copy(
+            type = ConversationEntity.Type.CONNECTION_PENDING
+        ))
+        val globalTeamConversation = QualifiedIDEntity("globalTeamConversation", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = globalTeamConversation).copy(
+            type = ConversationEntity.Type.GLOBAL_TEAM
+        ))
+
+        val messageId = "systemMessage"
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.persistSystemMessageToAllConversations(
+            newSystemMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z",
+                conversationId = selfConversation,
+                senderUserId = userEntity1.id,
+                content = MessageEntityContent.HistoryLost
+            )
+        )
+
+        // then
+        val resultForSelfConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = selfConversation)
+        val resultForOneOnOneConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = oneOnOneConversation)
+        val resultForGroupConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = groupConversation)
+        val resultForConnectionPendingConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = connectionPendingConversation)
+        val resultForGlobalTeamConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = globalTeamConversation)
+
+        assertTrue {
+            resultForSelfConversation.firstOrNull() == null &&
+                    resultForOneOnOneConversation.first()?.content == MessageEntityContent.HistoryLost &&
+                    resultForGroupConversation.first()?.content == MessageEntityContent.HistoryLost &&
+                    resultForConnectionPendingConversation.firstOrNull() == null &&
+                    resultForGlobalTeamConversation.firstOrNull() == null
         }
     }
 
