@@ -18,11 +18,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-<<<<<<< HEAD
 import kotlinx.coroutines.withContext
-=======
 import kotlinx.coroutines.flow.scan
->>>>>>> dbe58a2bb6de2af52ce69765b1ff6c6d652b75dc
 
 /**
  * Get notifications for the current user
