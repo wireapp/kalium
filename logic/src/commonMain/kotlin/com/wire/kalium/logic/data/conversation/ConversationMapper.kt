@@ -295,9 +295,9 @@ internal class ConversationMapperImpl(
             mutedTime = 0,
             removedBy = null,
             creatorId = creatorId.orEmpty(),
-            lastNotificationDate = "",
-            lastModifiedDate = "",
-            lastReadDate = "",
+            lastNotificationDate = conversation.lastNotificationDate!!,
+            lastModifiedDate = conversation.lastModifiedDate!!,
+            lastReadDate = conversation.lastReadDate,
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)
