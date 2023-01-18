@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
@@ -59,7 +60,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                     MessageEntity.Regular(
                         id = it.toString(),
                         conversationId = conversations.random().id,
-                        date = it.toString(),
+                        date = Instant.fromEpochSeconds(it.toLong()),
                         senderUserId = users.random().id,
                         status = MessageEntity.Status.values().random(),
                         visibility = MessageEntity.Visibility.values().random(),
@@ -74,7 +75,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                     MessageEntity.System(
                         id = it.toString(),
                         conversationId = conversations.random().id,
-                        date = it.toString(),
+                        date = Instant.fromEpochSeconds(it.toLong()),
                         senderUserId = users.random().id,
                         status = MessageEntity.Status.values().random(),
                         visibility = MessageEntity.Visibility.values().random(),
@@ -90,7 +91,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                     MessageEntity.Regular(
                         id = it.toString(),
                         conversationId = conversations.random().id,
-                        date = it.toString(),
+                        date = Instant.fromEpochSeconds(it.toLong()),
                         senderUserId = users.random().id,
                         status = MessageEntity.Status.values().random(),
                         visibility = MessageEntity.Visibility.values().random(),
@@ -120,7 +121,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                     MessageEntity.Regular(
                         id = it.toString(),
                         conversationId = conversations.random().id,
-                        date = it.toString(),
+                        date = Instant.fromEpochSeconds(it.toLong()),
                         senderUserId = users.random().id,
                         status = MessageEntity.Status.values().random(),
                         visibility = MessageEntity.Visibility.values().random(),

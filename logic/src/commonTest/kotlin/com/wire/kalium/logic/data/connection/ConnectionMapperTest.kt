@@ -10,6 +10,8 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionState
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.logic.data.id.ConversationId as ModelConversationId
@@ -65,7 +67,6 @@ class ConnectionMapperTest {
         assertEquals(ConnectionEntity.State.ACCEPTED, connectionEntity.status)
     }
 
-
     private class Arrangement {
         val idMapper = MapperProvider.idMapper()
 
@@ -78,7 +79,7 @@ class ConnectionMapperTest {
         val stubConnectionResponse = ConnectionDTO(
             "someId",
             "from",
-            "lastUpdate",
+            UNIX_FIRST_DATE,
             ConversationId("someId", "someDomain"),
             UserId("someId", "someDomain"),
             ConnectionStateDTO.ACCEPTED,
@@ -88,7 +89,7 @@ class ConnectionMapperTest {
         val stubConnection = Connection(
             "someId",
             "from",
-            "lastUpdate",
+            UNIX_FIRST_DATE,
             ModelConversationId("someId", "someDomain"),
             ModelConversationId("someId", "someDomain"),
             ConnectionState.ACCEPTED,
@@ -99,7 +100,7 @@ class ConnectionMapperTest {
         val stubConnectionEntity = ConnectionEntity(
             "someId",
             "from",
-            "lastUpdate",
+            Instant.UNIX_FIRST_DATE,
             ConversationIDEntity("someId", "someDomain"),
             QualifiedIDEntity("someId", "someDomain"),
             ConnectionEntity.State.ACCEPTED,

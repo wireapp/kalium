@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -219,8 +220,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            lastReadDate = "2000-01-01T12:00:00.000Z",
+            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
