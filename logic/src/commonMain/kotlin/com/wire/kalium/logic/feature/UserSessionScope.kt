@@ -111,6 +111,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
+import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -184,6 +186,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
+import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -469,7 +473,10 @@ class UserSessionScope internal constructor(
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
-        get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, slowSyncRepository, userId)
+        get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
+
+    private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
+        get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
@@ -625,6 +632,14 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val conversationsRecoveryManager: ConversationsRecoveryManager by lazy {
+        ConversationsRecoveryManagerImpl(
+            incrementalSyncRepository,
+            addSystemMessageToAllConversationsUseCase,
+            slowSyncRepository
+        )
+    }
+
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
         IncrementalSyncWorkerImpl(
             eventGatherer,
@@ -632,11 +647,7 @@ class UserSessionScope internal constructor(
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() =
-            IncrementalSyncRecoveryHandlerImpl(
-                slowSyncRepository,
-                addSystemMessageToAllConversationsUseCase
-            )
+        get() = IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
 
     private val incrementalSyncManager by lazy {
         IncrementalSyncManager(
@@ -883,7 +894,8 @@ class UserSessionScope internal constructor(
             upgradeCurrentSessionUseCase,
             userId,
             isAllowedToRegisterMLSClient,
-            clientIdProvider
+            clientIdProvider,
+            slowSyncRepository
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -1064,6 +1076,10 @@ class UserSessionScope internal constructor(
 
         launch {
             mlsConversationsRecoveryManager.invoke()
+        }
+
+        launch {
+            conversationsRecoveryManager.invoke()
         }
     }
 
