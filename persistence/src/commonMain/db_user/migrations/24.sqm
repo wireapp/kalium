@@ -42,10 +42,10 @@ import kotlinx.datetime.Instant;
 PRAGMA foreign_keys = 0;
 
 -- 1)
-DROP VIEW IF EXISTS ConversationDetails;
 DROP VIEW IF EXISTS MessageDetailsView;
-DROP VIEW IF EXISTS MessageQuoteDetails;
+DROP VIEW IF EXISTS ConversationDetails;
 DROP VIEW IF EXISTS MessagePreview;
+DROP VIEW IF EXISTS MessageQuoteDetails;
 
 -- 2)
 -- ####### Conversations
@@ -209,6 +209,43 @@ DROP TABLE Message;
 ALTER TABLE Message_temp RENAME TO Message;
 
 -- 3)
+-- ####### MessagePreview
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+
 -- ####### ConversationDetails
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
@@ -292,6 +329,30 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          AND Conversation.type IS "CONNECTION_PENDING")
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);
+
+-- ####### MessageQuoteDetails
+CREATE VIEW IF NOT EXISTS MessageQuoteDetails
+AS SELECT
+    MessageTextContent.message_id AS messageId,
+    MessageTextContent.conversation_id AS conversationId,
+    MessageTextContent.quoted_message_id AS quotedMessageId,
+    MessageTextContent.is_quote_verified AS isQuoteVerified,
+    QuotedSender.qualified_id AS quotedSenderId,
+    (qualified_id == SelfUser.id) AS isQuotingSelfUser,
+    QuotedSender.name AS quotedSenderName,
+    QuotedMessage.creation_date quotedMessageCreationInstant,
+    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
+    QuotedMessage.visibility AS quotedMessageVisibility,
+    QuotedMessage.content_type AS quotedMessageContentType,
+    QuotedTextContent.text_body AS quotedTextBody,
+    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+    QuotedAssetContent.asset_name AS quotedAssetName
+FROM MessageTextContent
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+INNER JOIN SelfUser AS SelfUser
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id;
 
 -- ####### MessageDetailsView
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -403,66 +464,6 @@ LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id 
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;
-
--- ####### MessageQuoteDetails
-CREATE VIEW IF NOT EXISTS MessageQuoteDetails
-AS SELECT
-    MessageTextContent.message_id AS messageId,
-    MessageTextContent.conversation_id AS conversationId,
-    MessageTextContent.quoted_message_id AS quotedMessageId,
-    MessageTextContent.is_quote_verified AS isQuoteVerified,
-    QuotedSender.qualified_id AS quotedSenderId,
-    (qualified_id == SelfUser.id) AS isQuotingSelfUser,
-    QuotedSender.name AS quotedSenderName,
-    QuotedMessage.creation_date quotedMessageCreationInstant,
-    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
-    QuotedMessage.visibility AS quotedMessageVisibility,
-    QuotedMessage.content_type AS quotedMessageContentType,
-    QuotedTextContent.text_body AS quotedTextBody,
-    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
-    QuotedAssetContent.asset_name AS quotedAssetName
-FROM MessageTextContent
-LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
-INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
-INNER JOIN SelfUser AS SelfUser
-LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
-LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id;
-
--- ####### MessagePreview
-CREATE VIEW IF NOT EXISTS MessagePreview
-AS SELECT
-Message.id AS id,
-Message.conversation_id AS conversationId,
-Message.content_type AS contentType,
-Message.creation_date AS date,
-Message.visibility AS visibility,
-User.name AS senderName,
-User.connection_status AS senderConnectionStatus,
-User.deleted AS senderIsDeleted,
-SelfUser.id AS selfUserId,
-(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-MemberChangeContent.member_change_list AS memberChangeList,
-MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS updateConversationName,
-Conversation.name AS conversationName,
-(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-TextContent.text_body AS text,
-AssetContent.asset_mime_type AS assetMimeType,
-(Message.creation_date > Conversation.last_read_date) AS isUnread,
-IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
-Conversation.muted_status AS mutedStatus,
-Conversation.type AS conversationType
-FROM Message
-LEFT JOIN SelfUser
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
-LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
 -- 4)
 PRAGMA foreign_keys = 1;
