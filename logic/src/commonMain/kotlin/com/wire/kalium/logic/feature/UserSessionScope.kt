@@ -473,7 +473,7 @@ class UserSessionScope internal constructor(
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
-        get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, slowSyncRepository, userId)
+        get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
 
     private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
         get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
