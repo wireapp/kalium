@@ -102,7 +102,6 @@ internal class CallDataSource(
         isMuted: Boolean,
         isCameraOn: Boolean
     ) {
-        callingLogger.i("Thread - createCall : " + Thread.currentThread().name)
         val conversation: ConversationDetails = conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
         // in OnIncomingCall we get callerId without a domain,
@@ -188,8 +187,6 @@ internal class CallDataSource(
     }
 
     private fun updateCallMetadata(conversationId: ConversationId, metadata: CallMetadata) {
-        callingLogger.i("Thread - updateCallMetadata : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
             this[conversationId.toString()] = metadata
@@ -201,8 +198,6 @@ internal class CallDataSource(
     }
 
     override suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus) {
-        callingLogger.i("Thread - updateCallStatusById : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         val modifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
 
@@ -236,8 +231,6 @@ internal class CallDataSource(
     }
 
     override suspend fun persistMissedCall(conversationId: ConversationId) {
-        callingLogger.i("Thread - persistMissedCall : " + Thread.currentThread().name)
-
         callingLogger.i(
             "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
                     "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
@@ -260,8 +253,6 @@ internal class CallDataSource(
     }
 
     override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
-        callingLogger.i("Thread - updateIsMutedById : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { callMetadata ->
             val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
@@ -277,8 +268,6 @@ internal class CallDataSource(
     }
 
     override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
-        callingLogger.i("Thread - updateIsCameraOnById : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
@@ -294,8 +283,6 @@ internal class CallDataSource(
     }
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
-        callingLogger.i("Thread - updateCallParticipants : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -320,8 +307,6 @@ internal class CallDataSource(
     }
 
     override fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers) {
-        callingLogger.i("Thread - updateParticipantsActiveSpeaker : " + Thread.currentThread().name)
-
         val callMetadataProfile = _callMetadataProfile.value
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
@@ -358,8 +343,6 @@ internal class CallDataSource(
         )
 
     override suspend fun updateOpenCallsToClosedStatus() {
-        callingLogger.i("Thread - updateOpenCallsToClosedStatus : " + Thread.currentThread().name)
-
         callDAO.updateOpenCallsToClosedStatus()
     }
 
