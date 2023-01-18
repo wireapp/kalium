@@ -68,6 +68,8 @@ For example, if you want to run the task `jvmTest` and the libraries are in `./n
 
 #### Running the CLI
 
+##### JVM
+
 Run the following with the native libs in the
 classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
 
@@ -80,6 +82,20 @@ or if you want the jar file deleted after your run:
 
 ```
 ./gradlew :cli:run --args="login" -Djava.library.path=/usr/local/lib/:./native/libs
+```
+
+##### Native (Mac)
+
+For running on arm64 mac
+```
+./gradlew :cli:macosArm64Binaries
+./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
+```
+
+For running on intel mac
+```
+./gradlew :cli:macosX64Binaries
+./cli/build/bin/macosX64/debugExecutable/cli.kexe login
 ```
 
 #### Detekt rules
