@@ -4,16 +4,17 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
+import com.wire.kalium.persistence.dao.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -580,7 +581,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 removedBy = removedBy,
                 creatorId = creatorId,
                 lastNotificationDate = lastNotificationDate,
-                lastModifiedDate = lastModifiedDate ?: "",
+                lastModifiedDate = lastModifiedDate ?: Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                 lastReadDate = lastReadDate,
                 access = accessList,
                 accessRole = accessRoleList,
@@ -613,9 +614,9 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 mutedTime = 0,
                 removedBy = null,
                 creatorId = "CreatorId$index",
-                lastNotificationDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
-                lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
-                lastReadDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
+                lastNotificationDate = UserDatabaseDataGenerator.DEFAULT_DATE,
+                lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE,
+                lastReadDate = UserDatabaseDataGenerator.DEFAULT_DATE,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                 receiptMode = ConversationEntity.ReceiptMode.DISABLED
