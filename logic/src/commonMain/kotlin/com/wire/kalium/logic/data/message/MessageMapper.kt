@@ -20,7 +20,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -49,13 +51,13 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
+                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -67,7 +69,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 status = status,
                 visibility = visibility,
@@ -90,13 +92,13 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 senderClientId = ClientId(message.senderClientId),
                 status = status,
                 editStatus = when (val editStatus = message.editStatus) {
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
+                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
                 },
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -109,7 +111,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 status = status,
                 visibility = visibility,

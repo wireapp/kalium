@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.ConversationsQueries
+import kotlinx.datetime.Instant
 
 interface MigrationDAO {
     suspend fun insertConversation(conversationList: List<ConversationEntity>)
@@ -34,15 +35,13 @@ internal class MigrationDAOImpl(
                         access,
                         accessRole,
                         lastReadDate,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
-                        else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
+                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
+                        else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                         if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                         else MLS_DEFAULT_CIPHER_SUITE
                     )
                 }
             }
         }
-
     }
-
 }

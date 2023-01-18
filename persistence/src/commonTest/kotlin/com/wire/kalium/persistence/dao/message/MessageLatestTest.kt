@@ -48,14 +48,14 @@ class MessageLatestTest : BaseMessageTest() {
     }
 
     private suspend fun insertTestMessage(
-        instant: Instant,
+        date: Instant,
         senderUserId: QualifiedIDEntity,
         conversationId: QualifiedIDEntity
     ) = newRegularMessageEntity(
         id = Random.nextBytes(10).decodeToString(),
         conversationId = conversationId,
         senderUserId = senderUserId,
-        date = instant.toString()
+        date = date
     ).also { messageDAO.insertOrIgnoreMessage(it) }
 
 }

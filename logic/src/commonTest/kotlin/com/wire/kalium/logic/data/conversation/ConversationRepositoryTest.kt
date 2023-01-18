@@ -1120,20 +1120,6 @@ class ConversationRepositoryTest {
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
 
-        val TEST_MESSAGE_ENTITY =
-            MessageEntity.Regular(
-                id = "uid",
-                content = MessageEntityContent.Text("content"),
-                conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
-                senderUserId = TEST_QUALIFIED_ID_ENTITY,
-                senderClientId = "sender",
-                status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "sender",
-                expectsReadConfirmation = false
-            )
-
         val TEST_MESSAGE_PREVIEW_ENTITY =
             MessagePreviewEntity(
                 id = "uid",
