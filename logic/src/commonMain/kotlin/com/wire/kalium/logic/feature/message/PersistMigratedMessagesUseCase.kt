@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -32,12 +33,23 @@ internal class PersistMigratedMessagesUseCaseImpl(
                 when (proto) {
                     is ProtoContent.ExternalMessageInstructions -> kaliumLogger.w("Ignoring external message")
                     is ProtoContent.Readable -> {
+                        val updatedProto =
+                            if (message.assetSize != null && message.assetName != null && proto.messageContent is MessageContent.Asset) {
+                                proto.copy(
+                                    messageContent = proto.messageContent.copy(
+                                        value = proto.messageContent.value.copy(
+                                            name = message.assetName,
+                                            sizeInBytes = message.assetSize.toLong()
+                                        )
+                                    )
+                                )
+                            } else proto
                         applicationMessageHandler.handleContent(
                             message.conversationId,
                             message.timestampIso,
                             message.senderUserId,
                             message.senderClientId,
-                            proto
+                            updatedProto
                         )
                     }
                 }
