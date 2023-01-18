@@ -10,13 +10,17 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageExtensionsTest : BaseDatabaseTest() {
 
     private lateinit var messageExtensions: MessageExtensions
@@ -33,7 +37,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
-        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper)
+        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper, StandardTestDispatcher())
     }
 
     @After
@@ -116,7 +120,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                     newRegularMessageEntity(
                         id = it.toString(),
                         conversationId = CONVERSATION_ID,
-                        senderUserId = userId
+                        senderUserId = userId,
+                        // Ordered by date - Inserting with decreasing date is important to assert pagination
+                        date = Instant.fromEpochSeconds(MESSAGE_COUNT - it.toLong())
                     )
                 )
             }

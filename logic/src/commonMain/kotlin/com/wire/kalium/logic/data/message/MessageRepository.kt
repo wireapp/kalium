@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -58,6 +57,10 @@ interface MessageRepository {
         updateConversationModifiedDate: Boolean = false,
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
@@ -77,6 +80,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
     suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
@@ -88,7 +92,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -145,7 +149,6 @@ class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val selfUserId: UserId,
@@ -170,7 +173,7 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -187,7 +190,8 @@ class MessageDataSource(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
-                    messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                    messages = messages.take(messageSizePerConversation)
+                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
                     } ?: false
@@ -209,6 +213,18 @@ class MessageDataSource(
             updateConversationReadDate,
             updateConversationModifiedDate
         )
+    }
+
+    override suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit> {
+        messageMapper.fromMessageToEntity(message).let {
+            return if (it is MessageEntity.System) {
+                wrapStorageRequest {
+                    messageDAO.persistSystemMessageToAllConversations(it)
+                }
+            } else Either.Left(CoreFailure.OnlySystemMessageAllowed)
+        }
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
@@ -276,7 +292,7 @@ class MessageDataSource(
 
     override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
         wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { Instant.parse(it.date) }
+            .map { it.date }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {

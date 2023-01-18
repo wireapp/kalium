@@ -11,7 +11,8 @@ enum class CallStatus {
     ANSWERED,
     ESTABLISHED,
     STILL_ONGOING,
-    CLOSED,
+    CLOSED_INTERNALLY, // Call terminated on current device only
+    CLOSED, // call terminated everywhere
     REJECTED
 }
 

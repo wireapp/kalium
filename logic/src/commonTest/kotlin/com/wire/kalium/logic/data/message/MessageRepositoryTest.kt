@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
@@ -19,6 +18,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -235,7 +236,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenASystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+    fun givenANewConversationSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val message = TEST_SYSTEM_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
         val (arrangement, messageRepository) = Arrangement()
@@ -257,10 +258,32 @@ class MessageRepositoryTest {
         }
     }
 
-    private class Arrangement {
+    @Test
+    fun givenAConversationReceiptModeChangedSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val message = TEST_SYSTEM_MESSAGE.copy(
+            content = TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT
+        )
+        val mappedEntity = TEST_MESSAGE_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
 
-        @Mock
-        val idMapper = mock(IdMapper::class)
+        messageRepository.persistMessage(message)
+
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertOrIgnoreMessage)
+                .with(eq(mappedEntity), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    private class Arrangement {
 
         @Mock
         val assetMapper = mock(AssetMapper::class)
@@ -326,7 +349,6 @@ class MessageRepositoryTest {
             mlsMessageApi = mlsMessageApi,
             messageDAO = messageDAO,
             messageMapper = messageMapper,
-            idMapper = idMapper,
             assetMapper = assetMapper,
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper
@@ -342,7 +364,7 @@ class MessageRepositoryTest {
                 id = "uid",
                 content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
+                date = Instant.UNIX_FIRST_DATE,
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = SENT,
@@ -365,6 +387,9 @@ class MessageRepositoryTest {
             editStatus = Message.EditStatus.NotEdited
         )
         val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
+            receiptMode = true
+        )
+        val TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT = MessageContent.ConversationReceiptModeChanged(
             receiptMode = true
         )
         val TEST_SYSTEM_MESSAGE = Message.System(

@@ -4,6 +4,9 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AssetsQueries
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 internal object AssetMapper {
     @Suppress("FunctionParameterNaming")
@@ -26,11 +29,12 @@ internal object AssetMapper {
 
 class AssetDAOImpl internal constructor(
     private val queries: AssetsQueries,
+    private val queriesContext: CoroutineContext,
     private val mapper: AssetMapper = AssetMapper
 ) : AssetDAO {
 
     // TODO(federation): support the case where domain is null
-    override suspend fun insertAsset(assetEntity: AssetEntity) {
+    override suspend fun insertAsset(assetEntity: AssetEntity) = withContext(queriesContext) {
         queries.insertAsset(
             assetEntity.key,
             assetEntity.domain.orEmpty(),
@@ -40,7 +44,7 @@ class AssetDAOImpl internal constructor(
         )
     }
 
-    override suspend fun insertAssets(assetsEntity: List<AssetEntity>) {
+    override suspend fun insertAssets(assetsEntity: List<AssetEntity>) = withContext(queriesContext) {
         queries.transaction {
             assetsEntity.forEach { asset ->
                 queries.insertAsset(
@@ -57,10 +61,11 @@ class AssetDAOImpl internal constructor(
     override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
         return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToOneOrNull()
     }
 
-    override suspend fun updateAsset(assetEntity: AssetEntity) {
+    override suspend fun updateAsset(assetEntity: AssetEntity) = withContext(queriesContext) {
         queries.updateAsset(
             assetEntity.downloadedDate,
             assetEntity.dataPath,
@@ -69,7 +74,7 @@ class AssetDAOImpl internal constructor(
         )
     }
 
-    override suspend fun deleteAsset(key: String) {
+    override suspend fun deleteAsset(key: String) = withContext(queriesContext) {
         queries.deleteAsset(key)
     }
 }

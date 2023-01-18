@@ -34,7 +34,7 @@ class UpdateApiVersionUseCaseTest {
         val configList = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3), newServerConfig(4))
 
         given(configRepository)
-            .function(configRepository::configList)
+            .suspendFunction(configRepository::configList)
             .whenInvoked()
             .thenReturn(
                 Either.Right(configList)

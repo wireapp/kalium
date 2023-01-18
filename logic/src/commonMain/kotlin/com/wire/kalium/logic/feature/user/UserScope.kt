@@ -91,4 +91,6 @@ class UserScope internal constructor(
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 
     val persistMigratedUsers: PersistMigratedUsersUseCase get() = PersistMigratedUsersUseCaseImpl(userRepository)
+
+    val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(userRepository)
 }

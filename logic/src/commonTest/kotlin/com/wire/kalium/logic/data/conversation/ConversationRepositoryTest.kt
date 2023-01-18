@@ -23,7 +23,6 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -57,6 +56,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -1120,20 +1120,6 @@ class ConversationRepositoryTest {
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
 
-        val TEST_MESSAGE_ENTITY =
-            MessageEntity.Regular(
-                id = "uid",
-                content = MessageEntityContent.Text("content"),
-                conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
-                senderUserId = TEST_QUALIFIED_ID_ENTITY,
-                senderClientId = "sender",
-                status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "sender",
-                expectsReadConfirmation = false
-            )
-
         val TEST_MESSAGE_PREVIEW_ENTITY =
             MessagePreviewEntity(
                 id = "uid",
@@ -1141,7 +1127,8 @@ class ConversationRepositoryTest {
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 isSelfMessage = false,
-                visibility = MessageEntity.Visibility.VISIBLE
+                visibility = MessageEntity.Visibility.VISIBLE,
+                senderUserId = TestUser.ENTITY_ID
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")

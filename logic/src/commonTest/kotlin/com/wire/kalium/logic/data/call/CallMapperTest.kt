@@ -148,6 +148,16 @@ class CallMapperTest {
     }
 
     @Test
+    fun givenACallStatusCLOSED_INTERNALLY_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.CLOSED_INTERNALLY)
+
+        assertEquals(
+            CallEntity.Status.CLOSED_INTERNALLY,
+            result
+        )
+    }
+
+    @Test
     fun givenACallStatusINCOMING_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
         val result = callMapper.toCallEntityStatus(callStatus = CallStatus.INCOMING)
 
