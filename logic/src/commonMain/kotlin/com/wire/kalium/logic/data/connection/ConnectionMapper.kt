@@ -33,7 +33,7 @@ internal class ConnectionMapperImpl(
     override fun fromApiToDao(state: ConnectionDTO): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdateInstant = state.lastUpdate.takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE,
+        lastUpdateInstant = state.lastUpdate.safeDateToInstant(),
         qualifiedConversationId = idMapper.fromApiToDao(state.qualifiedConversationId),
         qualifiedToId = idMapper.fromApiToDao(state.qualifiedToId),
         status = statusMapper.fromApiToDao(state.status),
@@ -80,10 +80,12 @@ internal class ConnectionMapperImpl(
     override fun modelToDao(state: Connection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
         from = state.from,
-        lastUpdateInstant = state.lastUpdate.takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE,
+        lastUpdateInstant = state.lastUpdate.safeDateToInstant(),
         qualifiedConversationId = state.qualifiedConversationId.toDao(),
         qualifiedToId = state.qualifiedToId.toDao(),
         status = statusMapper.toDaoModel(state.status),
         toId = state.toId,
     )
+
+    private fun String.safeDateToInstant() = takeIf { it.isNotBlank() }?.toInstant() ?: Instant.UNIX_FIRST_DATE
 }
