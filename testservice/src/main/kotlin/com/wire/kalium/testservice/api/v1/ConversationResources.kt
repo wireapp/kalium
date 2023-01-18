@@ -96,8 +96,11 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     @POST
     @Path("/instance/{id}/sendConfirmationDelivered")
-    @ApiOperation(value = "Send a delivery confirmation for a message")
-    fun sendConfirmationDelivered(@PathParam("id") id: String, @Valid sendConfirmationReadRequest: SendConfirmationReadRequest): Response {
+    @Operation(summary = "Send a delivery confirmation for a message")
+    fun sendConfirmationDelivered(
+        @PathParam("id") id: String,
+        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+    ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendConfirmationReadRequest) {
             ConversationRepository.sendConfirmation(
@@ -112,8 +115,11 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     @POST
     @Path("/instance/{id}/sendConfirmationRead")
-    @ApiOperation(value = "Send a read confirmation for a message")
-    fun sendConfirmationRead(@PathParam("id") id: String, @Valid sendConfirmationReadRequest: SendConfirmationReadRequest): Response {
+    @Operation(summary = "Send a read confirmation for a message")
+    fun sendConfirmationRead(
+        @PathParam("id") id: String,
+        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+    ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendConfirmationReadRequest) {
             ConversationRepository.sendConfirmation(
