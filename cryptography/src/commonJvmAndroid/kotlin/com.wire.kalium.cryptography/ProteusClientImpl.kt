@@ -1,14 +1,18 @@
 package com.wire.kalium.cryptography
 
+
+// TODO remove after debugging is completed
+var instanceCounter = 0
+
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.jvmInitialization
  */
 actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
-    private var client: ProteusClient = databaseKey?.let {
+    private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir)
+    } ?: ProteusClientCryptoBoxImpl(rootDir)).also { kaliumLogger.d("Constructing ProteusClient #${instanceCounter++} at $rootDir") }
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
