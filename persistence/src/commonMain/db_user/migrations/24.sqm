@@ -390,9 +390,7 @@ QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
 QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
-QuotedMessage.quotedAssetName AS quotedAssetName,
-NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
-ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
+QuotedMessage.quotedAssetName AS quotedAssetName
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -404,8 +402,6 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
-LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
-LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
 
 -- ####### MessageQuoteDetails
@@ -440,7 +436,6 @@ Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
 Message.creation_date AS date,
 Message.visibility AS visibility,
-Message.sender_user_id AS senderUserId,
 User.name AS senderName,
 User.connection_status AS senderConnectionStatus,
 User.deleted AS senderIsDeleted,
