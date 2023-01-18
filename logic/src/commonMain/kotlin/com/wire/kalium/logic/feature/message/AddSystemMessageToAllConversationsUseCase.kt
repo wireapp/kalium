@@ -5,12 +5,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.kaliumLogger
 
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.flow.first
 
 /**
  * persist a local system message to all conversations
@@ -21,13 +19,10 @@ interface AddSystemMessageToAllConversationsUseCase {
 
 class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId
 ) : AddSystemMessageToAllConversationsUseCase {
     override suspend operator fun invoke() {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
+        kaliumLogger.w("persist HistoryLost system message after recovery for all conversations")
         val generatedMessageUuid = uuid4().toString()
         val message = Message.System(
             id = generatedMessageUuid,
