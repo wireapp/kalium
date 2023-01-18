@@ -251,6 +251,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue { notDeletedMessage.first()?.visibility == MessageEntity.Visibility.VISIBLE }
     }
 
+    @Suppress("LongMethod")
     @Test
     fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()

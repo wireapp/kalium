@@ -16,7 +16,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.logic.data.id.ConversationId as ModelConversationId
 
-
 class ConnectionMapperTest {
     @Test
     fun givenAConnectionResponse_whenMappingFromConnectionResponse_thenTheStatusShouldBeCorrect() {
@@ -41,7 +40,6 @@ class ConnectionMapperTest {
         // then
         assertEquals(ConnectionEntity.State.ACCEPTED, connectionDao.status)
     }
-
 
     @Test
     fun givenAConnectionEntity_whenMappingToModel_thenTheStatusShouldBeCorrect() {
