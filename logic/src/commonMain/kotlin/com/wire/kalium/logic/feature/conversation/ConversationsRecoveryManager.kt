@@ -17,7 +17,7 @@ internal class ConversationsRecoveryManagerImpl(
 
     @Suppress("ComplexCondition")
     override suspend fun invoke() {
-        // waitUntilIncrementalSyncIsDone
+        // wait until incremental sync is done
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->
             if (syncState is IncrementalSyncStatus.Live &&
                 slowSyncRepository.needsToPersistHistoryLostMessage()

@@ -110,7 +110,7 @@ internal fun provideBaseHttpClient(
 ) = HttpClient(engine) {
 
     if (NetworkLogger.isRequestLoggingEnabled) {
-        Logging {
+        install(KaliumKtorCustomLogging) {
             logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
@@ -118,6 +118,7 @@ internal fun provideBaseHttpClient(
 
     if (installCompression) {
         install(ContentEncoding) {
+            gzip()
             identity()
         }
     }
