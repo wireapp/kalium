@@ -46,7 +46,7 @@ class SendConfirmationUseCase internal constructor(
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = generatedMessageUuid,
-                content =  MessageContent.Receipt(type,  listOf(firstMessageId) + moreMessageIds),
+                content = MessageContent.Receipt(type, listOf(firstMessageId) + moreMessageIds),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
