@@ -1,6 +1,5 @@
 package com.wire.kalium.cryptography
 
-
 // TODO remove after debugging is completed
 var instanceCounter = 0
 
