@@ -11,11 +11,11 @@ CREATE TABLE Message (
       id TEXT NOT NULL,
       content_type TEXT AS ContentType NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      creation_instant INTEGER AS Instant NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
-      last_edit_instant INTEGER AS Instant,
+      last_edit_date INTEGER AS Instant,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
@@ -25,7 +25,7 @@ CREATE TABLE Message (
 );
 
 -- Allows optimized querying of messages sorting by date.
-CREATE INDEX message_creation_instant_index ON Message(creation_instant);
+CREATE INDEX message_creation_date_index ON Message(creation_date);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -173,8 +173,8 @@ AS SELECT
     QuotedSender.qualified_id AS quotedSenderId,
     (qualified_id == SelfUser.id) AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
-    QuotedMessage.creation_instant quotedMessageCreationInstant,
-    QuotedMessage.last_edit_instant AS quotedMessageEditInstant,
+    QuotedMessage.creation_date quotedMessageCreationInstant,
+    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
     QuotedMessage.visibility AS quotedMessageVisibility,
     QuotedMessage.content_type AS quotedMessageContentType,
     QuotedTextContent.text_body AS quotedTextBody,
@@ -192,11 +192,11 @@ AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.creation_instant AS creationInstant,
+Message.creation_date AS date,
 Message.sender_user_id AS senderUserId,
 Message.sender_client_id AS senderClientId,
 Message.status AS status,
-Message.last_edit_instant AS lastEditTimestamp,
+Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
@@ -308,7 +308,7 @@ AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.creation_instant AS date,
+Message.creation_date AS date,
 Message.visibility AS visibility,
 Message.sender_user_id AS senderUserId,
 User.name AS senderName,
@@ -324,8 +324,8 @@ Conversation.name AS conversationName,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(Message.creation_instant > Conversation.last_read_instant) AS isUnread,
-IFNULL((Message.creation_instant > IFNULL(Conversation.last_notified_instant, 0)), FALSE) AS shouldNotify,
+(Message.creation_date > Conversation.last_read_date) AS isUnread,
+IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
 Conversation.muted_status AS mutedStatus,
 Conversation.type AS conversationType
 FROM Message
@@ -412,15 +412,15 @@ markMessageAsDeleted {
 
 markMessageAsEdited:
 UPDATE Message
-SET last_edit_instant = ?
+SET last_edit_date = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertOrIgnoreMessage:
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_instant, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_instant, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
 
 insertMessageMention:
@@ -500,16 +500,16 @@ updateAssetContent {
 getLatestMessageFromOtherUsers:
 SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.isSelfMessage = FALSE
-ORDER BY MessageDetailsView.creationInstant DESC LIMIT 1;
+ORDER BY MessageDetailsView.date DESC LIMIT 1;
 
 updateMessageDate:
 UPDATE Message
-SET creation_instant = ?
+SET creation_date = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateMessagesAddMillisToDate:
 UPDATE Message
-SET creation_instant = creation_instant +  ?
+SET creation_date = creation_date +  ?
 WHERE conversation_id = ? AND status = ?;
 
 updateMessageTextContent:
@@ -523,19 +523,19 @@ SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
 selectAllMessages:
-SELECT * FROM Message ORDER BY Message.creation_instant DESC LIMIT ? OFFSET ?;
+SELECT * FROM Message ORDER BY Message.creation_date DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_instant DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY MessageDetailsView.creationInstant DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY MessageDetailsView.date DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND creationInstant > ? ORDER BY creationInstant DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
@@ -556,7 +556,7 @@ AND isSelfMessage == 0
 AND contentType IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', message.date) DESC;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
-SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND creationInstant = ? AND contentType = ?;
+SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent
@@ -573,8 +573,8 @@ SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.conversationId = ?
 AND visibility IN ?
 AND (expectsReadConfirmation = 1)
-AND creationInstant > ?
-ORDER BY creationInstant DESC;
+AND date > ?
+ORDER BY date DESC;
 
 selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
 SELECT id FROM MessageDetailsView

@@ -6,10 +6,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.datetime.toInstant
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
-    const val TEST_DATE = "2000-01-01T12:00:00.000Z"
+    const val TEST_DATE_STRING = "2000-01-01T12:00:00.000Z"
+    val TEST_DATE = TEST_DATE_STRING.toInstant()
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
@@ -34,7 +36,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
         conversationId = TestConversation.ID,
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
@@ -45,7 +47,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = MessageContent.MissedCall,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.PENDING,
     )
@@ -54,7 +56,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = ASSET_CONTENT,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,

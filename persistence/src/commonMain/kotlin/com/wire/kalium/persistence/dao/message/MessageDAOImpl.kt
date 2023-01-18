@@ -60,7 +60,7 @@ class MessageDAOImpl(
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
         queries.transaction {
-            val messageCreationInstant = message.date.toInstant()
+            val messageCreationInstant = message.date
             if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
             }
@@ -98,7 +98,7 @@ class MessageDAOImpl(
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
         queries.insertOrIgnoreBulkSystemMessage(
             id = message.id,
-            creation_instant = message.creationInstant,
+            creation_date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = null,
             visibility = message.visibility,
@@ -129,7 +129,7 @@ class MessageDAOImpl(
         queries.insertOrIgnoreMessage(
             id = message.id,
             conversation_id = message.conversationId,
-            creation_instant = message.date.toInstant(),
+            creation_date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
@@ -318,7 +318,7 @@ class MessageDAOImpl(
             queries.selectByConversationIdAndSenderIdAndTimeAndType(
                 message.conversationId,
                 message.senderUserId,
-                message.date.toInstant(),
+                message.date,
                 contentTypeOf(messageContent)
             )
                 .executeAsList()

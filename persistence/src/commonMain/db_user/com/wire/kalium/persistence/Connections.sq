@@ -8,30 +8,30 @@ CREATE TABLE Connection (
     conversation_id TEXT NOT NULL,
     qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY ,
     to_id TEXT NOT NULL,
-    last_update_instant INTEGER AS Instant NOT NULL,
+    last_update_date INTEGER AS Instant NOT NULL,
     qualified_to TEXT AS QualifiedIDEntity NOT NULL,
     status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     should_notify INTEGER AS Boolean DEFAULT 1
 );
 -- Optimise comparisons and sorting by date:
-CREATE INDEX connection_update_instant_index ON Connection(last_update_instant);
+CREATE INDEX connection_update_date_index ON Connection(last_update_date);
 
 deleteConnection:
 DELETE FROM Connection WHERE qualified_conversation = ?;
 
 insertConnection:
-INSERT INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update_instant, qualified_to, status)
+INSERT INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update_date, qualified_to, status)
 VALUES(?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_conversation) DO UPDATE SET
 from_id = excluded.from_id,
 conversation_id = excluded.conversation_id,
 to_id = excluded.to_id,
-last_update_instant = excluded.last_update_instant,
+last_update_date = excluded.last_update_date,
 qualified_to = excluded.qualified_to,
 status = excluded.status;
 
 updateConnectionLastUpdated:
-UPDATE Connection SET last_update_instant = ? WHERE to_id = ?;
+UPDATE Connection SET last_update_date = ? WHERE to_id = ?;
 
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;

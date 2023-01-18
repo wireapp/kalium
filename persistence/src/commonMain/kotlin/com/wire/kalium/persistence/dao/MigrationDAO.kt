@@ -30,11 +30,11 @@ internal class MigrationDAOImpl(
                         mutedStatus,
                         mutedTime,
                         creatorId,
-                        lastModifiedInstant,
-                        lastNotificationInstant,
+                        lastModifiedDate,
+                        lastNotificationDate,
                         access,
                         accessRole,
-                        lastReadInstant,
+                        lastReadDate,
                         if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
                         else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                         if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite

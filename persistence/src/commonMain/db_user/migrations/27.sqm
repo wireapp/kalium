@@ -62,19 +62,19 @@ CREATE TABLE Conversation_temp (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
-    last_modified_instant INTEGER AS Instant NOT NULL,
-    last_notified_instant INTEGER AS Instant,
-    last_read_instant INTEGER AS Instant DEFAULT 0 NOT NULL,
+    last_modified_date INTEGER AS Instant NOT NULL,
+    last_notified_date INTEGER AS Instant,
+    last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
-    mls_last_keying_material_update_instant INTEGER AS Instant DEFAULT 0 NOT NULL,
+    mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
     receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
 );
 -- Optimise comparisons and sorting by dates:
-CREATE INDEX conversation_modified_instant_index ON Conversation_temp(last_modified_instant);
-CREATE INDEX conversation_notified_instant_index ON Conversation_temp(last_notified_instant);
-CREATE INDEX conversation_read_instant_index ON Conversation_temp(last_read_instant);
+CREATE INDEX conversation_modified_date_index ON Conversation_temp(last_modified_date);
+CREATE INDEX conversation_notified_date_index ON Conversation_temp(last_notified_date);
+CREATE INDEX conversation_read_date_index ON Conversation_temp(last_read_date);
 
 INSERT INTO
     Conversation_temp(
@@ -90,12 +90,12 @@ INSERT INTO
         muted_status,
         muted_time,
         creator_id,
-        last_modified_instant,
-        last_notified_instant,
-        last_read_instant,
+        last_modified_date,
+        last_notified_date,
+        last_read_date,
         access_list,
         access_role_list,
-        mls_last_keying_material_update_instant,
+        mls_last_keying_material_update_date,
         mls_cipher_suite,
         receipt_mode
     )
@@ -130,13 +130,13 @@ CREATE TABLE Connection_temp (
     conversation_id TEXT NOT NULL,
     qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY ,
     to_id TEXT NOT NULL,
-    last_update_instant INTEGER AS Instant NOT NULL,
+    last_update_date INTEGER AS Instant NOT NULL,
     qualified_to TEXT AS QualifiedIDEntity NOT NULL,
     status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     should_notify INTEGER AS Boolean DEFAULT 1
 );
 -- Optimise comparisons and sorting by date:
-CREATE INDEX connection_update_instant_index ON Connection_temp(last_update_instant);
+CREATE INDEX connection_update_date_index ON Connection_temp(last_update_date);
 
 INSERT INTO
     Connection_temp(
@@ -144,7 +144,7 @@ INSERT INTO
         conversation_id,
         qualified_conversation,
         to_id,
-        last_update_instant,
+        last_update_date,
         qualified_to,
         status,
         should_notify
@@ -166,11 +166,11 @@ CREATE TABLE Message_temp (
       id TEXT NOT NULL,
       content_type TEXT AS ContentType NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      creation_instant INTEGER AS Instant NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
-      last_edit_instant INTEGER AS Instant,
+      last_edit_date INTEGER AS Instant,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
@@ -178,18 +178,18 @@ CREATE TABLE Message_temp (
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
 );
-CREATE INDEX message_creation_instant_index ON Message_temp(creation_instant);
+CREATE INDEX message_creation_date_index ON Message_temp(creation_date);
 
 INSERT INTO
     Message_temp (
         id,
         content_type,
         conversation_id,
-        creation_instant,
+        creation_date,
         sender_user_id,
         sender_client_id,
         status,
-        last_edit_instant,
+        last_edit_date,
         visibility,
         expects_read_confirmation
     )
@@ -217,58 +217,58 @@ CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.name
     WHEN "CONNECTION_PENDING" THEN connection_user.name
     ELSE Conversation.name
-    END AS name,
+END AS name,
 Conversation.type,
 Call.status AS callStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.preview_asset_id
     WHEN "CONNECTION_PENDING" THEN connection_user.preview_asset_id
-    END AS previewAssetId,
+END AS previewAssetId,
 Conversation.muted_status AS mutedStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN User.team
     ELSE Conversation.team_id
-    END AS teamId,
+END AS teamId,
 CASE (Conversation.type)
-        WHEN "CONNECTION_PENDING" THEN Connection.last_update_instant
-        ELSE Conversation.last_modified_instant
-        END AS lastModifiedInstant,
-Conversation.last_read_instant AS lastReadInstant,
+        WHEN "CONNECTION_PENDING" THEN Connection.last_update_date
+        ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_availability_status
     WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status
-    END AS userAvailabilityStatus,
+END AS userAvailabilityStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_type
     WHEN "CONNECTION_PENDING" THEN connection_user.user_type
-    END AS userType,
+END AS userType,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.bot_service
     WHEN "CONNECTION_PENDING" THEN connection_user.bot_service
-    END AS botService,
+END AS botService,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.deleted
     WHEN "CONNECTION_PENDING" THEN connection_user.deleted
-    END AS userDeleted,
+END AS userDeleted,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.connection_status
     WHEN "CONNECTION_PENDING" THEN connection_user.connection_status
-    END AS connectionStatus,
+END AS connectionStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.qualified_id
     WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
-    END AS otherUserId,
+END AS otherUserId,
 CASE
     WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0
-    END AS isCreator,
-Conversation.last_notified_instant AS lastNotifiedMessageInstant,
-memberRole. role AS selfRole,
+END AS isCreator,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole.role AS selfRole,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
 Conversation.mls_group_id,
-Conversation.mls_last_keying_material_update_instant,
+Conversation.mls_last_keying_material_update_date,
 Conversation.mls_group_state,
 Conversation.access_list,
 Conversation.access_role_list,
@@ -276,7 +276,7 @@ Conversation.team_id,
 Conversation.mls_proposal_timer,
 Conversation.muted_time,
 Conversation.creator_id,
-Conversation.last_modified_instant,
+Conversation.last_modified_date,
 Conversation.receipt_mode
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -299,11 +299,11 @@ AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.creation_instant AS creationInstant,
+Message.creation_date AS date,
 Message.sender_user_id AS senderUserId,
 Message.sender_client_id AS senderClientId,
 Message.status AS status,
-Message.last_edit_instant AS lastEditTimestamp,
+Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
@@ -418,8 +418,8 @@ AS SELECT
     QuotedSender.qualified_id AS quotedSenderId,
     (qualified_id == SelfUser.id) AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
-    QuotedMessage.creation_instant quotedMessageCreationInstant,
-    QuotedMessage.last_edit_instant AS quotedMessageEditInstant,
+    QuotedMessage.creation_date quotedMessageCreationInstant,
+    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
     QuotedMessage.visibility AS quotedMessageVisibility,
     QuotedMessage.content_type AS quotedMessageContentType,
     QuotedTextContent.text_body AS quotedTextBody,
@@ -438,7 +438,7 @@ AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.creation_instant AS date,
+Message.creation_date AS date,
 Message.visibility AS visibility,
 Message.sender_user_id AS senderUserId,
 User.name AS senderName,
@@ -454,8 +454,8 @@ Conversation.name AS conversationName,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 TextContent.text_body AS text,
 AssetContent.asset_mime_type AS assetMimeType,
-(Message.creation_instant > Conversation.last_read_instant) AS isUnread,
-IFNULL((Message.creation_instant > IFNULL(Conversation.last_notified_instant, 0)), FALSE) AS shouldNotify,
+(Message.creation_date > Conversation.last_read_date) AS isUnread,
+IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
 Conversation.muted_status AS mutedStatus,
 Conversation.type AS conversationType
 FROM Message

@@ -150,9 +150,9 @@ class MessageTextEditTest : BaseMessageTest() {
     fun givenTextWasInserted_whenUpdatingContent_thenShouldMarkAsEditedWithNewDate() = runTest {
         insertInitialData()
 
-        val editDate = Instant.DISTANT_FUTURE.toIsoDateTimeString()
+        val editDate = Instant.DISTANT_FUTURE
         messageDAO.updateTextMessageContent(
-            editTimeStamp = editDate,
+            editTimeStamp = editDate.toIsoDateTimeString(),
             conversationId = CONVERSATION_ID,
             currentMessageId = ORIGINAL_MESSAGE_ID,
             newTextContent = ORIGINAL_CONTENT.copy(messageBody = "Howdy"),
@@ -164,7 +164,7 @@ class MessageTextEditTest : BaseMessageTest() {
         assertIs<MessageEntity.Regular>(result)
         val editStatus = result.editStatus
         assertIs<MessageEntity.EditStatus.Edited>(editStatus)
-        assertEquals(editDate, editStatus.lastTimeStamp)
+        assertEquals(editDate, editStatus.lastDate)
     }
 
     override suspend fun insertInitialData() {

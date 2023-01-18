@@ -364,7 +364,7 @@ class MessageRepositoryTest {
                 id = "uid",
                 content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
-                creationInstant = Instant.UNIX_FIRST_DATE,
+                date = Instant.UNIX_FIRST_DATE,
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = SENT,

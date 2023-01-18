@@ -18,7 +18,7 @@ private class ConnectionMapper {
     fun toModel(state: SQLDelightConnection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversation_id,
         from = state.from_id,
-        lastUpdateInstant = state.last_update_instant,
+        lastUpdateDate = state.last_update_date,
         qualifiedConversationId = state.qualified_conversation,
         qualifiedToId = state.qualified_to,
         status = state.status,
@@ -32,7 +32,7 @@ private class ConnectionMapper {
         conversation_id: String,
         qualified_conversation: QualifiedIDEntity,
         to_id: String,
-        last_update_instant: Instant,
+        last_update_date: Instant,
         qualified_to: QualifiedIDEntity,
         status: ConnectionEntity.State,
         should_notify: Boolean?,
@@ -53,7 +53,7 @@ private class ConnectionMapper {
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
-        lastUpdateInstant = last_update_instant,
+        lastUpdateDate = last_update_date,
         qualifiedConversationId = qualified_conversation,
         qualifiedToId = qualified_to,
         status = status,
@@ -107,7 +107,7 @@ class ConnectionDAOImpl(
             conversation_id = connectionEntity.conversationId,
             qualified_conversation = connectionEntity.qualifiedConversationId,
             to_id = connectionEntity.toId,
-            last_update_instant = connectionEntity.lastUpdateInstant,
+            last_update_date = connectionEntity.lastUpdateDate,
             qualified_to = connectionEntity.qualifiedToId,
             status = connectionEntity.status
         )
@@ -121,7 +121,7 @@ class ConnectionDAOImpl(
                     conversation_id = connectionEntity.conversationId,
                     qualified_conversation = connectionEntity.qualifiedConversationId,
                     to_id = connectionEntity.toId,
-                    last_update_instant = connectionEntity.lastUpdateInstant,
+                    last_update_date = connectionEntity.lastUpdateDate,
                     qualified_to = connectionEntity.qualifiedToId,
                     status = connectionEntity.status
                 )

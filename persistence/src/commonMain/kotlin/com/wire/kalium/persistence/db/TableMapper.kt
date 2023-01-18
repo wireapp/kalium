@@ -46,7 +46,7 @@ internal object TableMapper {
         qualified_conversationAdapter = QualifiedIDAdapter,
         qualified_toAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        last_update_instantAdapter = InstantTypeAdapter,
+        last_update_dateAdapter = InstantTypeAdapter,
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
@@ -58,10 +58,10 @@ internal object TableMapper {
         access_role_listAdapter = ConversationAccessRoleListAdapter(),
         mls_cipher_suiteAdapter = EnumColumnAdapter(),
         receipt_modeAdapter = EnumColumnAdapter(),
-        last_read_instantAdapter = InstantTypeAdapter,
-        last_modified_instantAdapter = InstantTypeAdapter,
-        last_notified_instantAdapter = InstantTypeAdapter,
-        mls_last_keying_material_update_instantAdapter = InstantTypeAdapter,
+        last_read_dateAdapter = InstantTypeAdapter,
+        last_modified_dateAdapter = InstantTypeAdapter,
+        last_notified_dateAdapter = InstantTypeAdapter,
+        mls_last_keying_material_update_dateAdapter = InstantTypeAdapter,
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -74,8 +74,8 @@ internal object TableMapper {
         statusAdapter = EnumColumnAdapter(),
         content_typeAdapter = ContentTypeAdapter(),
         visibilityAdapter = EnumColumnAdapter(),
-        creation_instantAdapter = InstantTypeAdapter,
-        last_edit_instantAdapter = InstantTypeAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+        last_edit_dateAdapter = InstantTypeAdapter,
     )
     val messageAssetContentAdapter = MessageAssetContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

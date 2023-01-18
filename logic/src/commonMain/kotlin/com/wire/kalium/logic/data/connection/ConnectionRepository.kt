@@ -229,9 +229,9 @@ internal class ConnectionDataSource(
                         teamId = null,
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
-                        lastNotificationInstant = null,
-                        lastModifiedInstant = connection.lastUpdate.toInstant(),
-                        lastReadInstant = connection.lastUpdate.toInstant(),
+                        lastNotificationDate = null,
+                        lastModifiedDate = connection.lastUpdate.toInstant(),
+                        lastReadDate = connection.lastUpdate.toInstant(),
                         access = emptyList(),
                         accessRole = emptyList(),
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED
