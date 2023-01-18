@@ -2,10 +2,12 @@ package com.wire.kalium.testservice.api.v1
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.SendConfirmationReadRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
@@ -92,12 +94,43 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/mute
     // Mute a conversation.
 
-    // POST /api/v1/instance/{instanceId}/sendConfirmationDelivered
-    // Send a delivery confirmation for a message
+    @POST
+    @Path("/instance/{id}/sendConfirmationDelivered")
+    @Operation(summary = "Send a delivery confirmation for a message")
+    fun sendConfirmationDelivered(
+        @PathParam("id") id: String,
+        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+    ): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendConfirmationReadRequest) {
+            ConversationRepository.sendConfirmation(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                ReceiptType.DELIVERED,
+                firstMessageId
+            )
+        }
+        return Response.status(Response.Status.OK).build()
+    }
 
-    // POST /api/v1/instance/{instanceId}/sendConfirmationRead
-    // Send a read confirmation for a message.
-    // Used in: web-mls
+    @POST
+    @Path("/instance/{id}/sendConfirmationRead")
+    @Operation(summary = "Send a read confirmation for a message")
+    fun sendConfirmationRead(
+        @PathParam("id") id: String,
+        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+    ): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendConfirmationReadRequest) {
+            ConversationRepository.sendConfirmation(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                ReceiptType.READ,
+                firstMessageId
+            )
+        }
+        return Response.status(Response.Status.OK).build()
+    }
 
     // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationDelivered
     // Send a delivery confirmation for an ephemeral message.
