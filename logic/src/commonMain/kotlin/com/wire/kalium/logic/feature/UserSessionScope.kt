@@ -607,8 +607,7 @@ class UserSessionScope internal constructor(
             syncConnections,
             syncSelfTeamUseCase,
             syncContacts,
-            joinExistingMLSConversations,
-            addSystemMessageToAllConversationsUseCase
+            joinExistingMLSConversations
         )
     }
 
@@ -1077,6 +1076,9 @@ class UserSessionScope internal constructor(
 
         launch {
             mlsConversationsRecoveryManager.invoke()
+        }
+
+        launch {
             conversationsRecoveryManager.invoke()
         }
     }
