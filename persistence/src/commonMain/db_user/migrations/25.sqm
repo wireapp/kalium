@@ -1,7 +1,8 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 -- Delete MessageDetails View
-DROP VIEW MessageDetailsView;
+DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS MessagePreview;
 
 -- Create new table for New Conversation Receipt Mode Content
 CREATE TABLE MessageNewConversationReceiptModeContent (
@@ -142,29 +143,29 @@ LEFT JOIN SelfUser;
 
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT
-Message.id AS id,
-Message.conversation_id AS conversationId,
-Message.content_type AS contentType,
-Message.creation_date AS date,
-Message.visibility AS visibility,
-Message.sender_user_id AS senderUserId,
-User.name AS senderName,
-User.connection_status AS senderConnectionStatus,
-User.deleted AS senderIsDeleted,
-SelfUser.id AS selfUserId,
-(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-MemberChangeContent.member_change_list AS memberChangeList,
-MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS updateConversationName,
-Conversation.name AS conversationName,
-(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-TextContent.text_body AS text,
-AssetContent.asset_mime_type AS assetMimeType,
-(Message.creation_date > Conversation.last_read_date) AS isUnread,
-IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
-Conversation.muted_status AS mutedStatus,
-Conversation.type AS conversationType
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
