@@ -55,7 +55,9 @@ class PersistMigratedMessagesUseCaseTest {
             senderClientId = TestClient.CLIENT_ID,
             "",
             "some_content",
-            genericMessage.encodeToByteArray()
+            genericMessage.encodeToByteArray(),
+            null,
+            null
         )
 
         fun withSuccessfulHandling(): Arrangement {
