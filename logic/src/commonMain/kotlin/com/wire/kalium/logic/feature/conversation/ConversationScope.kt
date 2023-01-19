@@ -164,4 +164,11 @@ class ConversationScope internal constructor(
             conversationRepository,
             selfUserId
         )
+
+    val updateConversationReceiptMode: UpdateConversationReceiptModeUseCase
+        get() = UpdateConversationReceiptModeUseCaseImpl(
+            conversationRepository = conversationRepository,
+            persistMessage = persistMessage,
+            selfUserId = selfUserId
+        )
 }
