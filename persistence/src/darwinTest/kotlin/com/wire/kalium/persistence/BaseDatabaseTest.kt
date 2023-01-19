@@ -11,7 +11,6 @@ import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
-
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()

@@ -7,7 +7,10 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 interface ReactionDAO {
 
@@ -46,7 +49,10 @@ interface ReactionDAO {
     ): Flow<List<MessageReactionEntity>>
 }
 
-class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : ReactionDAO {
+class ReactionDAOImpl(
+    private val reactionsQueries: ReactionsQueries,
+    private val queriesContext: CoroutineContext
+) : ReactionDAO {
 
     override suspend fun updateReactions(
         originalMessageId: String,
@@ -54,7 +60,7 @@ class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : Reaction
         senderUserId: UserIDEntity,
         date: String,
         reactions: UserReactionsEntity
-    ) {
+    ) = withContext(queriesContext) {
         reactionsQueries.transaction {
             reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
             reactions.forEach {
@@ -69,7 +75,7 @@ class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : Reaction
         senderUserId: UserIDEntity,
         date: String,
         emoji: String
-    ) {
+    ) = withContext(queriesContext) {
         reactionsQueries.insertReaction(
             originalMessageId, conversationId, senderUserId, emoji, date
         )
@@ -80,7 +86,7 @@ class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : Reaction
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
         emoji: String
-    ) {
+    ) = withContext(queriesContext) {
         reactionsQueries.deleteReaction(originalMessageId, conversationId, senderUserId, emoji)
     }
 
@@ -98,6 +104,7 @@ class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : Reaction
     override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
+            .flowOn(queriesContext)
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
 }

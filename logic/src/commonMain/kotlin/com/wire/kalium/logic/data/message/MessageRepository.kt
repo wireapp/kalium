@@ -57,6 +57,10 @@ interface MessageRepository {
         updateConversationModifiedDate: Boolean = false,
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
@@ -211,6 +215,18 @@ class MessageDataSource(
         )
     }
 
+    override suspend fun persistSystemMessageToAllConversations(
+        message: Message.System
+    ): Either<CoreFailure, Unit> {
+        messageMapper.fromMessageToEntity(message).let {
+            return if (it is MessageEntity.System) {
+                wrapStorageRequest {
+                    messageDAO.persistSystemMessageToAllConversations(it)
+                }
+            } else Either.Left(CoreFailure.OnlySystemMessageAllowed)
+        }
+    }
+
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.deleteMessage(messageUuid, conversationId.toDao())
@@ -276,7 +292,7 @@ class MessageDataSource(
 
     override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
         wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { Instant.parse(it.date) }
+            .map { it.date }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {

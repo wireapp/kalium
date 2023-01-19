@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.mock
 import io.mockative.verify
@@ -18,23 +18,19 @@ class IncrementalSyncRecoveryHandlerTest {
         val arrangement = Arrangement().arrange()
 
         // when
-        arrangement.recoverWithFailure(CoreFailure.Unknown(IllegalStateException()))
+        arrangement.recoverWithFailure(NetworkFailure.ServerMiscommunication(TestNetworkException.notFound))
 
         // then
         with(arrangement) {
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
-                .wasNotInvoked()
-
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
-                .with(any())
-                .wasNotInvoked()
+            verify(restartSlowSyncProcessForRecoveryUseCase)
+                .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
+                .with()
+                .wasInvoked()
 
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasNotInvoked()
         }
     }
 
@@ -50,32 +46,28 @@ class IncrementalSyncRecoveryHandlerTest {
 
         // then
         with(arrangement) {
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
-                .wasNotInvoked()
-
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
-                .with(any())
-                .wasNotInvoked()
-
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
                 .wasInvoked()
+
+            verify(restartSlowSyncProcessForRecoveryUseCase)
+                .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
+                .with()
+                .wasNotInvoked()
         }
     }
 
     private class Arrangement {
 
         @Mock
-        val onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback = mock(classOf<OnIncrementalSyncRetryCallback>())
+        val onIncrementalSyncRetryCallback = mock(classOf<OnIncrementalSyncRetryCallback>())
 
         @Mock
-        val slowSyncRepository: SlowSyncRepository = mock(classOf<SlowSyncRepository>())
+        val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
 
         private val incrementalSyncRecoveryHandler by lazy {
-            IncrementalSyncRecoveryHandlerImpl(slowSyncRepository)
+            IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
         }
 
         suspend fun recoverWithFailure(failure: CoreFailure) {

@@ -18,8 +18,8 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
-import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -119,7 +119,7 @@ class JoinConversationViaCodeUseCaseTest {
 
         val (useCae, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
-            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Left(NetworkFailure.NoNetworkConnection(IOException())))
+            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Left(NetworkFailure.NoNetworkConnection(CancellationException())))
             .arrange()
 
         useCae(code, key, domain).also {
