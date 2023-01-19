@@ -49,7 +49,6 @@ import okio.use
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@IgnoreIOS // TODO re-enable when asset support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleNewAssetMessageUseCaseTest {
 

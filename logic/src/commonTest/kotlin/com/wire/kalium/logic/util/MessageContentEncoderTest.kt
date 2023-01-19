@@ -7,7 +7,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-@IgnoreIOS // TODO calcSHA256 is not implemented
 class MessageContentEncoderTest {
 
     private val messageContentEncoder: MessageContentEncoder = MessageContentEncoder()
