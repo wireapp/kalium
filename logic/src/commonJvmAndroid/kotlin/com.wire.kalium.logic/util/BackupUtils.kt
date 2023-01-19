@@ -90,6 +90,10 @@ private fun readCompressedEntry(
     fileSystem: KaliumFileSystem,
     entry: ZipEntry
 ): Pair<Long, ZipEntry?> {
+    if (isInvalidEntryPathDestination(entry.name)) {
+        throw RuntimeException("The provided zip file is invalid or has invalid data")
+    }
+
     var totalExtractedFilesSize = 0L
     var byteCount: Int
     val entryPathName = "$outputRootPath/${entry.name}"
@@ -104,5 +108,7 @@ private fun readCompressedEntry(
     zipInputStream.closeEntry()
     return totalExtractedFilesSize to zipInputStream.nextEntry
 }
+
+private fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L
