@@ -49,7 +49,7 @@ android {
 
 repositories {
     maven {
-        url = uri("$rootDir/avs/localrepo/")
+        url = uri("$rootDir/localrepo/")
     }
 }
 
