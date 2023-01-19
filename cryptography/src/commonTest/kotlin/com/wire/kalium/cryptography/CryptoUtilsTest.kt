@@ -23,7 +23,6 @@ import kotlin.test.assertTrue
 class CryptoUtilsTest {
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun testGivenByteArray_whenCallingCalcMd5_returnsExpectedDigest() {
         // Given
@@ -46,7 +45,6 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun testGivenByteArray_whenCallingCalcSHA256_returnsExpectedDigest() {
         // Given
@@ -71,7 +69,6 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun givenSomeDummyFile_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalFile() {
         // Given
@@ -110,7 +107,6 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun givenSomeDummyFile_whenEncryptedAsDataAndDecryptedWithAES256AsAFile_returnsExpectedOriginalFileContent() {
         // Given
@@ -148,7 +144,6 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun givenSomeDummyFile_whenEncryptedAsAFileAndDecryptedWithAES256AsData_returnsExpectedOriginalFileContent() {
         // Given
@@ -182,7 +177,6 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
-    @IgnoreIOS
     @IgnoreAndroidInstrumented
     fun givenDummyText_whenEncryptedAndDecryptedWithAES256_returnsOriginalText() {
         // Given

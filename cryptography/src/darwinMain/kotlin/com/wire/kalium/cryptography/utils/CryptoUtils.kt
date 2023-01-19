@@ -41,6 +41,7 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
         val plainData = assetDataSource.buffer().readByteArray()
         val encryptedBuffer = ByteArray(plainData.size + kCCBlockSizeAES128.toInt())
 
+        // TODO avoid read whole file into memory by using streaming or block based API
         return memScoped {
             val bytesCopied = alloc<ULongVar>()
             val status = key.data.usePinned { key ->
@@ -87,6 +88,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
         val encryptedData = encryptedDataSource.buffer().readByteArray()
         val decryptedBuffer = ByteArray(encryptedData.size + kCCBlockSizeAES128.toInt())
 
+        // TODO avoid read whole file into memory by using streaming or block based API
         return memScoped {
             val bytesCopied = alloc<ULongVar>()
             val status = secretKey.data.usePinned { key ->
@@ -131,7 +133,7 @@ private fun generateRandomData(size: Int): ByteArray {
     val keyMaterial = ByteArray(size)
     val status = memScoped {
         keyMaterial.usePinned { keyMaterial ->
-            SecRandomCopyBytes(kSecRandomDefault, size.toULong(), keyMaterial.addressOf(0));
+            SecRandomCopyBytes(kSecRandomDefault, size.toULong(), keyMaterial.addressOf(0))
         }
     }
 
