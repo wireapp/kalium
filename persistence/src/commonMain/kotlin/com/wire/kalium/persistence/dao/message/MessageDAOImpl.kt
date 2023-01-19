@@ -468,13 +468,10 @@ class MessageDAOImpl(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        withContext(coroutineContext) {
-            queries.getLastMessages(mapper::toPreviewEntity).asFlow().mapToList()
-        }
+            queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
-    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> = withContext(coroutineContext) {
-        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().mapToList()
-    }
+    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
+        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     @Suppress("ComplexMethod")
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
