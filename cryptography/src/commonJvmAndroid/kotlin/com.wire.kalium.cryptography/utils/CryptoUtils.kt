@@ -1,3 +1,4 @@
+@file:JvmName("CryptoUtilsJvm")
 package com.wire.kalium.cryptography.utils
 
 import okio.Sink
