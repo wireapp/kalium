@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
@@ -62,4 +63,9 @@ interface ConversationApi {
     suspend fun joinConversation(code: String, key: String, uri: String?): NetworkResponse<ConversationMemberAddedResponse>
 
     suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo>
+
+    suspend fun updateReceiptMode(
+        conversationId: ConversationId,
+        receiptMode: ConversationReceiptModeDTO
+    ): NetworkResponse<UpdateConversationReceiptModeResponse>
 }

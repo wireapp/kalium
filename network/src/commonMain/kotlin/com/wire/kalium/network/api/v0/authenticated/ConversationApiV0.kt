@@ -15,7 +15,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -241,6 +243,25 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
+    override suspend fun updateReceiptMode(
+        conversationId: ConversationId,
+        receiptMode: ConversationReceiptModeDTO
+    ): NetworkResponse<UpdateConversationReceiptModeResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_RECEIPT_MODE") {
+            setBody(receiptMode)
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationReceiptModeResponse.ReceiptModeUnchanged, httpResponse)
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.ReceiptModeUpdate> { httpResponse }
+                    .mapSuccess {
+                        UpdateConversationReceiptModeResponse.ReceiptModeUpdated(it)
+                    }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -252,6 +273,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_ACCESS = "access"
         const val PATH_NAME = "name"
         const val PATH_JOIN = "join"
+        const val PATH_RECEIPT_MODE = "receipt-mode"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"
