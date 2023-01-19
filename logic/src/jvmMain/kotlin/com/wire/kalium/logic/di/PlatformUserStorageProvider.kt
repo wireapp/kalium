@@ -11,7 +11,7 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
     override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.rootPath, shouldEncryptData)
-        val database = userDatabaseBuilder(userIdEntity, File(platformProperties.rootStoragePath), KaliumDispatcherImpl.io)
+        val database = userDatabaseBuilder(userIdEntity, File(platformProperties.rootStoragePath), KaliumDispatcherImpl.io, false)
         return UserStorage(database, pref)
     }
 

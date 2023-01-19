@@ -4,13 +4,15 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
-import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.extractCompressedFile
+import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
@@ -20,7 +22,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.buffer
@@ -53,8 +54,8 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Success)
         assertEquals(result.backupFilePath.name, BACKUP_FILE_NAME)
-        verify(arrangement.observeClientId)
-            .suspendFunction(arrangement.observeClientId::invoke)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasInvoked(once)
 
         // Check that there is a metadata file and a db file whose content is the same as the one we provided
@@ -91,8 +92,8 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Failure)
         assertTrue(result.coreFailure is StorageFailure.DataNotFound)
-        verify(arrangement.observeClientId)
-            .suspendFunction(arrangement.observeClientId::invoke)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasInvoked(once)
     }
 
@@ -112,8 +113,8 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertTrue(result is CreateBackupResult.Success)
-        verify(arrangement.observeClientId)
-            .suspendFunction(arrangement.observeClientId::invoke)
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
             .wasInvoked(once)
 
         // Check there is only one .cc20 file in the backup file
@@ -133,13 +134,16 @@ class CreateBackupUseCaseTest {
         private var isUserDBSQLCiphered = false
 
         @Mock
-        val observeClientId = mock(classOf<ObserveCurrentClientIdUseCase>())
+        val databaseExporter = mock(classOf<DatabaseExporter>())
 
-        fun withObservedClientId(clientId: ClientId?) = apply {
-            given(observeClientId)
-                .suspendFunction(observeClientId::invoke)
+        @Mock
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+
+        fun withObservedClientId(clientId: ClientId) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
-                .thenReturn(flowOf(clientId))
+                .thenReturn(Either.Right(clientId))
         }
 
         fun withProvidedDB(dbData: ByteArray?) = apply {
@@ -151,7 +155,7 @@ class CreateBackupUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =
-            this to CreateBackupUseCaseImpl(userId, observeClientId, fakeFileSystem, userDBSecret, isUserDBSQLCiphered, dispatcher)
+            this to CreateBackupUseCaseImpl(userId, fakeFileSystem, databaseExporter, currentClientIdProvider, dispatcher)
 
     }
 

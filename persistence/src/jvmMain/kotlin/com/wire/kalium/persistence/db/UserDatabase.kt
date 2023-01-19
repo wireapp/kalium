@@ -19,7 +19,8 @@ internal actual class PlatformDatabaseData(
 fun userDatabaseBuilder(
     userId: UserIDEntity,
     storePath: File,
-    dispatcher: CoroutineDispatcher
+    dispatcher: CoroutineDispatcher,
+    encrypt: Boolean
 ): UserDatabaseBuilder {
     val databasePath = storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
@@ -32,7 +33,7 @@ fun userDatabaseBuilder(
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath), encrypt)
 }
 
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
@@ -43,7 +44,7 @@ private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
 fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
     val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY)
     UserDatabase.Schema.create(driver)
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")), false)
 }
 
 internal actual fun nuke(

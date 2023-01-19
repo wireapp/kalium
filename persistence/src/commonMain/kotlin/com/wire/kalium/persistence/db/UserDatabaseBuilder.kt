@@ -62,6 +62,7 @@ class UserDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
+    private val isEncrypted: Boolean,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
 
