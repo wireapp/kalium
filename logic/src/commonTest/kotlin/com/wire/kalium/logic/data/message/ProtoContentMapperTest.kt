@@ -216,7 +216,6 @@ class ProtoContentMapperTest {
         assertIs<MessageContent.Ignored>(decoded.messageContent)
     }
 
-    @IgnoreIOS // TODO generateRandomAES256Key is not implemented for darwin
     @Test
     fun givenExternalMessageInstructions_whenEncodingToProtoAndBack_thenTheResultContentShouldEqualTheOriginal() {
         val messageUid = TEST_MESSAGE_UUID

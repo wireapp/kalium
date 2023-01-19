@@ -92,7 +92,6 @@ class MessageEnvelopeCreatorTest {
         }
     }
 
-    @IgnoreIOS // TODO generateRandomAES256Key is not implemented
     @Test
     fun givenMessageContentIsTooBig_whenCreatingAnEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
         // Given
