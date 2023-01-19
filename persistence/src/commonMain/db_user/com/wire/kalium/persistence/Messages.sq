@@ -5,16 +5,17 @@ import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Boolean;
 import kotlin.Int;
 import kotlin.collections.List;
+import kotlinx.datetime.Instant;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
       content_type TEXT AS ContentType NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      date TEXT NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
-      last_edit_timestamp TEXT ,
+      last_edit_date INTEGER AS Instant,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
 
@@ -24,7 +25,7 @@ CREATE TABLE Message (
 );
 
 -- Allows optimized querying of messages sorting by date.
-CREATE INDEX message_date_index ON Message(date);
+CREATE INDEX message_creation_date_index ON Message(creation_date);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -152,8 +153,8 @@ AS SELECT
     QuotedSender.qualified_id AS quotedSenderId,
     (qualified_id == SelfUser.id) AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
-    QuotedMessage.date AS quotedMessageDateTime,
-    QuotedMessage.last_edit_timestamp AS quotedMessageEditTimestamp,
+    QuotedMessage.creation_date quotedMessageCreationInstant,
+    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
     QuotedMessage.visibility AS quotedMessageVisibility,
     QuotedMessage.content_type AS quotedMessageContentType,
     QuotedTextContent.text_body AS quotedTextBody,
@@ -171,11 +172,11 @@ AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.date AS date,
+Message.creation_date AS date,
 Message.sender_user_id AS senderUserId,
 Message.sender_client_id AS senderClientId,
 Message.status AS status,
-Message.last_edit_timestamp AS lastEditTimestamp,
+Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
@@ -256,8 +257,8 @@ QuotedMessage.quotedSenderId AS quotedSenderId,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 QuotedMessage.isQuoteVerified AS isQuoteVerified,
 QuotedMessage.quotedSenderName AS quotedSenderName,
-QuotedMessage.quotedMessageDateTime AS quotedMessageDateTime,
-QuotedMessage.quotedMessageEditTimestamp AS quotedMessageEditTimestamp,
+QuotedMessage.quotedMessageCreationInstant AS quotedMessageDateTime,
+QuotedMessage.quotedMessageEditInstant AS quotedMessageEditTimestamp,
 QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
@@ -280,28 +281,28 @@ LEFT JOIN SelfUser;
 
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT
-Message.id AS id,
-Message.conversation_id AS conversationId,
-Message.content_type AS contentType,
-Message.date AS date,
-Message.visibility AS visibility,
-User.name AS senderName,
-User.connection_status AS senderConnectionStatus,
-User.deleted AS senderIsDeleted,
-SelfUser.id AS selfUserId,
-(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-MemberChangeContent.member_change_list AS memberChangeList,
-MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS updateConversationName,
-Conversation.name AS conversationName,
-(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-TextContent.text_body AS text,
-AssetContent.asset_mime_type AS assetMimeType,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
-IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ',IFNULL(  Conversation.last_notified_message_date, '1970-01-01T00:00:00.000Z' ))), FALSE) AS shouldNotify,
-Conversation.muted_status AS mutedStatus,
-Conversation.type AS conversationType
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
@@ -386,11 +387,11 @@ markMessageAsDeleted {
 
 markMessageAsEdited:
 UPDATE Message
-SET last_edit_timestamp = ?
+SET last_edit_date = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertOrIgnoreMessage:
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
@@ -462,16 +463,16 @@ updateAssetContent {
 getLatestMessageFromOtherUsers:
 SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.isSelfMessage = FALSE
-ORDER BY strftime('%Y-%m-%d %H:%M:%f', MessageDetailsView.date) DESC LIMIT 1;
+ORDER BY MessageDetailsView.date DESC LIMIT 1;
 
 updateMessageDate:
 UPDATE Message
-SET date = ?
+SET creation_date = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateMessagesAddMillisToDate:
 UPDATE Message
-SET date = strftime('%Y-%m-%dT%H:%M:%fZ', date, '+' || ROUND(CAST(? AS REAL)/1000, 3) || ' seconds')
+SET creation_date = creation_date +  ?
 WHERE conversation_id = ? AND status = ?;
 
 updateMessageTextContent:
@@ -485,19 +486,19 @@ SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
 selectAllMessages:
-SELECT * FROM Message ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM Message ORDER BY Message.creation_date DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY MessageDetailsView.date DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
@@ -535,8 +536,8 @@ SELECT * FROM MessageDetailsView
 WHERE MessageDetailsView.conversationId = ?
 AND visibility IN ?
 AND (expectsReadConfirmation = 1)
-AND strftime('%Y-%m-%d %H:%M:%f', date) > strftime('%Y-%m-%d %H:%M:%f', ?)
-ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC;
+AND date > ?
+ORDER BY date DESC;
 
 selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
 SELECT id FROM MessageDetailsView

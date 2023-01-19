@@ -13,6 +13,7 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -119,7 +120,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                     newRegularMessageEntity(
                         id = it.toString(),
                         conversationId = CONVERSATION_ID,
-                        senderUserId = userId
+                        senderUserId = userId,
+                        // Ordered by date - Inserting with decreasing date is important to assert pagination
+                        date = Instant.fromEpochSeconds(MESSAGE_COUNT - it.toLong())
                     )
                 )
             }

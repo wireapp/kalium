@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
 import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.dao.MemberRoleAdapter
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.QualifiedIDListAdapter
@@ -42,7 +43,8 @@ internal object TableMapper {
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
         qualified_toAdapter = QualifiedIDAdapter,
-        statusAdapter = EnumColumnAdapter()
+        statusAdapter = EnumColumnAdapter(),
+        last_update_dateAdapter = InstantTypeAdapter,
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
@@ -53,7 +55,11 @@ internal object TableMapper {
         access_listAdapter = ConversationAccessListAdapter(),
         access_role_listAdapter = ConversationAccessRoleListAdapter(),
         mls_cipher_suiteAdapter = EnumColumnAdapter(),
-        receipt_modeAdapter = EnumColumnAdapter()
+        receipt_modeAdapter = EnumColumnAdapter(),
+        last_read_dateAdapter = InstantTypeAdapter,
+        last_modified_dateAdapter = InstantTypeAdapter,
+        last_notified_dateAdapter = InstantTypeAdapter,
+        mls_last_keying_material_update_dateAdapter = InstantTypeAdapter,
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -66,6 +72,8 @@ internal object TableMapper {
         statusAdapter = EnumColumnAdapter(),
         content_typeAdapter = ContentTypeAdapter(),
         visibilityAdapter = EnumColumnAdapter(),
+        creation_dateAdapter = InstantTypeAdapter,
+        last_edit_dateAdapter = InstantTypeAdapter,
     )
     val messageAssetContentAdapter = MessageAssetContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
