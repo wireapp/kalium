@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-// TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
 data class ConversationEntity(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -16,10 +15,10 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val removedBy: UserIDEntity? = null,
     val creatorId: String,
-    val lastNotificationDate: String?,
-    val lastModifiedDate: String,
+    val lastNotificationDate: Instant?,
+    val lastModifiedDate: Instant,
     // Date that indicates when the user has seen the conversation,
-    val lastReadDate: String,
+    val lastReadDate: Instant,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val receiptMode: ReceiptMode
@@ -75,8 +74,8 @@ data class ConversationViewEntity(
     val previewAssetId: QualifiedIDEntity?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val teamId: String?,
-    val lastModifiedDate: String?,
-    val lastReadDate: String,
+    val lastModifiedDate: Instant?,
+    val lastReadDate: Instant,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,
     val botService: BotEntity?,
@@ -84,7 +83,7 @@ data class ConversationViewEntity(
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,
-    val lastNotificationDate: String?,
+    val lastNotificationDate: Instant?,
     val selfRole: Member.Role?,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
@@ -93,7 +92,7 @@ data class ConversationViewEntity(
     val mlsCipherSuite: ConversationEntity.CipherSuite,
     val mlsEpoch: Long,
     val mlsGroupId: String?,
-    val mlsLastKeyingMaterialUpdate: Long,
+    val mlsLastKeyingMaterialUpdateDate: Instant,
     val mlsGroupState: ConversationEntity.GroupState,
     val mlsProposalTimer: String?,
     val mutedTime: Long,
@@ -102,6 +101,7 @@ data class ConversationViewEntity(
     val receiptMode: ConversationEntity.ReceiptMode
 ) {
     val isMember: Boolean get() = selfRole != null
+
 }
 
 // TODO: rename to MemberEntity

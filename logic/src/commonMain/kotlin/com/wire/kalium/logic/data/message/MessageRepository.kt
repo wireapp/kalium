@@ -292,7 +292,7 @@ class MessageDataSource(
 
     override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
         wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { Instant.parse(it.date) }
+            .map { it.date }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
