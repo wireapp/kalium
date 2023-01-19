@@ -84,6 +84,7 @@ actual fun checkIfCompressedFileContainsFileTypes(
         Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
     }
 
+@Suppress("TooGenericExceptionThrown")
 private fun readCompressedEntry(
     zipInputStream: ZipInputStream,
     outputRootPath: Path,
