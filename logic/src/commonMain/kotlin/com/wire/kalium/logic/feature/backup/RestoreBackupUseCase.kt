@@ -61,7 +61,7 @@ internal class RestoreBackupUseCaseImpl(
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
         withContext(dispatchers.io) {
-            extractCompressedBackup(backupFilePath)
+            extractCompressedBackup(backupFilePath.normalized())
                 .flatMap { extractedBackupRootPath ->
                     runSanityChecks(extractedBackupRootPath, password)
                         .map { (encryptedFilePath, isPasswordProtected) ->
