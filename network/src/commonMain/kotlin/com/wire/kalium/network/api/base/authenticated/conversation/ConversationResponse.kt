@@ -204,3 +204,34 @@ data class ServiceReferenceDTO(
     @SerialName("provider")
     val provider: String
 )
+
+@Serializable
+data class SubconversationResponse(
+    @SerialName("subconv_id")
+    val id: String,
+
+    @SerialName("parent_qualified_id")
+    val parentId: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String,
+
+    @SerialName("epoch")
+    val epoch: ULong,
+
+    @SerialName("epoch_timestamp")
+    val epochTimestamp: String?,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int,
+
+    @SerialName("members")
+    val members: List<SubconversationMember>,
+)
+
+@Serializable
+data class SubconversationMember(
+    @SerialName("client_id") val clientId: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("domain") val domain: String
+)

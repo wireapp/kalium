@@ -62,4 +62,10 @@ interface ConversationApi {
     suspend fun joinConversation(code: String, key: String, uri: String?): NetworkResponse<ConversationMemberAddedResponse>
 
     suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo>
+
+    suspend fun fetchSubconversationDetails(conversationId: ConversationId, subconversation: String): NetworkResponse<SubconversationResponse>
+
+    suspend fun fetchSubconversationGroupInfo(conversationId: ConversationId, subconversation: String): NetworkResponse<ByteArray>
+
+    suspend fun deleteSubconversation(conversationId: ConversationId, subconversation: String, deleteRequest: SubconversationDeleteRequest): NetworkResponse<Unit>
 }
