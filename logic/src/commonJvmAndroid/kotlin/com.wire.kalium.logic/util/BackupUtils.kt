@@ -84,16 +84,21 @@ actual fun checkIfCompressedFileContainsFileTypes(
         Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
     }
 
+@Suppress("TooGenericExceptionThrown")
 private fun readCompressedEntry(
     zipInputStream: ZipInputStream,
     outputRootPath: Path,
     fileSystem: KaliumFileSystem,
     entry: ZipEntry
 ): Pair<Long, ZipEntry?> {
+    if (isInvalidEntryPathDestination(entry.name)) {
+        throw RuntimeException("The provided zip file is invalid or has invalid data")
+    }
+
     var totalExtractedFilesSize = 0L
     var byteCount: Int
     val entryPathName = "$outputRootPath/${entry.name}"
-    val outputSink = fileSystem.sink(entryPathName.toPath())
+    val outputSink = fileSystem.sink(entryPathName.toPath().normalized())
     outputSink.buffer().use { output ->
         while (zipInputStream.read().also { byteCount = it } != -1) {
             output.writeByte(byteCount)
@@ -104,5 +109,10 @@ private fun readCompressedEntry(
     zipInputStream.closeEntry()
     return totalExtractedFilesSize to zipInputStream.nextEntry
 }
+
+/**
+ * Verification that the entry path is valid and does not contain any invalid characters leading to write in undesired directories.
+ */
+private fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L
