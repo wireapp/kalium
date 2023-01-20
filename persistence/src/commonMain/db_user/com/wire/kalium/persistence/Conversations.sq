@@ -81,7 +81,7 @@ WHERE qualified_id = ?;
 updateAllUnNotifiedConversationsNotificationsDate:
 UPDATE Conversation
 SET last_notified_date = ?
-WHERE last_modified_date ISNULL
+WHERE last_notified_date ISNULL
 OR last_modified_date > last_notified_date;
 
 updateConversationModifiedDate:

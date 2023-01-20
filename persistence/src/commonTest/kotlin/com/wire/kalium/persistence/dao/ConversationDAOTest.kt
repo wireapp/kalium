@@ -249,7 +249,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO
             .updateConversationNotificationDate(
                 QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z"
+                "2022-03-30T15:37:10.000Z".toInstant()
             )
 
         val result = conversationDAO.getConversationsForNotifications().first()
@@ -275,7 +275,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO
             .updateConversationNotificationDate(
                 conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z"
+                "2022-03-30T15:37:10.000Z".toInstant()
             )
 
         val result = conversationDAO.getConversationsForNotifications().first()

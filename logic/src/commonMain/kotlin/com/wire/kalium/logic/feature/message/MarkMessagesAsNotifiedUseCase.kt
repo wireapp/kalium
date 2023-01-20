@@ -33,9 +33,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
     suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
-        messageRepository.getInstantOfLatestMessageFromOtherUsers().map {
-            it.toIsoDateTimeString()
-        }.flatMap { date ->
+        messageRepository.getInstantOfLatestMessageFromOtherUsers().flatMap { date ->
             when (conversationsToUpdate) {
                 UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate(date)
 
