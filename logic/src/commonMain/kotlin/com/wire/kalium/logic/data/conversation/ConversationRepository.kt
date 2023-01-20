@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -119,8 +120,8 @@ interface ConversationRepository {
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
 
-    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
+    suspend fun updateAllConversationsNotificationDate(date: Instant): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
@@ -428,13 +429,13 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateConversationNotificationDate(
         qualifiedID: QualifiedID,
-        date: String
+        date: Instant
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateConversationNotificationDate(qualifiedID.toDao(), date)
         }
 
-    override suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit> =
+    override suspend fun updateAllConversationsNotificationDate(date: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate(date) }
 
     override suspend fun updateConversationModifiedDate(

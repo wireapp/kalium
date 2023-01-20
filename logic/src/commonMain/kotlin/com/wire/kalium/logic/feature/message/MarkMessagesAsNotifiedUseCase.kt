@@ -6,8 +6,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 
 /**
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
@@ -33,9 +31,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
     suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
-        messageRepository.getInstantOfLatestMessageFromOtherUsers().map {
-            it.toIsoDateTimeString()
-        }.flatMap { date ->
+        messageRepository.getInstantOfLatestMessageFromOtherUsers().flatMap { date ->
             when (conversationsToUpdate) {
                 UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate(date)
 
