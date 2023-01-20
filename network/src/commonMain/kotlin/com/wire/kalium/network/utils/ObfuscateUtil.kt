@@ -5,9 +5,16 @@ package com.wire.kalium.network.utils
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateUrlPath
-import io.ktor.http.*
+import io.ktor.http.Url
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 fun obfuscatedJsonMessage(text: String): String = try {
     val obj = (Json.decodeFromString(text) as JsonElement)
