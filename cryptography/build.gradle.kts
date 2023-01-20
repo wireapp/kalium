@@ -97,7 +97,7 @@ kotlin {
 fun registerCopyTestResourcesTask(target: String) {
     val task = tasks.register<Copy>("copy${target.capitalized()}TestResources") {
         from("src/commonTest/resources")
-        into("build/bin/${target}/debugTest/resources")
+        into("build/bin/$target/debugTest/resources")
     }
     tasks.findByName("${target}Test")?.dependsOn(task)
 }
