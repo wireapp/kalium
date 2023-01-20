@@ -106,6 +106,17 @@ fun deleteSensitiveItemsFromJson(text: String): String {
     }
 }
 
+/**
+ * Helps to obfcuscate sensitive data in json header from the request
+ */
+fun obfuscateSensitiveHeaderValues(headerKey: String, values: List<String>): Pair<String, String> {
+    return if (sensitiveJsonKeys.contains(headerKey.lowercase())) {
+        headerKey to values.joinToString(",") { "***" }
+    } else {
+        headerKey to values.joinToString(",")
+    }
+}
+
 val sensitiveJsonKeys by lazy {
     listOf(
         "password",

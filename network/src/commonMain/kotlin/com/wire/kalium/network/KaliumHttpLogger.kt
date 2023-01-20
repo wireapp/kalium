@@ -2,6 +2,7 @@ package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.network.utils.obfuscatePath
+import com.wire.kalium.network.utils.obfuscateSensitiveHeaderValues
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
 import com.wire.kalium.network.utils.toJsonElement
 import io.ktor.client.plugins.logging.LogLevel
@@ -148,7 +149,7 @@ internal class KaliumHttpLogger(
     }
 
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
-        headers.associate {
-            it.first to it.second.joinToString(",")
+        headers.associate { (key, values) ->
+            obfuscateSensitiveHeaderValues(key, values)
         }
 }
