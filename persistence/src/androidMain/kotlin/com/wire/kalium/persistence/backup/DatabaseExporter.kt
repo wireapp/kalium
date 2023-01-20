@@ -1,8 +1,10 @@
 package com.wire.kalium.persistence.backup
 
+import android.content.Context.MODE_PRIVATE
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.kaliumLogger
 import java.io.File
 
 actual class PlatformDatabaseExporter internal actual constructor(
@@ -18,21 +20,26 @@ actual class PlatformDatabaseExporter internal actual constructor(
     /**
      * Create a new plain database to be used for
      */
-    actual override fun backupToPlainText(): String = if (isLocalDatabaseEncrypted) {
+    actual override fun backupToPlainText(): String? = if (isLocalDatabaseEncrypted) {
         backupToPlainTextFromEncrypted()
     } else {
         backupToPlainTextFromUnencrypted()
     }
 
-    private fun backupToPlainTextFromEncrypted(): String {
+    private fun backupToPlainTextFromEncrypted(): String? {
         // Delete the old database if it exists, otherwise the new database will be attached to the old one
         deleteDBIfExists(backupDBName)
         val dbFile: File = appContext.getDatabasePath(backupDBName)
 
+        appContext.openOrCreateDatabase(backupDBName, MODE_PRIVATE, null) ?: run {
+            kaliumLogger.d("Failed to create database")
+            return null
+        }
+
         sqlDriver.execute(null, """ATTACH ? AS plain_text KEY '';""", 1) {
             bindString(0, dbFile.absolutePath)
         }
-        sqlDriver.executeQuery(null, """SELECT sqlcipher_export('plain_text');""", { _ -> }, 0, null )
+            sqlDriver.executeQuery(null, """SELECT sqlcipher_export('plain_text');""", { _ -> }, 0, null )
         sqlDriver.execute(null, """DETACH DATABASE plain_text;""", 0)
         return dbFile.absolutePath
     }

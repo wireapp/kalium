@@ -10,7 +10,7 @@ actual class PlatformDatabaseExporter internal actual constructor(
     private val sqlDriver: SqlDriver,
     isLocalDatabaseEncrypted: Boolean
 ): DatabaseExporter {
-    actual override fun backupToPlainText(): String {
+    actual override fun backupToPlainText(): String? {
         TODO("Not yet implemented")
     }
 

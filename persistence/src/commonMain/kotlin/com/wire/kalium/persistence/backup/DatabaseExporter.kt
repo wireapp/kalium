@@ -11,7 +11,7 @@ expect class PlatformDatabaseExporter internal constructor(
     sqlDriver: SqlDriver,
     isLocalDatabaseEncrypted: Boolean
 ): DatabaseExporter {
-    override fun backupToPlainText(): String
+    override fun backupToPlainText(): String?
     override fun deleteBackupDB(): Boolean?
 }
 
@@ -28,6 +28,6 @@ internal class ExporterExtensionsImpl: ExporterExtensions {
 }
 
 interface DatabaseExporter {
-    fun backupToPlainText(): String
+    fun backupToPlainText(): String?
     fun deleteBackupDB(): Boolean?
 }
