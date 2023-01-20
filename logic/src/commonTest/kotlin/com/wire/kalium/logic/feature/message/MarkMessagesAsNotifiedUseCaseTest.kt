@@ -35,7 +35,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
 
         verify(arrangement.conversationRepository)
-            .coroutine { updateAllConversationsNotificationDate(DATE) }
+            .coroutine { updateAllConversationsNotificationDate(TEST_INSTANT) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
@@ -133,7 +133,6 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
     companion object {
         private val TEST_INSTANT = Instant.fromEpochMilliseconds(123_456_789L)
-        private val DATE = TEST_INSTANT.toIsoDateTimeString()
         private val CONVERSATION_ID = QualifiedID("some_id", "some_domain")
     }
 }
