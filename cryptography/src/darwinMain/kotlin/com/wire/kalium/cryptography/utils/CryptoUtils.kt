@@ -1,5 +1,6 @@
 package com.wire.kalium.cryptography.utils
 
+import com.wire.kalium.cryptography.exceptions.CryptographyException
 import kotlinx.cinterop.ULongVar
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
@@ -67,7 +68,7 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             }
 
             if (status != kCCSuccess) {
-                throw Error("Failure while encrypting data using AES256")
+                throw CryptographyException("Failure while encrypting data using AES256")
             }
 
             outputSink.write(Buffer().write(iv), iv.size.toLong())
@@ -114,7 +115,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
             }
 
             if (status != kCCSuccess) {
-                throw Error("Failure while decrypting data using AES256")
+                throw CryptographyException("Failure while decrypting data using AES256")
             }
 
             decryptedDataSink.write(Buffer().write(decryptedBuffer), bytesCopied.value.toLong())
@@ -138,7 +139,7 @@ private fun generateRandomData(size: Int): ByteArray {
     }
 
     if (status != errSecSuccess) {
-        throw Error("Failure while generating random data")
+        throw CryptographyException("Failure while generating random data")
     }
 
     return keyMaterial
