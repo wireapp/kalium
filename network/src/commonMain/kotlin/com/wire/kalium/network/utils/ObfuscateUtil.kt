@@ -5,16 +5,9 @@ package com.wire.kalium.network.utils
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateUrlPath
-import io.ktor.http.Url
+import io.ktor.http.*
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.*
 
 fun obfuscatedJsonMessage(text: String): String = try {
     val obj = (Json.decodeFromString(text) as JsonElement)
@@ -103,6 +96,17 @@ fun deleteSensitiveItemsFromJson(text: String): String {
 
     } catch (e: Exception) {
         return "error while logging "
+    }
+}
+
+/**
+ * Helps to obfcuscate sensitive data in json header from the request
+ */
+fun obfuscateSensitiveHeaderValues(headerKey: String, values: List<String>): Pair<String, String> {
+    return if (sensitiveJsonKeys.contains(headerKey.lowercase())) {
+        headerKey to values.joinToString(",") { "***" }
+    } else {
+        headerKey to values.joinToString(",")
     }
 }
 
