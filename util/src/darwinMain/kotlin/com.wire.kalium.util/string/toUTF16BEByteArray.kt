@@ -23,7 +23,7 @@ actual fun ByteArray.toStringFromUtf16BE(): String = memScoped {
     return@memScoped string as String
 }
 
-fun NSData.toByteArray():ByteArray {
+fun NSData.toByteArray(): ByteArray {
     val buffer = ByteArray(length.toInt())
     buffer.usePinned {
         getBytes(it.addressOf(0))
