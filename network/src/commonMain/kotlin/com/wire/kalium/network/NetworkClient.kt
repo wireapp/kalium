@@ -97,12 +97,6 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-internal class KaliumHttpLogger : Logger {
-    override fun log(message: String) {
-        kaliumLogger.d(message)
-    }
-}
-
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     installCompression: Boolean = true,
@@ -111,14 +105,13 @@ internal fun provideBaseHttpClient(
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
-            logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
     }
 
     if (installCompression) {
         install(ContentEncoding) {
-            gzip()
+            // gzip()
             identity()
         }
     }
