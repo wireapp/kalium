@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MarkMessagesAsNotifiedUseCase.UpdateTarget
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
