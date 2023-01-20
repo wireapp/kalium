@@ -1,8 +1,6 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.utils.obfuscatePath
-import com.wire.kalium.network.utils.obfuscatedJsonMessage
-import com.wire.kalium.network.utils.toJsonElement
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -12,31 +10,18 @@ import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.observer.ResponseHandler
 import io.ktor.client.plugins.observer.ResponseObserver
-import io.ktor.client.plugins.plugin
-import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpSendPipeline
 import io.ktor.client.statement.HttpReceivePipeline
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpResponsePipeline
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
-import io.ktor.http.charset
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
 import io.ktor.util.InternalAPI
-import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.readText
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 private val KaliumHttpCustomLogger = AttributeKey<KaliumHttpLogger>("KaliumHttpLogger")
 private val DisableLogging = AttributeKey<Unit>("DisableLogging")
@@ -102,7 +87,8 @@ public class KaliumKtorCustomLogging private constructor(
             } catch (cause: Throwable) {
                 logRequestException(context, cause)
                 throw cause
-            } finally { }
+            } finally {
+            }
         }
     }
 
