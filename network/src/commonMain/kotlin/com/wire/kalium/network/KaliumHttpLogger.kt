@@ -48,7 +48,7 @@ internal class KaliumHttpLogger(
                 content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
                 obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
-                requestLog["headers"] = obfuscatedHeaders.toMap()
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
             }
 
             level.headers -> {
@@ -58,7 +58,7 @@ internal class KaliumHttpLogger(
                 content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
                 obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
-                requestLog["headers"] = obfuscatedHeaders.toMap()
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
             }
 
             level.body -> {
@@ -67,7 +67,7 @@ internal class KaliumHttpLogger(
                 content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
                 obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
-                requestLog["headers"] = obfuscatedHeaders.toMap()
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
             }
         }
 

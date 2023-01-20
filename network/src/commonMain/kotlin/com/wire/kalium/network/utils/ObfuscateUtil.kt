@@ -111,6 +111,7 @@ val sensitiveJsonKeys by lazy {
         "password",
         "authorization",
         "set-cookie",
+        "cookie",
         "location",
         "x-amz-meta-user",
         "sec-websocket-key",
