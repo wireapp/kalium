@@ -26,5 +26,5 @@ class TeamScope internal constructor(
             conversationRepository = conversationRepository,
         )
 
-    val isSelfATeamMember: IsSelfATeamMemberUseCase get() = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
+    val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl get() = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
 }
