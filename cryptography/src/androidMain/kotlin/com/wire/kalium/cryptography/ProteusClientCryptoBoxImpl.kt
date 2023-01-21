@@ -4,6 +4,8 @@ import android.util.Base64
 import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 @Suppress("TooManyFunctions")
@@ -11,6 +13,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
+    private val sessionLock: MutableMap<String, Mutex> = mutableMapOf()
+    @Synchronized
+    private fun getSessionLock(sessionId: String): Mutex {
+        return sessionLock.getOrPut(sessionId) { Mutex() }
+    }
 
     init {
         path = rootDir
@@ -62,25 +69,28 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return try {
-            box.getSession(sessionId.value)
-            true
-        } catch (e: CryptoException) {
-            if (e.code == CryptoException.Code.SESSION_NOT_FOUND) {
-                false
-            } else {
-                throw e
+        return getSessionLock(sessionId.value).withLock {
+            try {
+                box.getSession(sessionId.value)
+                true
+            } catch (e: CryptoException) {
+                if (e.code == CryptoException.Code.SESSION_NOT_FOUND) {
+                    false
+                } else {
+                    throw e
+                }
             }
         }
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
+        getSessionLock(sessionId.value).withLock {
+            wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
+        }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = getSessionLock(sessionId.value).withLock {
         val session = box.tryGetSession(sessionId.value)
-
         return wrapException {
             if (session != null) {
                 val decryptedMessage = session.decrypt(message)
@@ -94,7 +104,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = getSessionLock(sessionId.value).withLock {
         return wrapException {
             val session = box.getSession(sessionId.value)
             val encryptedMessage = session.encrypt(message)
@@ -107,7 +117,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
-    ): ByteArray {
+    ): ByteArray = getSessionLock(sessionId.value).withLock {
         return wrapException {
             val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             val encryptedMessage = session.encrypt(message)
@@ -116,9 +126,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
-        wrapException {
-            box.deleteSession(sessionId.value)
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
+        getSessionLock(sessionId.value).withLock {
+            wrapException {
+                box.deleteSession(sessionId.value)
+            }
         }
     }
 
