@@ -32,7 +32,7 @@ private class ConversationMapper {
                 mls_group_id,
                 mls_group_state,
                 mls_epoch,
-                mls_last_keying_material_update_date.epochSeconds,
+                mls_last_keying_material_update_date,
                 mls_cipher_suite
             ),
             isCreator = isCreator,
@@ -109,27 +109,27 @@ private class ConversationMapper {
         }
     }
 
-    @Suppress("LongParameterList")
-    private fun mapProtocolInfo(
-        protocol: ConversationEntity.Protocol,
-        mlsGroupId: String?,
-        mlsGroupState: ConversationEntity.GroupState,
-        mlsEpoch: Long,
-        mlsLastKeyingMaterialUpdate: Long,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
-    ): ConversationEntity.ProtocolInfo {
-        return when (protocol) {
-            ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                mlsGroupId ?: "",
-                mlsGroupState,
-                mlsEpoch.toULong(),
-                Instant.fromEpochSeconds(mlsLastKeyingMaterialUpdate),
-                mlsCipherSuite
-            )
+@Suppress("LongParameterList")
+fun mapProtocolInfo(
+    protocol: ConversationEntity.Protocol,
+    mlsGroupId: String?,
+    mlsGroupState: ConversationEntity.GroupState,
+    mlsEpoch: Long,
+    mlsLastKeyingMaterialUpdate: Instant,
+    mlsCipherSuite: ConversationEntity.CipherSuite,
+): ConversationEntity.ProtocolInfo {
+    return when (protocol) {
+        ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+            mlsGroupId ?: "",
+            mlsGroupState,
+            mlsEpoch.toULong(),
+            mlsLastKeyingMaterialUpdate,
+            mlsCipherSuite
+        )
 
-            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
-        }
+        ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
     }
+}
 }
 
 class MemberMapper {
@@ -245,12 +245,11 @@ class ConversationDAOImpl(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
-        return conversationQueries.selectByQualifiedId(qualifiedID)
+    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+        return conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
-            .map { it?.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
@@ -267,6 +266,9 @@ class ConversationDAOImpl(
             .flowOn(coroutineContext)
             .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
+
+    override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo =
+        conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOne()
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
@@ -308,12 +310,13 @@ class ConversationDAOImpl(
         }
 
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
-            memberQueries.transaction {
-                for (member: Member in memberList) {
-                    userQueries.insertOrIgnoreUserId(member.user)
-                    memberQueries.insertMember(member.user, conversationID, member.role)
-                }
+        memberQueries.transaction {
+            for (member: Member in memberList) {
+                userQueries.insertOrIgnoreUserId(member.user)
+                memberQueries.insertMember(member.user, conversationID, member.role)
             }
+        }
+
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
         withContext(coroutineContext) {
             getConversationByGroupID(groupId).firstOrNull()?.let {

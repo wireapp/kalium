@@ -478,7 +478,6 @@ class MessageDAOImpl(
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        date: String,
         visibility: List<MessageEntity.Visibility>
     ): List<MessageEntity> = withContext(coroutineContext) {
         queries.selectPendingMessagesByConversationIdAndVisibilityAfterDate(

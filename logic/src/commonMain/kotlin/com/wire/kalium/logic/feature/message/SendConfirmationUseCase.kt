@@ -73,33 +73,21 @@ internal class SendConfirmationUseCase internal constructor(
     }
 
     private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
-        conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
-            emptyList()
-        }, { conversation ->
+        if (isReceiptsEnabledForConversation(conversationId)) {
+            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId)
+                .fold({
+                    logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
+                    emptyList()
+                }, { it })
+        } else emptyList()
 
-            val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
-            if (!readReceiptsEnabled) {
-                emptyList()
-            } else {
-                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
-                    .fold({
-                        logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
-                        emptyList()
-                    }, { messages ->
-                        messages.map { it.id }
-                    })
+    private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
+        conversationRepository.detailsById(conversationId).fold({
+            false
+        }, { conversation ->
+            when (conversation.type) {
+                Conversation.Type.ONE_ON_ONE -> userPropertyRepository.getReadReceiptsStatus()
+                else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
-
-    private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
-        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
-            userPropertyRepository.getReadReceiptsStatus()
-        } else {
-            when (conversation.receiptMode) {
-                Conversation.ReceiptMode.DISABLED -> false
-                Conversation.ReceiptMode.ENABLED -> true
-            }
-        }
-
 }
