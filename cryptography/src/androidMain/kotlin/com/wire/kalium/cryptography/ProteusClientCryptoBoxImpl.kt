@@ -143,7 +143,6 @@ class ProteusClientCryptoBoxImpl constructor(
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
         }
 
-
     @Suppress("ComplexMethod")
     private fun fromCryptoException(e: CryptoException): ProteusException.Code {
         return when (e.code) {
