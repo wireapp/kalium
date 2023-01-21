@@ -93,7 +93,7 @@ class ProteusClientCryptoBoxImpl constructor(
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         // TODO Delete session
     }
 

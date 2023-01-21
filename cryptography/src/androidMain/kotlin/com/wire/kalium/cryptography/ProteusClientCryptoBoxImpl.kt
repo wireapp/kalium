@@ -6,6 +6,7 @@ import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 class ProteusClientCryptoBoxImpl constructor(
@@ -58,15 +59,15 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun getIdentity(): ByteArray = withContext(coroutineContext) {
+    override suspend fun getIdentity(): ByteArray = withContext(ioContext) {
         wrapException { box.copyIdentity() }
     }
 
-    override suspend fun getLocalFingerprint(): ByteArray = withContext(coroutineContext) {
+    override suspend fun getLocalFingerprint(): ByteArray = withContext(ioContext) {
         wrapException { box.localFingerprint }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> = withContext(coroutineContext) {
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> = withContext(defaultContext) {
         wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
     }
 
@@ -126,7 +127,7 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun deleteSession(sessionId: CryptoSessionId) {
-        withContext(coroutineContext) {
+        withContext(defaultContext) {
             wrapException {
                 box.deleteSession(sessionId.value)
             }

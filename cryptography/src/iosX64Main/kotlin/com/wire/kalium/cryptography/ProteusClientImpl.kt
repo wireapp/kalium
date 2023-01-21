@@ -193,7 +193,7 @@ actual class ProteusClientImpl actual constructor(
         return encrypt(message, sessionId)!!
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         // TODO Delete session for iOS
     }
 

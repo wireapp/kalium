@@ -103,7 +103,7 @@ actual class ProteusClientImpl actual constructor(
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         box.session_delete(sessionId.value)
     }
 
