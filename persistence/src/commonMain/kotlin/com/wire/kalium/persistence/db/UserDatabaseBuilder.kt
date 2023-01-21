@@ -60,7 +60,7 @@ class UserDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.database
 ) {
 
     internal val database: UserDatabase = UserDatabase(
