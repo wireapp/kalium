@@ -56,9 +56,8 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
     }
 
     private fun restoreConversations() {
-        // For some strange reason, when restoring the backup db, all last_read_date fields from backup db are hardcoded to 0. Therefore,
-        // before restoring the conversations, we need to set the lastReadTimestamp of the backup conversations to the latest timestamp of
-        // the current conversations so that they don't show up as unread.
+        // Before restoring any conversations, we need to set the last_read_date of the backup conversations to the last_read_date of the
+        // current conversations if it is more recent that what the backup states
         sqlDriver.execute(
             """UPDATE $BACKUP_DB_ALIAS.Conversation
             |SET last_read_date = (
