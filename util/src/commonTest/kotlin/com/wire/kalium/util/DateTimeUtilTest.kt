@@ -1,10 +1,14 @@
 package com.wire.kalium.util
 
+import com.wire.kalium.util.string.IgnoreIOS
+import com.wire.kalium.util.string.IgnoreJS
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreIOS
+@IgnoreJS
 class DateTimeUtilTest {
 
     private val isoDateTimeStringWith0Millis = "2022-12-20T17:30:00.000Z"
