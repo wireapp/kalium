@@ -661,7 +661,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         messageDAO.insertOrIgnoreMessages(allMessages)
-        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id)
         assertEquals(2, result.size)
     }
 
