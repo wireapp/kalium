@@ -31,10 +31,10 @@ internal class SelfConversationIdProviderImpl(
 
     override suspend fun invoke(): Either<StorageFailure, List<ConversationId>> {
         val selfConversationIDs = mutableListOf(proteusSelfConversationIdProvider())
-
-        if (clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
-            selfConversationIDs.add(mlsSelfConversationIdProvider())
-        }
+            // todo: re-enable mls later
+//         if (clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
+//             selfConversationIDs.add(mlsSelfConversationIdProvider())
+//         }
 
         return selfConversationIDs.foldToEitherWhileRight(emptyList()) { result, acc ->
             result.map {
