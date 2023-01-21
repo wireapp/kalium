@@ -141,11 +141,6 @@ class AssetMapperImpl(
                 mimeType = original?.mimeType ?: "*/*",
                 metadata = when (val metadataType = original?.metaData) {
                     is Asset.Original.MetaData.Image -> Image(width = metadataType.value.width, height = metadataType.value.height)
-                    is Asset.Original.MetaData.Audio -> Audio(
-                        durationMs = metadataType.value.durationInMillis,
-                        normalizedLoudness = metadataType.value.normalizedLoudness?.array
-                    )
-
                     null -> null
                     else -> null
                 },

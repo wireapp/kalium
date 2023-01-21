@@ -20,7 +20,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
@@ -55,7 +54,7 @@ internal class ApplicationMessageHandlerImpl(
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
-    private val assetMessageHandler: AssetMessageHandler,
+    private val userConfigRepository: UserConfigRepository,
     private val callManagerImpl: Lazy<CallManager>,
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
@@ -123,6 +122,21 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
+    private fun updateAssetMessageWithDecryptionKeys(
+        persistedMessage: Message.Regular,
+        remoteData: AssetContent.RemoteData
+    ): Message.Regular {
+        val assetMessageContent = persistedMessage.content as MessageContent.Asset
+        // The message was previously received with just metadata info, so let's update it with the raw data info
+        return persistedMessage.copy(
+            content = assetMessageContent.copy(
+                value = assetMessageContent.value.copy(
+                    remoteData = remoteData
+                )
+            ),
+            visibility = Message.Visibility.VISIBLE
+        )
+    }
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false
@@ -180,6 +194,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : $message }")
 
@@ -192,7 +207,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Knock -> handleKnock(message)
-            is MessageContent.Asset -> assetMessageHandler.handle(message, content)
+            is MessageContent.Asset -> handleAssetMessage(message, content)
 
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
@@ -244,6 +259,58 @@ internal class ApplicationMessageHandlerImpl(
             logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
             logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
             quotedReference.copy(isVerified = false)
+        }
+    }
+
+    private suspend fun handleAssetMessage(message: Message.Regular, messageContent: MessageContent.Asset) {
+        userConfigRepository.isFileSharingEnabled().onSuccess {
+            if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
+                processNonRestrictedAssetMessage(message)
+            } else {
+                val newMessage = message.copy(
+                    content = MessageContent.RestrictedAsset(
+                        messageContent.value.mimeType, messageContent.value.sizeInBytes, messageContent.value.name ?: ""
+                    )
+                )
+                persistMessage(newMessage)
+            }
+        }
+    }
+
+    private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
+        val assetContent = message.content as MessageContent.Asset
+        val isPreviewMessage = assetContent.value.sizeInBytes > 0 && !assetContent.value.hasValidRemoteData()
+        messageRepository.getMessageById(message.conversationId, message.id).onFailure {
+            // No asset message was received previously, so just persist the preview of the asset message
+            val isValidImage = assetContent.value.metadata?.let {
+                it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+            } ?: false
+
+            // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
+            // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
+            // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
+            val previewMessage = message.copy(
+                content = message.content.copy(value = assetContent.value),
+                visibility = if (isPreviewMessage && !isValidImage) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
+            )
+            persistMessage(previewMessage)
+        }.onSuccess { persistedMessage ->
+            val validDecryptionKeys = message.content.value.remoteData
+            // Check the second asset message is from the same original sender
+            if (isSenderVerified(
+                    persistedMessage.id,
+                    persistedMessage.conversationId,
+                    message.senderUserId
+                ) && persistedMessage is Message.Regular
+            ) {
+                // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
+                // the preview message persisted previously with the rest of the data
+                persistMessage(
+                    updateAssetMessageWithDecryptionKeys(
+                        persistedMessage, validDecryptionKeys
+                    )
+                )
+            }
         }
     }
 
