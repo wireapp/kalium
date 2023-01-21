@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.ConversationDetails
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
@@ -296,6 +297,14 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
+    }
+
+    override suspend fun observeGetConversationDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
+        return conversationQueries.selectByQualifiedId(qualifiedID)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(coroutineContext)
+            .map { it?.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =

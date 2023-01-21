@@ -328,7 +328,7 @@ internal class ConversationDataSource internal constructor(
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
-        conversationDAO.observeGetConversationByQualifiedID(conversationID.toDao())
+        conversationDAO.observeGetConversationDetailsByQualifiedID(conversationID.toDao())
             .wrapStorageRequest()
             // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
             .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
