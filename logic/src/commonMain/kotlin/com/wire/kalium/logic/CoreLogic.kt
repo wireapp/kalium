@@ -24,8 +24,6 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 expect class CoreLogic : CoreLogicCommon
 
 abstract class CoreLogicCommon internal constructor(
-    // TODO: can client label be replaced with clientConfig.deviceName() ?
-    protected val clientLabel: String,
     protected val rootPath: String,
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
@@ -36,7 +34,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    private val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider(clientLabel)
+    private val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider, authenticationScopeProvider)
@@ -68,3 +66,5 @@ abstract class CoreLogicCommon internal constructor(
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 }
+
+expect val clientPlatform: String

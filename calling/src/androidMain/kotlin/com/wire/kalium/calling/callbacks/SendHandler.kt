@@ -9,9 +9,9 @@ fun interface SendHandler : Callback {
     @Suppress("LongParameterList")
     fun onSend(
         context: Pointer?,
-        conversationId: String,
-        userIdSelf: String,
-        clientIdSelf: String,
+        remoteConversationId: String,
+        remoteSelfUserId: String,
+        remoteClientIdSelf: String,
         targetRecipientsJson: String?,
         clientIdDestination: String?,
         data: Pointer?,

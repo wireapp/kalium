@@ -14,20 +14,24 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 
-class SessionResetSender internal constructor(
+interface SessionResetSender {
+    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
+}
+
+class SessionResetSenderImpl internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) {
-    suspend operator fun invoke(
+) : SessionResetSender {
+    override suspend operator fun invoke(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId,
@@ -40,9 +44,9 @@ class SessionResetSender internal constructor(
         provideClientId().flatMap { selfClientId ->
             val message = Message.Signaling(
                 id = generatedMessageUuid,
-                content = MessageContent.SessionReset,
+                content = MessageContent.ClientAction,
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = selfClientId,
                 status = Message.Status.SENT

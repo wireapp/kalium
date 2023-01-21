@@ -15,7 +15,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
+/**
+ * Searches for public users, aka users that are not in your contacts
+ * For this reason, if we filter also users that are already contacts, and we exclude those results
+ */
 interface SearchPublicUsersUseCase {
+    /**
+     * @param searchQuery the query to search for¬
+     * @param maxResultSize the maximum number of results to return
+     * @param searchUsersOptions @see [SearchUsersOptions]
+     * @return the [Flow] of [List] of [SearchUsersResult] if successful
+     */
     suspend operator fun invoke(
         searchQuery: String,
         maxResultSize: Int? = null,

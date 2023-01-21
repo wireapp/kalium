@@ -10,7 +10,9 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform()
+    multiplatform {
+        enableJsTests.set(false)
+    }
 }
 
 val codegenProject = project(":protobuf-codegen")

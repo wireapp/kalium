@@ -16,15 +16,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
-fun obfuscatedJsonMessage(text: String): String {
-    var obfuscatedMessage = ""
-    try {
-        val obj = (Json.decodeFromString(text) as JsonElement)
-        obfuscatedMessage = obfuscatedJsonElement(obj).toString()
-    } catch (e: Exception) {
-        obfuscatedMessage = "\"Error while obfuscating. Content probably not json.\""
-    }
-    return obfuscatedMessage
+fun obfuscatedJsonMessage(text: String): String = try {
+    val obj = (Json.decodeFromString(text) as JsonElement)
+    obfuscatedJsonElement(obj).toString()
+} catch (e: Exception) {
+    "\"Error while obfuscating. Content probably not json.\""
 }
 
 fun obfuscatedJsonElement(element: JsonElement): JsonElement =
@@ -115,6 +111,7 @@ val sensitiveJsonKeys by lazy {
         "password",
         "authorization",
         "set-cookie",
+        "cookie",
         "location",
         "x-amz-meta-user",
         "sec-websocket-key",
@@ -125,6 +122,6 @@ val sensitiveJsonKeys by lazy {
 }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team", "creator_client") }
 private val domainJsonKeys by lazy { listOf("domain") }
-private val sensitiveJsonObjects by lazy { listOf("qualified_id", "qualified_ids", "qualified_users") }
+private val sensitiveJsonObjects by lazy { listOf("qualified_id", "qualified_ids", "qualified_users", "content", "payload") }
 private val notSensitiveJsonKeys by lazy { listOf("type", "time") }
 private val notSensitiveJsonArray by lazy { listOf("payload") }

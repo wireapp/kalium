@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -56,7 +57,8 @@ object ConversationResponseJson {
             ConversationAccessRoleDTO.TEAM_MEMBER,
             ConversationAccessRoleDTO.NON_TEAM_MEMBER
         ),
-        mlsCipherSuiteTag = null
+        mlsCipherSuiteTag = null,
+        receiptMode = ReceiptMode.DISABLED
     )
 
     val v3 = ValidJsonProvider(

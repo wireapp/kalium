@@ -1,23 +1,25 @@
 package com.wire.kalium.persistence.dao
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
     private val metadataCache: Cache<String, Flow<String?>>,
-    private val databaseScope: CoroutineScope
+    private val databaseScope: CoroutineScope,
+    private val queriesContext: CoroutineContext
 ) : MetadataDAO {
 
-    override suspend fun insertValue(value: String, key: String) {
+    override suspend fun insertValue(value: String, key: String) = withContext(queriesContext) {
         metadataQueries.insertValue(key, value)
     }
 
@@ -33,6 +35,7 @@ class MetadataDAOImpl internal constructor(
             .shareIn(databaseScope, SharingStarted.Lazily, 1)
     }
 
-    override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
-
+    override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
+        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
+    }
 }

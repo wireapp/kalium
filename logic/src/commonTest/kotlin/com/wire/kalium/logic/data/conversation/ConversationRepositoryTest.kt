@@ -9,6 +9,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -33,6 +35,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationP
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -53,6 +56,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -71,7 +75,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -262,7 +265,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationApi)
@@ -285,7 +288,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            Clock.System.now().toEpochMilliseconds()
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
         verify(arrangement.conversationDAO)
@@ -464,8 +467,8 @@ class ConversationRepositoryTest {
             verify(conversationApi)
                 .coroutine {
                     conversationApi.updateConversationMemberRole(
-                        MapperProvider.idMapper().toApiModel(conversationId),
-                        MapperProvider.idMapper().toApiModel(userId),
+                        conversationId.toApi(),
+                        userId.toApi(),
                         ConversationMemberRoleDTO(MapperProvider.conversationRoleMapper().toApi(newRole))
                     )
                 }
@@ -474,8 +477,8 @@ class ConversationRepositoryTest {
             verify(conversationDAO)
                 .coroutine {
                     conversationDAO.updateConversationMemberRole(
-                        MapperProvider.idMapper().toDaoModel(conversationId),
-                        MapperProvider.idMapper().toDaoModel(userId),
+                        conversationId.toDao(),
+                        userId.toDao(),
                         MapperProvider.conversationRoleMapper().toDAO(newRole)
                     )
                 }
@@ -493,7 +496,7 @@ class ConversationRepositoryTest {
         with(arrange) {
             verify(conversationDAO)
                 .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
-                .with(eq(MapperProvider.idMapper().toDaoModel(conversationId)))
+                .with(eq(conversationId.toDao()))
                 .wasInvoked(once)
         }
     }
@@ -783,13 +786,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
-        with(result) {
-            shouldSucceed()
-            verify(arrange.renamedConversationEventHandler)
-                .suspendFunction(arrange.renamedConversationEventHandler::handle)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
+        result.shouldSucceed()
     }
 
     @Test
@@ -848,8 +845,7 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
-                clientApi,
-                renamedConversationEventHandler
+                clientApi
             )
 
         init {
@@ -1033,7 +1029,7 @@ class ConversationRepositoryTest {
         }
 
         fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {
-            val author = deletionAuthor?.let { MapperProvider.idMapper().toDaoModel(it) }
+            val author = deletionAuthor?.let { it.toDao() }
             given(conversationDAO)
                 .suspendFunction(conversationDAO::whoDeletedMeInConversation)
                 .whenInvokedWith(any(), any())
@@ -1041,7 +1037,7 @@ class ConversationRepositoryTest {
         }
 
         fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
-            val conversationIdEntities = conversationIds.map { MapperProvider.idMapper().toDaoModel(it) }
+            val conversationIdEntities = conversationIds.map { it.toDao() }
 
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationIdsByUserId)
@@ -1093,7 +1089,7 @@ class ConversationRepositoryTest {
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
-                ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_member"),
+                ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
                 emptyList()
             ),
             GROUP_NAME,
@@ -1111,7 +1107,8 @@ class ConversationRepositoryTest {
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
             ),
-            mlsCipherSuiteTag = null
+            mlsCipherSuiteTag = null,
+            receiptMode = ReceiptMode.DISABLED
         )
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
@@ -1123,20 +1120,6 @@ class ConversationRepositoryTest {
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
 
-        val TEST_MESSAGE_ENTITY =
-            MessageEntity.Regular(
-                id = "uid",
-                content = MessageEntityContent.Text("content"),
-                conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
-                senderUserId = TEST_QUALIFIED_ID_ENTITY,
-                senderClientId = "sender",
-                status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "sender",
-                expectsReadConfirmation = false
-            )
-
         val TEST_MESSAGE_PREVIEW_ENTITY =
             MessagePreviewEntity(
                 id = "uid",
@@ -1144,16 +1127,17 @@ class ConversationRepositoryTest {
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 isSelfMessage = false,
-                visibility = MessageEntity.Visibility.VISIBLE
+                visibility = MessageEntity.Visibility.VISIBLE,
+                senderUserId = TestUser.ENTITY_ID
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
 
-        val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
+        private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
             EventContentDTO.Conversation.ConversationRenameDTO(
-                MapperProvider.idMapper().toApiModel(CONVERSATION_ID),
-                MapperProvider.idMapper().toApiModel(USER_ID),
-                Clock.System.now().toString(),
+                CONVERSATION_ID.toApi(),
+                USER_ID.toApi(),
+                DateTimeUtil.currentIsoDateTimeString(),
                 ConversationNameUpdateEvent("newName")
             )
         )

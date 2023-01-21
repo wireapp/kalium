@@ -21,6 +21,7 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
@@ -82,7 +83,8 @@ interface AuthenticatedNetworkContainer {
 
     companion object {
         fun create(
-            sessionManager: SessionManager
+            sessionManager: SessionManager,
+            selfUserId: UserId
         ): AuthenticatedNetworkContainer {
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
@@ -94,14 +96,16 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
-                    sessionManager
+                    sessionManager,
+                    selfUserId
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
-                    sessionManager
+                    sessionManager,
+                    selfUserId
                 )
 
-                else -> throw error("Unsupported version: $version")
+                else -> error("Unsupported version: $version")
             }
         }
     }

@@ -7,6 +7,9 @@ import java.io.File
 import java.util.Base64
 
 @Suppress("TooManyFunctions")
+/**
+ *
+ */
 class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String
@@ -75,6 +78,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException { box.encryptFromSession(sessionId.value, message) }
+    }
+
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return sessionIds.associateWith { sessionId ->
+            encrypt(message, sessionId)
+        }
     }
 
     override suspend fun encryptWithPreKey(

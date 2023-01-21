@@ -14,17 +14,19 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
+                implementation(libs.ktxDateTime)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
+            }
+        }
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.annotation)
             }
         }
     }

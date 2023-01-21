@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -93,7 +95,6 @@ internal object MapperProvider {
     fun receiptsMapper(): ReceiptsMapper = ReceiptsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
-        idMapper = idMapper(),
         selfUserId = selfUserId
     )
 
@@ -120,7 +121,7 @@ internal object MapperProvider {
         connectionMapper(),
         featureConfigMapper(),
         conversationRoleMapper(),
-        userTypeMapper(),
+        receiptModeMapper(),
     )
 
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
@@ -150,5 +151,6 @@ internal object MapperProvider {
     fun mlsCommitBundleMapper(): MLSCommitBundleMapper = MLSCommitBundleMapperImpl()
 
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
+    fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
 
 }

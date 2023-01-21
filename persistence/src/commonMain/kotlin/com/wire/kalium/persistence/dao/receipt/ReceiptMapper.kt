@@ -8,7 +8,7 @@ import kotlinx.datetime.Instant
 
 internal object ReceiptMapper {
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "UNUSED_PARAMETER")
     fun fromDetailedReceiptView(
         type: ReceiptTypeEntity,
         date: String,

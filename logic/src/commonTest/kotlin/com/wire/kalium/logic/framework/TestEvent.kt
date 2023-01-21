@@ -2,12 +2,14 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
 object TestEvent {
@@ -82,6 +84,14 @@ object TestEvent {
         "2022-03-30T15:36:00.000Z"
     )
 
+    fun receiptModeUpdate(eventId: String = "eventId") = Event.Conversation.ConversationReceiptMode(
+        eventId,
+        TestConversation.ID,
+        false,
+        receiptMode = Conversation.ReceiptMode.ENABLED,
+        senderUserId = TestUser.USER_ID
+    )
+
     fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(
         eventId,
         teamId = "teamId",
@@ -141,7 +151,7 @@ object TestEvent {
         TestConversation.ID,
         false,
         TestUser.USER_ID,
-        timestamp.toString(),
+        timestamp.toIsoDateTimeString(),
         "content"
     )
 }

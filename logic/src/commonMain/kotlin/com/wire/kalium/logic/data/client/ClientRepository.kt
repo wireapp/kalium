@@ -6,6 +6,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -19,6 +20,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -30,7 +32,7 @@ interface ClientRepository {
     suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
 
-    @Deprecated("this function is not cached use CurrentClientIdProvider")
+    @DelicateKaliumApi("This function is not cached use CurrentClientIdProvider instead")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
     suspend fun persistRetainedClientId(clientId: ClientId): Either<CoreFailure, Unit>
@@ -76,6 +78,7 @@ class ClientDataSource(
     override suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearHasRegisteredMLSClient() }
 
+    @DelicateKaliumApi("This function is not cached use CurrentClientIdProvider instead")
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
             .map { ClientId(it) }
@@ -149,7 +152,7 @@ class ClientDataSource(
 
     override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>> =
         wrapStorageRequest {
-            clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
+            clientDAO.getClientsOfUserByQualifiedID(userId.toDao())
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }

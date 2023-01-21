@@ -3,8 +3,16 @@ package com.wire.kalium.plugins
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
+/**
+ * Applies the base configurations for a multiplatform module, including:
+ * - Toggling of target platforms
+ * - Basic Android settings, with SDK versions and Instrumentation Testing
+ * - Dokka settings for documentation
+ *
+ * @see commonDokkaConfig
+ */
 fun Project.configureDefaultMultiplatform(
-    enableiOS: Boolean,
+    enableDarwin: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean
@@ -22,13 +30,8 @@ fun Project.configureDefaultMultiplatform(
             js { commonJsConfig(enableJsTests) }
         }
 
-        if (enableiOS) {
-            // TODO: check arch of current system (X64 or ARM64) and enable accordingly?
-            //       devs on Apple Silicon should be able to run ARM tests
-            //       devs on Intel Macbooks should be able to run X64 tests
-            //       this should require us moving iOS code from iOSX64Main to
-            //       another sourceSet (iOSMain/iOSCommon or similar)
-            iosX64()
+        if (enableDarwin) {
+            commonDarwinMultiplatformConfig()
         }
     }
 
@@ -36,4 +39,15 @@ fun Project.configureDefaultMultiplatform(
         .configure<com.android.build.gradle.LibraryExtension>("android") {
             commonAndroidLibConfig(includeNativeInterop)
         }
+
+    // Add common runner and rules to Android Instrumented Tests
+    kotlinExtension.sourceSets.getByName("androidAndroidTest") {
+        dependencies {
+            implementation(library("androidtest.core"))
+            implementation(library("androidtest.runner"))
+            implementation(library("androidtest.rules"))
+        }
+    }
+
+    commonDokkaConfig()
 }

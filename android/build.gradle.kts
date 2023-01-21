@@ -36,14 +36,21 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
-        freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+        freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
 
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
+        jniLibs.pickFirsts.add("**/libsodium.so")
     }
 
 //    sourceSets { map { it.java.srcDir("src/${it.name}/kotlin") } }
+}
+
+repositories {
+    maven {
+        url = uri("$rootDir/localrepo/")
+    }
 }
 
 dependencies {

@@ -19,6 +19,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
@@ -37,7 +38,6 @@ import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -62,10 +62,10 @@ class MessageScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val timeParser: TimeParser,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
     private val userPropertyRepository: UserPropertyRepository,
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -112,12 +112,11 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingScheduler,
             messageSendingInterceptor,
-            timeParser,
             scope
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userRepository)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
@@ -200,7 +199,8 @@ class MessageScope internal constructor(
             messageSender
         )
 
-    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
+        get() = MarkMessagesAsNotifiedUseCase(conversationRepository, messageRepository)
 
     val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
         get() = UpdateAssetMessageUploadStatusUseCaseImpl(
@@ -216,10 +216,7 @@ class MessageScope internal constructor(
         get() = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
-            userRepository = userRepository,
-            conversationRepository = conversationRepository,
-            timeParser = timeParser,
-            selfUserId = selfUserId,
+            incrementalSyncRepository = incrementalSyncRepository,
             ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
@@ -238,8 +235,8 @@ class MessageScope internal constructor(
         )
 
     private val sessionResetSender: SessionResetSender
-        get() = SessionResetSender(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
+        get() = SessionResetSenderImpl(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
 
     val resetSession: ResetSessionUseCase
-        get() = ResetSessionUseCaseImpl(syncManager, proteusClientProvider, sessionResetSender, messageRepository)
+        get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 }

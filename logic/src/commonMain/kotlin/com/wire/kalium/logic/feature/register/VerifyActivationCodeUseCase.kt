@@ -6,9 +6,17 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCode
 
+/**
+ * Use case to validate an activation code for a given email address.
+ */
 class VerifyActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
+    /**
+     * @param email [String] the registered email address that the activation code was sent to
+     * @param code [String] the activation code to validate
+     * @return [VerifyActivationCodeResult.Success] or [VerifyActivationCodeResult.Failure] with the specific error.
+     */
     suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
         registerAccountRepository.verifyActivationCode(email, code)
             .fold({

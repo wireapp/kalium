@@ -14,12 +14,12 @@ kaliumLibrary {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.10")
+    implementation(libs.kotlin.nativeUtils)
 }
 
 sqldelight {
     database("UserDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_user"
         sourceFolders = listOf(sourceFolderName)
@@ -27,7 +27,7 @@ sqldelight {
     }
 
     database("GlobalDatabase") {
-        dialect = libs.sqldelight.dialect.get().toString()
+        dialect(libs.sqldelight.dialect.get().toString())
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_global"
         sourceFolders = listOf(sourceFolderName)
@@ -41,11 +41,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutinesExtension)
@@ -54,6 +50,7 @@ kotlin {
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
 
+                implementation(project(":util"))
                 api(project(":logger"))
             }
         }
@@ -85,24 +82,16 @@ kotlin {
             dependencies {
                 implementation(libs.securityCrypto)
                 implementation(libs.sqldelight.androidDriver)
+                implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
-                implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
-                implementation("androidx.sqlite:sqlite:2.0.1")
+                implementation(libs.sqlite.androidx)
+                implementation(libs.sql.android.cipher)
             }
         }
-        val androidAndroidTest by getting {
-            dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.core)
-            }
-        }
-
-        val iosX64Main by getting {
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
-        val iosX64Test by getting
     }
 }

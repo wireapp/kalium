@@ -2,6 +2,9 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.di.UserStorage
 
+/**
+ * Clears the user data from the local storage, except for the client id
+ */
 interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }

@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.IgnoreIOS
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -36,6 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when asset support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetMessageAssetUseCaseTest {
 
@@ -172,7 +174,14 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) }, anything())
+                .whenInvokedWith(
+                    anything(),
+                    anything(),
+                    anything(),
+                    anything(),
+                    matching { it.data.contentEquals(secretKey.data) },
+                    anything()
+                )
                 .thenReturn(Either.Right(encodedPath))
             given(updateAssetMessageDownloadStatus)
                 .suspendFunction(updateAssetMessageDownloadStatus::invoke)
@@ -206,7 +215,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(any(), any(), any(), anything(), any())
+                .whenInvokedWith(any(), any(), any(), anything(), any(), any())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }

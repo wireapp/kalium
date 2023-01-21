@@ -16,6 +16,10 @@ sealed class RefillKeyPackagesResult {
 
 }
 
+/**
+ * This use case will check if the number of key packages is below the minimum threshold and will
+ * upload new key packages if needed.
+ */
 interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(): RefillKeyPackagesResult

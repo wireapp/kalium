@@ -1,9 +1,9 @@
 package com.wire.kalium.network.api.base.authenticated.client
 
-import com.wire.kalium.network.api.base.model.MLSPublicKey
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO.Unknown
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.model.MLSPublicKey
+import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -16,7 +16,8 @@ data class RegisterClientRequest(
     @SerialName("type") val type: ClientTypeDTO, // 'temporary', 'permanent', 'legalhold'
     @SerialName("label") val label: String?,
     @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>?,
-    @SerialName("model") val model: String?
+    @SerialName("model") val model: String?,
+    @SerialName("cookie") val cookieLabel: String?
 )
 
 @Serializable

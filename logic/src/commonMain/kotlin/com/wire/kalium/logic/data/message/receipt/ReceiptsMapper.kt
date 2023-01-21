@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
@@ -34,7 +35,7 @@ internal class ReceiptsMapperImpl(
 
     override fun fromEntityToModel(detailedReceiptEntity: DetailedReceiptEntity): DetailedReceipt =
         with(detailedReceiptEntity) {
-            val messageUserId = idMapper.fromDaoModel(userId)
+            val messageUserId = userId.toModel()
             DetailedReceipt(
                 type = fromTypeEntity(type),
                 date = date,
@@ -42,7 +43,7 @@ internal class ReceiptsMapperImpl(
                     userId = messageUserId,
                     userName = userName,
                     userHandle = userHandle,
-                    userPreviewAssetId = userPreviewAssetId?.let { idMapper.fromDaoModel(it) },
+                    userPreviewAssetId = userPreviewAssetId?.toModel(),
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                     isUserDeleted = isUserDeleted,
                     connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),

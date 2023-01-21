@@ -6,6 +6,10 @@ import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
 
+/**
+ * This use case is responsible for getting the client.
+ * If the client is not found, it will be registered.
+ */
 interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientUseCase.RegisterClientParam
@@ -21,7 +25,7 @@ class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        val result: RegisterClientResult? = clientRepository.retainedClientId()
+        val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(
                 {
                     if (it is CoreFailure.MissingClientRegistration) null
@@ -37,14 +41,14 @@ class GetOrRegisterClientUseCaseImpl(
                         }
                     }
                 }
-            )
+            ) ?: registerClient(registerClientParam)
 
-        return (result ?: registerClient(registerClientParam)).also { result ->
-            if (result is RegisterClientResult.Success) {
-                upgradeCurrentSessionUseCase(result.client.id).flatMap {
-                    clientRepository.persistClientId(result.client.id)
-                }
+        if (result is RegisterClientResult.Success) {
+            upgradeCurrentSessionUseCase(result.client.id).flatMap {
+                clientRepository.persistClientId(result.client.id)
             }
         }
+
+        return result
     }
 }

@@ -5,10 +5,13 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 
 @Suppress("LongParameterList")
@@ -16,26 +19,32 @@ object MessageMapper {
 
     private val serializer = JsonSerializer()
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun toMessagePreviewEntityContent(
         contentType: MessageEntity.ContentType,
         senderName: String?,
-        selfUserId: QualifiedIDEntity?,
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
-        assetMimeType: String?
+        assetMimeType: String?,
+        selfUserId: QualifiedIDEntity?,
+        senderUserId: QualifiedIDEntity?
     ) = when (contentType) {
         MessageEntity.ContentType.TEXT -> when {
             isSelfMessage -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
-            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(senderName = senderName)
-            (selfUserId == mentionedUserId) -> MessagePreviewEntityContent.MentionedSelf(senderName = senderName)
+            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                senderName = senderName,
+                messageBody = text.requireField("text")
+            )
+            (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                senderName = senderName, messageBody = text.requireField("text")
+            )
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
@@ -50,13 +59,39 @@ object MessageMapper {
                     it.contains("audio/") -> AssetTypeEntity.AUDIO
                     else -> AssetTypeEntity.FILE
                 }
-            } ?: AssetTypeEntity.FILE)
+            } ?: AssetTypeEntity.FILE
+        )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
-        MessageEntity.ContentType.MEMBER_CHANGE -> MessagePreviewEntityContent.MemberChange(
-            adminName = senderName,
-            count = memberChangeList.requireField("memberChangeList").size,
-            type = memberChangeType.requireField("memberChangeType"))
+        MessageEntity.ContentType.MEMBER_CHANGE -> {
+            val userIdList = memberChangeList.requireField("memberChangeList")
+            when (memberChangeType.requireField("memberChangeType")) {
+                MessageEntity.MemberChangeType.ADDED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberJoined(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersAdded(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+                MessageEntity.MemberChangeType.REMOVED -> {
+                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                        MessagePreviewEntityContent.MemberLeft(senderName)
+                    } else {
+                        MessagePreviewEntityContent.MembersRemoved(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList
+                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+                }
+            }
+        }
 
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
@@ -64,20 +99,26 @@ object MessageMapper {
             type = AssetTypeEntity.ASSET
         )
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
-            adminName = senderName)
+            adminName = senderName
+        )
 
         MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
         MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+        MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
+        MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
+        MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "UNUSED_PARAMETER")
     fun toPreviewEntity(
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        date: Instant,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -87,7 +128,7 @@ object MessageMapper {
         memberChangeType: MessageEntity.MemberChangeType?,
         updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -99,34 +140,37 @@ object MessageMapper {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
             senderName = senderName,
-            selfUserId = selfUserId,
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return MessagePreviewEntity(
             id = id,
             conversationId = conversationId,
             content = content,
-            date = date,
+            date = date.toIsoDateTimeString(),
             visibility = visibility,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            senderUserId = senderUserId
         )
 
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "UNUSED_PARAMETER")
     fun toNotificationEntity(
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        date: Instant,
         visibility: MessageEntity.Visibility,
+        senderUserId: UserIDEntity,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -136,7 +180,7 @@ object MessageMapper {
         memberChangeType: MessageEntity.MemberChangeType?,
         updatedConversationName: String?,
         conversationName: String?,
-        mentionedUserId: QualifiedIDEntity?,
+        isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
@@ -148,14 +192,15 @@ object MessageMapper {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
             senderName = senderName,
-            selfUserId = selfUserId,
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,
             memberChangeType = memberChangeType,
-            mentionedUserId = mentionedUserId,
+            isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             text = text,
-            assetMimeType = assetMimeType
+            assetMimeType = assetMimeType,
+            selfUserId = selfUserId,
+            senderUserId = senderUserId
         )
 
         return NotificationMessageEntity(
@@ -164,7 +209,7 @@ object MessageMapper {
             conversationId = conversationId,
             conversationName = conversationName,
             conversationType = conversationType,
-            date = date
+            date = date.toIsoDateTimeString()
         )
 
     }
@@ -172,11 +217,11 @@ object MessageMapper {
     private fun createMessageEntity(
         id: String,
         conversationId: QualifiedIDEntity,
-        date: String,
+        date: Instant,
         senderUserId: QualifiedIDEntity,
         senderClientId: String?,
         status: MessageEntity.Status,
-        lastEditTimestamp: String?,
+        lastEdit: Instant?,
         visibility: MessageEntity.Visibility,
         content: MessageEntityContent,
         allReactionsJson: String?,
@@ -193,7 +238,7 @@ object MessageMapper {
             senderUserId = senderUserId,
             senderClientId = senderClientId!!,
             status = status,
-            editStatus = mapEditStatus(lastEditTimestamp),
+            editStatus = mapEditStatus(lastEdit),
             visibility = visibility,
             reactions = ReactionsEntity(
                 totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
@@ -217,20 +262,20 @@ object MessageMapper {
         )
     }
 
-    private fun mapEditStatus(lastEditTimestamp: String?) =
-        lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
+    private fun mapEditStatus(lastEdit: Instant?) =
+        lastEdit?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-    @Suppress("LongMethod", "ComplexMethod")
+    @Suppress("LongMethod", "ComplexMethod", "UNUSED_PARAMETER")
     fun toEntityMessageFromView(
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: String,
+        date: Instant,
         senderUserId: QualifiedIDEntity,
         senderClientId: String?,
         status: MessageEntity.Status,
-        lastEditTimestamp: String?,
+        lastEditDate: Instant?,
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean?,
         senderName: String?,
@@ -282,13 +327,15 @@ object MessageMapper {
         isQuotingSelfUser: Boolean?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
-        quotedMessageDateTime: String?,
-        quotedMessageEditTimestamp: String?,
+        quotedMessageCreationInstant: Instant?,
+        quotedMessageEditInstant: Instant?,
         quotedMessageVisibility: MessageEntity.Visibility?,
         quotedMessageContentType: MessageEntity.ContentType?,
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
+        newConversationReceiptMode: Boolean?,
+        conversationReceiptModeChanged: Boolean?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -304,9 +351,9 @@ object MessageMapper {
                         senderId = quotedSenderId.requireField("quotedSenderId"),
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
-                        senderName = quotedSenderName.requireField("quotedSenderName"),
-                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
-                        editTimestamp = quotedMessageEditTimestamp,
+                        senderName = quotedSenderName,
+                        dateTime = quotedMessageCreationInstant.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                        editTimestamp = quotedMessageEditInstant?.toIsoDateTimeString(),
                         visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
                         contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
                         textBody = quotedTextBody,
@@ -361,6 +408,14 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
+            MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(
+                receiptMode = newConversationReceiptMode ?: false
+            )
+            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
+                receiptMode = conversationReceiptModeChanged ?: false
+            )
+            MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
         }
 
         return createMessageEntity(
@@ -370,7 +425,7 @@ object MessageMapper {
             senderUserId,
             senderClientId,
             status,
-            lastEditTimestamp,
+            lastEditDate,
             visibility,
             content,
             allReactionsJson,

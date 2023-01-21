@@ -1,4 +1,3 @@
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
@@ -24,15 +23,18 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
+    wireDetektRulesRepo()
     google()
     mavenCentral()
 }
 
 plugins {
-    val dokkaVersion = "1.6.10"
-    id("org.jetbrains.dokka") version "$dokkaVersion"
-    id("org.jetbrains.kotlinx.kover") version "0.5.1"
+    id("org.jetbrains.dokka")
+    id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
     id("scripts.testing")
+    id("scripts.detekt")
+    alias(libs.plugins.completeKotlin)
 }
 
 dependencies {
@@ -47,14 +49,23 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
                 username = getLocalProperty("github.package_registry.user", System.getenv("GITHUB_USER"))
                 password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
+            }
+        }
+
+        // TODO we should remove this and "localrepo" dir after cryptobox-android debugging is completed
+        val avsLocal = maven(url = uri("$rootDir/localrepo/"))
+        exclusiveContent {
+            forRepositories(avsLocal)
+            filter {
+                includeModule("com.wire", "cryptobox-android")
             }
         }
     }
@@ -90,13 +101,4 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
 }
 
-tasks.create("dokkaClean") {
-    group = "documentation"
-    project.delete(file("build/dokka"))
-}
-
-tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
-tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
-
-apply(from = "$rootDir/gradle/detekt.gradle")
-apply(from = "$rootDir/gradle/dokka.gradle")
+tasks.dokkaHtmlMultiModule.configure {}

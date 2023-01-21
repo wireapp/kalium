@@ -16,13 +16,17 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 
 @Suppress("LongParameterList")
+/**
+ * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
+ * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
+ */
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
@@ -62,7 +66,7 @@ class SendTextMessageUseCase internal constructor(
                 ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.PENDING,

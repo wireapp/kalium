@@ -20,7 +20,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
 
 /**
  * This use case allows to send a confirmation type [ReceiptType.READ]
@@ -58,7 +58,7 @@ internal class SendConfirmationUseCase internal constructor(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.READ, messageIds),
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
@@ -96,7 +96,10 @@ internal class SendConfirmationUseCase internal constructor(
         if (conversation.type == Conversation.Type.ONE_ON_ONE) {
             userPropertyRepository.getReadReceiptsStatus()
         } else {
-            false
+            when (conversation.receiptMode) {
+                Conversation.ReceiptMode.DISABLED -> false
+                Conversation.ReceiptMode.ENABLED -> true
+            }
         }
 
 }

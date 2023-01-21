@@ -8,6 +8,11 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * This use case will observe and return the conversation model for a specific conversation.
+ * @see Conversation
+ * @see ObserveConversationDetailsUseCase
+ */
 class GetConversationUseCase(
     private val conversationRepository: ConversationRepository
 ) {

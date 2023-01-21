@@ -12,8 +12,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.utils.toJsonElement
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -29,7 +29,8 @@ data class Conversation(
     val lastReadDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
-    val creatorId: String?
+    val creatorId: String?,
+    val receiptMode: ReceiptMode,
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -69,6 +70,8 @@ data class Conversation(
         LINK,
         CODE;
     }
+
+    enum class ReceiptMode { DISABLED, ENABLED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
@@ -159,6 +162,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean,
         val selfRole: Conversation.Member.Role?
+//         val isTeamAdmin: Boolean, TODO kubaz
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -181,10 +185,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             removedBy = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
-            lastReadDate = EPOCH_FIRST_DAY,
+            lastReadDate = UNIX_FIRST_DATE,
             access = access,
             accessRole = accessRole,
-            creatorId = null
+            creatorId = null,
+            receiptMode = Conversation.ReceiptMode.DISABLED
         )
     )
 }

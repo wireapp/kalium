@@ -10,7 +10,9 @@ data class MigratedMessage(
     val senderClientId: ClientId,
     val timestampIso: String,
     val content: String,
-    val encryptedProto: ByteArray?
+    val encryptedProto: ByteArray?,
+    val assetName: String?,
+    val assetSize: Int?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

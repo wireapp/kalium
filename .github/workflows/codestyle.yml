@@ -15,14 +15,14 @@ jobs:
       - name: Set up JDK 11
         uses: actions/setup-java@v3
         with:
-          java-version: '11'
-          distribution: 'adopt'
+          java-version: '17'
+          distribution: 'zulu'
           cache: gradle
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
       - name: Run Detekt
         run: |
-            ./gradlew detekt
+            make detekt/run-verify
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.

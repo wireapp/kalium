@@ -13,9 +13,9 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
-import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
@@ -59,7 +59,6 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
-
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
@@ -80,7 +79,7 @@ class ProtoContentMapperImpl(
 
             is MessageContent.Receipt -> packReceipt(readableContent)
 
-            is MessageContent.SessionReset -> GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
+            is MessageContent.ClientAction -> packClientAction()
 
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
 
@@ -146,7 +145,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
-            is GenericMessage.Content.ClientAction -> MessageContent.SessionReset
+            is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
@@ -205,9 +204,21 @@ class ProtoContentMapperImpl(
         )
         )
 
+    private fun packClientAction() = GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
+
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji
-        val emojiSet = emoji?.split(',')?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+        val emojiSet = emoji?.split(',')
+            ?.map {
+                it.trim().let { trimmedReaction ->
+                    if (trimmedReaction == "❤️") {
+                        "❤"
+                    } else trimmedReaction
+                }
+            }
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
         return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
     }
 

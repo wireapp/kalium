@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
@@ -83,9 +82,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
-                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN
-                    else Message.Visibility.VISIBLE
-
+                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
@@ -160,6 +157,23 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.Availability -> {
                 logger.i(message = "Availability status update received: ${content.status}")
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
+            }
+
+            is MessageContent.ClientAction -> {
+                logger.i(message = "ClientAction status update received: ")
+
+                val message = Message.System(
+                    id = signaling.id,
+                    content = MessageContent.CryptoSessionReset,
+                    conversationId = signaling.conversationId,
+                    date = signaling.date,
+                    senderUserId = signaling.senderUserId,
+                    status = signaling.status,
+                    senderUserName = signaling.senderUserName
+                )
+
+                logger.i(message = "Persisting crypto session reset system message..")
+                persistMessage(message)
             }
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
@@ -308,13 +322,10 @@ internal class ApplicationMessageHandlerImpl(
         if (isSenderVerified(content.messageId, conversationId, senderUserId)) {
             messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
                 (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-                    assetRepository.deleteAssetLocally(
-                        AssetId(
-                            assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()
-                        )
-                    ).onFailure {
-                        logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
-                    }
+                    assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
+                        .onFailure {
+                            logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
+                        }
                 }
             }
             messageRepository.markMessageAsDeleted(

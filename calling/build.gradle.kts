@@ -7,7 +7,6 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableiOS.set(false)
         enableJs.set(false)
     }
 }

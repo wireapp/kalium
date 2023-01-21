@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -44,22 +43,7 @@ class MemberMapperTest {
     @Test
     fun givenAMembersResponse_whenMappingFromApiModel_shouldCallIdMapperForAllMembers() {
         val membersResponse = MEMBERS_RESPONSE
-        val mappedID = QualifiedID("someValue", "someDomain")
-
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
-
         memberMapper.fromApiModel(membersResponse)
-
-        verify(idMapper)
-            .invocation { idMapper.fromApiModel(SELF_MEMBER_RESPONSE.id) }
-            .wasInvoked(exactly = once)
-
-        verify(idMapper)
-            .invocation { idMapper.fromApiModel(OTHER_MEMBER_RESPONSE.id) }
-            .wasInvoked(exactly = once)
 
         verify(roleMapper)
             .invocation { roleMapper.fromApi(OTHER_MEMBER_RESPONSE.conversationRole) }
@@ -69,29 +53,19 @@ class MemberMapperTest {
     @Test
     fun givenAMembersResponse_whenMappingFromApiModel_shouldUseIdReturnedFromMapperAllMembers() {
         val membersResponse = MEMBERS_RESPONSE
-        val mappedID = QualifiedID("someValue", "someDomain")
-
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
+        val otherID = QualifiedID("other1", "domain1")
+        val selfID = QualifiedID("selfId", "selfDomain")
 
         val result = memberMapper.fromApiModel(membersResponse)
 
-        assertEquals(mappedID, result.otherMembers.first().id)
-        assertEquals(mappedID, result.self.id)
+        assertEquals(otherID, result.otherMembers.first().id)
+        assertEquals(selfID, result.self.id)
         assertEquals(OTHER_MEMBER.role, result.otherMembers.first().role)
     }
 
     @Test
     fun givenAMembersResponseWithNoOthers_whenMappingFromApiModel_shouldReturnNoOthers() {
         val membersResponse = MEMBERS_RESPONSE.copy(otherMembers = listOf())
-        val mappedID = QualifiedID("someValue", "someDomain")
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
-
         val result = memberMapper.fromApiModel(membersResponse)
 
         assertTrue(result.otherMembers.isEmpty())
@@ -105,11 +79,6 @@ class MemberMapperTest {
             others.add(others.first())
         }
         val membersResponse = MEMBERS_RESPONSE.copy(otherMembers = others)
-        val mappedID = QualifiedID("someValue", "someDomain")
-        given(idMapper)
-            .function(idMapper::fromApiModel)
-            .whenInvokedWith(any())
-            .then { mappedID }
 
         val result = memberMapper.fromApiModel(membersResponse)
 
@@ -123,7 +92,6 @@ class MemberMapperTest {
         val OTHER_MEMBER_RESPONSE =
             ConversationMemberDTO.Other(id = UserIdDTO("other1", "domain1"), conversationRole = "wire_member", service = null)
         val OTHER_MEMBER = Conversation.Member(id = UserId("other1", "domain1"), role = Conversation.Member.Role.Member)
-
 
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, listOf(OTHER_MEMBER_RESPONSE))
         val MEMBERS_INFO = MembersInfo(SELF_MEMBER, listOf(OTHER_MEMBER))

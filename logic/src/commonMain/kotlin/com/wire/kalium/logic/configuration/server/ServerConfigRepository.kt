@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ServerConfigFailure
@@ -37,21 +38,21 @@ internal interface ServerConfigRepository {
     /**
      * @return list of all locally stored server configurations
      */
-    fun configList(): Either<StorageFailure, List<ServerConfig>>
+    suspend fun configList(): Either<StorageFailure, List<ServerConfig>>
 
     /**
      * @return observable list of all locally stored server configurations
      */
-    fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
+    suspend fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
 
     /**
      * delete a locally stored server configuration
      */
-    fun deleteById(id: String): Either<StorageFailure, Unit>
-    fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
+    suspend fun deleteById(id: String): Either<StorageFailure, Unit>
+    suspend fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
-    fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
-    fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig>
+    suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
+    suspend fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig>
 
     /**
      * calculate the app/server common api version for a new non stored config and store it locally if the version is valid
@@ -71,7 +72,7 @@ internal interface ServerConfigRepository {
     /**
      * retrieve a config from the local DB by Links
      */
-    fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig>
+    suspend fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig>
 
     /**
      * update the api version of a locally stored config
@@ -109,15 +110,15 @@ internal class ServerConfigDataSource(
         wrapApiRequest { api.fetchServerConfig(serverConfigUrl) }
             .map { serverConfigMapper.fromDTO(it) }
 
-    override fun configList(): Either<StorageFailure, List<ServerConfig>> =
+    override suspend fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
 
-    override fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>> =
+    override suspend fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>> =
         wrapStorageRequest { dao.allConfigFlow().map { it.map(serverConfigMapper::fromEntity) } }
 
-    override fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
+    override suspend fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
 
-    override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
+    override suspend fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
     override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
             fetchApiVersionAndStore(serverLinks)
@@ -125,7 +126,7 @@ internal class ServerConfigDataSource(
             Either.Right(serverConfigMapper.fromEntity(it))
         })
 
-    override fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
+    override suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest {
             // check if such config is already inserted
             val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
@@ -164,7 +165,10 @@ internal class ServerConfigDataSource(
             serverConfigMapper.fromEntity(it)
         }
 
-    override fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig> {
+    override suspend fun storeConfig(
+        links: ServerConfig.Links,
+        versionInfo: ServerConfig.VersionInfo
+    ): Either<StorageFailure, ServerConfig> {
         val metaDataDTO = backendMetaDataUtil.calculateApiVersion(
             versionInfoDTO = VersionInfoDTO(
                 developmentSupported = versionInfo.developmentSupported,
@@ -187,7 +191,7 @@ internal class ServerConfigDataSource(
         dao.configById(id)
     }.map { serverConfigMapper.fromEntity(it) }
 
-    override fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig> =
+    override suspend fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(links)) }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
@@ -195,7 +199,7 @@ internal class ServerConfigDataSource(
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
+        wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =

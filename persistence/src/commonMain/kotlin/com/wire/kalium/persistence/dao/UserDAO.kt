@@ -138,7 +138,7 @@ interface UserDAO {
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
-    fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
+    suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
@@ -163,4 +163,5 @@ interface UserDAO {
 
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
+    suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
 }

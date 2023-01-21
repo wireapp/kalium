@@ -14,7 +14,6 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
-        coreCrypto.close()
         return File(path).deleteRecursively()
     }
 
@@ -25,8 +24,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
-            // TODO client ID is not relevant for proteus but must be provided atm
-            val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -37,8 +35,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
-                // TODO client ID is not relevant for proteus but must be provided atm
-                val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto
@@ -97,16 +94,9 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        // TODO hack until we have the proteusSessionExists API
-        try {
-            coreCrypto.proteusDecrypt(sessionId.value, toUByteList(""))
-        } catch (e: CryptoException) {
-            if (e.message == "Couldn't find conversation") {
-                return false
-            }
+        return wrapException {
+            coreCrypto.proteusSessionExists(sessionId.value)
         }
-
-        return true
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
@@ -134,6 +124,16 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
             val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId.value)
             encryptedMessage
+        }
+    }
+
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return wrapException {
+            coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
+                CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
+                    sessionId to toByteArray(entry.value)
+                }
+            }.toMap()
         }
     }
 
@@ -168,6 +168,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
+    @OptIn(ExperimentalUnsignedTypes::class)
     private companion object {
 
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
@@ -176,7 +177,6 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         fun toPreKey(id: Int, data: ByteArray): PreKeyCrypto =
             PreKeyCrypto(id, data.encodeBase64())
 
-        val CLIENT_ID = CryptoQualifiedID("2380b74d-f321-4c11-b7dd-552a74502e30", "wire.com")
         val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
         const val KEYSTORE_NAME = "keystore"
     }

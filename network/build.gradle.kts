@@ -17,14 +17,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":protobuf"))
+                implementation(project(":util"))
                 api(project(":logger"))
 
                 // coroutines
-                implementation(libs.coroutines.core.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
-                        version { strictly(libs.versions.coroutines.get()) }
-                    })
-                })
+                implementation(libs.coroutines.core)
 
                 // ktor
                 api(libs.ktor.core)
@@ -36,6 +33,10 @@ kotlin {
                 implementation(libs.ktor.webSocket)
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
+
+                // KTX
+                implementation(libs.ktxDateTime)
+                implementation(libs.ktx.atomicfu)
 
                 // Okio
                 implementation(libs.okio.core)
@@ -69,8 +70,7 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val androidTest by getting
-        val iosX64Main by getting {
+        val darwinMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }

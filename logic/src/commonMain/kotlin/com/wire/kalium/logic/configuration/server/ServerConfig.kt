@@ -3,6 +3,7 @@
 package com.wire.kalium.logic.configuration.server
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -294,7 +295,7 @@ class ServerConfigMapperImpl(
     override fun fromEntity(serverConfigEntity: ServerConfigWithUserIdEntity): ServerConfigWithUserId =
         ServerConfigWithUserId(
             fromEntity(serverConfigEntity.serverConfig),
-            idMapper.fromDaoModel(serverConfigEntity.userId)
+            serverConfigEntity.userId.toModel()
         )
 }
 

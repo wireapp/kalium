@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.model.AssetRetentionType
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -24,6 +25,8 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetApiV2Test : ApiTest {
+
+    private val userId: UserId = UserId("user_id", "domain")
 
     @Test
     fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
@@ -44,7 +47,7 @@ class AssetApiV2Test : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiV2(networkClient)
+        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
         val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
         // Then
@@ -71,7 +74,7 @@ class AssetApiV2Test : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiV2(networkClient)
+        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
         val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
         // Then
@@ -97,8 +100,8 @@ class AssetApiV2Test : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiV2(networkClient)
-        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
+        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
+        val response = assetApi.downloadAsset(assetId.value, assetId.domain, ASSET_TOKEN, tempFileSink)
     }
 
     @Test
@@ -118,9 +121,9 @@ class AssetApiV2Test : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiV2(networkClient)
+        val assetApi: AssetApi = AssetApiV2(networkClient, userId)
         val assetIdFallback = assetId
-        val response = assetApi.deleteAsset(assetIdFallback, ASSET_TOKEN)
+        val response = assetApi.deleteAsset(assetIdFallback.value, assetIdFallback.domain, ASSET_TOKEN)
 
         // Then
         assertTrue(response.isSuccessful())

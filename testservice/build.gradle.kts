@@ -9,7 +9,7 @@ group = "com.wire.kalium.testservice"
 version = "0.0.1-SNAPSHOT"
 
 object Versions {
-    const val dropwizard = "2.1.2"
+    const val dropwizard = "2.1.4"
     const val prometheus_simpleclient = "0.1.0"
 }
 
@@ -35,22 +35,22 @@ tasks.shadowJar {
     }
 }
 
-repositories {
-    // to fetch a version of dropwizard-swagger via git reference
-    maven(url = "https://jitpack.io")
-}
-
 dependencies {
     add("implementation", "io.dropwizard:dropwizard-core:${Versions.dropwizard}")
-    add("implementation", "com.github.smoketurner:dropwizard-swagger:72e8441e4a")
+    add("implementation", "com.smoketurner:dropwizard-swagger:2.1.4-1")
+    add("implementation", "org.slf4j:slf4j-api:1.7.22")
 
     // prometheus metrics
     add("implementation", "io.prometheus:simpleclient_dropwizard:${Versions.prometheus_simpleclient}")
     add("implementation", "io.prometheus:simpleclient_servlet:${Versions.prometheus_simpleclient}")
 
     add("implementation", project(":network"))
-    add("implementation", project(":cryptography"))
-    add("implementation", project(":logic"))
+    add("implementation", project(":cryptography")) {
+        exclude("org.slf4j", "slf4j-api")
+    }
+    add("implementation", project(":logic")) {
+        exclude("org.slf4j", "slf4j-api")
+    }
 
     // Okio
     implementation(libs.okio.core)

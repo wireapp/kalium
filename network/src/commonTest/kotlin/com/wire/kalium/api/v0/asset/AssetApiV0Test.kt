@@ -110,7 +110,7 @@ class AssetApiV0Test : ApiTest {
 
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
-        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
+        val response = assetApi.downloadAsset(assetId.value, assetId.domain, ASSET_TOKEN, tempFileSink)
         assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
@@ -134,7 +134,7 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
-        val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
+        val response = assetApi.downloadAsset(assetIdFallback.value, assetIdFallback.domain, ASSET_TOKEN, tempFileSink)
         assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
@@ -157,7 +157,7 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
-        val response = assetApi.deleteAsset(assetIdFallback, ASSET_TOKEN)
+        val response = assetApi.deleteAsset(assetIdFallback.value, assetIdFallback.domain, ASSET_TOKEN)
 
         // Then
         assertTrue(response.isSuccessful())
@@ -180,7 +180,7 @@ class AssetApiV0Test : ApiTest {
 
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
-        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
+        val response = assetApi.downloadAsset(assetId.value, assetId.domain, ASSET_TOKEN, tempFileSink)
         assertIs<NetworkResponse.Error>(response)
         assertIs<KaliumException.InvalidRequestError>(response.kException)
     }

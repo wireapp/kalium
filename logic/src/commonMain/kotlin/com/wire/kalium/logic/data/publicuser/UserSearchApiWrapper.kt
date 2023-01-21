@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
@@ -16,6 +18,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
@@ -72,14 +75,14 @@ internal class UserSearchApiWrapperImpl(
         // if we do not exclude the conversation members, we just return empty list
         val conversationMembersId = if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
             conversationDAO.getAllMembers(
-                qualifiedID = idMapper.toDaoModel(qualifiedID = searchUsersOptions.conversationExcluded.conversationId)
-            ).firstOrNull()?.map { idMapper.fromDaoModel(it.user) }
+                qualifiedID = searchUsersOptions.conversationExcluded.conversationId.toDao()
+            ).firstOrNull()?.map { it.user.toModel() }
         } else {
             emptyList()
         }
 
         val filteredContactResponse = userSearchResponse.documents.filter { contactDTO ->
-            val domainId = idMapper.fromApiModel(contactDTO.qualifiedID)
+            val domainId = contactDTO.qualifiedID.toModel()
 
             var isConversationMember = false
 
@@ -110,6 +113,7 @@ internal class UserSearchApiWrapperImpl(
     // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository and SearchUserReopsitory what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
+    @OptIn(FlowPreview::class)
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()

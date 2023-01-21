@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.register
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -23,6 +24,7 @@ sealed class RegisterParam(
     lastName: String,
     val email: String,
     val password: String,
+    val cookieLabel: String?
 ) {
     val name: String = "$firstName $lastName"
 
@@ -31,8 +33,9 @@ sealed class RegisterParam(
         lastName: String,
         email: String,
         password: String,
-        val emailActivationCode: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val emailActivationCode: String,
+        cookieLabel: String? = uuid4().toString(),
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 
     @Suppress("LongParameterList")
     class Team(
@@ -42,38 +45,55 @@ sealed class RegisterParam(
         password: String,
         val emailActivationCode: String,
         val teamName: String,
-        val teamIcon: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val teamIcon: String,
+        cookieLabel: String? = uuid4().toString()
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 }
 
+/**
+ * This use case is responsible for registering a new account.
+ */
 class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
+    /**
+     * @see [RegisterParam.PrivateAccount] and [RegisterParam.Team]
+     * @param param [RegisterParam] the registration to create a private account or a team account
+     *
+     * @return [RegisterResult] with credentials if successful or [RegisterResult.Failure] with the specific error
+     */
     suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
         is RegisterParam.PrivateAccount -> {
             with(param) {
-                registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password)
+                registerAccountRepository.registerPersonalAccountWithEmail(
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             }
         }
 
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
-                    email,
-                    emailActivationCode,
-                    name,
-                    password,
-                    teamName,
-                    teamIcon
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    teamName = teamName,
+                    teamIcon = teamIcon,
+                    cookieLabel = cookieLabel
                 )
             }
         }
     }.map { (ssoId, authTokens) ->
-               RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
+        RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)

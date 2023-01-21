@@ -1,10 +1,10 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -30,6 +30,9 @@ data class GlobalTeamConversationResponse(
 
     @SerialName("cipher_suite")
     val mlsCipherSuiteTag: Int?,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
 
     @SerialName("access")
     val access: Set<ConversationAccessDTO>
@@ -78,6 +81,9 @@ data class ConversationResponse(
 
     @SerialName("access_role_v2")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
 ) {
 
     val isOneOnOneConversation: Boolean
@@ -137,8 +143,11 @@ data class ConversationResponseV3(
     @SerialName("access")
     val access: Set<ConversationAccessDTO>,
 
-    @SerialName("access_role")
+    @SerialName("access_role_v2")
     val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
 )
 
 @Serializable

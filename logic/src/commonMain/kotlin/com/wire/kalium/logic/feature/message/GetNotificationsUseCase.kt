@@ -2,22 +2,30 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.scan
 
+/**
+ * Get notifications for the current user
+ */
 interface GetNotificationsUseCase {
+    /**
+     * Operation to get all notifications, the Flow emits everytime when the list is changed
+     * @return [Flow] of [List] of [LocalNotificationConversation] with the List that should be shown to the user.
+     */
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
 }
 
@@ -25,38 +33,39 @@ interface GetNotificationsUseCase {
  *
  * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
- * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
- * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
- * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
- * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
  * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
- *
- * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
- * That Flow emits everytime when the list is changed
  */
 @Suppress("LongParameterList")
 internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
-    private val timeParser: TimeParser,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
-    private val selfUserId: UserId,
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return merge(
-            messageRepository.getNotificationMessage(),
-            observeConnectionRequests(),
-            ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
-        )
+        return incrementalSyncRepository.incrementalSyncState
+            .isLiveDebounced()
+            .flatMapLatest { isLive ->
+                if (isLive) {
+                    merge(
+                        messageRepository.getNotificationMessage(),
+                        observeConnectionRequests(),
+                        observeEphemeralNotifications()
+                    )
+                } else {
+                    observeEphemeralNotifications()
+                }
+                    .map { list -> list.filter { it.messages.isNotEmpty() } }
+            }
             .distinctUntilChanged()
             .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
     }
+
+    private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
+        ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
         return connectionRepository.observeConnectionRequestsForNotification()
@@ -67,10 +76,24 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             }
     }
 
-    // TODO: will consider these values in query lever after SQLDelight added window functions
+    /**
+     * In case of push notification we close the connection immediately after syncing finished.
+     * So event `IncrementalSyncStatus.Pending` after `IncrementalSyncStatus.Live` may come sooner
+     * than notifications are handled, and cancel it.
+     * This `debounce` only for the case when we were Live and non-Live event comes helps to avoid such a scenario.
+     */
+    private fun Flow<IncrementalSyncStatus>.isLiveDebounced(): Flow<Boolean> =
+        this.map { it == IncrementalSyncStatus.Live }
+            .distinctUntilChanged()
+            .scan(false to false) { prevPair, isLive -> prevPair.second to isLive }
+            .drop(1) // initial value of scan
+            .debounce { (prevValue, newValue) ->
+                if (prevValue && !newValue) AFTER_LIVE_DELAY_MS
+                else 0
+            }
+            .map { it.second }
+
     companion object {
-        private const val DEFAULT_MESSAGE_LIMIT = 100
-        private const val DEFAULT_MESSAGE_OFFSET = 0
-        private const val NOTIFICATION_DATE_OFFSET = 1000L
+        private const val AFTER_LIVE_DELAY_MS = 100L
     }
 }

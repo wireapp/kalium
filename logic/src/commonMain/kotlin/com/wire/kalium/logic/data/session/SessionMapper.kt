@@ -2,6 +2,9 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
@@ -43,38 +46,41 @@ internal class SessionMapperImpl(
 
     override fun toSessionDTO(authSession: AuthTokens): SessionDTO = with(authSession) {
         SessionDTO(
-            userId = idMapper.toApiModel(userId),
+            userId = userId.toApi(),
             tokenType = tokenType,
             accessToken = accessToken,
-            refreshToken = refreshToken
+            refreshToken = refreshToken,
+            cookieLabel = cookieLabel
         )
     }
 
     override fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO = with(authTokenEntity) {
         SessionDTO(
-            userId = idMapper.fromDaoToDto(userId),
+            userId = userId.toApi(),
             tokenType = tokenType,
             accessToken = accessToken,
-            refreshToken = refreshToken
+            refreshToken = refreshToken,
+            cookieLabel = cookieLabel
         )
     }
 
     override fun fromSessionDTO(sessionDTO: SessionDTO): AuthTokens = with(sessionDTO) {
         AuthTokens(
-            userId = idMapper.fromApiModel(userId),
+            userId = userId.toModel(),
             accessToken = accessToken,
             refreshToken = refreshToken,
-            tokenType = tokenType
+            tokenType = tokenType,
+            cookieLabel = cookieLabel
         )
     }
 
     override fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo =
         accountInfoEntity.logoutReason?.let {
             AccountInfo.Invalid(
-                idMapper.fromDaoModel(accountInfoEntity.userIDEntity),
+                accountInfoEntity.userIDEntity.toModel(),
                 toLogoutReason(it)
             )
-        } ?: AccountInfo.Valid(idMapper.fromDaoModel(accountInfoEntity.userIDEntity))
+        } ?: AccountInfo.Valid(accountInfoEntity.userIDEntity.toModel())
 
     override fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity =
         when (reason) {
@@ -88,12 +94,15 @@ internal class SessionMapperImpl(
     override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
         ssoId?.let { SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
 
-    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = AuthTokenEntity(
-        userId = idMapper.toDaoModel(authSession.userId),
-        accessToken = authSession.accessToken,
-        refreshToken = authSession.refreshToken,
-        tokenType = authSession.tokenType
-    )
+    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = with(authSession) {
+        AuthTokenEntity(
+            userId = userId.toDao(),
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            tokenType = tokenType,
+            cookieLabel = cookieLabel
+        )
+    }
 
     override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
         ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
@@ -113,7 +122,7 @@ internal class SessionMapperImpl(
     override fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus = PersistentWebSocketStatus(
-        idMapper.fromDaoModel(persistentWebSocketStatusEntity.userIDEntity),
+        persistentWebSocketStatusEntity.userIDEntity.toModel(),
         persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
     )
     override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =

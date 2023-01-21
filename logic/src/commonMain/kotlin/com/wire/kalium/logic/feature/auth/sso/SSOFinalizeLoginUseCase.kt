@@ -16,7 +16,14 @@ sealed class SSOFinalizeLoginResult {
     }
 }
 
+/**
+ * Finalizes a login using SSO
+ */
 interface SSOFinalizeLoginUseCase {
+    /**
+     * @param cookie the cookie to use for the login
+     * @return the [SSOFinalizeLoginResult] with the request url if successful
+     */
     suspend operator fun invoke(cookie: String): SSOFinalizeLoginResult
 }
 

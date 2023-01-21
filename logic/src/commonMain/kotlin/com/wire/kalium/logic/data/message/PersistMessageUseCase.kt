@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.logic.functional.fold
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
@@ -16,33 +14,36 @@ interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
-@OptIn(DelicateKaliumApi::class)
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository
+    private val selfUserId: UserId
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
-        val (updateConversationNotificationsDate, isMyMessage) = userRepository.getSelfUser()?.let {
-            message.shouldUpdateConversationNotificationDate(it) to message.isSelfTheSender(it.id)
-        } ?: (false to false)
-        return messageRepository
-            .persistMessage(
-                message = message,
-                updateConversationReadDate = isMyMessage,
-                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
-                updateConversationNotificationsDate
-            )
+        val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
+
+        return messageRepository.persistMessage(
+            message = modifiedMessage,
+            updateConversationReadDate = message.isSelfTheSender(selfUserId),
+            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
+        )
     }
 
-    private fun Message.shouldUpdateConversationNotificationDate(selfUser: SelfUser) =
-        when (selfUser.availabilityStatus) {
-            UserAvailabilityStatus.AWAY -> true
-            UserAvailabilityStatus.BUSY -> this.isSelfTheSender(selfUser.id)
-            // todo: OR conversationMutedStatus == MutedConversationStatus.OnlyMentionsAndRepliesAllowed
-            else -> this.isSelfTheSender(selfUser.id)
-        }
-
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
+
+    private suspend fun getExpectsReadConfirmationFromMessage(message: Message.Standalone) =
+        if (message is Message.Regular) {
+            val expectsReadConfirmation: Boolean = messageRepository
+                .getReceiptModeFromGroupConversationByQualifiedID(message.conversationId)
+                .fold({
+                    message.expectsReadConfirmation
+                }, { receiptMode ->
+                    receiptMode == Conversation.ReceiptMode.ENABLED
+                })
+
+            message.copy(expectsReadConfirmation = expectsReadConfirmation)
+        } else {
+            message
+        }
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
@@ -68,6 +69,10 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationRenamed -> true
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.Receipt -> false
-            is MessageContent.SessionReset -> false
+            is MessageContent.ClientAction -> false
+            is MessageContent.CryptoSessionReset -> false
+            is MessageContent.NewConversationReceiptMode -> false
+            is MessageContent.ConversationReceiptModeChanged -> false
+            is MessageContent.HistoryLost -> false
         }
 }

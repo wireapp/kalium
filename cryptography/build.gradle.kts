@@ -3,7 +3,6 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.carthage.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -26,10 +25,9 @@ kotlin {
         }
     }
 
-    iosX64 {
-        carthage {
-            baseName = "Cryptography"
-            dependency("WireCryptobox")
+    ios() {
+        binaries.all {
+            linkerOpts("-framework", "Security")
         }
     }
 
@@ -41,8 +39,14 @@ kotlin {
                 implementation(libs.coroutines.core)
                 api(libs.ktor.core)
 
+                // KTX
+                implementation(libs.ktxDateTime)
+
                 // Okio
                 implementation(libs.okio.core)
+
+                // Libsodium
+                implementation(libs.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {
@@ -80,10 +84,9 @@ kotlin {
                 implementation(libs.coreCryptoAndroid)
             }
         }
-        val androidAndroidTest by getting {
+        val darwinMain by getting {
             dependencies {
-                implementation(libs.androidtest.runner)
-                implementation(libs.androidtest.rules)
+                implementation(libs.coreCrypto)
             }
         }
     }

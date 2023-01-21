@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
@@ -76,7 +77,7 @@ class JoinExistingMLSConversationUseCaseImpl(
                 }
             } else {
                 wrapApiRequest {
-                    conversationApi.fetchGroupInfo(idMapper.toApiModel(conversation.id))
+                    conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
                     mlsConversationRepository.joinGroupByExternalCommit(
                         conversation.protocol.groupId,

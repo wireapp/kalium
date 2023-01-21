@@ -21,7 +21,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -87,7 +87,6 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val messageSendingInterceptor: MessageSendingInterceptor,
-    private val timeParser: TimeParser,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -129,7 +128,7 @@ internal class MessageSenderImpl internal constructor(
                 // this should make sure that pending messages are ordered correctly after one of them is sent
                 messageRepository.updatePendingMessagesAddMillisToDate(
                     message.conversationId,
-                    timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                    DateTimeUtil.calculateMillisDifference(message.date, messageRemoteTime)
                 )
             }.onFailure {
                 val cause = (it as? CoreFailure.Unknown)?.rootCause ?: (it as? StorageFailure.Generic)?.rootCause

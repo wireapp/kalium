@@ -24,7 +24,8 @@ class TestSessionManagerV0 : SessionManager {
             session.userId,
             newAccessTokenDTO.tokenType,
             newAccessTokenDTO.value,
-            newRefreshTokenDTO?.value ?: session.refreshToken
+            newRefreshTokenDTO?.value ?: session.refreshToken,
+            session.cookieLabel
         )
 
     override fun proxyCredentials(): ProxyCredentialsDTO? =

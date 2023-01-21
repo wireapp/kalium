@@ -10,11 +10,10 @@ import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.ContentNegotiation
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 
@@ -97,12 +96,6 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-internal class KaliumHttpLogger : Logger {
-    override fun log(message: String) {
-        kaliumLogger.d(message)
-    }
-}
-
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     installCompression: Boolean = true,
@@ -111,7 +104,6 @@ internal fun provideBaseHttpClient(
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
-            logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
     }
