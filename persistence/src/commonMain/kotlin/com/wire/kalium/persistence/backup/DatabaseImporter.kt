@@ -12,7 +12,6 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
-        val currentTimeStamp = Clock.System.now().toEpochMilliseconds()
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
                 bindString(0, filePath)
@@ -57,6 +56,9 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
     }
 
     private fun restoreConversations() {
+        // For some strange reason, when restoring the backup db, all last_read_date fields from backup db are hardcoded to 0. Therefore,
+        // before restoring the conversations, we need to set the lastReadTimestamp of the backup conversations to the latest timestamp of
+        // the current conversations so that they don't show up as unread.
         sqlDriver.execute(
             """UPDATE $BACKUP_DB_ALIAS.Conversation
             |SET last_read_date = (
