@@ -11,8 +11,8 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions")
 class ProteusClientCryptoBoxImpl constructor(
     rootDir: String,
-    private val ioContext: CoroutineContext,
-    private val defaultContext: CoroutineContext
+    private val ioContext: CoroutineContext?,
+    private val defaultContext: CoroutineContext?
 ) : ProteusClient {
 
     private val path: String
@@ -35,7 +35,7 @@ class ProteusClientCryptoBoxImpl constructor(
      * Create the crypto files if missing and call box.open
      * this must be called only one time
      */
-    override suspend fun openOrCreate() = withContext(ioContext) {
+    override suspend fun openOrCreate() = withContext(ioContext!!) {
         val directory = File(path)
         box = wrapException {
             directory.mkdirs()
@@ -47,7 +47,7 @@ class ProteusClientCryptoBoxImpl constructor(
      * open the crypto box if and only if the local files are already created
      * this must be called only one time
      */
-    override suspend fun openOrError() = withContext(ioContext) {
+    override suspend fun openOrError() = withContext(ioContext!!) {
         val directory = File(path)
         if (directory.exists()) {
             box = wrapException {
@@ -74,17 +74,17 @@ class ProteusClientCryptoBoxImpl constructor(
     //  parse it content we can consider changing it to a simple check if the session file exists on the local storage or not
     //  or rename it to doesValidSessionExist
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean =
-        withContext(ioContext) {
+        withContext(ioContext!!) {
             box.tryGetSession(sessionId.value)?.let { true } ?: false
         }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        withContext(ioContext) {
+        withContext(ioContext!!) {
             wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
         }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
+    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext!!) {
         val session = box.tryGetSession(sessionId.value)
         wrapException {
             if (session != null) {
@@ -99,7 +99,7 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext!!) {
         wrapException {
             val session = box.getSession(sessionId.value)
             val encryptedMessage = session.encrypt(message)
@@ -112,7 +112,7 @@ class ProteusClientCryptoBoxImpl constructor(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
-    ): ByteArray = withContext(defaultContext) {
+    ): ByteArray = withContext(defaultContext!!) {
         wrapException {
             val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             val encryptedMessage = session.encrypt(message)
@@ -122,7 +122,7 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun deleteSession(sessionId: CryptoSessionId) {
-        withContext(defaultContext) {
+        withContext(defaultContext!!) {
             wrapException {
                 box.deleteSession(sessionId.value)
             }
