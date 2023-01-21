@@ -13,4 +13,6 @@ actual object KaliumDispatcherImpl : KaliumDispatcher {
         get() = Dispatchers.Unconfined
     override val io: CoroutineDispatcher
         get() = Dispatchers.Default
+    override val database: CoroutineDispatcher
+        get() = Dispatchers.Default
 }

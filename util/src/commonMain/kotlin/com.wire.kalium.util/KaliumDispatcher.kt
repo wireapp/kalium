@@ -7,6 +7,7 @@ interface KaliumDispatcher {
     val main: CoroutineDispatcher
     val unconfined: CoroutineDispatcher
     val io: CoroutineDispatcher
+    val database: CoroutineDispatcher
 }
 
 expect object KaliumDispatcherImpl : KaliumDispatcher

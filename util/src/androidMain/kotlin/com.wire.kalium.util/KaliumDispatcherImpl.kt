@@ -3,6 +3,7 @@ package com.wire.kalium.util
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainCoroutineDispatcher
+import kotlinx.coroutines.newSingleThreadContext
 
 actual object KaliumDispatcherImpl : KaliumDispatcher {
     override val default: CoroutineDispatcher
@@ -13,4 +14,6 @@ actual object KaliumDispatcherImpl : KaliumDispatcher {
         get() = Dispatchers.Unconfined
     override val io: CoroutineDispatcher
         get() = Dispatchers.IO
+    override val database: CoroutineDispatcher
+        get() = newSingleThreadContext("SingleThreadDispatcher")
 }
