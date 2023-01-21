@@ -18,7 +18,9 @@ actual class ProteusClientImpl actual constructor(
 
     private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir, ioContext, defaultContext)).also { kaliumLogger.d("Constructing ProteusClient #${instanceCounter++} at $rootDir") }
+    } ?: ProteusClientCryptoBoxImpl(rootDir, ioContext, defaultContext)).also {
+        kaliumLogger.d("Constructing ProteusClient #${instanceCounter++} at $rootDir")
+    }
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
