@@ -64,50 +64,96 @@ private class ConversationMapper {
         )
     }
 
-    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
-        return conversation?.run {
-            ConversationViewEntity(
-                id = qualifiedId,
-                name = name,
-                type = type,
-                teamId = teamId,
-                protocolInfo = mapProtocolInfo(
-                    protocol,
-                    mls_group_id,
-                    mls_group_state,
-                    mls_epoch,
-                    mls_last_keying_material_update_date.epochSeconds,
-                    mls_cipher_suite
-                ),
-                isCreator = isCreator,
-                mutedStatus = mutedStatus,
-                mutedTime = muted_time,
-                creatorId = creator_id,
-                lastNotificationDate = lastNotifiedMessageDate,
-                lastModifiedDate = last_modified_date,
-                lastReadDate = lastReadDate,
-                accessList = access_list,
-                accessRoleList = access_role_list,
-                protocol = protocol,
-                mlsCipherSuite = mls_cipher_suite,
-                mlsEpoch = mls_epoch,
-                mlsGroupId = mls_group_id,
-                mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
-                mlsGroupState = mls_group_state,
-                mlsProposalTimer = mls_proposal_timer,
-                callStatus = callStatus,
-                previewAssetId = previewAssetId,
-                userAvailabilityStatus = userAvailabilityStatus,
-                userType = userType,
-                botService = botService,
-                userDeleted = userDeleted,
-                connectionStatus = connectionStatus,
-                otherUserId = otherUserId,
-                selfRole = selfRole,
-                receiptMode = receipt_mode
-            )
-        }
+    fun toModel(
+        qualified_id: QualifiedIDEntity,
+        name: String?,
+        type: ConversationEntity.Type,
+        team_id: String?,
+        mls_group_id: String?,
+        mls_group_state: ConversationEntity.GroupState,
+        mls_epoch: Long,
+        mls_proposal_timer: String?,
+        protocol: ConversationEntity.Protocol,
+        muted_status: ConversationEntity.MutedStatus,
+        muted_time: Long,
+        creator_id: String,
+        last_modified_date: Instant,
+        last_notified_date: Instant?,
+        last_read_date: Instant,
+        access_list: List<ConversationEntity.Access>,
+        access_role_list: List<ConversationEntity.AccessRole>,
+        mls_last_keying_material_update_date: Instant,
+        mls_cipher_suite: ConversationEntity.CipherSuite,
+        receipt_mode: ConversationEntity.ReceiptMode
+    ) = ConversationEntity(
+        id = qualified_id,
+        name = name,
+        type = type,
+        teamId = team_id,
+        protocolInfo = mapProtocolInfo(
+            protocol,
+            mls_group_id,
+            mls_group_state,
+            mls_epoch,
+            mls_last_keying_material_update_date,
+            mls_cipher_suite
+        ),
+        mutedStatus = muted_status,
+        mutedTime = muted_time,
+        creatorId = creator_id,
+        lastNotificationDate = last_notified_date,
+        lastModifiedDate = last_modified_date,
+        lastReadDate = last_read_date,
+        access = access_list,
+        accessRole = access_role_list,
+        receiptMode = receipt_mode
+    )
+}
+
+fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
+    return conversation?.run {
+        ConversationViewEntity(
+            id = qualifiedId,
+            name = name,
+            type = type,
+            teamId = teamId,
+            protocolInfo = mapProtocolInfo(
+                protocol,
+                mls_group_id,
+                mls_group_state,
+                mls_epoch,
+                mls_last_keying_material_update_date,
+                mls_cipher_suite
+            ),
+            isCreator = isCreator,
+            mutedStatus = mutedStatus,
+            mutedTime = muted_time,
+            creatorId = creator_id,
+            lastNotificationDate = lastNotifiedMessageDate,
+            lastModifiedDate = last_modified_date,
+            lastReadDate = lastReadDate,
+            accessList = access_list,
+            accessRoleList = access_role_list,
+            protocol = protocol,
+            mlsCipherSuite = mls_cipher_suite,
+            mlsEpoch = mls_epoch,
+            mlsGroupId = mls_group_id,
+            mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
+            mlsGroupState = mls_group_state,
+            mlsProposalTimer = mls_proposal_timer,
+            callStatus = callStatus,
+            previewAssetId = previewAssetId,
+            userAvailabilityStatus = userAvailabilityStatus,
+            userType = userType,
+            botService = botService,
+            userDeleted = userDeleted,
+            connectionStatus = connectionStatus,
+            otherUserId = otherUserId,
+            selfRole = selfRole,
+            receiptMode = receipt_mode
+        )
     }
+}
 
 @Suppress("LongParameterList")
 fun mapProtocolInfo(
