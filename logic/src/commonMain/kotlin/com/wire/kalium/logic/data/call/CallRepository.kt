@@ -93,7 +93,7 @@ internal class CallDataSource(
 
     override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
 
-    // This needs to be reworked the logic into the useCases
+    // TODO This method needs to be simplified and optimized
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,

@@ -77,6 +77,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
     suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
@@ -88,7 +89,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -170,7 +171,7 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -187,7 +188,8 @@ class MessageDataSource(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
-                    messages = messages.map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                    messages = messages.take(messageSizePerConversation)
+                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
                     } ?: false
@@ -276,7 +278,7 @@ class MessageDataSource(
 
     override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
         wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { Instant.parse(it.date) }
+            .map { it.date }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {

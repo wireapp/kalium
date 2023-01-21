@@ -1,6 +1,7 @@
 import com.wire.kalium.persistence.dao.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.collections.List;
+import kotlinx.datetime.Instant;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -15,15 +16,20 @@ CREATE TABLE Conversation (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
-    last_modified_date TEXT NOT NULL,
-    last_notified_message_date TEXT,
-    last_read_date TEXT DEFAULT "1970-01-01T00:00:00.000Z" NOT NULL,
+    last_modified_date INTEGER AS Instant NOT NULL,
+    last_notified_date INTEGER AS Instant,
+    last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
-    mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL,
+    mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
     receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
 );
+
+-- Optimise comparisons and sorting by dates:
+CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
+CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
+CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 
 deleteAllConversations:
 DELETE FROM Conversation;
@@ -32,7 +38,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite, receipt_mode)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
@@ -47,14 +53,14 @@ creator_id = excluded.creator_id,
 access_list = excluded.access_list,
 access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
-last_notified_message_date = last_notified_message_date,
+last_notified_date = last_notified_date,
 last_read_date = last_read_date,
-mls_last_keying_material_update  = excluded.mls_last_keying_material_update,
+mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update_date,
 mls_cipher_suite = excluded.mls_cipher_suite,
 receipt_mode = excluded.receipt_mode;
 
 insertMigrationOnly:
-INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
+INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 updateConversation:
@@ -69,14 +75,14 @@ WHERE mls_group_id = ?;
 
 updateConversationNotificationsDate:
 UPDATE Conversation
-SET last_notified_message_date = ?
+SET last_notified_date = ?
 WHERE qualified_id = ?;
 
 updateAllUnNotifiedConversationsNotificationsDate:
 UPDATE Conversation
-SET last_notified_message_date = ?
-WHERE last_notified_message_date ISNULL
-OR strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date) > strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date);
+SET last_notified_date = ?
+WHERE last_notified_date ISNULL
+OR last_modified_date > last_notified_date;
 
 updateConversationModifiedDate:
 UPDATE Conversation
@@ -95,58 +101,58 @@ CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.name
     WHEN "CONNECTION_PENDING" THEN connection_user.name
     ELSE Conversation.name
-    END AS name,
+END AS name,
 Conversation.type,
 Call.status AS callStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.preview_asset_id
     WHEN "CONNECTION_PENDING" THEN connection_user.preview_asset_id
-    END AS previewAssetId,
+END AS previewAssetId,
 Conversation.muted_status AS mutedStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN User.team
     ELSE Conversation.team_id
-    END AS teamId,
+END AS teamId,
 CASE (Conversation.type)
-        WHEN "CONNECTION_PENDING" THEN Connection.last_update
-        ELSE Conversation.last_modified_date
-        END AS lastModifiedDate,
+    WHEN "CONNECTION_PENDING" THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
 Conversation.last_read_date AS lastReadDate,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_availability_status
     WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status
-    END AS userAvailabilityStatus,
+END AS userAvailabilityStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_type
     WHEN "CONNECTION_PENDING" THEN connection_user.user_type
-    END AS userType,
+END AS userType,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.bot_service
     WHEN "CONNECTION_PENDING" THEN connection_user.bot_service
-    END AS botService,
+END AS botService,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.deleted
     WHEN "CONNECTION_PENDING" THEN connection_user.deleted
-    END AS userDeleted,
+END AS userDeleted,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.connection_status
     WHEN "CONNECTION_PENDING" THEN connection_user.connection_status
-    END AS connectionStatus,
+END AS connectionStatus,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.qualified_id
     WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
-    END AS otherUserId,
+END AS otherUserId,
 CASE
     WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0
-    END AS isCreator,
-Conversation.last_notified_message_date AS lastNotifiedMessageDate,
+END AS isCreator,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
 Conversation.mls_group_id,
-Conversation.mls_last_keying_material_update,
+Conversation.mls_last_keying_material_update_date,
 Conversation.mls_group_state,
 Conversation.access_list,
 Conversation.access_role_list,
@@ -198,7 +204,7 @@ getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR strftime('%Y-%m-%d %H:%M:%f', last_modified_date) > strftime('%Y-%m-%d %H:%M:%f', lastNotifiedMessageDate));
+SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR last_modified_date > lastNotifiedMessageDate);
 
 updateConversationMutingStatus:
 UPDATE Conversation
@@ -209,10 +215,10 @@ updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
 updateKeyingMaterialDate:
-UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = ?;
+UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
@@ -227,7 +233,7 @@ isUserMember:
 SELECT user FROM Member WHERE conversation = ? AND user = ?;
 
 whoDeletedMeInConversation:
-SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY strftime('%Y-%m-%d %H:%M:%f', date) DESC LIMIT 1;
+SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
 
 updateConversationName:
 UPDATE Conversation

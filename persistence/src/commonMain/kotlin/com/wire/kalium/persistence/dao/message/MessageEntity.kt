@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,7 +12,7 @@ sealed class MessageEntity(
     open val id: String,
     open val content: MessageEntityContent,
     open val conversationId: QualifiedIDEntity,
-    open val date: String,
+    open val date: Instant,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
     open val visibility: Visibility,
@@ -21,7 +22,7 @@ sealed class MessageEntity(
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -38,7 +39,7 @@ sealed class MessageEntity(
         override val id: String,
         override val content: MessageEntityContent.System,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -52,12 +53,12 @@ sealed class MessageEntity(
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
-        data class Edited(val lastTimeStamp: String) : EditStatus()
+        data class Edited(val lastDate: Instant) : EditStatus()
 
         override fun toString(): String {
             return when (this) {
                 is NotEdited -> "NOT_EDITED"
-                is Edited -> "EDITED_AT: ${this.lastTimeStamp}"
+                is Edited -> "EDITED_AT: ${this.lastDate}"
             }
         }
     }

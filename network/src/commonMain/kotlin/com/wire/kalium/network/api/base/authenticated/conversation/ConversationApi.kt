@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
+@Suppress("TooManyFunctions")
 interface ConversationApi {
 
     /**
@@ -56,4 +57,6 @@ interface ConversationApi {
     suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<ConversationRenameResponse>
 
     suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
+
+    suspend fun joinConversation(code: String, key: String, uri: String?): NetworkResponse<ConversationMemberAddedResponse>
 }

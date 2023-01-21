@@ -360,7 +360,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = TestMessage.TEST_DATE,
+            date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
@@ -410,7 +410,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = TestMessage.TEST_DATE,
+            date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
@@ -550,7 +550,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE)) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())

@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MarkMessagesAsNotifiedUseCase.UpdateTarget
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -35,7 +34,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
 
         verify(arrangement.conversationRepository)
-            .coroutine { updateAllConversationsNotificationDate(DATE) }
+            .coroutine { updateAllConversationsNotificationDate(TEST_INSTANT) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
@@ -133,7 +132,6 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
     companion object {
         private val TEST_INSTANT = Instant.fromEpochMilliseconds(123_456_789L)
-        private val DATE = TEST_INSTANT.toIsoDateTimeString()
         private val CONVERSATION_ID = QualifiedID("some_id", "some_domain")
     }
 }

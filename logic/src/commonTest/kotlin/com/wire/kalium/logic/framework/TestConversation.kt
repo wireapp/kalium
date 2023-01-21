@@ -25,7 +25,9 @@ import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 object TestConversation {
     private const val conversationValue = "valueConvo"
@@ -102,37 +104,24 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED
     )
 
-    fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
-        ENTITY_ID.copy(value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
-        "convo name",
-        ConversationEntity.Type.GROUP,
-        "teamId",
-        protocolInfo,
-        creatorId = "someValue",
-        lastNotificationDate = null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z",
-        lastReadDate = "2022-03-30T15:36:00.000Z",
-        access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-        receiptMode = ConversationEntity.ReceiptMode.DISABLED
-    )
-
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
-        ENTITY_ID.copy(value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
-        "convo name",
-        ConversationEntity.Type.GROUP,
-        null,
-        null,
-        ConversationEntity.MutedStatus.ALL_ALLOWED,
-        "teamId",
-        lastModifiedDate = "2022-03-30T15:36:00.000Z",
-        lastReadDate = "2022-03-30T15:36:00.000Z",
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
+        id = ENTITY_ID.copy(
+            value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"
+        ),
+        name = "convo name",
+        type = ConversationEntity.Type.GROUP,
+        callStatus = null,
+        previewAssetId = null,
+        mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+        teamId = "teamId",
+        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        userAvailabilityStatus = null,
+        userType = null,
+        botService = null,
+        userDeleted = false,
+        connectionStatus = null,
+        otherUserId = null,
         isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = protocolInfo,
@@ -143,7 +132,7 @@ object TestConversation {
         mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
         mlsEpoch = 0L,
         mlsGroupId = null,
-        mlsLastKeyingMaterialUpdate = 0L,
+        mlsLastKeyingMaterialUpdateDate = Instant.UNIX_FIRST_DATE,
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
         mlsProposalTimer = null,
         mutedTime = 0L,
@@ -237,28 +226,28 @@ object TestConversation {
         ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         lastNotificationDate = null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z",
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
     )
     val VIEW_ENTITY = ConversationViewEntity(
-        ENTITY_ID,
-        "convo name",
-        ConversationEntity.Type.SELF,
-        null,
-        null,
-        ConversationEntity.MutedStatus.ALL_ALLOWED,
-        "teamId",
-        lastModifiedDate = "2022-03-30T15:36:00.000Z",
-        lastReadDate = "2022-03-30T15:36:00.000Z",
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
+        id = ENTITY_ID,
+        name = "convo name",
+        type = ConversationEntity.Type.SELF,
+        callStatus = null,
+        previewAssetId = null,
+        mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+        teamId = "teamId",
+        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        userAvailabilityStatus = null,
+        userType = null,
+        botService = null,
+        userDeleted = false,
+        connectionStatus = null,
+        otherUserId = null,
         isCreator = 0L,
         lastNotificationDate = null,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
@@ -269,7 +258,7 @@ object TestConversation {
         mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
         mlsEpoch = 0L,
         mlsGroupId = null,
-        mlsLastKeyingMaterialUpdate = 0L,
+        mlsLastKeyingMaterialUpdateDate = Instant.UNIX_FIRST_DATE,
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
         mlsProposalTimer = null,
         mutedTime = 0L,
