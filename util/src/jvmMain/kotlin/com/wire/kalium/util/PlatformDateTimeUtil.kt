@@ -1,16 +1,12 @@
 package com.wire.kalium.util
 
+import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.format.DateTimeFormatterBuilder
 
 actual open class PlatformDateTimeUtil actual constructor() {
-    private val isoDateTimeFormatter = DateTimeFormatter.ofPattern(DateTimeUtil.pattern)
-        .withLocale(Locale.getDefault())
-        .withZone(ZoneId.from(ZoneOffset.UTC))
+    private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
