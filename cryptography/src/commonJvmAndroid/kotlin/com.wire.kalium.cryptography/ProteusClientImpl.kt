@@ -29,11 +29,11 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         client.openOrError()
     }
 
-    override fun getIdentity(): ByteArray {
+    override suspend fun getIdentity(): ByteArray {
         return client.getIdentity()
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return client.getLocalFingerprint()
     }
 
@@ -41,7 +41,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.newPreKeys(from, count)
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return client.newLastPreKey()
     }
 
@@ -65,7 +65,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.encryptWithPreKey(message, preKeyCrypto, sessionId)
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
 }

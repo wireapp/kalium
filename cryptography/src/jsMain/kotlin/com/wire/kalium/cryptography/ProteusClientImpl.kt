@@ -38,12 +38,12 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         openOrCreate() // JS cryptobox is in-memory only
     }
 
-    override fun getIdentity(): ByteArray {
+    override suspend fun getIdentity(): ByteArray {
         val encodedIdentity = box.getIdentity().serialise()
         return Int8Array(encodedIdentity).unsafeCast<ByteArray>()
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return box.identity.public_key.fingerprint().encodeToByteArray()
     }
 
@@ -55,7 +55,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return preKeys.map { toPreKey(box.getIdentity().public_key, it) } as ArrayList<PreKeyCrypto>
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         val preKey = box.lastResortPreKey
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)

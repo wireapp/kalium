@@ -56,11 +56,11 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
         }
     }
 
-    override fun getIdentity(): ByteArray {
+    override suspend fun getIdentity(): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         lateinit var fingerprint: NSData
         box?.perform { session ->
             fingerprint = session?.localFingerprint()!!
@@ -90,7 +90,7 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
         return preKeys
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         lateinit var preKey: PreKeyCrypto
         box?.perform { session ->
             memScoped {

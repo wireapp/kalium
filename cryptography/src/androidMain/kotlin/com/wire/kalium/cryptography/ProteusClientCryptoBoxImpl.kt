@@ -4,20 +4,19 @@ import android.util.Base64
 import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(
+    rootDir: String,
+    private val coroutineContext: CoroutineContext = Dispatchers.Default
+) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
-    private val sessionLock: MutableMap<String, Mutex> = mutableMapOf()
-    @Synchronized
-    private fun getSessionLock(sessionId: String): Mutex {
-        return sessionLock.getOrPut(sessionId) { Mutex() }
-    }
 
     init {
         path = rootDir
@@ -32,7 +31,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return false
     }
 
-    override suspend fun openOrCreate() {
+    /**
+     * Create the crypto files if missing and call box.open
+     * this must be called only one time
+     */
+    override suspend fun openOrCreate() = withContext(coroutineContext) {
         val directory = File(path)
         box = wrapException {
             directory.mkdirs()
@@ -40,7 +43,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override suspend fun openOrError() {
+    /**
+     * open the crypto box if and only if the local files are already created
+     * this must be called only one time
+     */
+    override suspend fun openOrError() = withContext(coroutineContext) {
         val directory = File(path)
         if (directory.exists()) {
             box = wrapException {
@@ -48,50 +55,43 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
                 CryptoBox.open(path)
             }
         } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException("Local files were not found in: ${directory.absolutePath}", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
         }
     }
 
-    override fun getIdentity(): ByteArray {
-        return wrapException { box.copyIdentity() }
+    override suspend fun getIdentity(): ByteArray = withContext(coroutineContext) {
+        wrapException { box.copyIdentity() }
     }
 
-    override fun getLocalFingerprint(): ByteArray {
-        return wrapException { box.localFingerprint }
+    override suspend fun getLocalFingerprint(): ByteArray = withContext(coroutineContext) {
+        wrapException { box.localFingerprint }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
-        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> = withContext(coroutineContext) {
+        wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return getSessionLock(sessionId.value).withLock {
-            try {
-                box.getSession(sessionId.value)
-                true
-            } catch (e: CryptoException) {
-                if (e.code == CryptoException.Code.SESSION_NOT_FOUND) {
-                    false
-                } else {
-                    throw e
-                }
-            }
+    // TODO: this function calls the native function session_load which does open the session file and
+    //  parse it content we can consider changing it to a simple check if the session file exists on the local storage or not
+    //  or rename it to doesValidSessionExist
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean =
+        withContext(coroutineContext) {
+            box.tryGetSession(sessionId.value)?.let { true } ?: false
         }
-    }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        getSessionLock(sessionId.value).withLock {
+        withContext(coroutineContext) {
             wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
         }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = getSessionLock(sessionId.value).withLock {
+    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(coroutineContext) {
         val session = box.tryGetSession(sessionId.value)
-        return wrapException {
+        wrapException {
             if (session != null) {
                 val decryptedMessage = session.decrypt(message)
                 session.save()
@@ -104,8 +104,8 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = getSessionLock(sessionId.value).withLock {
-        return wrapException {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(coroutineContext) {
+        wrapException {
             val session = box.getSession(sessionId.value)
             val encryptedMessage = session.encrypt(message)
             session.save()
@@ -117,8 +117,8 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
-    ): ByteArray = getSessionLock(sessionId.value).withLock {
-        return wrapException {
+    ): ByteArray = withContext(coroutineContext) {
+        wrapException {
             val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             val encryptedMessage = session.encrypt(message)
             session.save()
@@ -127,7 +127,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     override suspend fun deleteSession(sessionId: CryptoSessionId) {
-        getSessionLock(sessionId.value).withLock {
+        withContext(coroutineContext) {
             wrapException {
                 box.deleteSession(sessionId.value)
             }
@@ -135,15 +135,15 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun <T> wrapException(b: () -> T): T {
+    private inline fun <T> wrapException(b: () -> T): T =
         try {
-            return b()
+            b()
         } catch (e: CryptoException) {
             throw ProteusException(e.message, fromCryptoException(e))
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
         }
-    }
+
 
     @Suppress("ComplexMethod")
     private fun fromCryptoException(e: CryptoException): ProteusException.Code {

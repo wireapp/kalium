@@ -11,6 +11,7 @@ data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
+
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
@@ -28,17 +29,17 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun openOrError()
 
-    @Throws(ProteusException::class)
-    fun getIdentity(): ByteArray
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun getIdentity(): ByteArray
 
-    @Throws(ProteusException::class)
-    fun getLocalFingerprint(): ByteArray
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
-    @Throws(ProteusException::class)
-    fun newLastPreKey(): PreKeyCrypto
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
