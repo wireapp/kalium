@@ -77,6 +77,6 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
 expect class ProteusClientImpl(
     rootDir: String,
     databaseKey: ProteusDBSecret? = null,
-    ioContext: CoroutineContext,
-    defaultContext: CoroutineContext
+    ioContext: CoroutineContext? = null,
+    defaultContext: CoroutineContext? = null
 ) : ProteusClient
