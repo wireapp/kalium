@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -436,10 +437,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-            queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        flowOf(emptyList())
+        // FIXME: Re-enable gradually as we improve its performance
+        //        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
-        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        flowOf(emptyList())
+        // FIXME: Re-enable gradually as we improve its performance
+        //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
