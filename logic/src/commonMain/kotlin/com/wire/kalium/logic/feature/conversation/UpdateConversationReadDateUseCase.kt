@@ -40,9 +40,10 @@ class UpdateConversationReadDateUseCase internal constructor(
             // TODO: Disabled for now as we are still figuring out performance and STORAGE_ERROR issues.
             // sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
-            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-            }
+            // TODO: Also disable sending of conversation last read as we only want to keep it local.
+            // selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+            //    sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+            // }
         }
         return
     }
