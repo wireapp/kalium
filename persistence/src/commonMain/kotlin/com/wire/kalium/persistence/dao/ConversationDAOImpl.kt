@@ -109,74 +109,73 @@ private class ConversationMapper {
         accessRole = access_role_list,
         receiptMode = receipt_mode
     )
-}
 
-fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
-    return conversation?.run {
-        ConversationViewEntity(
-            id = qualifiedId,
-            name = name,
-            type = type,
-            teamId = teamId,
-            protocolInfo = mapProtocolInfo(
-                protocol,
-                mls_group_id,
-                mls_group_state,
-                mls_epoch,
-                mls_last_keying_material_update_date,
-                mls_cipher_suite
-            ),
-            isCreator = isCreator,
-            mutedStatus = mutedStatus,
-            mutedTime = muted_time,
-            creatorId = creator_id,
-            lastNotificationDate = lastNotifiedMessageDate,
-            lastModifiedDate = last_modified_date,
-            lastReadDate = lastReadDate,
-            accessList = access_list,
-            accessRoleList = access_role_list,
-            protocol = protocol,
-            mlsCipherSuite = mls_cipher_suite,
-            mlsEpoch = mls_epoch,
-            mlsGroupId = mls_group_id,
-            mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
-            mlsGroupState = mls_group_state,
-            mlsProposalTimer = mls_proposal_timer,
-            callStatus = callStatus,
-            previewAssetId = previewAssetId,
-            userAvailabilityStatus = userAvailabilityStatus,
-            userType = userType,
-            botService = botService,
-            userDeleted = userDeleted,
-            connectionStatus = connectionStatus,
-            otherUserId = otherUserId,
-            selfRole = selfRole,
-            receiptMode = receipt_mode
-        )
+    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
+        return conversation?.run {
+            ConversationViewEntity(
+                id = qualifiedId,
+                name = name,
+                type = type,
+                teamId = teamId,
+                protocolInfo = mapProtocolInfo(
+                    protocol,
+                    mls_group_id,
+                    mls_group_state,
+                    mls_epoch,
+                    mls_last_keying_material_update_date,
+                    mls_cipher_suite
+                ),
+                isCreator = isCreator,
+                mutedStatus = mutedStatus,
+                mutedTime = muted_time,
+                creatorId = creator_id,
+                lastNotificationDate = lastNotifiedMessageDate,
+                lastModifiedDate = last_modified_date,
+                lastReadDate = lastReadDate,
+                accessList = access_list,
+                accessRoleList = access_role_list,
+                protocol = protocol,
+                mlsCipherSuite = mls_cipher_suite,
+                mlsEpoch = mls_epoch,
+                mlsGroupId = mls_group_id,
+                mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
+                mlsGroupState = mls_group_state,
+                mlsProposalTimer = mls_proposal_timer,
+                callStatus = callStatus,
+                previewAssetId = previewAssetId,
+                userAvailabilityStatus = userAvailabilityStatus,
+                userType = userType,
+                botService = botService,
+                userDeleted = userDeleted,
+                connectionStatus = connectionStatus,
+                otherUserId = otherUserId,
+                selfRole = selfRole,
+                receiptMode = receipt_mode
+            )
+        }
     }
-}
 
-@Suppress("LongParameterList")
-fun mapProtocolInfo(
-    protocol: ConversationEntity.Protocol,
-    mlsGroupId: String?,
-    mlsGroupState: ConversationEntity.GroupState,
-    mlsEpoch: Long,
-    mlsLastKeyingMaterialUpdate: Instant,
-    mlsCipherSuite: ConversationEntity.CipherSuite,
-): ConversationEntity.ProtocolInfo {
-    return when (protocol) {
-        ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-            mlsGroupId ?: "",
-            mlsGroupState,
-            mlsEpoch.toULong(),
-            mlsLastKeyingMaterialUpdate,
-            mlsCipherSuite
-        )
+    @Suppress("LongParameterList")
+    fun mapProtocolInfo(
+        protocol: ConversationEntity.Protocol,
+        mlsGroupId: String?,
+        mlsGroupState: ConversationEntity.GroupState,
+        mlsEpoch: Long,
+        mlsLastKeyingMaterialUpdate: Instant,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+    ): ConversationEntity.ProtocolInfo {
+        return when (protocol) {
+            ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            )
 
-        ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+        }
     }
-}
 }
 
 class MemberMapper {
