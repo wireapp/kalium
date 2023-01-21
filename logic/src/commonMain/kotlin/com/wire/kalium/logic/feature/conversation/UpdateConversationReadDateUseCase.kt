@@ -44,7 +44,6 @@ class UpdateConversationReadDateUseCase internal constructor(
             }
         }
     }
-    }
 
     private suspend fun sendLastReadMessageToOtherClients(
         conversationId: QualifiedID,
