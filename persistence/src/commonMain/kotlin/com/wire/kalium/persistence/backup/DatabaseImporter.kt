@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.db.UserDBSecret
+import kotlinx.datetime.Clock
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
@@ -11,6 +12,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
+        val currentTimeStamp = Clock.System.now().toEpochMilliseconds()
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
                 bindString(0, filePath)
@@ -25,7 +27,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         restoreTable("Team")
         restoreTable("User")
         restoreTable("Metadata")
-        restoreTable("Conversation")
+        restoreConversations()
         restoreTable("Connection")
         restoreTable("Member")
         restoreTable("Client")
@@ -52,6 +54,26 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         )
         restoreTable("MessageAssetContent")
         restoreTable("MessageRestrictedAssetContent")
+    }
+
+    private fun restoreConversations() {
+        sqlDriver.execute(
+            """UPDATE $BACKUP_DB_ALIAS.Conversation
+            |SET last_read_date = (
+            |SELECT Conversation.last_read_date
+            |FROM Conversation
+            |WHERE Conversation.qualified_id = $BACKUP_DB_ALIAS.Conversation.qualified_id
+            |AND Conversation.last_read_date > $BACKUP_DB_ALIAS.Conversation.last_read_date
+            |)
+            |WHERE EXISTS (
+            |SELECT 1
+            |FROM Conversation
+            |WHERE Conversation.qualified_id = $BACKUP_DB_ALIAS.Conversation.qualified_id
+            |AND Conversation.last_read_date > $BACKUP_DB_ALIAS.Conversation.last_read_date
+            |);
+            |INSERT OR IGNORE INTO Conversation SELECT * FROM $BACKUP_DB_ALIAS.Conversation;
+            """.trimMargin()
+        )
     }
 
     private fun restoreTable(tableName: String) {
