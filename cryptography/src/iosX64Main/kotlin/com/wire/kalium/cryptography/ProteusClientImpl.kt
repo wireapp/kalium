@@ -22,9 +22,15 @@ import platform.Foundation.NSURL
 import platform.Foundation.create
 import platform.Foundation.valueForKey
 import platform.posix.memcpy
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(private val rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    private val rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    ioContext: CoroutineContext,
+    defaultContext: CoroutineContext
+) : ProteusClient {
 
     private var box: EncryptionContext? = null
 

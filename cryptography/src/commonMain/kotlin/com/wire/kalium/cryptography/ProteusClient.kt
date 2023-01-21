@@ -1,6 +1,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
@@ -73,4 +74,9 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
     }
 }
 
-expect class ProteusClientImpl(rootDir: String, databaseKey: ProteusDBSecret? = null) : ProteusClient
+expect class ProteusClientImpl(
+    rootDir: String,
+    databaseKey: ProteusDBSecret? = null,
+    ioContext: CoroutineContext,
+    defaultContext: CoroutineContext
+) : ProteusClient

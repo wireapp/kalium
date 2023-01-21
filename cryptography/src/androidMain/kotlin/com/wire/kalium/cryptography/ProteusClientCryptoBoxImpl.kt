@@ -4,10 +4,16 @@ import android.util.Base64
 import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(
+    rootDir: String,
+    private val ioContext: CoroutineContext,
+    private val defaultContext: CoroutineContext
+) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -26,22 +32,26 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     override suspend fun openOrCreate() {
-        val directory = File(path)
-        box = wrapException {
-            directory.mkdirs()
-            CryptoBox.open(path)
-        }
-    }
-
-    override suspend fun openOrError() {
-        val directory = File(path)
-        if (directory.exists()) {
+        withContext(ioContext) {
+            val directory = File(path)
             box = wrapException {
                 directory.mkdirs()
                 CryptoBox.open(path)
             }
-        } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+        }
+    }
+
+    override suspend fun openOrError() {
+        withContext(ioContext) {
+            val directory = File(path)
+            if (directory.exists()) {
+                box = wrapException {
+                    directory.mkdirs()
+                    CryptoBox.open(path)
+                }
+            } else {
+                throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            }
         }
     }
 
@@ -61,8 +71,9 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        return try {
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = withContext(ioContext) {
+
+        return@withContext try {
             box.getSession(sessionId.value)
             true
         } catch (e: CryptoException) {
@@ -75,13 +86,14 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
+        withContext(ioContext) {
+            wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
+        }
     }
 
-    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
         val session = box.tryGetSession(sessionId.value)
-
-        return wrapException {
+        return@withContext wrapException {
             if (session != null) {
                 val decryptedMessage = session.decrypt(message)
                 session.save()
@@ -94,8 +106,8 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
+        return@withContext wrapException {
             val session = box.getSession(sessionId.value)
             val encryptedMessage = session.encrypt(message)
             session.save()
@@ -107,8 +119,8 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
-    ): ByteArray {
-        return wrapException {
+    ): ByteArray = withContext(defaultContext) {
+        return@withContext wrapException {
             val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             val encryptedMessage = session.encrypt(message)
             session.save()
