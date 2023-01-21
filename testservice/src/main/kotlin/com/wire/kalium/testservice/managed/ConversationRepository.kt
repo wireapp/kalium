@@ -27,7 +27,6 @@ import javax.ws.rs.WebApplicationException
 
 sealed class ConversationRepository {
 
-
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
         private val scope = CoroutineScope(Dispatchers.Default)
@@ -200,7 +199,8 @@ sealed class ConversationRepository {
                                     }
 
                                     is SendBrokenAssetMessageResult.Failure -> {
-                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending broken file $fileName failed")
+                                        throw WebApplicationException("Instance ${instance.instanceId}: " +
+                                                "Sending broken file $fileName failed")
                                     }
 
                                     else -> {
