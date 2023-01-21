@@ -59,19 +59,16 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun getIdentity(): ByteArray = withContext(ioContext) {
-        wrapException { box.copyIdentity() }
-    }
+    override fun getIdentity(): ByteArray = wrapException { box.copyIdentity() }
 
-    override suspend fun getLocalFingerprint(): ByteArray = withContext(ioContext) {
-        wrapException { box.localFingerprint }
-    }
+    override fun getLocalFingerprint(): ByteArray = wrapException { box.localFingerprint }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> = withContext(defaultContext) {
+
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> =
         wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
-    }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+
+    override fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 

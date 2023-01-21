@@ -53,15 +53,15 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         return wrapException { box.identity }
     }
 
-    override suspend fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return wrapException { box.localFingerprint }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 

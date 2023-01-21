@@ -33,11 +33,11 @@ actual class ProteusClientImpl actual constructor(
         client.openOrError()
     }
 
-    override suspend fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         return client.getIdentity()
     }
 
-    override suspend fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return client.getLocalFingerprint()
     }
 
@@ -45,7 +45,7 @@ actual class ProteusClientImpl actual constructor(
         return client.newPreKeys(from, count)
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override fun newLastPreKey(): PreKeyCrypto {
         return client.newLastPreKey()
     }
 
