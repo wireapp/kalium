@@ -36,6 +36,7 @@ kotlin {
 
                 // KTX
                 implementation(libs.ktxDateTime)
+                implementation(libs.ktx.atomicfu)
 
                 // Okio
                 implementation(libs.okio.core)

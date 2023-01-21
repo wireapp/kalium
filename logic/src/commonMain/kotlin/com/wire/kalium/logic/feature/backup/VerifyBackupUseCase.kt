@@ -23,15 +23,13 @@ internal class VerifyBackupUseCaseImpl(
         checkIfCompressedFileContainsFileTypes(
             compressedBackupFilePath,
             kaliumFileSystem,
-            listOf(
-                BackupConstants.BACKUP_ENCRYPTED_EXTENSION,
-                BackupConstants.BACKUP_DB_EXTENSION,
-                BackupConstants.BACKUP_METADATA_EXTENSION
-            )
+            BackupConstants.ACCEPTED_EXTENSIONS
         ).fold({
             VerifyBackupResult.Failure.Generic(it)
         }, {
             when {
+                it.keys.any { it !in BackupConstants.ACCEPTED_EXTENSIONS } -> VerifyBackupResult.Failure.InvalidBackupFile
+
                 it[BackupConstants.BACKUP_ENCRYPTED_EXTENSION] == true ->
                     VerifyBackupResult.Success.Encrypted
 
