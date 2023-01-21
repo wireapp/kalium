@@ -2,12 +2,11 @@ package com.wire.kalium.util
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.text.SimpleDateFormat
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatterBuilder
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -19,9 +18,7 @@ actual open class PlatformDateTimeUtil actual constructor() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private val isoDateTimeFormatter = DateTimeFormatter.ofPattern(DateTimeUtil.pattern)
-        .withLocale(Locale.getDefault())
-        .withZone(ZoneId.from(ZoneOffset.UTC))
+    private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
