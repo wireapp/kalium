@@ -1,7 +1,6 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.ConversationDetails
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
