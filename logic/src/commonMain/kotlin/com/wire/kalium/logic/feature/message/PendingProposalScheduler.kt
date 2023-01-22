@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.distinct
 import com.wire.kalium.logic.functional.flatten
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -71,14 +70,15 @@ internal class PendingProposalSchedulerImpl(
     }
 
     private suspend fun startCommittingPendingProposals() {
-        kaliumLogger.d("Start listening for pending proposals to commit")
-        timers().cancellable().collect() { groupID ->
-            kaliumLogger.d("Committing pending proposals in $groupID")
-            mlsConversationRepository.value.commitPendingProposals(groupID)
-                .onFailure {
-                    kaliumLogger.e("Failed to commit pending proposals in $groupID: $it")
-                }
-        }
+        // todo: re-enable mls
+//         kaliumLogger.d("Start listening for pending proposals to commit")
+//         timers().cancellable().collect() { groupID ->
+//             kaliumLogger.d("Committing pending proposals in $groupID")
+//             mlsConversationRepository.value.commitPendingProposals(groupID)
+//                 .onFailure {
+//                     kaliumLogger.e("Failed to commit pending proposals in $groupID: $it")
+//                 }
+//         }
     }
 
     private suspend fun timers() = channelFlow {

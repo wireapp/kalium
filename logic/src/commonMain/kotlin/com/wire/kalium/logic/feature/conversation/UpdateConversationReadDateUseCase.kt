@@ -13,7 +13,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -39,11 +38,13 @@ class UpdateConversationReadDateUseCase internal constructor(
      */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
         selfConversationIdProvider().flatMap { selfConversationIds ->
-            sendConfirmation(conversationId)
+            // TODO: Disabled for now as we are still figuring out performance and STORAGE_ERROR issues.
+            // sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
-            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-            }
+            // TODO: Also disable sending of conversation last read as we only want to keep it local.
+            // selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+            //    sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+            // }
         }
         return
     }
