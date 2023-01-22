@@ -59,7 +59,9 @@ internal class CreateBackupUseCaseImpl(
             val backupFilePath = kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_FILE_NAME)
 
             deletePreviousBackupFiles(backupFilePath)
-            val userDBData = databaseExporter.backupToPlainText().toPath()
+            val userDBData = databaseExporter.backupToPlainText()?.toPath() ?: return@withContext CreateBackupResult.Failure(
+                StorageFailure.Generic(RuntimeException("Failed to create backup file"))
+            )
             createBackupFile(userId, userDBData, backupFilePath).fold(
                 { error -> CreateBackupResult.Failure(error) },
                 { (backupFilePath, backupSize) ->

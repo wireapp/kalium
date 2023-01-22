@@ -1,11 +1,14 @@
 package com.wire.kalium.persistence.backup
 
-import android.content.Context.MODE_PRIVATE
 import app.cash.sqldelight.db.SqlDriver
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.kaliumLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
+import net.sqlcipher.database.SQLiteDatabase as SqlCipherDatabase
 
 actual class PlatformDatabaseExporter internal actual constructor(
     private val platformDBData: PlatformDatabaseData,
@@ -20,37 +23,45 @@ actual class PlatformDatabaseExporter internal actual constructor(
     /**
      * Create a new plain database to be used for
      */
-    actual override fun backupToPlainText(): String? = if (isLocalDatabaseEncrypted) {
+    actual override suspend fun backupToPlainText(): String? = if (isLocalDatabaseEncrypted) {
         backupToPlainTextFromEncrypted()
     } else {
         backupToPlainTextFromUnencrypted()
     }
 
-    private fun backupToPlainTextFromEncrypted(): String? {
+    private suspend fun backupToPlainTextFromEncrypted(): String? {
         // Delete the old database if it exists, otherwise the new database will be attached to the old one
-        deleteDBIfExists(backupDBName)
-        val dbFile: File = appContext.getDatabasePath(backupDBName)
-
-        appContext.openOrCreateDatabase(backupDBName, MODE_PRIVATE, null) ?: run {
-            kaliumLogger.d("Failed to create database")
+        if (!deleteDBIfExists(backupDBName)) {
+            kaliumLogger.e("Failed to delete old backup database")
             return null
         }
+        val dbFile: File = appContext.getDatabasePath(backupDBName)
 
-        sqlDriver.execute(null, """ATTACH ? AS plain_text KEY '';""", 1) {
-            bindString(0, dbFile.absolutePath)
+        val db = SqlCipherDatabase.openOrCreateDatabase(dbFile, "123", null)
+        if (db == null) {
+            kaliumLogger.e("Could not create backup database")
+            return null
         }
-            sqlDriver.executeQuery(null, """SELECT sqlcipher_export('plain_text');""", { _ -> }, 0, null )
-        sqlDriver.execute(null, """DETACH DATABASE plain_text;""", 0)
+        db.close()
+
+        withContext(Dispatchers.IO) {
+            UserDatabase.Schema.create(sqlDriver)
+            sqlDriver.execute(null, """ATTACH ? AS plain_text  KEY '123';""", 1) {
+                bindString(0, dbFile.absolutePath)
+            }
+            sqlDriver.executeQuery(null, """SELECT sqlcipher_export('plain_text');""", { }, 0)
+            sqlDriver.execute(null, """DETACH DATABASE plain_text;""", 0)
+        }
         return dbFile.absolutePath
     }
 
     private fun backupToPlainTextFromUnencrypted(): String = appContext.getDatabasePath(backupDBName).absolutePath
 
-    private fun deleteDBIfExists(dbFileName: String): Boolean? =
+    private fun deleteDBIfExists(dbFileName: String): Boolean =
         if (appContext.getDatabasePath(dbFileName).exists()) {
             appContext.deleteDatabase(dbFileName)
         } else {
-            null
+            true
         }
 
     // in case of unencrypted db, we don't need to delete the backup db since it is the same file as the local db
