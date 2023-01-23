@@ -9,13 +9,13 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     rootDir: String,
     databaseKey: ProteusDBSecret?,
-    ioContext: CoroutineContext,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient {
 
     private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir, ioContext, defaultContext))
+    } ?: ProteusClientCryptoBoxImpl(rootDir, defaultContext = defaultContext, ioContext = ioContext))
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
@@ -25,7 +25,9 @@ actual class ProteusClientImpl actual constructor(
         return client.needsMigration()
     }
 
-    override suspend fun openOrCreate() {
+    override suspend
+
+    fun openOrCreate() {
         client.openOrCreate()
     }
 
@@ -45,7 +47,7 @@ actual class ProteusClientImpl actual constructor(
         return client.newPreKeys(from, count)
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return client.newLastPreKey()
     }
 
