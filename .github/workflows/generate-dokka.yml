@@ -7,7 +7,7 @@ on:
 
 jobs:
     publish:
-        runs-on: macos-latest
+        runs-on: ubuntu-22.04
         steps:
             - name: Checkout project
               uses: actions/checkout@v2
