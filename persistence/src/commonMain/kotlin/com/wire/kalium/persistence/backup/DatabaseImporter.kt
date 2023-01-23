@@ -11,6 +11,9 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
+        sqlDriver.execute("""BEGIN""")
+
+        // BackupDB will be detached automatically when committing the transaction
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
                 bindString(0, filePath)
@@ -21,7 +24,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
                 bindString(0, filePath)
             }
         }
-        sqlDriver.execute("""BEGIN""")
+
         restoreTable("Team")
         restoreTable("User")
         restoreTable("Metadata")
@@ -42,7 +45,6 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         restoreTable("Reaction")
 
         sqlDriver.execute("""COMMIT""")
-        sqlDriver.execute("""DETACH $BACKUP_DB_ALIAS""")
     }
 
     private fun restoreAssets() {
