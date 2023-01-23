@@ -9,7 +9,10 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    detekt:
+        uses: ./.github/workflows/codestyle.yml
     gradle-run-tests:
+        needs: [detekt]
         runs-on: buildjet-4vcpu-ubuntu-2204
         strategy:
             matrix:
