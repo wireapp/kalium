@@ -78,7 +78,8 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 //                 """INSERT INTO Conversation
 //                 |SELECT * FROM $BACKUP_DB_ALIAS.Conversation
 //                 |ON CONFLICT (Conversation.qualified_id)
-//                 |DO UPDATE SET last_read_date = IIF (Conversation.last_read_date > excluded.last_read_date, Conversation.last_read_date, excluded.last_read_date);
+//                 |DO UPDATE SET last_read_date =
+    //             |IIF (Conversation.last_read_date > excluded.last_read_date, Conversation.last_read_date, excluded.last_read_date);
 //                 """.trimMargin()
 //         )
     }
