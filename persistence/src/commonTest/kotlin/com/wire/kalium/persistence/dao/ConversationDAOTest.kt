@@ -868,6 +868,30 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(1L, result?.isCreator)
     }
 
+    @Test
+    fun givenAnMLSConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity2.id)
+
+        // then
+        assertEquals(conversationEntity2.protocolInfo, result)
+    }
+
+    @Test
+    fun givenAProteusConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity1.id)
+
+        // then
+        assertEquals(conversationEntity1.protocolInfo, result)
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)

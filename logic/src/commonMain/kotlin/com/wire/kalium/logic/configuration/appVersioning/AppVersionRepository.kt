@@ -17,7 +17,7 @@ internal class AppVersionRepositoryImpl(
         wrapApiRequest { api.fetchAppVersionBlackList(blackListUrl) }
             .fold({
                 kaliumLogger.e("$TAG: error while fetching VersionBlacklist: $it")
-                true
+                false
             }) {
                 kaliumLogger.i("$TAG: Fetched VersionBlacklist: $it ; currentVersion: $currentVersion")
                 it.isAppNeedsToBeUpdated(currentVersion)
