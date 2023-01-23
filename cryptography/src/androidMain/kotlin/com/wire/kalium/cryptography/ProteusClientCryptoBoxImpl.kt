@@ -91,11 +91,11 @@ class ProteusClientCryptoBoxImpl constructor(
     // TODO: this function calls the native function session_load which does open the session file and
     //  parse it content we can consider changing it to a simple check if the session file exists on the local storage or not
     //  or rename it to doesValidSessionExist
-    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean =
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = lock.withLock {
         withContext(ioContext) {
             box.tryGetSession(sessionId.value)?.let { true } ?: false
         }
-
+    }
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
         lock.withLock {
             withContext(ioContext) {
@@ -147,8 +147,8 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun deleteSession(sessionId: CryptoSessionId) {
-        withContext(defaultContext) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) = lock.withLock {
+        withContext(ioContext) {
             wrapException {
                 box.deleteSession(sessionId.value)
             }
