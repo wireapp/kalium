@@ -37,7 +37,10 @@ fun userDatabaseBuilder(
 
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
     driverUri,
-    Properties(1).apply { put("foreign_keys", "true") }
+    Properties(1).apply {
+        put("foreign_keys", "true")
+        put("journal_mode", "wal")
+    }
 )
 
 fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
