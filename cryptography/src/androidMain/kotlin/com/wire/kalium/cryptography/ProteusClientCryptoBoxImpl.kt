@@ -6,6 +6,7 @@ import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
@@ -54,7 +55,11 @@ class ProteusClientCryptoBoxImpl constructor(
                 CryptoBox.open(path)
             }
         } else {
-            throw ProteusException("Local files were not found in: ${directory.absolutePath}", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                "Local files were not found in: ${directory.absolutePath}",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
         }
     }
 
@@ -133,9 +138,9 @@ class ProteusClientCryptoBoxImpl constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, fromCryptoException(e))
+            throw ProteusException(e.message, fromCryptoException(e), e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
     }
 
@@ -162,11 +167,11 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-        companion object {
-            private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
-                com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
+    companion object {
+        private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
+            com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
 
-            private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
-                PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
-        }
+        private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
+            PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
+    }
 }
