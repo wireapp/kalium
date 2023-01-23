@@ -87,7 +87,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                     .awaitAll()
 
                 val noUpdateRequiredConfigIds = configIdWithFreshFlag
-                    .filter { (_, isUpdateRequired) -> isUpdateRequired }
+                    .filter { (_, isUpdateRequired) -> !isUpdateRequired }
                     .map { (configId, _) -> configId }
                     .toSet()
 
