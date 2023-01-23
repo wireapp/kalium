@@ -66,9 +66,8 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                         ?.let { dtoCredentials ->
                                             MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(dtoCredentials)
                                         }
-                                    if (credentials == null) {
+                                    if (credentials == null)
                                         kaliumLogger.e("$TAG proxy credentials required, but it's null")
-                                    }
                                     credentials
                                 } else {
                                     null
@@ -87,7 +86,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                     .awaitAll()
 
                 val noUpdateRequiredConfigIds = configIdWithFreshFlag
-                    .filter { (_, isUpdateRequired) -> isUpdateRequired }
+                    .filter { (_, isUpdateRequired) -> !isUpdateRequired }
                     .map { (configId, _) -> configId }
                     .toSet()
 
