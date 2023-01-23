@@ -28,10 +28,6 @@ class MetadataDAOTest : BaseDatabaseTest() {
         metadataDAO = db.metadataDAO
     }
 
-
-
-
-
     @Test
     fun givenNonExistingKey_thenValueCanBeStored() = runTest(dispatcher) {
         metadataDAO.insertValue(value1, key1)
