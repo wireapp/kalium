@@ -1,7 +1,6 @@
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import java.nio.file.Files
 
