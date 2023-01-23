@@ -207,35 +207,6 @@ class MessageRepositoryTest {
             )
     }
 
-    @Test
-    fun givenABaseMessageEntityAndMapper_whenGettingPendingConfirmationMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
-        // Given
-        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        val entity = TEST_MESSAGE_ENTITY.copy(expectsReadConfirmation = true)
-        val mappedMessage = TEST_MESSAGE.copy(expectsReadConfirmation = true)
-
-        val (arrangement, messageRepository) = Arrangement()
-            .withMockedMessages(listOf(entity))
-            .withMappedMessageModel(mappedMessage)
-            .arrange()
-
-        // When
-        val messageList = messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
-            TEST_CONVERSATION_ID,
-            "2022-03-30T15:36:00.000Z"
-        ).shouldSucceed {
-            assertEquals(listOf(mappedMessage), it)
-        }
-
-        // Then
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .with(eq(entity))
-                .wasInvoked(exactly = once)
-        }
-    }
-
     private class Arrangement {
 
         @Mock
@@ -265,8 +236,8 @@ class MessageRepositoryTest {
                 .then { _, _, _, _ -> flowOf(messages) }
             given(messageDAO)
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .then { _, _, _ -> messages }
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> messages.map { it.id } }
             return this
         }
 

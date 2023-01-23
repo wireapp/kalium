@@ -115,9 +115,8 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
-    ): Either<CoreFailure, List<Message>>
+    ): Either<CoreFailure, List<String>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -344,14 +343,12 @@ class MessageDataSource(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             conversationId.toDao(),
-            date,
             visibility.map { it.toEntityVisibility() }
-        ).map(messageMapper::fromEntityToMessage)
+        )
     }
 
     override suspend fun updateTextMessage(
