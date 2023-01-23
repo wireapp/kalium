@@ -231,6 +231,7 @@ sealed interface Message {
                 is MessageContent.TeamMemberRemoved -> mutableMapOf(
                     typeKey to "teamMemberRemoved"
                 )
+
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
