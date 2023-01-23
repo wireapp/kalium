@@ -76,11 +76,11 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
-    override suspend fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         return ByteArray(0)
     }
 
-    override suspend fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 
@@ -92,7 +92,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
     }
 

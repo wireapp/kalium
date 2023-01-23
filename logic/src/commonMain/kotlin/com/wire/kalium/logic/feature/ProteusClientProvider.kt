@@ -11,8 +11,11 @@ import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 interface ProteusClientProvider {
@@ -33,7 +36,8 @@ class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
@@ -42,8 +46,10 @@ class ProteusClientProviderImpl(
     @Throws(ProteusException::class)
     override suspend fun clearLocalFiles() {
         mutex.withLock {
-            _proteusClient?.clearLocalFiles()
-            _proteusClient = null
+            withContext(dispatcher.io) {
+                _proteusClient?.clearLocalFiles()
+                _proteusClient = null
+            }
         }
     }
 
@@ -75,9 +81,9 @@ class ProteusClientProviderImpl(
 
     private fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId))
+            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId), dispatcher.io, dispatcher.default)
         } else {
-            ProteusClientImpl(rootProteusPath)
+            ProteusClientImpl(rootProteusPath, null, dispatcher.io, dispatcher.default)
         }
     }
 }

@@ -5,12 +5,17 @@ import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.Base64
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
  *
  */
-class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(
+    rootDir: String,
+    private val ioContext: CoroutineContext,
+    private val defaultContext: CoroutineContext
+) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -48,15 +53,15 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         }
     }
 
-    override suspend fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         return wrapException { box.identity }
     }
 
-    override suspend fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return wrapException { box.localFingerprint }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -88,7 +93,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         // TODO Delete session
     }
 
