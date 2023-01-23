@@ -28,8 +28,8 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     private val rootDir: String,
     databaseKey: ProteusDBSecret?,
-    ioContext: CoroutineContext,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient {
 
     private var box: EncryptionContext? = null
@@ -57,7 +57,8 @@ actual class ProteusClientImpl actual constructor(
         } else {
             throw ProteusException(
                 message = "Local files were not found",
-                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND
+                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                cause = null
             )
         }
     }
@@ -96,7 +97,7 @@ actual class ProteusClientImpl actual constructor(
         return preKeys
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         lateinit var preKey: PreKeyCrypto
         box?.perform { session ->
             memScoped {
@@ -218,7 +219,7 @@ actual class ProteusClientImpl actual constructor(
         }
 
         private fun toException(error: NSError): ProteusException {
-            return ProteusException(message = error.description, code = error.code.toInt())
+            return ProteusException(message = error.description, code = error.code.toInt(), null)
         }
     }
 
