@@ -10,11 +10,13 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +27,7 @@ import kotlin.test.assertTrue
 // There is some issue with restoring backup on JVM, investigation in progress
 @OptIn(ExperimentalCoroutinesApi::class)
 @IgnoreJvm
-class RestoreBackupTest : BaseDatabaseTest() {
+class DatabaseImporterTest : BaseDatabaseTest() {
 
     private val backupUserIdEntity = UserIDEntity("backupValue", "backupDomain")
 
@@ -178,6 +180,25 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
         // then
         assertEquals(10, userDatabaseBuilder.conversationDAO.getAllConversations().first().size)
+    }
+
+    @IgnoreJvm
+    @IgnoreIOS
+    @Test
+    fun givenBackupHasOverLappingConversationWithLastReadDate_whenRestoringBackup_thenThoseConversationsAreNotInserted() = runTest {
+        // given
+        val readDateBackup = Instant.parse("2023-01-20T12:00:00.000Z")
+        val backupConversation = insertBackupConversationWithReadDate(readDateBackup)
+
+        val readDateCurrent = Instant.parse("2023-01-22T12:00:00.000Z")
+        val currentConversation = backupConversation.copy(lastReadDate = readDateCurrent)
+        userDatabaseBuilder.conversationDAO.insertConversation(currentConversation)
+
+        // when
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false, null)
+
+        // then
+        assertEquals(userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation.id)?.lastReadDate, readDateCurrent)
     }
 
     @Test
@@ -630,5 +651,35 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
 
         return conversationAdded
+    }
+
+    private suspend fun insertBackupConversationWithReadDate(
+        readDate: Instant,
+        conversationId: ConversationIDEntity? = null,
+        index: Int = Random.nextInt(0, 5)
+    ): ConversationEntity {
+        val randomID = Random.nextBytes(16).decodeToString()
+        val type = if (index % 2 == 0) ConversationEntity.Type.ONE_ON_ONE else ConversationEntity.Type.GROUP
+        val conversation = ConversationEntity(
+            id = conversationId ?: ConversationIDEntity(randomID, "some-domain-$index"),
+            name = "name-$index",
+            type = type,
+            teamId = null,
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            mutedTime = 0,
+            removedBy = null,
+            creatorId = "creatorId$index",
+            lastNotificationDate = UserDatabaseDataGenerator.DEFAULT_DATE,
+            lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE,
+            lastReadDate = readDate,
+            access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
+            accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        )
+
+        backupDatabaseBuilder.conversationDAO.insertConversation(conversation)
+
+        return conversation
     }
 }

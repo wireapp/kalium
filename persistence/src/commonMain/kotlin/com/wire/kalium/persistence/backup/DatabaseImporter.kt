@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.db.UserDBSecret
-import kotlinx.datetime.Clock
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
@@ -75,6 +74,13 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
             |INSERT OR IGNORE INTO Conversation SELECT * FROM $BACKUP_DB_ALIAS.Conversation;
             """.trimMargin()
         )
+//         sqlDriver.execute(
+//                 """INSERT INTO Conversation
+//                 |SELECT * FROM $BACKUP_DB_ALIAS.Conversation
+//                 |ON CONFLICT (Conversation.qualified_id)
+//                 |DO UPDATE SET last_read_date = IIF (Conversation.last_read_date > excluded.last_read_date, Conversation.last_read_date, excluded.last_read_date);
+//                 """.trimMargin()
+//         )
     }
 
     private fun restoreTable(tableName: String) {
