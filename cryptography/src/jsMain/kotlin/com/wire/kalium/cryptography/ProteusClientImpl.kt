@@ -18,7 +18,8 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     rootDir: String,
     databaseKey: ProteusDBSecret?,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient {
 
     private lateinit var box: Cryptobox

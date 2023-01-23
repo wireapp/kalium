@@ -13,7 +13,6 @@ import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -43,9 +42,6 @@ class ProteusClientProviderImpl(
 
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val cryptoDispatcher = dispatcher.default.limitedParallelism(1)
 
     @Throws(ProteusException::class)
     override suspend fun clearLocalFiles() {
@@ -85,9 +81,18 @@ class ProteusClientProviderImpl(
 
     private fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId), cryptoDispatcher)
+            ProteusClientImpl(
+                rootProteusPath,
+                SecurityHelper(passphraseStorage).proteusDBSecret(userId),
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         } else {
-            ProteusClientImpl(rootProteusPath, null, cryptoDispatcher)
+            ProteusClientImpl(
+                rootProteusPath, null,
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         }
     }
 }
