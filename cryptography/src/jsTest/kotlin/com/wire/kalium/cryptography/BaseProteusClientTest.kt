@@ -1,7 +1,9 @@
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 
+@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
 
     private val standardScope = StandardTestDispatcher()
@@ -15,7 +17,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, defaultContext = standardScope)
+        return ProteusClientImpl(proteusStore.value, defaultContext = standardScope, ioContext = standardScope
     }
 
 }
