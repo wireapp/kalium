@@ -14,7 +14,7 @@ actual class ProteusClientImpl actual constructor(
 
     private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir, defaultContext))
+    } ?: ProteusClientCryptoBoxImpl(rootDir = rootDir, defaultContext = defaultContext))
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()

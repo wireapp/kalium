@@ -13,7 +13,6 @@ import kotlin.coroutines.CoroutineContext
  */
 class ProteusClientCryptoBoxImpl constructor(
     rootDir: String,
-    private val ioContext: CoroutineContext,
     private val defaultContext: CoroutineContext
 ) : ProteusClient {
 

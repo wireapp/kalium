@@ -9,7 +9,7 @@ import java.io.File
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-class ProteusClientImpl constructor(
+class ProteusClientCryptoBoxImpl constructor(
     rootDir: String,
     private val defaultContext: CoroutineContext
 ) : ProteusClient {
@@ -162,11 +162,11 @@ class ProteusClientImpl constructor(
         }
     }
 
-    companion object {
-        private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
-            com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
+        companion object {
+            private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
+                com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
 
-        private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
-            PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
-    }
+            private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
+                PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
+        }
 }
