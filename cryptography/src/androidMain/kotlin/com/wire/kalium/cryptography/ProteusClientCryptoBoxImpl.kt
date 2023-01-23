@@ -155,7 +155,6 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-
     @Suppress("TooGenericExceptionCaught")
     private inline fun <T> wrapException(b: () -> T): T {
         try {
