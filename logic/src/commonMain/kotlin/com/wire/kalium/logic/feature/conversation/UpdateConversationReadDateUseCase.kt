@@ -13,7 +13,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -46,7 +45,7 @@ class UpdateConversationReadDateUseCase internal constructor(
         //    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
         //        sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
         //    }
-        //}
+        // }
     }
 
     private suspend fun sendLastReadMessageToOtherClients(
