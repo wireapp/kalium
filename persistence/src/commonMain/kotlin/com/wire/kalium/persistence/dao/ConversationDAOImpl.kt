@@ -291,19 +291,19 @@ class ConversationDAOImpl(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
-        return conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
-            .asFlow()
-            .mapToOneOrNull()
-            .flowOn(coroutineContext)
-    }
-
-    override suspend fun observeGetConversationDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
+    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
             .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+        return conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(coroutineContext)
     }
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
