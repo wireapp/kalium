@@ -136,6 +136,7 @@ interface ConversationDAO {
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
 
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
 
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>

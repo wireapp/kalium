@@ -306,6 +306,11 @@ class ConversationDAOImpl(
             .flowOn(coroutineContext)
     }
 
+    override suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity? =
+        withContext(coroutineContext) {
+            conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel).executeAsOneOrNull()
+        }
+
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
         withContext(coroutineContext) {
             conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {

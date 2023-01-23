@@ -27,7 +27,7 @@ class UpdateConversationAccessRoleUseCase internal constructor(
         allowServices: Boolean,
         allowNonTeamMember: Boolean
     ): Result {
-        return conversationRepository.detailsById(conversationId)
+        return conversationRepository.baseInfoById(conversationId)
             .map { conversation ->
                 // TODO: handle edge case where accessRole is null
                 val newAccessRoles: List<Conversation.AccessRole> = conversation.accessRole.toMutableSet().apply {

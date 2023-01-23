@@ -82,7 +82,7 @@ internal class SendConfirmationUseCase internal constructor(
         } else emptyList()
 
     private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
-        conversationRepository.detailsById(conversationId).fold({
+        conversationRepository.baseInfoById(conversationId).fold({
             false
         }, { conversation ->
             when (conversation.type) {

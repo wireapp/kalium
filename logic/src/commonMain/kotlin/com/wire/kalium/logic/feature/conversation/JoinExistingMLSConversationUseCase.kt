@@ -15,6 +15,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
@@ -53,11 +54,13 @@ class JoinExistingMLSConversationUseCaseImpl(
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            conversationRepository.getConversationById(conversationId)?.let { conversation ->
+            conversationRepository.baseInfoById(conversationId).fold({
+                Either.Left(StorageFailure.DataNotFound)
+            },{ conversation ->
                 withContext(dispatcher) {
                     joinOrEstablishMLSGroupAndRetry(conversation)
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+            })
         }
 
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
@@ -100,7 +103,7 @@ class JoinExistingMLSConversationUseCaseImpl(
                         kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
                         // Re-fetch current epoch and try again
                         conversationRepository.fetchConversation(conversation.id).flatMap {
-                            conversationRepository.detailsById(conversation.id).flatMap { conversation ->
+                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(conversation)
                             }
                         }
