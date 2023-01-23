@@ -4,9 +4,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsPlatformParam
 import com.wire.kalium.persistence.kmmSettings.SettingOptions
 import com.wire.kalium.persistence.kmmSettings.encryptedSettingsBuilder
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Test
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -16,23 +13,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class EncryptedSettingsBuilderTest {
-
-
-    @Test
-    fun test() = runBlocking(UnconfinedTestDispatcher()) {
-        launch {
-
-        }
-        launch {
-
-        }
-        launch {
-
-        }
-        launch {
-
-        }
-    }
 
     @Test
     fun givenJvmPropertiesSettings_WhenUserSettingsAreChanged_ThenItIsStoredInFile() {

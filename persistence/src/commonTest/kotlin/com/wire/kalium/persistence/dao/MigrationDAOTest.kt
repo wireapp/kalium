@@ -2,12 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -41,23 +36,6 @@ class MigrationDAOTest : BaseDatabaseTest() {
         conversationDAO.getConversationByQualifiedID(conversationFromMigration.id).also {
             assertEquals(conversation.type, it?.type)
             assertEquals(conversation.name, it?.name)
-        }
-    }
-
-    @Test
-    fun test() {
-        runTest {
-            GlobalScope.launch(Dispatchers.Default) {
-                launch {
-                    println("1")
-                    delay(100)
-                }
-                launch {
-
-                }
-                println("test")
-
-            }.join()
         }
     }
 }
