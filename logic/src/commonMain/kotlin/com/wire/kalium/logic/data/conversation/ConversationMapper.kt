@@ -39,6 +39,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
+    fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
         lastMessage: MessagePreview?,
@@ -114,6 +115,27 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
+            creatorId = creatorId,
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+        )
+    }
+
+    override fun fromDaoModel(daoModel: ConversationEntity): Conversation = with(daoModel) {
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
+        else lastReadDate.toIsoDateTimeString()
+        Conversation(
+            id = id.toModel(),
+            name = name,
+            type = type.fromDaoModelToType(),
+            teamId = teamId?.let { TeamId(it) },
+            protocol = protocolInfoMapper.fromEntity(protocolInfo),
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
+            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastReadDate = lastReadDateEntity,
+            access = access.map { it.toDAO() },
+            accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
         )
