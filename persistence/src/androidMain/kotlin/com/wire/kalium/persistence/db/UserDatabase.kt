@@ -64,6 +64,7 @@ fun inMemoryDatabase(
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
     val passphrase = "testPass".toByteArray()
+    System.loadLibrary("sqlcipher")
     val driver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
         context = context,
