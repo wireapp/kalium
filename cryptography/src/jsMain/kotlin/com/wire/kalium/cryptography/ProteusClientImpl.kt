@@ -18,7 +18,6 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     rootDir: String,
     databaseKey: ProteusDBSecret?,
-    ioContext: CoroutineContext,
     defaultContext: CoroutineContext
 ) : ProteusClient {
 

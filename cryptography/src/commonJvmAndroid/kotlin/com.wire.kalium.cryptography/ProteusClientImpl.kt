@@ -9,13 +9,12 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     rootDir: String,
     databaseKey: ProteusDBSecret?,
-    ioContext: CoroutineContext,
     defaultContext: CoroutineContext
 ) : ProteusClient {
 
     private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir, ioContext, defaultContext))
+    } ?: ProteusClientCryptoBoxImpl(rootDir, defaultContext))
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
