@@ -29,6 +29,7 @@ data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
+
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
@@ -56,7 +57,7 @@ interface ProteusClient {
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class)
-    fun newLastPreKey(): PreKeyCrypto
+    suspend newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
@@ -77,7 +78,7 @@ interface ProteusClient {
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
-    fun deleteSession(sessionId: CryptoSessionId)
+    suspend fun deleteSession(sessionId: CryptoSessionId)
 }
 
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {
@@ -94,4 +95,9 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
     }
 }
 
-expect class ProteusClientImpl(rootDir: String, databaseKey: ProteusDBSecret? = null) : ProteusClient
+expect class ProteusClientImpl(
+    rootDir: String,
+    databaseKey: ProteusDBSecret? = null,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+) : ProteusClient

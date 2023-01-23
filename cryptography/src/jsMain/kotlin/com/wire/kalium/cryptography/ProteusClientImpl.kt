@@ -14,7 +14,12 @@ import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+) : ProteusClient {
 
     private lateinit var box: Cryptobox
 
@@ -55,7 +60,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return preKeys.map { toPreKey(box.getIdentity().public_key, it) } as ArrayList<PreKeyCrypto>
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         val preKey = box.lastResortPreKey
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)
