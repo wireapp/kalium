@@ -14,7 +14,7 @@ actual open class BaseProteusClientTest {
     }
 
     actual fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, databaseKey, standardScope)
+        return ProteusClientImpl(proteusStore.value, databaseKey, standardScope, standardScope)
     }
 
 }

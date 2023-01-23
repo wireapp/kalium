@@ -28,7 +28,8 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     private val rootDir: String,
     databaseKey: ProteusDBSecret?,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient {
 
     private var box: EncryptionContext? = null
@@ -96,7 +97,7 @@ actual class ProteusClientImpl actual constructor(
         return preKeys
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         lateinit var preKey: PreKeyCrypto
         box?.perform { session ->
             memScoped {

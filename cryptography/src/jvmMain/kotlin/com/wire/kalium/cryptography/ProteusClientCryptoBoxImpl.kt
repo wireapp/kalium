@@ -14,7 +14,8 @@ import kotlin.coroutines.CoroutineContext
  */
 class ProteusClientCryptoBoxImpl constructor(
     rootDir: String,
-    private val defaultContext: CoroutineContext
+    private val defaultContext: CoroutineContext,
+    private val ioContext: CoroutineContext
 ) : ProteusClient {
 
     private val path: String
@@ -65,7 +66,7 @@ class ProteusClientCryptoBoxImpl constructor(
         return wrapException { box.localFingerprint }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 

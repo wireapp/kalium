@@ -2,7 +2,7 @@ package com.wire.kalium.cryptography.exceptions
 
 class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
 
-    constructor(message: String?, code: Int, cause: Throwable?) : this(message, fromNativeCode(code), cause)
+    constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
 
     enum class Code {
         /**
