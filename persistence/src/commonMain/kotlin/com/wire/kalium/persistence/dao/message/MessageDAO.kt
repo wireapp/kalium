@@ -117,9 +117,8 @@ interface MessageDAO {
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
-    ): List<MessageEntity>
+    ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 

@@ -327,8 +327,8 @@ class MessageRepositoryTest {
                 .then { _, _, _, _ -> flowOf(messages) }
             given(messageDAO)
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .then { _, _, _ -> messages }
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> messages.map { it.id } }
             return this
         }
 
