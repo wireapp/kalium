@@ -1075,35 +1075,36 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1.copy(lastReadDate = conversationLastReadDate))
 
-        //having a list of messages after the lastReadDate
+        // having a list of messages after the lastReadDate
         val allMessages = listOf(
             newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
-                senderUserId =userEntity2.id,
+                senderUserId = userEntity2.id,
                 date = messageDateBeforeLastReadDate,
                 expectsReadConfirmation = true
             ),
             newRegularMessageEntity(
                 "2",
                 conversationId = conversationEntity1.id,
-                senderUserId =userEntity2.id,
+                senderUserId = userEntity2.id,
                 date = messageDateAfterLastReadDate,
                 expectsReadConfirmation = true
             ),
             newRegularMessageEntity(
                 "3",
                 conversationId = conversationEntity1.id,
-                senderUserId =userEntity2.id,
+                senderUserId = userEntity2.id,
                 date = messageDateAfterLastReadDate,
                 expectsReadConfirmation = true
             )
         )
 
-        val expected = listOf("2","3")
+        val expected = listOf("2", "3")
 
         messageDAO.insertOrIgnoreMessages(allMessages)
-        //the list should be correct
+
+        // the list should be correct
         val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationEntity1.id)
 
         assertEquals(expected.sorted(), result.sorted())
