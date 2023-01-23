@@ -22,7 +22,6 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
             }
         }
         sqlDriver.execute("""BEGIN""")
-        restoreTable("Team")
         restoreTable("User")
         restoreTable("Conversation")
         restoreTable("Message")
