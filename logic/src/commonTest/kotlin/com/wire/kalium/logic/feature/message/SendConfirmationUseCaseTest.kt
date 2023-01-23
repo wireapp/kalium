@@ -63,7 +63,7 @@ class SendConfirmationUseCaseTest {
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getPendingConfirmationMessagesByConversationAfterDate)
-            .with(anything(), anything(), anything())
+            .with(anything(), anything())
             .wasNotInvoked()
     }
 
@@ -103,7 +103,7 @@ class SendConfirmationUseCaseTest {
 
         fun withGetConversationByIdSuccessful() = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
+                .suspendFunction(conversationRepository::baseInfoById)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(TestConversation.CONVERSATION))
         }
@@ -118,8 +118,8 @@ class SendConfirmationUseCaseTest {
         fun withPendingMessagesResponse() = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::getPendingConfirmationMessagesByConversationAfterDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(listOf(TestMessage.TEXT_MESSAGE)))
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
         }
 
         fun arrange() = this to SendConfirmationUseCase(
