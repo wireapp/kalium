@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -61,6 +62,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     .map { list -> list.filter { it.messages.isNotEmpty() } }
             }
             .distinctUntilChanged()
+            .filter { it.isNotEmpty() }
             .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
     }
 

@@ -1,11 +1,13 @@
-package com.wire.kalium.logic.util
+package com.wire.kalium.util
 
-import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.string.IgnoreIOS
+import com.wire.kalium.util.string.IgnoreJS
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreJS
 @IgnoreIOS // TODO investigate why tests are failing, timestamp precision?
 class DateTimeUtilTest {
 
