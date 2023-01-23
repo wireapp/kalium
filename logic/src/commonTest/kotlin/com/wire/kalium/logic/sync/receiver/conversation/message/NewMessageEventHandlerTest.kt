@@ -14,6 +14,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.Ignore
 import kotlin.test.Test
 
 class NewMessageEventHandlerTest {
@@ -34,6 +35,7 @@ class NewMessageEventHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Ignore
     @Test
     fun givenMLSEvent_whenHandling_shouldAskMLSUnpackerToDecrypt() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()

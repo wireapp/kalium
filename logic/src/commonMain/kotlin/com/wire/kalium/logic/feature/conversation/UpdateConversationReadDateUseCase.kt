@@ -36,8 +36,9 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        sendConfirmation(conversationId)
-        conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
+        // TODO: Disabled for now as we are still figuring out performance and STORAGE_ERROR issues.
+        // sendConfirmation(conversationId)
+        // conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
         selfConversationIdProvider().flatMap { selfConversationIds ->
             selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                 sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
