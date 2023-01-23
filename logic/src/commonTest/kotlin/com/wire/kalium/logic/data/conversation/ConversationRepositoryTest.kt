@@ -1005,7 +1005,7 @@ class ConversationRepositoryTest {
 
         fun withExpectedObservableConversation(conversationEntity: ConversationViewEntity? = null) = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::observeGetConversationDetailsByQualifiedID)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(conversationEntity))
         }
