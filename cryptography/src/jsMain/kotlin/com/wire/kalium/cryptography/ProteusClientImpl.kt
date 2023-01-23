@@ -12,9 +12,15 @@ import kotlinx.coroutines.await
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    ioContext: CoroutineContext,
+    defaultContext: CoroutineContext
+) : ProteusClient {
 
     private lateinit var box: Cryptobox
 
@@ -97,7 +103,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         box.session_delete(sessionId.value)
     }
 
