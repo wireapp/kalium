@@ -17,7 +17,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, defaultContext = standardScope, ioContext = standardScope
+        return ProteusClientImpl(proteusStore.value, defaultContext = standardScope, ioContext = standardScope)
     }
 
 }
