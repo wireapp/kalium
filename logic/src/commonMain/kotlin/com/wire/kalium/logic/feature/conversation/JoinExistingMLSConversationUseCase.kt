@@ -56,7 +56,7 @@ class JoinExistingMLSConversationUseCaseImpl(
         } else {
             conversationRepository.baseInfoById(conversationId).fold({
                 Either.Left(StorageFailure.DataNotFound)
-            },{ conversation ->
+            }, { conversation ->
                 withContext(dispatcher) {
                     joinOrEstablishMLSGroupAndRetry(conversation)
                 }
