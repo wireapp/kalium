@@ -1,8 +1,11 @@
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.test.StandardTestDispatcher
 import java.nio.file.Files
 
 actual open class BaseProteusClientTest {
+
+    private val standardScope = StandardTestDispatcher()
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         val root = Files.createTempDirectory("proteus").toFile()
@@ -11,7 +14,7 @@ actual open class BaseProteusClientTest {
     }
 
     actual fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, databaseKey)
+        return ProteusClientImpl(proteusStore.value, databaseKey, standardScope, standardScope)
     }
 
 }
