@@ -25,6 +25,7 @@ expect open class PlatformDateTimeUtil() {
 object DateTimeUtil : PlatformDateTimeUtil() {
     const val pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
     const val regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d(([+-]\\d\\d:\\d\\d)|Z)?\$"
+    internal const val MILLISECONDS_DIGITS = 3
 
     /**
      * Calculate the difference between two date-times provided to it

@@ -67,6 +67,14 @@ class DebugScope internal constructor(
             messageSender
         )
 
+    val sendConfirmation: SendConfirmationUseCase
+        get() = SendConfirmationUseCase(
+            userRepository,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender
+        )
+
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 

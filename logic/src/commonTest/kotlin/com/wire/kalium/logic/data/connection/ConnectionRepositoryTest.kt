@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -320,7 +321,7 @@ class ConnectionRepositoryTest {
         val stubConnectionOne = ConnectionDTO(
             conversationId = "conversationId1",
             from = "fromId",
-            lastUpdate = "lastUpdate",
+            lastUpdate = UNIX_FIRST_DATE,
             qualifiedConversationId = ConversationId("conversationId1", "domain"),
             qualifiedToId = NetworkUserId("connectionId1", "domain"),
             status = ConnectionStateDTO.ACCEPTED,
@@ -329,7 +330,7 @@ class ConnectionRepositoryTest {
         val stubConnectionTwo = ConnectionDTO(
             conversationId = "conversationId2",
             from = "fromId",
-            lastUpdate = "lastUpdate",
+            lastUpdate = UNIX_FIRST_DATE,
             qualifiedConversationId = ConversationId("conversationId2", "domain"),
             qualifiedToId = NetworkUserId("connectionId2", "domain"),
             status = ConnectionStateDTO.ACCEPTED,

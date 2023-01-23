@@ -14,7 +14,6 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -30,7 +29,10 @@ import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
@@ -82,9 +84,9 @@ internal class ConversationMapperImpl(
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
         creatorId = apiModel.creator,
-        lastReadDate = EPOCH_FIRST_DAY,
+        lastReadDate = Instant.UNIX_FIRST_DATE,
         lastNotificationDate = null,
-        lastModifiedDate = apiModel.lastEventTime,
+        lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
@@ -96,7 +98,8 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) EPOCH_FIRST_DAY else lastReadDate
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
+        else lastReadDate.toIsoDateTimeString()
 
         Conversation(
             id = id.toModel(),
@@ -106,8 +109,8 @@ internal class ConversationMapperImpl(
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
             removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-            lastNotificationDate = lastNotificationDate,
-            lastModifiedDate = lastModifiedDate,
+            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
+            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
@@ -188,7 +191,7 @@ internal class ConversationMapperImpl(
                         conversationId = id.toModel(),
                         otherUser = otherUser,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        lastModifiedDate = lastModifiedDate.orEmpty(),
+                        lastModifiedDate = lastModifiedDate?.toIsoDateTimeString().orEmpty(),
                         connection = Connection(
                             conversationId = id.value,
                             from = "",
@@ -295,9 +298,9 @@ internal class ConversationMapperImpl(
             mutedTime = 0,
             removedBy = null,
             creatorId = creatorId.orEmpty(),
-            lastNotificationDate = "",
-            lastModifiedDate = "",
-            lastReadDate = "",
+            lastNotificationDate = (conversation.lastNotificationDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
+            lastModifiedDate = (conversation.lastModifiedDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
+            lastReadDate = conversation.lastReadDate.toInstant(),
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)

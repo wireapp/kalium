@@ -32,27 +32,33 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetNotificationsUseCaseTest {
 
     @Test
-    fun givenSyncStateChangedToLive_thenAllNotificationsObserved() = runTest {
+    fun givenSyncStateChangedToLive_thenRepositoriesAreUsedToFetchNotifications() = runTest {
         val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
+        val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
+        val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withIncrementalSyncState(syncStatusFlow)
             .withConnectionList(listOf())
-            .withConversationsForNotifications(listOf())
-            .arrange()
+            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
@@ -85,12 +91,13 @@ class GetNotificationsUseCaseTest {
                 .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
                 .wasInvoked(atLeast = once)
 
-            awaitItem()
+            val result = awaitItem()
+            assertContentEquals(expectedConversations, result)
         }
     }
 
     @Test
-    fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
+    fun givenEmptyConversationList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification(
                 LocalNotificationConversation(
@@ -98,18 +105,16 @@ class GetNotificationsUseCaseTest {
                 )
             )
             .withConnectionList(listOf())
-            .withConversationsForNotifications(listOf())
+            .withConversationsForNotifications(flowOf(listOf()))
             .arrange()
 
         getNotifications().test {
-            val actual1 = awaitItem()
-            assertEquals(0, actual1.size)
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
     @Test
-    fun givenConversationWithEmptyMessageList_thenEmptyNotificationList() = runTest {
+    fun givenConversationWithEmptyMessageList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification(
                 LocalNotificationConversation(
@@ -117,44 +122,37 @@ class GetNotificationsUseCaseTest {
                 )
             )
             .withConnectionList(listOf())
-            .withConversationsForNotifications(listOf(localNotificationConversation()))
+            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation())))
             .arrange()
 
         getNotifications().test {
-            assertEquals(0, awaitItem().size)
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
     @Test
-    fun givenConversationWithOnlyMyMessageList_thenEmptyNotificationList() = runTest {
+    fun givenConversationWithOnlyMyMessageList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withConversationsForNotifications(listOf(localNotificationConversation()))
+            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation(messages = emptyList()))))
             .arrange()
 
         getNotifications().test {
-            val actualToCheck = awaitItem()
-
-            assertEquals(0, actualToCheck.size)
-
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
     @Test
-    fun givenSelfUserWithStatusAway_whenNewMessageCome_thenNoNotificationsAndAllConversationNotificationDateUpdated() = runTest {
+    fun givenSelfUserWithStatusAway_whenNewMessageCome_thenNoNotificationsAreEmitted() = runTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withConversationsForNotifications(listOf(localNotificationConversation()))
+            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation(messages = emptyList()))))
             .arrange()
 
         getNotifications().test {
-            val actualToCheck = awaitItem()
-            assertEquals(0, actualToCheck.size)
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
@@ -162,7 +160,7 @@ class GetNotificationsUseCaseTest {
     fun givenConnectionRequests_thenNotificationListWithConnectionRequestMessage() = runTest {
         val (_, getNotifications) = Arrangement()
             .withConnectionList(listOf(connectionRequest()))
-            .withConversationsForNotifications(null)
+            .withConversationsForNotifications(emptyFlow())
             .withEphemeralNotification()
             .arrange()
 
@@ -177,6 +175,19 @@ class GetNotificationsUseCaseTest {
                 actualToCheck.first { message -> message.messages.any { it is LocalNotificationMessage.ConnectionRequest } }.messages
             )
             awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenNoNewNotifications_thenShouldNotEmitAnything() = runTest {
+        val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
+            .withConversationsForNotifications(emptyFlow())
+            .withEphemeralNotification(null)
+            .arrange()
+
+        getNotifications().test {
+            expectNoEvents()
         }
     }
 
@@ -218,11 +229,11 @@ class GetNotificationsUseCaseTest {
                 .then { flowOf(IncrementalSyncStatus.Live) }
         }
 
-        fun withConversationsForNotifications(list: List<LocalNotificationConversation>?): Arrangement {
+        fun withConversationsForNotifications(list: Flow<List<LocalNotificationConversation>> = emptyFlow()): Arrangement {
             given(messageRepository)
                 .suspendFunction(messageRepository::getNotificationMessage)
                 .whenInvokedWith(any())
-                .thenReturn(list?.let { flowOf(it) } ?: flowOf())
+                .thenReturn(list)
 
             return this
         }
@@ -263,12 +274,13 @@ class GetNotificationsUseCaseTest {
             QualifiedID("conversation_id_${number}_value", "conversation_id_${number}_domain")
 
         private fun localNotificationConversation(
-            number: Int = 0,
+            messages: List<LocalNotificationMessage> = emptyList(),
+            conversationIdSeed: Int = 0,
             isOneOnOne: Boolean = true,
         ) = LocalNotificationConversation(
-            conversationId(number),
-            conversationName = "conversation_$number",
-            messages = emptyList(),
+            conversationId(conversationIdSeed),
+            conversationName = "conversation_$conversationIdSeed",
+            messages = messages,
             isOneToOneConversation = isOneOnOne
         )
 

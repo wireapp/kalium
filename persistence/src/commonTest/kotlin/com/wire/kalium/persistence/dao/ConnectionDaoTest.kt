@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -65,7 +66,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         private fun connectionEntity(id: String = "0") = ConnectionEntity(
             conversationId = "$id@wire.com",
             from = "from_string",
-            lastUpdate = "2022-03-30T15:36:00.000Z",
+            lastUpdateDate = "2022-03-30T15:36:00.000Z".toInstant(),
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = QualifiedIDEntity("me", "wire.com"),
             status = ConnectionEntity.State.PENDING,
