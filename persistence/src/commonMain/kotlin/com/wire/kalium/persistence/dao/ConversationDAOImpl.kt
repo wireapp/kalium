@@ -306,6 +306,7 @@ class ConversationDAOImpl(
             .flowOn(coroutineContext)
     }
 
+    // todo: find a better naming for views vs tables queries
     override suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity? =
         withContext(coroutineContext) {
             conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel).executeAsOneOrNull()
