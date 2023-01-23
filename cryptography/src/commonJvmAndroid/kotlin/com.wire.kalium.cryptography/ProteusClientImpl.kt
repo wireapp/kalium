@@ -1,17 +1,21 @@
 package com.wire.kalium.cryptography
 
-// TODO remove after debugging is completed
-var instanceCounter = 0
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.jvmInitialization
  */
-actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    ioContext: CoroutineContext,
+    defaultContext: CoroutineContext
+) : ProteusClient {
 
     private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir)).also { kaliumLogger.d("Constructing ProteusClient #${instanceCounter++} at $rootDir") }
+    } ?: ProteusClientCryptoBoxImpl(rootDir, ioContext, defaultContext))
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
@@ -65,7 +69,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.encryptWithPreKey(message, preKeyCrypto, sessionId)
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
 }

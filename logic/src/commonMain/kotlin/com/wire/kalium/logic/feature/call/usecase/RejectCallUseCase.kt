@@ -18,7 +18,7 @@ class RejectCallUseCase(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.io) {
+    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         callingLogger.d("[RejectCallUseCase] -> Updating call status to REJECTED")
         callRepository.updateCallStatusById(conversationId.toString(), CallStatus.REJECTED)
 
