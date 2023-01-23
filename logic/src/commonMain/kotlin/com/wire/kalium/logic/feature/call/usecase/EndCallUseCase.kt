@@ -40,7 +40,7 @@ class EndCallUseCase(
     /**
      * @param conversationId the id of the conversation for the call should be ended.
      */
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.io) {
+    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         persistMissedCallIfNeeded(conversationId)
 
         callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
