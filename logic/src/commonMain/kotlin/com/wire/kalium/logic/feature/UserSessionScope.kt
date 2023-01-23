@@ -119,6 +119,8 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUse
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
@@ -599,6 +601,12 @@ class UserSessionScope internal constructor(
             joinExistingMLSConversationUseCase
         )
 
+    private val joinSubconversationUseCase: JoinSubconversationUseCase
+        get() = JoinSubconversationUseCaseImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            mlsConversationRepository
+        )
+
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
             syncSelfUser,
@@ -1031,7 +1039,8 @@ class UserSessionScope internal constructor(
             syncManager,
             qualifiedIdMapper,
             clientIdProvider,
-            userConfigRepository
+            userConfigRepository,
+            joinSubconversationUseCase
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

@@ -7,5 +7,6 @@ package com.wire.kalium.logic.data.call
 enum class ConversationType {
     OneOnOne,
     Conference,
+    ConferenceMls,
     Unknown
 }

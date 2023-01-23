@@ -62,6 +62,7 @@ class CallMapperImpl(
         return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
+            ConversationType.ConferenceMls -> ConversationTypeCalling.ConferenceMls
             else -> ConversationTypeCalling.Unknown
         }
     }
