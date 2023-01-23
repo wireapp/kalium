@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
@@ -31,10 +30,10 @@ internal class SelfConversationIdProviderImpl(
 
     override suspend fun invoke(): Either<StorageFailure, List<ConversationId>> {
         val selfConversationIDs = mutableListOf(proteusSelfConversationIdProvider())
-
-        if (clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
-            selfConversationIDs.add(mlsSelfConversationIdProvider())
-        }
+            // todo: re-enable mls later
+//         if (clientRepository.hasRegisteredMLSClient().getOrElse(false)) {
+//             selfConversationIDs.add(mlsSelfConversationIdProvider())
+//         }
 
         return selfConversationIDs.foldToEitherWhileRight(emptyList()) { result, acc ->
             result.map {
