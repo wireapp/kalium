@@ -17,7 +17,6 @@ interface DeleteAssetUseCase {
     suspend operator fun invoke(assetId: AssetId)
 }
 
-
 internal class DeleteAssetUseCaseImpl(
     private val assetRepository: AssetRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
