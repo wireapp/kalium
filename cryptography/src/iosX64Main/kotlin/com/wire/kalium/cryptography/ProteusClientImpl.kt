@@ -56,7 +56,8 @@ actual class ProteusClientImpl actual constructor(
         } else {
             throw ProteusException(
                 message = "Local files were not found",
-                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND
+                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                cause = null
             )
         }
     }
@@ -217,7 +218,7 @@ actual class ProteusClientImpl actual constructor(
         }
 
         private fun toException(error: NSError): ProteusException {
-            return ProteusException(message = error.description, code = error.code.toInt())
+            return ProteusException(message = error.description, code = error.code.toInt(), null)
         }
     }
 
