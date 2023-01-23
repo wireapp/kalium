@@ -362,7 +362,7 @@ internal class ConversationDataSource internal constructor(
 
     // TODO: refactor. 3 Ways different ways to return conversation details?!
     override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
-        conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao())
+        conversationDAO.observeGetConversationDetailsByQualifiedID(conversationId.toDao())
             .map { conversationEntity ->
                 conversationEntity?.let { conversationMapper.fromDaoModel(it) }
             }.firstOrNull()

@@ -405,7 +405,7 @@ class ConnectionRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(eq(conversationId))
-                .then { flowOf(TestConversation.VIEW_ENTITY) }
+                .then { flowOf(TestConversation.ENTITY) }
 
             return this
         }
