@@ -272,7 +272,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateAllConversationsNotificationDate(date: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateAllUnNotifiedConversationsNotificationsDate(date)
+        conversationQueries.updateAllNotifiedConversationsNotificationsDate(date)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {
