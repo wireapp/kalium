@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.kaliumLogger
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
@@ -12,7 +11,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
-        val transaction = sqlDriver.newTransaction()
+        sqlDriver.newTransaction()
 
         // BackupDB will be detached automatically when committing the transaction
         if (isDBSQLCiphered) {
@@ -26,32 +25,20 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
             }
         }
 
-        try {
-            restoreTable("Team")
-            restoreTable("User")
-            restoreTable("Metadata")
-            restoreConversations()
-            restoreTable("Connection")
-            restoreTable("Member")
-            restoreTable("Client")
-            restoreTable("Message")
-            if (!fromOtherClient) restoreTable("Call")
-            restoreAssets()
-            restoreTable("MessageConversationChangedContent")
-            restoreTable("MessageFailedToDecryptContent")
-            restoreTable("MessageMemberChangeContent")
-            restoreTable("MessageMention")
-            restoreTable("MessageMissedCallContent")
-            restoreTable("MessageTextContent")
-            restoreTable("MessageUnknownContent")
-            restoreTable("Reaction")
-        } catch (e: Exception) {
-            sqlDriver.execute("""ROLLBACK""")
-            kaliumLogger.e("Error while importing database ${e.stackTraceToString()}")
-        } finally {
-            sqlDriver.execute("""COMMIT""")
-        }
-
+        restoreTable("User")
+        restoreConversations()
+        restoreTable("Message")
+        if (!fromOtherClient) restoreTable("Call")
+        restoreAssets()
+        restoreTable("MessageConversationChangedContent")
+        restoreTable("MessageFailedToDecryptContent")
+        restoreTable("MessageMemberChangeContent")
+        restoreTable("MessageMention")
+        restoreTable("MessageMissedCallContent")
+        restoreTable("MessageTextContent")
+        restoreTable("MessageUnknownContent")
+        restoreTable("Reaction")
+        sqlDriver.execute("""COMMIT""")
     }
 
     private fun restoreAssets() {
