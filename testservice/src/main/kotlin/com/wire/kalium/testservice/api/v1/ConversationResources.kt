@@ -2,7 +2,9 @@ package com.wire.kalium.testservice.api.v1
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
@@ -23,6 +25,7 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
+import kotlin.streams.toList
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -223,12 +226,24 @@ class ConversationResources(private val instanceService: InstanceService) {
     )
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement mentions, reply and ephemeral messages here
+        // TODO Implement reply and ephemeral messages here
+        val mentions = when (sendTextRequest.mentions.size) {
+            0 -> emptyList<MessageMention>()
+            else -> {
+                sendTextRequest.mentions.stream().map {
+                    mention -> MessageMention(
+                        mention.start,
+                        mention.length,
+                        UserId(mention.userId, mention.userDomain))
+                }.toList()
+            }
+        }
         with(sendTextRequest) {
             ConversationRepository.sendTextMessage(
                 instance,
                 ConversationId(conversationId, conversationDomain),
-                text
+                text,
+                mentions
             )
         }
         return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
