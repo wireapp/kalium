@@ -76,11 +76,11 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
                 |SELECT * FROM $BACKUP_DB_ALIAS.Conversation WHERE true
                 |ON CONFLICT(qualified_id) DO UPDATE SET
                 |last_read_date = 
-                |IIF (last_read_date > excluded.last_read_date, last_read_date, excluded.last_read_date),
+                |CASE WHEN last_read_date > excluded.last_read_date THEN last_read_date ELSE excluded.last_read_date END,
                 |last_modified_date = 
-                |IIF (last_modified_date > excluded.last_modified_date, last_modified_date, excluded.last_modified_date),
+                |CASE WHEN last_modified_date > excluded.last_modified_date THEN last_modified_date ELSE excluded.last_modified_date,
                 |last_notified_date = 
-                |IIF (last_notified_date > excluded.last_notified_date, last_notified_date, excluded.last_notified_date);
+                |CASE WHEN last_notified_date > excluded.last_notified_date THEN last_notified_date ELSE excluded.last_notified_date;
                 """.trimMargin()
         )
     }
