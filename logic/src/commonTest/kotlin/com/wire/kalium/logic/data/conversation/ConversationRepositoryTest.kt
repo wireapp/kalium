@@ -513,17 +513,11 @@ class ConversationRepositoryTest {
 
         val unreadMessagesCount = 5
 
-        val unreadMessages = List(unreadMessagesCount) {
-            TEST_MESSAGE_PREVIEW_ENTITY.copy(
-                id = "message$it",
-                conversationId = conversationIdEntity,
-                content = MessagePreviewEntityContent.Text("senderName", "body")
-            )
-        }
+        val unreadMessages = mapOf(conversationIdEntity to unreadMessagesCount)
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadMessages(unreadMessages)
+            .withUnreadMessageCounter(unreadMessages)
             .arrange()
 
         // when
@@ -599,17 +593,11 @@ class ConversationRepositoryTest {
         )
         val unreadMessagesCount = 5
 
-        val unreadMessages = List(unreadMessagesCount) {
-            TEST_MESSAGE_PREVIEW_ENTITY.copy(
-                id = "message$it",
-                conversationId = conversationIdEntity,
-                content = MessagePreviewEntityContent.Text("senderName", "body")
-            )
-        }
+        val unreadMessages = mapOf(conversationIdEntity to unreadMessagesCount)
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadMessages(unreadMessages)
+            .withUnreadMessageCounter(unreadMessages)
             .arrange()
 
         // when
@@ -624,36 +612,6 @@ class ConversationRepositoryTest {
 
             awaitComplete()
         }
-    }
-
-    @Test
-    fun givenUserHasUnReadMessagesInConversation_whenObservingConversationListDetails_ThenCorrectlyGetTheCount() = runTest {
-        // given
-        val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
-        val conversationId = QualifiedID("some_value", "some_domain")
-
-        val conversationEntity = TestConversation.VIEW_ENTITY.copy(id = conversationIdEntity, type = ConversationEntity.Type.GROUP)
-        val message = TEST_MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
-        val (_, conversationRepository) = Arrangement()
-            .withConversations(listOf(conversationEntity))
-            .withLastMessages(listOf())
-            .withUnreadMessages(listOf(message))
-            .arrange()
-
-        // when
-        conversationRepository.observeConversationListDetails().test {
-            val result = awaitItem()
-
-            // then
-            assertContains(result.map { it.conversation.id }, conversationId)
-            val conversation = result.first { it.conversation.id == conversationId }
-
-            assertIs<ConversationDetails.Group>(conversation)
-            assertEquals(conversation.unreadEventCount.size, 1)
-
-            awaitComplete()
-        }
-
     }
 
     @Test
@@ -932,12 +890,19 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(response)
         }
+//
+//         fun withUnreadMessages(messages: List<MessagePreviewEntity>) = apply {
+//             given(messageDAO)
+//                 .suspendFunction(messageDAO::observeUnreadMessages)
+//                 .whenInvoked()
+//                 .thenReturn(flowOf(messages))
+//         }
 
-        fun withUnreadMessages(messages: List<MessagePreviewEntity>) = apply {
+        fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::observeUnreadMessages)
+                .suspendFunction(messageDAO::observeUnreadMessageCounter)
                 .whenInvoked()
-                .thenReturn(flowOf(messages))
+                .thenReturn(flowOf(unreadCounter))
         }
 
         fun withConversations(conversations: List<ConversationViewEntity>) = apply {
