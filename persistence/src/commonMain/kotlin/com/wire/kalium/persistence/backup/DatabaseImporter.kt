@@ -78,9 +78,9 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
                 |last_read_date = 
                 |CASE WHEN last_read_date > excluded.last_read_date THEN last_read_date ELSE excluded.last_read_date END,
                 |last_modified_date = 
-                |CASE WHEN last_modified_date > excluded.last_modified_date THEN last_modified_date ELSE excluded.last_modified_date,
+                |CASE WHEN last_modified_date > excluded.last_modified_date THEN last_modified_date ELSE excluded.last_modified_date END,
                 |last_notified_date = 
-                |CASE WHEN last_notified_date > excluded.last_notified_date THEN last_notified_date ELSE excluded.last_notified_date;
+                |CASE WHEN last_notified_date > excluded.last_notified_date THEN last_notified_date ELSE excluded.last_notified_date END;
                 """.trimMargin()
         )
     }
