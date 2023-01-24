@@ -892,6 +892,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversationEntity1.protocolInfo, result)
     }
 
+    @Test
+    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdated() = runTest {
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastNotificationDate = Instant.DISTANT_FUTURE,
+                lastModifiedDate = Instant.fromEpochSeconds(0)
+            )
+        )
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                lastNotificationDate = null,
+                lastModifiedDate = Instant.DISTANT_FUTURE
+            )
+        )
+        val instant = Clock.System.now()
+
+        conversationDAO.updateAllConversationsNotificationDate(instant)
+
+        conversationDAO.getAllConversations().first().forEach {
+            assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
+        }
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
