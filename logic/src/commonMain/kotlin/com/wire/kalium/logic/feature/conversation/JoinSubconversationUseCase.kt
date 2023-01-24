@@ -77,7 +77,7 @@ class JoinSubconversationUseCaseImpl(
 
 }
 private fun Instant.timeElapsedUntilNow(): Duration =
-    minus(Clock.System.now())
+    Clock.System.now().minus(this)
 
 
 
