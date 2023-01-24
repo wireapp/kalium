@@ -24,6 +24,7 @@ interface PreKeyRepository {
 
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
     suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
+    suspend fun getLocalFingerprint(): Either<ProteusFailure, ByteArray>
     suspend fun lastPreKeyId(): Either<StorageFailure, Int>
     suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
@@ -50,6 +51,11 @@ class PreKeyDataSource(
     override suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
         wrapCryptoRequest {
             proteusClientProvider.getOrCreate().newLastPreKey()
+        }
+
+    override suspend fun getLocalFingerprint(): Either<ProteusFailure, ByteArray> =
+        wrapCryptoRequest {
+            proteusClientProvider.getOrCreate().getLocalFingerprint()
         }
 
     override suspend fun lastPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
