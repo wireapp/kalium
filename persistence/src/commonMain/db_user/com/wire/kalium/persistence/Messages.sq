@@ -54,7 +54,7 @@ CREATE TABLE MessageTextContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
-CREATE INDEX message_text_content_quoted_id ON MessageTextContent(quoted_message_id) WHERE quoted_message_id IS NOT NULL;
+CREATE INDEX message_text_content_quoted_id_index ON MessageTextContent(quoted_message_id) WHERE quoted_message_id IS NOT NULL;
 
 CREATE TABLE MessageRestrictedAssetContent (
       message_id TEXT NOT NULL,
@@ -138,7 +138,7 @@ CREATE TABLE MessageMissedCallContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
-CREATE INDEX message_missed_call_caller ON MessageMissedCallContent(caller_id);
+CREATE INDEX message_missed_call_caller_index ON MessageMissedCallContent(caller_id);
 
 CREATE TABLE MessageConversationChangedContent (
       message_id TEXT NOT NULL,
