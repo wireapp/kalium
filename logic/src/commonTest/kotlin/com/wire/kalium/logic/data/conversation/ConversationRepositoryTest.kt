@@ -890,13 +890,13 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(response)
         }
-//
-//         fun withUnreadMessages(messages: List<MessagePreviewEntity>) = apply {
-//             given(messageDAO)
-//                 .suspendFunction(messageDAO::observeUnreadMessages)
-//                 .whenInvoked()
-//                 .thenReturn(flowOf(messages))
-//         }
+
+        fun withUnreadMessages(messages: List<MessagePreviewEntity>) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::observeUnreadMessages)
+                .whenInvoked()
+                .thenReturn(flowOf(messages))
+        }
 
         fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {
             given(messageDAO)
