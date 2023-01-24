@@ -12,6 +12,8 @@ CREATE TABLE Call (
     PRIMARY KEY (conversation_id, id)
 );
 CREATE INDEX CallDateIndex ON Call (created_at);
+CREATE INDEX CallConversationIndex ON Call (conversation_id);
+CREATE INDEX CallCallerIndex ON Call (caller_id);
 
 insertCall:
 INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at)
