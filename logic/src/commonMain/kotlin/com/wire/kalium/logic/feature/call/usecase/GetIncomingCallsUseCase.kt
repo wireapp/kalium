@@ -75,7 +75,7 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
 
             // Filter calls if ConversationDetails for it were not found
             val allowedConversations = calls.mapNotNull { call ->
-                conversationRepository.detailsById(call.conversationId).nullableFold({ null }, { it })
+                conversationRepository.baseInfoById(call.conversationId).nullableFold({ null }, { it })
             }.filter { conversationDetails ->
                 // Don't display call if that Conversation is muted
                 conversationDetails.mutedStatus != MutedConversationStatus.AllMuted
