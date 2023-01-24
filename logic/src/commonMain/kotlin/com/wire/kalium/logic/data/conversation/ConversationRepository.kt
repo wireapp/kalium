@@ -314,10 +314,8 @@ internal class ConversationDataSource internal constructor(
             messageDAO.observeLastMessages(),
             messageDAO.observeUnreadMessageCounter(),
         ) { conversationList, lastMessageList, unreadMessageCount ->
-            kaliumLogger.w("UNREAD COUNT MAP ${unreadMessageCount.size}")
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
-                kaliumLogger.w("UNREAD COUNT MAP FOR CONVO ${conversation.name}= ${unreadMessageCount[conversation.id]}")
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
                     unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
