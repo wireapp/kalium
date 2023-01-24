@@ -437,9 +437,7 @@ class MessageDAOImpl(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        flowOf(emptyList())
-        // FIXME: Re-enable gradually as we improve its performance
-        //        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
         flowOf(emptyList())

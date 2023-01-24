@@ -314,10 +314,10 @@ internal class ConversationDataSource internal constructor(
             messageDAO.observeUnreadMessages(),
         ) { conversationList, lastMessageList, unreadMessageList ->
             val groupedMessages = unreadMessageList.groupBy { it.conversationId }
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
                     groupedMessages[conversation.id]?.mapNotNull { message ->
                         messageMapper.fromPreviewEntityToUnreadEventCount(message)
                     }?.groupingBy { it }?.eachCount()

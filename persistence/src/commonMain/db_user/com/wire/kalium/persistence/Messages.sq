@@ -26,6 +26,9 @@ CREATE TABLE Message (
 
 -- Allows optimized querying of messages sorting by date.
 CREATE INDEX message_creation_date_index ON Message(creation_date);
+CREATE INDEX message_content_type_index ON Message(content_type);
+CREATE INDEX message_visibility_index ON Message(visibility);
+CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -38,6 +41,7 @@ CREATE TABLE MessageMention (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
 );
+CREATE INDEX message_mentioned_user_id_index ON MessageMention(user_id);
 
 CREATE TABLE MessageTextContent (
       message_id TEXT NOT NULL,
@@ -50,6 +54,7 @@ CREATE TABLE MessageTextContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
+CREATE INDEX message_text_content_quoted_id_index ON MessageTextContent(quoted_message_id) WHERE quoted_message_id IS NOT NULL;
 
 CREATE TABLE MessageRestrictedAssetContent (
       message_id TEXT NOT NULL,
@@ -133,6 +138,7 @@ CREATE TABLE MessageMissedCallContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
+CREATE INDEX message_missed_call_caller_index ON MessageMissedCallContent(caller_id);
 
 CREATE TABLE MessageConversationChangedContent (
       message_id TEXT NOT NULL,
@@ -349,10 +355,14 @@ SELECT (
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
-WHERE visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
-GROUP BY conversationId
-HAVING date = MAX(date)
-ORDER BY message.date ASC;
+WHERE id IN (
+	SELECT id FROM Message
+	WHERE
+		Message.visibility = 'VISIBLE' AND
+		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
+	GROUP BY Message.conversation_id
+	HAVING Message.creation_date = MAX(Message.creation_date)
+);
 
 getUnreadMessages:
 SELECT * FROM MessagePreview AS message
