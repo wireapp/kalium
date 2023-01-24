@@ -12,7 +12,10 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+  detekt:
+      uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
+    needs: [detekt]
     runs-on: ubuntu-22.04
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: wirebot/cryptobox:1.1.1
