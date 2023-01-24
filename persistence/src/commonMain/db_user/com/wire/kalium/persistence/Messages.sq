@@ -393,6 +393,19 @@ SELECT * FROM MessagePreview AS message
 WHERE isUnread AND isSelfMessage = 0
 AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
+getUnreadMessagesCount:
+SELECT
+    conversation_id,
+    COUNT()
+FROM Message
+JOIN SelfUser
+JOIN Conversation ON Conversation.qualified_id = Message.conversation_id
+WHERE Message.creation_date > Conversation.last_read_date
+AND Message.sender_user_id != SelfUser.id
+AND visibility = 'VISIBLE'
+AND content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
+GROUP BY conversation_id;
+
 deleteAllMessages:
 DELETE FROM Message;
 
