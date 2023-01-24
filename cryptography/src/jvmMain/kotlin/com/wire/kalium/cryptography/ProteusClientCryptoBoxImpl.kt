@@ -4,6 +4,7 @@ import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.Base64
 import kotlin.coroutines.CoroutineContext
 
@@ -13,8 +14,8 @@ import kotlin.coroutines.CoroutineContext
  */
 class ProteusClientCryptoBoxImpl constructor(
     rootDir: String,
-    private val ioContext: CoroutineContext,
-    private val defaultContext: CoroutineContext
+    private val defaultContext: CoroutineContext,
+    private val ioContext: CoroutineContext
 ) : ProteusClient {
 
     private val path: String
@@ -49,7 +50,11 @@ class ProteusClientCryptoBoxImpl constructor(
                 CryptoBox.open(path)
             }
         } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                "Local files were not found",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
         }
     }
 
@@ -61,7 +66,7 @@ class ProteusClientCryptoBoxImpl constructor(
         return wrapException { box.localFingerprint }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -102,9 +107,9 @@ class ProteusClientCryptoBoxImpl constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
+            throw ProteusException(e.message, e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
     }
 
