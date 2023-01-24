@@ -171,9 +171,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
     @Test
     fun givenBackupHasOverLappingConversationWithUser_whenRestoringBackup_thenThoseConversationsAreNotInserted() = runTest {
         // given
-        val overLappingConversations = insertOverlappingConversations(10)
-        userDatabaseBuilder.conversationDAO.insertConversations(overLappingConversations)
-        backupDatabaseBuilder.conversationDAO.insertConversations(overLappingConversations)
+        insertOverlappingConversations(10)
 
         // when
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false, encryptedDBSecret)
@@ -182,23 +180,30 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         assertEquals(10, userDatabaseBuilder.conversationDAO.getAllConversations().first().size)
     }
 
-    @IgnoreJvm
-    @IgnoreIOS
     @Test
-    fun givenBackupHasOverLappingConversationWithLastReadDate_whenRestoringBackup_thenThoseConversationsAreNotInserted() = runTest {
+    fun givenBackupHasOverLappingConversationWithLastReadDate_whenRestoringBackup_thenTheRightLastReadDateIsRestored() = runTest {
         // given
         val readDateBackup = Instant.parse("2023-01-20T12:00:00.000Z")
-        val backupConversation = insertBackupConversationWithReadDate(readDateBackup)
+        val readDateBackup2 = Instant.parse("2023-01-21T12:00:00.000Z")
+        val backupConversation1 = backupDatabaseDataGenerator.generateAndInsertConversationWithLastReadDate(readDateBackup)
+        val backupConversation2 = backupDatabaseDataGenerator.generateAndInsertConversationWithLastReadDate(readDateBackup2)
 
-        val readDateCurrent = Instant.parse("2023-01-22T12:00:00.000Z")
-        val currentConversation = backupConversation.copy(lastReadDate = readDateCurrent)
+        val readDateCurrent = Instant.parse("2023-01-23T12:00:00.000Z")
+        val currentConversation = backupConversation1.copy(lastReadDate = readDateCurrent)
         userDatabaseBuilder.conversationDAO.insertConversation(currentConversation)
 
         // when
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false, encryptedDBSecret)
 
         // then
-        assertEquals(userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation.id)?.lastReadDate, readDateCurrent)
+        assertEquals(
+            userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation1.id)?.lastReadDate,
+            readDateCurrent
+        )
+        assertEquals(
+            userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation2.id)?.lastReadDate,
+            readDateBackup2
+        )
     }
 
     @Test
@@ -223,7 +228,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenBackupHasGroupConversationWithMembersAndUserNone_whenRestoringBackup_thenThoseGroupMembersAndConversationAreRestored() =
+    fun givenBackupHasGroupConversationWithMembersAndUserNone_whenRestoringBackup_thenThoseConversationAreRestoredButMembersNot() =
         runTest {
             // given
             val membersPerGroup = 10
@@ -650,35 +655,5 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         }
 
         return conversationAdded
-    }
-
-    private suspend fun insertBackupConversationWithReadDate(
-        readDate: Instant,
-        conversationId: ConversationIDEntity? = null,
-        index: Int = Random.nextInt(0, 5)
-    ): ConversationEntity {
-        val randomID = Random.nextBytes(16).decodeToString()
-        val type = if (index % 2 == 0) ConversationEntity.Type.ONE_ON_ONE else ConversationEntity.Type.GROUP
-        val conversation = ConversationEntity(
-            id = conversationId ?: ConversationIDEntity(randomID, "some-domain-$index"),
-            name = "name-$index",
-            type = type,
-            teamId = null,
-            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
-            mutedTime = 0,
-            removedBy = null,
-            creatorId = "creatorId$index",
-            lastNotificationDate = UserDatabaseDataGenerator.DEFAULT_DATE,
-            lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE,
-            lastReadDate = readDate,
-            access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-            accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-            receiptMode = ConversationEntity.ReceiptMode.DISABLED
-        )
-
-        backupDatabaseBuilder.conversationDAO.insertConversation(conversation)
-
-        return conversation
     }
 }
