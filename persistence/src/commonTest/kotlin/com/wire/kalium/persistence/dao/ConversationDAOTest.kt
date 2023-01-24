@@ -981,7 +981,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
     }
 
-
     private companion object {
         const val teamId = "teamId"
 
