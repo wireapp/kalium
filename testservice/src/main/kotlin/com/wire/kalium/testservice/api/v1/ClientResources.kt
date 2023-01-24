@@ -42,7 +42,8 @@ class ClientResources(private val instanceService: InstanceService) {
                 mediaType = "application/json",
                 examples = [
                     ExampleObject(
-                        value = "{ \"fingerprint\": \"0faf901703e040ee\","
+                        value = "{ \"fingerprint\": "
+                                +"\"5badc6060241ce1000eba81f09cd42cfc3b5d6a951870f22bc5b9a5acc5b14af\","
                                 + "\"id\": \"1a3d8b57-ef71-4d0e-b046-ce6f4cb825c2\" }"
                     )
                 ]
