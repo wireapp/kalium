@@ -11,7 +11,8 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
-        sqlDriver.newTransaction()
+
+        sqlDriver.execute("""BEGIN""")
 
         // BackupDB will be detached automatically when committing the transaction
         if (isDBSQLCiphered) {

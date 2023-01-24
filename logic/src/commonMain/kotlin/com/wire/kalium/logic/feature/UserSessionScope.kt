@@ -111,14 +111,14 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
@@ -449,7 +449,8 @@ class UserSessionScope internal constructor(
             client.observeCurrentClientId,
             kaliumFileSystem,
             SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-            kaliumConfigs.shouldEncryptData
+            kaliumConfigs.shouldEncryptData,
+            userStorage.database.databaseExporter
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
