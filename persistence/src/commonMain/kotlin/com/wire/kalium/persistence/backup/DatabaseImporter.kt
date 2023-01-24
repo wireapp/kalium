@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.db.UserDBSecret
+import com.wire.kalium.persistence.kaliumLogger
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?)
@@ -11,7 +12,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
-        sqlDriver.execute("""BEGIN""")
+        val transaction = sqlDriver.newTransaction()
 
         // BackupDB will be detached automatically when committing the transaction
         if (isDBSQLCiphered) {
@@ -25,26 +26,32 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
             }
         }
 
-        restoreTable("Team")
-        restoreTable("User")
-        restoreTable("Metadata")
-        restoreConversations()
-        restoreTable("Connection")
-        restoreTable("Member")
-        restoreTable("Client")
-        restoreTable("Message")
-        if (!fromOtherClient) restoreTable("Call")
-        restoreAssets()
-        restoreTable("MessageConversationChangedContent")
-        restoreTable("MessageFailedToDecryptContent")
-        restoreTable("MessageMemberChangeContent")
-        restoreTable("MessageMention")
-        restoreTable("MessageMissedCallContent")
-        restoreTable("MessageTextContent")
-        restoreTable("MessageUnknownContent")
-        restoreTable("Reaction")
+        try {
+            restoreTable("Team")
+            restoreTable("User")
+            restoreTable("Metadata")
+            restoreConversations()
+            restoreTable("Connection")
+            restoreTable("Member")
+            restoreTable("Client")
+            restoreTable("Message")
+            if (!fromOtherClient) restoreTable("Call")
+            restoreAssets()
+            restoreTable("MessageConversationChangedContent")
+            restoreTable("MessageFailedToDecryptContent")
+            restoreTable("MessageMemberChangeContent")
+            restoreTable("MessageMention")
+            restoreTable("MessageMissedCallContent")
+            restoreTable("MessageTextContent")
+            restoreTable("MessageUnknownContent")
+            restoreTable("Reaction")
+        } catch (e: Exception) {
+            sqlDriver.execute("""ROLLBACK""")
+            kaliumLogger.e("Error while importing database ${e.stackTraceToString()}")
+        } finally {
+            sqlDriver.execute("""COMMIT""")
+        }
 
-        sqlDriver.execute("""COMMIT""")
     }
 
     private fun restoreAssets() {
@@ -59,31 +66,30 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
     private fun restoreConversations() {
         // Before restoring any conversations, we need to set the last_read_date of the backup conversations to the last_read_date of the
         // current conversations if it is more recent that what the backup states
+
+        /*
+        Parsing Ambiguity
+        When the INSERT statement to which the UPSERT is attached takes its values from a SELECT statement, there is a potential parsing ambiguity. The parser might not be able to tell if the "ON" keyword is introducing the UPSERT or if it is the ON clause of a join. To work around this, the SELECT statement should always include a WHERE clause, even if that WHERE clause is just "WHERE true".
+        Ambiguous use of ON:
+        INSERT INTO t1 SELECT * FROM t2
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+        Ambiguity resolved using a WHERE clause:
+        INSERT INTO t1 SELECT * FROM t2 WHERE true
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+        https://www.sqlite.org/lang_UPSERT.html
+         */
+
         sqlDriver.execute(
-            """UPDATE $BACKUP_DB_ALIAS.Conversation
-            |SET last_read_date = (
-            |SELECT Conversation.last_read_date
-            |FROM Conversation
-            |WHERE Conversation.qualified_id = $BACKUP_DB_ALIAS.Conversation.qualified_id
-            |AND Conversation.last_read_date > $BACKUP_DB_ALIAS.Conversation.last_read_date
-            |)
-            |WHERE EXISTS (
-            |SELECT 1
-            |FROM Conversation
-            |WHERE Conversation.qualified_id = $BACKUP_DB_ALIAS.Conversation.qualified_id
-            |AND Conversation.last_read_date > $BACKUP_DB_ALIAS.Conversation.last_read_date
-            |);
-            |INSERT OR IGNORE INTO Conversation SELECT * FROM $BACKUP_DB_ALIAS.Conversation;
-            """.trimMargin()
+            """INSERT OR IGNORE INTO Conversation
+                |SELECT * FROM $BACKUP_DB_ALIAS.Conversation WHERE true
+                |ON CONFLICT(qualified_id) DO UPDATE SET
+                |last_read_date = IIF (last_read_date > excluded.last_read_date, last_read_date, excluded.last_read_date),
+                |last_modified_date = IIF (last_modified_date > excluded.last_modified_date, last_modified_date, excluded.last_modified_date),
+                |last_notified_date = IIF (last_notified_date > excluded.last_notified_date, last_notified_date, excluded.last_notified_date);
+                """.trimMargin()
         )
-//         sqlDriver.execute(
-//                 """INSERT INTO Conversation
-//                 |SELECT * FROM $BACKUP_DB_ALIAS.Conversation
-//                 |ON CONFLICT (Conversation.qualified_id)
-//                 |DO UPDATE SET last_read_date =
-    //             |IIF (Conversation.last_read_date > excluded.last_read_date, Conversation.last_read_date, excluded.last_read_date);
-//                 """.trimMargin()
-//         )
     }
 
     private fun restoreTable(tableName: String) {
