@@ -443,9 +443,9 @@ class MessageDAOImpl(
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
         flowOf(emptyList())
-
     // FIXME: Re-enable gradually as we improve its performance
     //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+
     override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
         queries.getUnreadMessagesCount { conversationId, count ->
             conversationId to count.toInt()
