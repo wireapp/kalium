@@ -56,7 +56,10 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
         /*
         Parsing Ambiguity
-        When the INSERT statement to which the UPSERT is attached takes its values from a SELECT statement, there is a potential parsing ambiguity. The parser might not be able to tell if the "ON" keyword is introducing the UPSERT or if it is the ON clause of a join. To work around this, the SELECT statement should always include a WHERE clause, even if that WHERE clause is just "WHERE true".
+        When the INSERT statement to which the UPSERT is attached takes its values from a SELECT statement,
+        there is a potential parsing ambiguity. The parser might not be able to tell if the "ON" keyword is
+        introducing the UPSERT or if it is the ON clause of a join. To work around this, the SELECT statement
+        should always include a WHERE clause, even if that WHERE clause is just "WHERE true".
         Ambiguous use of ON:
         INSERT INTO t1 SELECT * FROM t2
         ON CONFLICT(x) DO UPDATE SET y=excluded.y;
@@ -72,9 +75,12 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
             """INSERT OR IGNORE INTO Conversation
                 |SELECT * FROM $BACKUP_DB_ALIAS.Conversation WHERE true
                 |ON CONFLICT(qualified_id) DO UPDATE SET
-                |last_read_date = IIF (last_read_date > excluded.last_read_date, last_read_date, excluded.last_read_date),
-                |last_modified_date = IIF (last_modified_date > excluded.last_modified_date, last_modified_date, excluded.last_modified_date),
-                |last_notified_date = IIF (last_notified_date > excluded.last_notified_date, last_notified_date, excluded.last_notified_date);
+                |last_read_date = 
+                |IIF (last_read_date > excluded.last_read_date, last_read_date, excluded.last_read_date),
+                |last_modified_date = 
+                |IIF (last_modified_date > excluded.last_modified_date, last_modified_date, excluded.last_modified_date),
+                |last_notified_date = 
+                |IIF (last_notified_date > excluded.last_notified_date, last_notified_date, excluded.last_notified_date);
                 """.trimMargin()
         )
     }
