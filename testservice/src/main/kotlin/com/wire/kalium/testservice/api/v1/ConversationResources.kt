@@ -245,6 +245,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         // TODO Implement reply and ephemeral messages here
+        val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
             else -> {
@@ -261,7 +262,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                 instance,
                 ConversationId(conversationId, conversationDomain),
                 text,
-                mentions
+                mentions,
+                quotedMessageId
             )
         }
         return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
