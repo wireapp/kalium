@@ -12,6 +12,7 @@ import okio.Buffer
 import okio.Sink
 import okio.Source
 import okio.buffer
+import okio.use
 import platform.CoreCrypto.CCCrypt
 import platform.CoreCrypto.kCCAlgorithmAES
 import platform.CoreCrypto.kCCBlockSizeAES128
@@ -26,14 +27,28 @@ import platform.Security.kSecRandomDefault
 
 actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
     val outputBuffer = Buffer()
-    encryptFileWithAES256(Buffer().write(data.data), key, outputBuffer)
-    return EncryptedData(outputBuffer.readByteArray())
+    val inputBuffer = Buffer()
+
+    return outputBuffer.use { output ->
+        inputBuffer.use { input ->
+            input.write(data.data)
+            encryptFileWithAES256(input, key, output)
+        }
+        EncryptedData(output.readByteArray())
+    }
 }
 
 actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData {
     val outputBuffer = Buffer()
-    decryptFileWithAES256(Buffer().write(data.data), outputBuffer, secretKey)
-    return PlainData(outputBuffer.readByteArray())
+    val inputBuffer = Buffer()
+
+    return outputBuffer.use { output ->
+        inputBuffer.use { input ->
+            input.write(data.data)
+            decryptFileWithAES256(input, output, secretKey)
+        }
+        PlainData(output.readByteArray())
+    }
 }
 
 actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {

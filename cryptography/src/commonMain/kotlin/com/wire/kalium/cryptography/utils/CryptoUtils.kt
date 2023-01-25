@@ -11,7 +11,7 @@ import okio.buffer
 import okio.use
 
 fun calcMd5(bytes: ByteArray): String =
-    Buffer().write(bytes).md5().toByteArray().encodeBase64()
+    Buffer().use { it.write(bytes).md5().toByteArray().encodeBase64() }
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
@@ -34,7 +34,7 @@ fun calcFileMd5(dataSource: Source): String? =
     }
 
 fun calcSHA256(bytes: ByteArray): ByteArray =
-    Buffer().write(bytes).sha256().toByteArray()
+    Buffer().use { it.write(bytes).sha256().toByteArray() }
 
 /**
  * Method used to calculate the digested SHA256 hash of a relatively small byte array
