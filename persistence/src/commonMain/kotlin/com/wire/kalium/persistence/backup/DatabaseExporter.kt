@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
-import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 interface DatabaseExporter {
@@ -44,7 +43,6 @@ internal class DatabaseExporterImpl internal constructor(
 ) : DatabaseExporter {
 
     private val backupUserId = uerId.copy(value = "backup-${uerId.value}")
-    private val backupDBName = FileNameUtil.userDBName(backupUserId)
 
     /*
     https://www.sqlite.org/c3ref/c_checkpoint_full.html
