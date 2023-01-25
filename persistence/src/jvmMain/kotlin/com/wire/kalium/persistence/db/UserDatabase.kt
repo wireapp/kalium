@@ -12,27 +12,37 @@ import java.util.Properties
 
 private const val DATABASE_NAME = "main.db"
 
-internal actual class PlatformDatabaseData(
-    val storePath: File?
+ actual class PlatformDatabaseData(
+    val storePath: File
 )
 
-fun userDatabaseBuilder(
+actual fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-    storePath: File,
-    dispatcher: CoroutineDispatcher
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
 ): UserDatabaseBuilder {
-    val databasePath = storePath.resolve(DATABASE_NAME)
+    if (passphrase != null) {
+        throw NotImplementedError("Encrypted DB is not supported on JVM")
+    }
+
+    if (enableWAL) {
+        throw NotImplementedError("WAL is not supported on JVM")
+    }
+
+    val databasePath = platformDatabaseData.storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
-    storePath.mkdirs()
+    platformDatabaseData.storePath.mkdirs()
 
     val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData)
 }
 
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
@@ -51,6 +61,14 @@ fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): Use
 
 internal actual fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
-): Boolean = platformDatabaseData.storePath?.resolve(DATABASE_NAME)?.delete() ?: false
+): Boolean = platformDatabaseData.storePath.resolve(DATABASE_NAME).delete() ?: false
+
+
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? {
+    val dbFile = platformDatabaseData.storePath.resolve(DATABASE_NAME)
+    return if (dbFile.exists()) dbFile.absolutePath else null
+}

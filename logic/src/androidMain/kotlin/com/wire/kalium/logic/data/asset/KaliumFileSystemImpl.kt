@@ -24,6 +24,7 @@ actual class KaliumFileSystemImpl actual constructor(
     /**
      * Provides the root of the current user database path, used to store all the Database information.
      */
+    // TODO: delete this value since it is only used to copy the database to the backup folder
     override val rootDBPath: Path = dataStoragePaths.dbPath.value.toPath()
 
     /**

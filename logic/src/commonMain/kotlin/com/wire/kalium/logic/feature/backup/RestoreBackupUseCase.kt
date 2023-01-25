@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
@@ -107,7 +107,7 @@ internal class RestoreBackupUseCaseImpl(
         password: String
     ): RestoreBackupResult {
         val backupSource = kaliumFileSystem.source(encryptedFilePath)
-        val extractedBackupPath = extractedBackupRootPath / BACKUP_FILE_NAME
+        val extractedBackupPath = extractedBackupRootPath / BACKUP_ZIP_FILE_NAME
         val backupSink = kaliumFileSystem.sink(extractedBackupPath)
         val userIdEntity = idMapper.toCryptoModel(userId)
         val (decodingError, backupSize) = decryptBackupFile(

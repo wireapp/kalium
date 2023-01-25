@@ -228,7 +228,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -446,10 +445,8 @@ class UserSessionScope internal constructor(
     val createBackup: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
             userId,
-            client.observeCurrentClientId,
+            clientIdProvider,
             kaliumFileSystem,
-            SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-            kaliumConfigs.shouldEncryptData,
             userStorage.database.databaseExporter
         )
 

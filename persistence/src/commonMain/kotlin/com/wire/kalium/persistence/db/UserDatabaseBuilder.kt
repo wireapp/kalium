@@ -55,7 +55,15 @@ value class UserDBSecret(val value: ByteArray)
  * that might be necessary for future operations
  * in the future like [nuke]
  */
-internal expect class PlatformDatabaseData
+expect class PlatformDatabaseData
+
+expect fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean = true
+): UserDatabaseBuilder
 
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
@@ -115,13 +123,19 @@ class UserDatabaseBuilder internal constructor(
         get() = DatabaseImporterImpl(sqlDriver)
 
     val databaseExporter: DatabaseExporter
-        get() = DatabaseExporterImpl(sqlDriver)
+        get() = DatabaseExporterImpl(userId, platformDatabaseData, sqlDriver)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries, queriesContext)
+        get() = MessageDAOImpl(
+            database.messagesQueries,
+            database.conversationsQueries,
+            userId,
+            database.reactionsQueries,
+            queriesContext
+        )
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries, queriesContext)
@@ -141,17 +155,26 @@ class UserDatabaseBuilder internal constructor(
     val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
 
     /**
+     * @return the absolute path of the DB file or null if the DB file does not exist
+     */
+    fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
+
+    /**
      * drops DB connection and delete the DB file
      */
     fun nuke(): Boolean {
         sqlDriver.close()
         databaseScope.cancel()
-        return nuke(userId, database, platformDatabaseData)
+        return nuke(userId, platformDatabaseData)
     }
 }
 
 internal expect fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean
+
+internal expect fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String?

@@ -1,0 +1,42 @@
+
+dumpUserTable:
+INSERT INTO plain_db.User SELECT * FROM User;
+
+dumpConversationTable:
+INSERT INTO plain_db.Conversation SELECT * FROM Conversation;
+
+dumpMessageTable:
+INSERT INTO plain_db.Message SELECT * FROM Message;
+
+dumpCallTable:
+INSERT INTO plain_db.Call SELECT * FROM Call;
+
+dumpMessageAssetContentTable:
+INSERT INTO plain_db.MessageAssetContent SELECT * FROM MessageAssetContent;
+
+dumpMessageRestrictedAssetContentTable:
+INSERT INTO plain_db.MessageRestrictedAssetContent SELECT * FROM MessageRestrictedAssetContent;
+
+dumpMessageConversationChangedContentTable:
+INSERT INTO plain_db.MessageConversationChangedContent SELECT * FROM MessageConversationChangedContent;
+
+dumpMessageFailedToDecryptContentTable:
+INSERT INTO plain_db.MessageFailedToDecryptContent SELECT * FROM MessageFailedToDecryptContent;
+
+dumpMessageMemberChangeContentTable:
+INSERT INTO plain_db.MessageMemberChangeContent SELECT * FROM MessageMemberChangeContent;
+
+dumpMessageMentionTable:
+INSERT INTO plain_db.MessageMention SELECT * FROM MessageMention;
+
+dumpMessageMissedCallContentTable:
+INSERT INTO plain_db.MessageMissedCallContent SELECT * FROM MessageMissedCallContent;
+
+dumpMessageTextContentTable:
+INSERT INTO plain_db.MessageTextContent SELECT * FROM MessageTextContent;
+
+dumpMessageUnknownContentTable:
+INSERT INTO plain_db.MessageUnknownContent SELECT * FROM MessageUnknownContent;
+
+dumpReactionTable:
+INSERT INTO plain_db.Reaction SELECT * FROM Reaction;
