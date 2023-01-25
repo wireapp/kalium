@@ -11,6 +11,7 @@ import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.extractCompressedFile
+import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
@@ -135,6 +136,8 @@ class CreateBackupUseCaseTest {
         @Mock
         val observeClientId = mock(classOf<ObserveCurrentClientIdUseCase>())
 
+        @Mock
+        val databaseExporter = mock(classOf<DatabaseExporter>())
         fun withObservedClientId(clientId: ClientId?) = apply {
             given(observeClientId)
                 .suspendFunction(observeClientId::invoke)
@@ -151,7 +154,15 @@ class CreateBackupUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =
-            this to CreateBackupUseCaseImpl(userId, observeClientId, fakeFileSystem, userDBSecret, isUserDBSQLCiphered, dispatcher)
+            this to CreateBackupUseCaseImpl(
+                userId,
+                observeClientId,
+                fakeFileSystem,
+                userDBSecret,
+                isUserDBSQLCiphered,
+                databaseExporter,
+                dispatcher
+            )
 
     }
 

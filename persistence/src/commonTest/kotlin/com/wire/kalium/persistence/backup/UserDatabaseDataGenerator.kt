@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
+import kotlin.random.Random
 
 class UserDatabaseDataGenerator(
     private val userDatabaseBuilder: UserDatabaseBuilder,
@@ -264,6 +265,34 @@ class UserDatabaseDataGenerator(
         }
 
         return userDatabaseBuilder.conversationDAO.getAllConversations().first()
+    }
+
+    suspend fun generateAndInsertConversationWithLastReadDate(
+        lastReadDate: Instant,
+        conversationId: ConversationIDEntity? = null,
+        index: Int = Random.nextInt(0, 5)
+    ): ConversationEntity {
+        val randomID = Random.nextBytes(16).decodeToString()
+        val type = if (index % 2 == 0) ConversationEntity.Type.ONE_ON_ONE else ConversationEntity.Type.GROUP
+        val conversation = ConversationEntity(
+            id = conversationId ?: ConversationIDEntity(randomID, "some-domain-$index"),
+            name = "name-$index",
+            type = type,
+            teamId = null,
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            mutedTime = 0,
+            removedBy = null,
+            creatorId = "creatorId$index",
+            lastNotificationDate = DEFAULT_DATE,
+            lastModifiedDate = DEFAULT_DATE,
+            lastReadDate = lastReadDate,
+            access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
+            accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        )
+        userDatabaseBuilder.conversationDAO.insertConversation(conversation)
+        return conversation
     }
 
     @Suppress("StringTemplate")

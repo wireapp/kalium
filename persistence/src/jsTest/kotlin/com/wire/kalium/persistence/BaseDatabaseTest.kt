@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -22,5 +23,8 @@ actual open class BaseDatabaseTest actual constructor() {
     ): String {
         TODO("Not yet implemented")
     }
+
+    actual val encryptedDBSecret: UserDBSecret
+        get() = TODO("Not yet implemented")
 
 }
