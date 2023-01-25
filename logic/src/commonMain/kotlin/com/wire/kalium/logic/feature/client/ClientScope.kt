@@ -85,6 +85,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val clearClientData: ClearClientDataUseCase
         get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
 
+    val getProteusFingerprint: GetProteusFingerprintUseCase
+        get() = GetProteusFingerprintUseCaseImpl(preKeyRepository)
+
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase
         get() = VerifyExistingClientUseCaseImpl(clientRepository)
 

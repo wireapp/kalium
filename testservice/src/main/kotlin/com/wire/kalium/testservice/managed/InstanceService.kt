@@ -14,10 +14,12 @@ import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
+import com.wire.kalium.logic.feature.client.GetProteusFingerprintResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
@@ -29,6 +31,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import javax.ws.rs.WebApplicationException
+import javax.ws.rs.core.Response
 
 /*
 This service makes sure that instances are destroyed (used files deleted) on
@@ -218,5 +221,36 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
+
+    fun getFingerprint(id: String): Response {
+        log.info("Instance $id: Get fingerprint of client")
+        val instance = getInstanceOrThrow(id)
+        instance.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                    return runBlocking {
+                        when (val fingerprint = client.getProteusFingerprint()) {
+                            is GetProteusFingerprintResult.Success -> {
+                                return@runBlocking Response.status(Response.Status.OK).entity(
+                                    FingerprintResponse(fingerprint.fingerprint, id)
+                                ).build()
+                            }
+
+                            is GetProteusFingerprintResult.Failure -> {
+                                return@runBlocking Response.status(Response.Status.NO_CONTENT)
+                                    .entity("Instance $id: Cannot get fingerprint: "
+                                            + fingerprint.genericFailure).build()
+                            }
+                        }
+                    }
+                }
+            } else {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Instance $id: No current session found").build()
+            }
+        }
+        throw WebApplicationException("Instance $id: No client assigned to instance yet")
+    }
 
 }
