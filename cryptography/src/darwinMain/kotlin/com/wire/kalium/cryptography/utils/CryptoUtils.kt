@@ -110,7 +110,7 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             Buffer().use {
                 outputSink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
             }
-            iv.size.toLong() + bytesCopied.value.toLong()
+            bytesCopied.value.toLong()
         }
     } finally {
         assetDataSource.close()
@@ -159,7 +159,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
             Buffer().use {
                 decryptedDataSink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
             }
-            iv.size.toLong() + bytesCopied.value.toLong()
+             bytesCopied.value.toLong()
         }
     } finally {
         encryptedDataSource.close()
