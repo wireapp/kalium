@@ -2,7 +2,13 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 
-class DatabaseExporter internal constructor(private val sqlDriver: SqlDriver) {
+interface DatabaseExporter {
+    fun beforeBackup()
+}
+
+internal class DatabaseExporterImpl internal constructor(
+    private val sqlDriver: SqlDriver
+) : DatabaseExporter {
 
     /*
     https://www.sqlite.org/c3ref/c_checkpoint_full.html
@@ -12,7 +18,7 @@ class DatabaseExporter internal constructor(private val sqlDriver: SqlDriver) {
     #define SQLITE_CHECKPOINT_RESTART  2  /* Like FULL but wait for readers */
     #define SQLITE_CHECKPOINT_TRUNCATE 3  /* Like RESTART but also truncate WAL */
      */
-    fun beforeBackup() {
+    override fun beforeBackup() {
         sqlDriver.executeQuery(null, "PRAGMA wal_checkpoint(3)", {}, 0)
     }
 

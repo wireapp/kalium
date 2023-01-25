@@ -10,13 +10,11 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
