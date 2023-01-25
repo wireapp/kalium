@@ -57,6 +57,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -77,7 +78,7 @@ class CallManagerImpl internal constructor(
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
-    private val strongReferences = mutableListOf<Any>()
+    private val strongReferences = Collections.synchronizedList(mutableListOf<Any>())
     private fun <T : Any> T.keepingStrongReference(): T {
         strongReferences.add(this)
         return this
