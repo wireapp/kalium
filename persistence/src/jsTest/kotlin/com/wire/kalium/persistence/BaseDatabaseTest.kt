@@ -42,8 +42,4 @@ actual open class BaseDatabaseTest actual constructor() {
     ): String {
         TODO("Not yet implemented")
     }
-
-    actual val encryptedDBSecret: UserDBSecret
-        get() = TODO("Not yet implemented")
-
 }
