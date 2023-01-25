@@ -49,7 +49,7 @@ AVS_FRAMEWORK_UNZIP := native/avs.framework_$(AVS_VERSION)
 AVS_FRAMEWORK_LOCATION := $(AVS_FRAMEWORK_UNZIP)/Carthage/Build/iOS/avs.framework
 AVS_FRAMEWORK_ARTIFACT := $(NATIVE_LIBS)/$(AVS_ARTIFACT_FILE)
 
-all: $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT) $(CRYPTOBOX4J_ARTIFACT) $(AVS_FRAMEWORK_ARTIFACT)
+all: $(CRYPTOBOX_C_ARTIFACT) $(LIBSODIUM_ARTIFACT) $(CRYPTOBOX4J_ARTIFACT) $(AVS_FRAMEWORK_ARTIFACT) setup/pre-commit-hook
 
 .PHONY: clean-native
 clean-native:
@@ -120,3 +120,7 @@ $(AVS_FRAMEWORK_LOCATION): $(AVS_FRAMEWORK_UNZIP)
 
 $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_LOCATION)
 	cp -r "$<" "$@"
+
+setup/pre-commit-hook:
+	mkdir -p .git/hooks
+	cp .githooks/pre-commit .git/hooks/pre-commit

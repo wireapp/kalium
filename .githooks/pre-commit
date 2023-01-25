@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # Wire
 # Copyright (C) 2023 Wire Swiss GmbH
 #
@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 #
-#
+
 set -e
 
-echo "> Running detekt checks before commit..."
+echo "-----------------------------------------------------------"
+echo "> Running detekt checks before committing"
+echo "-----------------------------------------------------------"
+
 ./gradlew clean detekt
