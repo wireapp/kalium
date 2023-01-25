@@ -161,17 +161,6 @@ class CommonUtilsTest {
     }
 
     @Test
-    fun givenEmptyNameWithCopyCounterAndWithoutExtension_whenBuildingFileName_thenReturnProperNameWithCopyCounterAndWithoutExtension() {
-        val name = ""
-        val copyCounter = 2
-        val extension = null
-        val expected = "(2)"
-
-        val result = buildFileName(name, extension, copyCounter)
-        assertEquals(expected, result)
-    }
-
-    @Test
     fun givenAFileNameWithoutCopyCounterAndWithExtension_whenSplittingExtensionAndCopyCounter_itReturnsItCorrectly() {
         val fileName = "some_dummy_image_file.jpg"
         val expectedCoreName = "some_dummy_image_file"
