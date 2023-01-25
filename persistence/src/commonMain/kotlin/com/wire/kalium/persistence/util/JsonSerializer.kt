@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.util
 
 import kotlinx.serialization.json.Json
 
-internal object JsonSerializer {
+object JsonSerializer {
 
     private val instance: Json by lazy {
         Json {

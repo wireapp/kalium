@@ -328,7 +328,7 @@ class UserSessionScope internal constructor(
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
+        get() = UserConfigDataSource(userStorage.database.metadataDAO)
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(

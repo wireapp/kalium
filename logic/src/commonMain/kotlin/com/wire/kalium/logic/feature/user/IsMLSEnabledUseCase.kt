@@ -11,7 +11,7 @@ interface IsMLSEnabledUseCase {
     /**
      * @return true if MLS is enabled, false otherwise.
      */
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 internal class IsMLSEnabledUseCaseImpl(
@@ -19,7 +19,7 @@ internal class IsMLSEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsMLSEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.isMLSEnabled().fold({
             false
         }, {

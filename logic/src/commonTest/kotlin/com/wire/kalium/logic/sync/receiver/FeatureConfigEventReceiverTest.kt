@@ -151,21 +151,21 @@ class FeatureConfigEventReceiverTest {
 
         fun withSettingMLSEnabledSuccessful() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setMLSEnabled)
+                .suspendFunction(userConfigRepository::setMLSEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withSettingFileSharingEnabledSuccessful() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setFileSharingStatus)
+                .suspendFunction(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withSettingConferenceCallingEnabledSuccessfull() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setConferenceCallingEnabled)
+                .suspendFunction(userConfigRepository::setConferenceCallingEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

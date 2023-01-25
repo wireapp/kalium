@@ -75,7 +75,7 @@ class UserPropertyRepositoryTest {
 
         assertFalse(result)
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isReadReceiptsEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isReadReceiptsEnabled)
             .wasInvoked()
     }
 
@@ -105,14 +105,14 @@ class UserPropertyRepositoryTest {
 
         fun withUpdateReadReceiptsLocallySuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setReadReceiptsStatus)
+                .suspendFunction(userConfigRepository::setReadReceiptsStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withNullReadReceiptsStatus() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isReadReceiptsEnabled)
+                .suspendFunction(userConfigRepository::isReadReceiptsEnabled)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }

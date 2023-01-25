@@ -124,7 +124,7 @@ class MLSClientManagerTest {
 
         fun withIsMLSEnabled(enabled: Boolean) = apply {
             given(isMLSEnabled)
-                .function(isMLSEnabled::invoke)
+                .suspendFunction(isMLSEnabled::invoke)
                 .whenInvoked()
                 .thenReturn(enabled)
         }
