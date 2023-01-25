@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.TestDispatcher
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
+    actual val encryptedDBSecret: UserDBSecret = UserDBSecret(ByteArray(0))
 
     actual fun deleteDatabase(userId: UserIDEntity) {
         val context: Context = ApplicationProvider.getApplicationContext()
@@ -24,7 +25,7 @@ actual open class BaseDatabaseTest actual constructor() {
             context = ApplicationProvider.getApplicationContext(),
             userId = userId,
             encrypt = false,
-            passphrase = UserDBSecret("db_secret".toByteArray()),
+            passphrase = encryptedDBSecret,
             dispatcher = dispatcher
         )
     }

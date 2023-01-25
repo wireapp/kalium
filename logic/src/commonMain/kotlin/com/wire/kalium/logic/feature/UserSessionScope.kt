@@ -455,7 +455,8 @@ class UserSessionScope internal constructor(
             client.observeCurrentClientId,
             kaliumFileSystem,
             SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-            kaliumConfigs.shouldEncryptData
+            kaliumConfigs.shouldEncryptData,
+            userStorage.database.databaseExporter
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
