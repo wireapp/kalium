@@ -240,20 +240,21 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Path("/instance/{id}/sendText")
     @Operation(
         summary = "Send a text message to a conversation",
-        description = "This can include mentions, reply, buttons and link previews"
+        description = "This can include mentions and reply (buttons and link previews not yet implemented)"
     )
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement reply and ephemeral messages here
+        // TODO Implement buttons, link previews and ephemeral messages here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
             else -> {
-                sendTextRequest.mentions.stream().map {
-                    mention -> MessageMention(
+                sendTextRequest.mentions.stream().map { mention ->
+                    MessageMention(
                         mention.start,
                         mention.length,
-                        UserId(mention.userId, mention.userDomain))
+                        UserId(mention.userId, mention.userDomain)
+                    )
                 }.toList()
             }
         }
