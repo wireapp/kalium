@@ -72,4 +72,7 @@ dependencies {
 
     // Okio
     implementation(libs.okio.core)
+
+    // Test
+    testImplementation(kotlin("test"))
 }
