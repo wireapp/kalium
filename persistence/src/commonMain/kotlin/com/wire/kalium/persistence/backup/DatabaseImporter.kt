@@ -29,7 +29,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         restoreTable("User")
         restoreConversations()
         restoreTable("Message")
-        if (!fromOtherClient) restoreTable("Call")
+        if (!fromOtherClient) restoreCalls()
         restoreAssets()
         restoreTable("MessageConversationChangedContent")
         restoreTable("MessageFailedToDecryptContent")
@@ -49,6 +49,13 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         )
         restoreTable("MessageAssetContent")
         restoreTable("MessageRestrictedAssetContent")
+    }
+
+    private fun restoreCalls() {
+        sqlDriver.execute(
+            """UPDATE $BACKUP_DB_ALIAS.Call SET status = 'CLOSED' WHERE status != 'CLOSED' AND status != 'MISSED'""".trimMargin()
+        )
+        restoreTable("Call")
     }
 
     private fun restoreConversations() {
