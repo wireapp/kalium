@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,5 +28,7 @@ actual open class BaseDatabaseTest actual constructor() {
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
         return userDatabaseBuilder(userId, userId.databaseFile, dispatcher = dispatcher)
     }
+
+    actual val encryptedDBSecret: UserDBSecret = UserDBSecret(ByteArray(0))
 
 }
