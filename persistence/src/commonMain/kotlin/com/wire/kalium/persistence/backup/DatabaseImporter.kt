@@ -11,6 +11,10 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean, userDBSecret: UserDBSecret?) {
         val isDBSQLCiphered = userDBSecret != null && userDBSecret.value.isNotEmpty()
+
+        sqlDriver.execute("""BEGIN""")
+
+        // BackupDB will be detached automatically when committing the transaction
         if (isDBSQLCiphered) {
             sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ?""", 2) {
                 bindString(0, filePath)
@@ -21,14 +25,9 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
                 bindString(0, filePath)
             }
         }
-        sqlDriver.execute("""BEGIN""")
-        restoreTable("Team")
+
         restoreTable("User")
-        restoreTable("Metadata")
-        restoreTable("Conversation")
-        restoreTable("Connection")
-        restoreTable("Member")
-        restoreTable("Client")
+        restoreConversations()
         restoreTable("Message")
         if (!fromOtherClient) restoreTable("Call")
         restoreAssets()
@@ -40,9 +39,7 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         restoreTable("MessageTextContent")
         restoreTable("MessageUnknownContent")
         restoreTable("Reaction")
-
         sqlDriver.execute("""COMMIT""")
-        sqlDriver.execute("""DETACH $BACKUP_DB_ALIAS""")
     }
 
     private fun restoreAssets() {
@@ -52,6 +49,41 @@ class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter 
         )
         restoreTable("MessageAssetContent")
         restoreTable("MessageRestrictedAssetContent")
+    }
+
+    private fun restoreConversations() {
+        // Before restoring any conversations, we need to set the last_read_date of the backup conversations to the last_read_date of the
+        // current conversations if it is more recent that what the backup states
+
+        /*
+        Parsing Ambiguity
+        When the INSERT statement to which the UPSERT is attached takes its values from a SELECT statement,
+        there is a potential parsing ambiguity. The parser might not be able to tell if the "ON" keyword is
+        introducing the UPSERT or if it is the ON clause of a join. To work around this, the SELECT statement
+        should always include a WHERE clause, even if that WHERE clause is just "WHERE true".
+        Ambiguous use of ON:
+        INSERT INTO t1 SELECT * FROM t2
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+        Ambiguity resolved using a WHERE clause:
+        INSERT INTO t1 SELECT * FROM t2 WHERE true
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+        https://www.sqlite.org/lang_UPSERT.html
+         */
+
+        sqlDriver.execute(
+            """INSERT OR IGNORE INTO Conversation
+                |SELECT * FROM $BACKUP_DB_ALIAS.Conversation WHERE true
+                |ON CONFLICT(qualified_id) DO UPDATE SET
+                |last_read_date = 
+                |CASE WHEN last_read_date > excluded.last_read_date THEN last_read_date ELSE excluded.last_read_date END,
+                |last_modified_date = 
+                |CASE WHEN last_modified_date > excluded.last_modified_date THEN last_modified_date ELSE excluded.last_modified_date END,
+                |last_notified_date = 
+                |CASE WHEN last_notified_date > excluded.last_notified_date THEN last_notified_date ELSE excluded.last_notified_date END;
+                """.trimMargin()
+        )
     }
 
     private fun restoreTable(tableName: String) {
