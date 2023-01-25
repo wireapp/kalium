@@ -24,9 +24,10 @@ import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
-import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
@@ -58,7 +59,7 @@ fun userDatabaseBuilder(
             schema = UserDatabase.Schema,
             context = context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase.value, null, true)
+            factory = SupportOpenHelperFactory(passphrase.value, true)
         )
     } else {
         AndroidSqliteDriver(
