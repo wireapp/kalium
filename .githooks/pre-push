@@ -20,7 +20,7 @@
 set -e
 
 echo "-----------------------------------------------------------"
-echo "> Running detekt checks before committing"
+echo "> Running detekt checks locally before push..."
 echo "-----------------------------------------------------------"
 
 ./gradlew clean detekt
