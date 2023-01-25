@@ -103,7 +103,7 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             if (status != kCCSuccess) {
                 throw CryptographyException("Failure while encrypting data using AES256")
             }
-            
+
             Buffer().use {
                 outputSink.write(it.write(iv), iv.size.toLong())
             }
