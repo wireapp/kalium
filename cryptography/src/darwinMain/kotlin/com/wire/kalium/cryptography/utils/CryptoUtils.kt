@@ -103,10 +103,14 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             if (status != kCCSuccess) {
                 throw CryptographyException("Failure while encrypting data using AES256")
             }
-
-            outputSink.write(Buffer().write(iv), iv.size.toLong())
-            outputSink.write(Buffer().write(encryptedBuffer), bytesCopied.value.toLong())
-            bytesCopied.value.toLong()
+            
+            Buffer().use {
+                outputSink.write(it.write(iv), iv.size.toLong())
+            }
+            Buffer().use {
+                outputSink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
+            }
+            iv.size.toLong() + bytesCopied.value.toLong()
         }
     } finally {
         assetDataSource.close()
@@ -116,9 +120,10 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
 
 actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long {
     try {
-        val ivBuffer = Buffer()
-        encryptedDataSource.read(ivBuffer, kCCBlockSizeAES128.toLong())
-        val iv = ivBuffer.readByteArray()
+        val iv = Buffer().use {
+            encryptedDataSource.read(it, kCCBlockSizeAES128.toLong())
+            it.readByteArray()
+        }
         val encryptedData = encryptedDataSource.buffer().readByteArray()
         val decryptedBuffer = ByteArray(encryptedData.size + kCCBlockSizeAES128.toInt())
 
@@ -151,8 +156,10 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
                 throw CryptographyException("Failure while decrypting data using AES256")
             }
 
-            decryptedDataSink.write(Buffer().write(decryptedBuffer), bytesCopied.value.toLong())
-            bytesCopied.value.toLong()
+            Buffer().use {
+                decryptedDataSink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
+            }
+            iv.size.toLong() + bytesCopied.value.toLong()
         }
     } finally {
         encryptedDataSource.close()
