@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -342,7 +343,16 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         // then
         val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
-        val calls = conversationsWithCallToBackup.map { it.second }
+        val calls = conversationsWithCallToBackup.map {
+            val call = it.second
+            call.copy(
+                status = if (call.status != CallEntity.Status.CLOSED && call.status != CallEntity.Status.MISSED) {
+                    CallEntity.Status.CLOSED
+                } else {
+                    call.status
+                }
+            )
+        }
 
         assertEquals(backupConversationAmount + userConversationAmount, conversationsAfterBackup.size)
 
@@ -361,7 +371,16 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false, encryptedDBSecret)
 
         // then
-        val calls = conversationsWithCallToBackup.map { it.second }
+        val calls = conversationsWithCallToBackup.map {
+            val call = it.second
+            call.copy(
+                status = if (call.status != CallEntity.Status.CLOSED && call.status != CallEntity.Status.MISSED) {
+                    CallEntity.Status.CLOSED
+                } else {
+                    call.status
+                }
+            )
+        }
 
         val allCalls = userDatabaseBuilder.callDAO.observeCalls().first()
         assertEquals(calls, allCalls)
