@@ -21,6 +21,7 @@ package com.wire.kalium.testservice.managed
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
@@ -100,7 +101,13 @@ sealed class ConversationRepository {
             }
         }
 
-        fun sendTextMessage(instance: Instance, conversationId: ConversationId, text: String?) {
+        fun sendTextMessage(
+            instance: Instance,
+            conversationId: ConversationId,
+            text: String?,
+            mentions: List<MessageMention>,
+            quotedMessageId: String?
+        ) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
@@ -108,7 +115,9 @@ sealed class ConversationRepository {
                         text?.let {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             runBlocking {
-                                val sendResult = messages.sendTextMessage(conversationId, text)
+                                val sendResult = messages.sendTextMessage(
+                                    conversationId, text, mentions, quotedMessageId
+                                )
                                 if (sendResult.isLeft()) {
                                     throw WebApplicationException(
                                         "Instance ${instance.instanceId}: Sending failed with ${sendResult.value}"
@@ -189,13 +198,13 @@ sealed class ConversationRepository {
                                 val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 debug.sendBrokenAssetMessage(
-                                   conversationId,
-                                   temp.toOkioPath(),
-                                   byteArray.size.toLong(),
-                                   fileName,
-                                   type,
-                                   brokenState
-                               )
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    fileName,
+                                    type,
+                                    brokenState
+                                )
                             } else {
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 messages.sendAssetMessage(
