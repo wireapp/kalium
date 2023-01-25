@@ -1,4 +1,4 @@
-import org.gradle.configurationcache.extensions.capitalized
+import com.wire.kalium.plugins.darwinTargets
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -94,16 +94,6 @@ kotlin {
     }
 }
 
-fun registerCopyTestResourcesTask(target: String) {
-    val task = tasks.register<Copy>("copy${target.capitalized()}TestResources") {
-        from("src/commonTest/resources")
-        into("build/bin/$target/debugTest/resources")
-    }
-    tasks.findByName("${target}Test")?.dependsOn(task)
-}
-
-// TODO can we avoid manually listing the native targets?
-val darwinTargets = listOf("iosX64", "iosArm64", "iosSimulatorArm64", "macosX64", "macosArm64")
-darwinTargets.forEach {
+project.darwinTargets().forEach {
     registerCopyTestResourcesTask(it)
 }
