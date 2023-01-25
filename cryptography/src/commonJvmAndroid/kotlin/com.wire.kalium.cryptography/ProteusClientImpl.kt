@@ -75,7 +75,7 @@ actual class ProteusClientImpl actual constructor(
         return client.encryptWithPreKey(message, preKeyCrypto, sessionId)
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
 }

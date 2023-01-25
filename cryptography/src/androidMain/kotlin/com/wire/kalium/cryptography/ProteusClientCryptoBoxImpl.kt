@@ -134,7 +134,7 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> =
-        locl.withLock {
+        lock.withLock {
             sessionIds.associateWith { sessionId ->
                 encrypt(message, sessionId)
             }

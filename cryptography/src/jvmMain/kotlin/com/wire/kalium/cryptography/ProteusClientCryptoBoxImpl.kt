@@ -6,6 +6,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.Base64
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
