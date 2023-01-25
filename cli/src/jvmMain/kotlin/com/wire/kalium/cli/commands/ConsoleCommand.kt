@@ -13,7 +13,6 @@ import com.wire.kalium.cli.listConversations
 import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -126,7 +125,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
         val currentConversation = context.currentConversation ?: return -1
-        val isProteusConversation = currentConversation.protocol  is Conversation.ProtocolInfo.Proteus
+        val isProteusConversation = currentConversation.protocol is Conversation.ProtocolInfo.Proteus
 
         val convType = when (currentConversation.type) {
             Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne

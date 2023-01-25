@@ -14,20 +14,33 @@ interface ConversationApi {
     /**
      * Fetch conversations id's in a paginated fashion, including federated conversations
      */
-    suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse>
+    suspend fun fetchConversationsIds(
+        pagingState: String?
+    ): NetworkResponse<ConversationPagingResponse>
 
     /**
      * Fetch conversations details by id's, including federated conversations
      */
-    suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO>
+    suspend fun fetchConversationsListDetails(
+        conversationsIds: List<ConversationId>
+    ): NetworkResponse<ConversationResponseDTO>
 
-    suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
+    suspend fun fetchConversationDetails(
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse>
+    suspend fun fetchGlobalTeamConversationDetails(
+        selfUserId: UserId,
+        teamId: TeamId
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
+    suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
+    suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse>
 
     suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
@@ -55,17 +68,39 @@ interface ConversationApi {
         conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 
-    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<ConversationRenameResponse>
+    suspend fun updateConversationName(
+        conversationId: QualifiedID,
+        conversationName: String
+    ): NetworkResponse<ConversationRenameResponse>
 
-    suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
+    suspend fun fetchGroupInfo(
+        conversationId: QualifiedID
+    ): NetworkResponse<ByteArray>
 
-    suspend fun joinConversation(code: String, key: String, uri: String?): NetworkResponse<ConversationMemberAddedResponse>
+    suspend fun joinConversation(
+        code: String,
+        key: String,
+        uri: String?
+    ): NetworkResponse<ConversationMemberAddedResponse>
 
-    suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo>
+    suspend fun fetchLimitedInformationViaCode(
+        code: String,
+        key: String
+    ): NetworkResponse<LimitedConversationInfo>
 
-    suspend fun fetchSubconversationDetails(conversationId: ConversationId, subconversation: String): NetworkResponse<SubconversationResponse>
+    suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversation: String
+    ): NetworkResponse<SubconversationResponse>
 
-    suspend fun fetchSubconversationGroupInfo(conversationId: ConversationId, subconversation: String): NetworkResponse<ByteArray>
+    suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversation: String
+    ): NetworkResponse<ByteArray>
 
-    suspend fun deleteSubconversation(conversationId: ConversationId, subconversation: String, deleteRequest: SubconversationDeleteRequest): NetworkResponse<Unit>
+    suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversation: String,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit>
 }

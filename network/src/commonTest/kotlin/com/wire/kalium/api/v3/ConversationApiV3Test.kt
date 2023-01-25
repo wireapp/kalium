@@ -49,10 +49,12 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun whenUpdatingAccessRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val accessRoles = UpdateConversationAccessRequest(
-            setOf(ConversationAccessDTO.PRIVATE), setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
+            setOf(ConversationAccessDTO.PRIVATE),
+            setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
         )
         val networkClient = mockAuthenticatedNetworkClient(
-            "", statusCode = HttpStatusCode.NoContent,
+            "",
+            statusCode = HttpStatusCode.NoContent,
             assertion = {
                 assertPut()
                 assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/access")
@@ -61,20 +63,28 @@ class ConversationApiV3Test : ApiTest {
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles)
+        conversationApi.updateAccess(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            accessRoles
+        )
     }
 
     @Test
     fun givenAccessUnchangedResponse_whenUpdatingAccessRole_thenAccessUnchangedIsPropagated() = runTest {
         val accessRoles = UpdateConversationAccessRequest(
-            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE),
+            setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
-            "", statusCode = HttpStatusCode.NoContent
+            "",
+            statusCode = HttpStatusCode.NoContent
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            accessRoles
+        ).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUnchanged>>(it)
         }
     }
@@ -82,14 +92,19 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun givenSuccessAccessUpdateResponse_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
         val accessRoles = UpdateConversationAccessRequest(
-            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE),
+            setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
-            EventContentDTOJson.validAccessUpdate.rawJson, statusCode = HttpStatusCode.OK
+            EventContentDTOJson.validAccessUpdate.rawJson,
+            statusCode = HttpStatusCode.OK
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.updateAccess(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
+        conversationApi.updateAccess(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            accessRoles
+        ).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
         }
     }
@@ -97,25 +112,35 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun givenRequest_whenFetchingSubconversationDetails_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v3.rawJson, statusCode = HttpStatusCode.OK,
+            SubconversationDetailsResponseJson.v3.rawJson,
+            statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
-                assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub")
+                assertPathEqual(
+                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
+                )
             }
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.fetchSubconversationDetails(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), "sub")
+        conversationApi.fetchSubconversationDetails(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            "sub"
+        )
     }
 
     @Test
     fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v3.rawJson, statusCode = HttpStatusCode.OK
+            SubconversationDetailsResponseJson.v3.rawJson,
+            statusCode = HttpStatusCode.OK
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.fetchSubconversationDetails(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), "sub").also {
+        conversationApi.fetchSubconversationDetails(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            "sub"
+        ).also {
             assertIs<NetworkResponse.Success<SubconversationResponse>>(it)
         }
     }
@@ -123,15 +148,21 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun givenRequest_whenFetchingSubconversationGroupInfo_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            "groupinfo".encodeToByteArray(), statusCode = HttpStatusCode.OK,
+            "groupinfo".encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
-                assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/groupinfo")
+                assertPathEqual(
+                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/groupinfo"
+                )
             }
         )
 
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.fetchSubconversationGroupInfo(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), "sub").also {
+        conversationApi.fetchSubconversationGroupInfo(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            "sub"
+        ).also {
             assertIs<NetworkResponse.Success<ByteArray>>(it)
         }
     }
@@ -139,17 +170,24 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun givenRequest_whenDeletingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            "groupinfo".encodeToByteArray(), statusCode = HttpStatusCode.OK,
+            "groupinfo".encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
             assertion = {
                 assertDelete()
-                assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub")
+                assertPathEqual(
+                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
+                )
                 assertJsonBodyContent(SubconversationDeleteRequestJson.v3.rawJson)
             }
         )
 
         val deleteRequest = SubconversationDeleteRequest(43UL, "groupid")
         val conversationApi = ConversationApiV3(networkClient)
-        conversationApi.deleteSubconversation(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), "sub", deleteRequest)
+        conversationApi.deleteSubconversation(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            "sub",
+            deleteRequest
+        )
     }
 
     private companion object {

@@ -30,25 +30,39 @@ class JoinSubconversationUseCaseImpl(
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, subconversationId: String): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
-    suspend fun joinOrEstablishSubconversation(conversationId: ConversationId, subconversationId: String): Either<CoreFailure, Unit> =
+    private suspend fun joinOrEstablishSubconversation(
+        conversationId: ConversationId,
+        subconversationId: String
+    ): Either<CoreFailure, Unit> =
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId)
         }.flatMap { subconversationDetails ->
             if (subconversationDetails.epoch > 0UL) {
-                if (subconversationDetails.epochTimestamp?.toInstant()?.timeElapsedUntilNow()?.inWholeHours ?: 0 > 24) {
+                val durationSinceLastEpoch = (subconversationDetails.epochTimestamp?.toInstant()?.timeElapsedUntilNow()?.inWholeHours ?: 0)
+                if (durationSinceLastEpoch > STALE_EPOCH_DURATION_IN_HOURS) {
                     wrapApiRequest {
-                        conversationApi.deleteSubconversation(conversationId.toApi(), subconversationId, SubconversationDeleteRequest(
-                            subconversationDetails.epoch,
-                            subconversationDetails.groupId
-                        ))
+                        conversationApi.deleteSubconversation(
+                            conversationId.toApi(),
+                            subconversationId,
+                            SubconversationDeleteRequest(
+                                subconversationDetails.epoch,
+                                subconversationDetails.groupId
+                            )
+                        )
                     }.flatMap {
-                        mlsConversationRepository.establishMLSGroup(GroupID(subconversationDetails.groupId), emptyList())
+                        mlsConversationRepository.establishMLSGroup(
+                            GroupID(subconversationDetails.groupId),
+                            emptyList()
+                        )
                     }
-                } else{
+                } else {
                     wrapApiRequest {
                         conversationApi.fetchSubconversationGroupInfo(conversationId.toApi(), subconversationId)
                     }.flatMap { groupInfo ->
-                        mlsConversationRepository.joinGroupByExternalCommit(GroupID(subconversationDetails.groupId), groupInfo)
+                        mlsConversationRepository.joinGroupByExternalCommit(
+                            GroupID(subconversationDetails.groupId),
+                            groupInfo
+                        )
                     }
                 }
             } else {
@@ -64,7 +78,7 @@ class JoinSubconversationUseCaseImpl(
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
-                        kaliumLogger.w("Epoch out of date for conversation ${conversationId}, re-fetching and re-trying")
+                        kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
                         // Try again
                         joinOrEstablishSubconversation(conversationId, subconversationId)
                     } else {
@@ -75,9 +89,10 @@ class JoinSubconversationUseCaseImpl(
                 }
             }
 
+    companion object {
+        const val STALE_EPOCH_DURATION_IN_HOURS = 24
+    }
+
 }
 private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
-
-
-

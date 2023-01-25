@@ -106,7 +106,10 @@ internal open class ConversationApiV3 internal constructor(
             setBody(apiModelMapper.toApiV3(updateConversationAccessRequest))
         }.let { httpResponse ->
             when (httpResponse.status) {
-                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateConversationAccessResponse.AccessUnchanged,
+                    httpResponse
+                )
                 else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationAccessResponse.AccessUpdated(it)
@@ -122,7 +125,9 @@ internal open class ConversationApiV3 internal constructor(
         subconversation: String
     ): NetworkResponse<SubconversationResponse> =
         wrapKaliumResponse {
-            httpClient.get("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation")
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation"
+            )
         }
 
     override suspend fun fetchSubconversationGroupInfo(
@@ -130,7 +135,9 @@ internal open class ConversationApiV3 internal constructor(
         subconversation: String
     ): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
-            httpClient.get("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation/groupinfo")
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation/groupinfo"
+            )
         }
 
     override suspend fun deleteSubconversation(
@@ -139,7 +146,9 @@ internal open class ConversationApiV3 internal constructor(
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.delete("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation") {
+            httpClient.delete(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation"
+            ) {
                 setBody(deleteRequest)
             }
         }

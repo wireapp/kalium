@@ -37,12 +37,13 @@ class StartCallUseCase internal constructor(
             isAudioCbr = isAudioCbr
         )
 
-        if (conversationType  == ConversationType.ConferenceMls) {
+        if (conversationType == ConversationType.ConferenceMls) {
             // TODO update AVS on current epoch after joining the sub conversation
             joinSubconversationUseCase(conversationId, "conference").fold(
                 {
                     Result.SyncFailure
-                }, {
+                },
+                {
                     Result.Success
                 }
             )

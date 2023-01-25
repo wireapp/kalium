@@ -85,10 +85,13 @@ class JoinSubconversationUseCaseTest {
                 .with(
                     eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId),
                     eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id),
-                    eq(SubconversationDeleteRequest(
-                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
-                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
-                    )))
+                    eq(
+                        SubconversationDeleteRequest(
+                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
+                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
+                        )
+                    )
+                )
                 .wasInvoked()
 
             verify(arrangement.mlsConversationRepository)
@@ -116,7 +119,7 @@ class JoinSubconversationUseCaseTest {
 
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
-        val (arrangement, joinSubconversationUseCase) = Arrangement()
+        val (_, joinSubconversationUseCase) = Arrangement()
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
             .withFetchingSubconversationGroupInfoSuccessful()
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
@@ -181,7 +184,6 @@ class JoinSubconversationUseCaseTest {
                 .thenReturn(NetworkResponse.Success(Unit, emptyMap(), 200))
         }
 
-
         companion object {
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
@@ -203,7 +205,7 @@ class JoinSubconversationUseCaseTest {
                 )
             )
             val CONVERSATION_ID = ConversationId("id1", "domain")
-            val SUBCONVERSATION_ID = "subconversation_id"
+            const val SUBCONVERSATION_ID = "subconversation_id"
             val SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH = SubconversationResponse(
                 SUBCONVERSATION_ID,
                 QualifiedID(CONVERSATION_ID.value, CONVERSATION_ID.domain),
