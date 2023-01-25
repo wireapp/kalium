@@ -31,9 +31,10 @@ import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
-import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import kotlin.coroutines.CoroutineContext
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
@@ -55,7 +56,7 @@ actual class GlobalDatabaseProvider(
                 schema = schema,
                 context = context,
                 name = dbName,
-                factory = SupportOpenHelperFactory(passphrase.value, null, true)
+                factory = SupportOpenHelperFactory(passphrase.value, true)
             )
         } else {
             AndroidSqliteDriver(
