@@ -58,7 +58,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         )
 
         // resources
-        val clientResources = ClientResources()
+        val clientResources = ClientResources(instanceService)
         val conversationResources = ConversationResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
         val logResources = LogResources(configuration)
