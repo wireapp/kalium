@@ -121,6 +121,6 @@ $(AVS_FRAMEWORK_LOCATION): $(AVS_FRAMEWORK_UNZIP)
 $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_LOCATION)
 	cp -r "$<" "$@"
 
-setup/pre-commit-hook:
+setup/pre-push-hook:
 	mkdir -p .git/hooks
-	cp .githooks/pre-commit .git/hooks/pre-commit
+	cp .githooks/pre-push .git/hooks/pre-push
