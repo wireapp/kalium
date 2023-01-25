@@ -28,11 +28,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
-import io.ktor.util.encodeBase64
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -43,6 +42,8 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okio.Path
 import okio.buffer
 import okio.use
@@ -232,16 +233,15 @@ class RestoreBackupUseCaseTest {
         private fun createMetadataFile(metadataFilePath: Path, userId: UserId, userDBSecret: UserDBSecret? = null): Path {
             val clientId = "dummy-client-id"
             val creationTime = DateTimeUtil.currentIsoDateTimeString()
-            val metadataJson =
+            val metadataJson = Json.encodeToString(
                 BackupMetadata(
                     clientPlatform,
                     BackupCoder.version,
                     userId.toString(),
                     creationTime,
                     clientId,
-                    userDBSecret?.value?.encodeBase64(),
-                    true
-                ).toString()
+                )
+            )
             fakeFileSystem.sink(metadataFilePath).buffer().use {
                 it.write(metadataJson.encodeToByteArray())
             }
