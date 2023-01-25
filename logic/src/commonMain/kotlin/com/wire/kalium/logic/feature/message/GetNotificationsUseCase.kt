@@ -8,8 +8,8 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -50,6 +50,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         return incrementalSyncRepository.incrementalSyncState
             .isLiveDebounced()
             .flatMapLatest { isLive ->
+                kaliumLogger.d("KBX isLive $isLive")
                 if (isLive) {
                     merge(
                         messageRepository.getNotificationMessage(),
@@ -62,8 +63,10 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     .map { list -> list.filter { it.messages.isNotEmpty() } }
             }
             .distinctUntilChanged()
-            .filter { it.isNotEmpty() }
-            .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
+            .filter {
+                kaliumLogger.d("KBX notifications ${it.size}")
+                it.isNotEmpty()
+            }
     }
 
     private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
@@ -85,7 +88,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
      * This `debounce` only for the case when we were Live and non-Live event comes helps to avoid such a scenario.
      */
     private fun Flow<IncrementalSyncStatus>.isLiveDebounced(): Flow<Boolean> =
-        this.map { it == IncrementalSyncStatus.Live }
+        this.map { it != IncrementalSyncStatus.FetchingPendingEvents }
             .distinctUntilChanged()
             .scan(false to false) { prevPair, isLive -> prevPair.second to isLive }
             .drop(1) // initial value of scan
@@ -96,6 +99,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             .map { it.second }
 
     companion object {
-        private const val AFTER_LIVE_DELAY_MS = 100L
+        private const val AFTER_LIVE_DELAY_MS = 500L
     }
 }
