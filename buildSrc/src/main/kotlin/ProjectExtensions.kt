@@ -1,5 +1,25 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import org.gradle.api.Project
+import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.kotlin.dsl.ivy
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -41,3 +61,21 @@ fun String.execute(): Process = ProcessGroovyMethods.execute(this).also {
  * Run command and return the output as text
  */
 fun Process.text(): String = ProcessGroovyMethods.getText(this)
+
+/**
+ * Configure the repository for wire's detekt custom rules
+ */
+fun RepositoryHandler.wireDetektRulesRepo() {
+    val repo = ivy("https://raw.githubusercontent.com/wireapp/wire-detekt-rules/main/dist") {
+        patternLayout {
+            artifact("/[module]-[revision].[ext]")
+        }
+        metadataSources.artifact()
+    }
+    exclusiveContent {
+        forRepositories(repo)
+        filter {
+            includeModule("com.wire", "detekt-rules")
+        }
+    }
+}
