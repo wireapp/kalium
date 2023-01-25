@@ -20,6 +20,9 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration
 
+/**
+ * Join a sub-conversation of a MLS conversation
+ */
 interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: String): Either<CoreFailure, Unit>
 }
