@@ -55,7 +55,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@IgnoreIOS // TODO re-enable when asset support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetMessageAssetUseCaseTest {
 
