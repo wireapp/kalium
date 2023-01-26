@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import com.wire.kalium.plugins.darwinTargets
+
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.android.library.get().pluginId)
@@ -108,4 +110,8 @@ kotlin {
             }
         }
     }
+}
+
+project.darwinTargets().forEach {
+    registerCopyTestResourcesTask(it)
 }

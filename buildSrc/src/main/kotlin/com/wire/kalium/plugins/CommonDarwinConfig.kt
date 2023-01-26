@@ -18,7 +18,20 @@
 
 package com.wire.kalium.plugins
 
+import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.targets
+
+
+fun Project.darwinTargets(): List<String> =
+    listOf(
+        "iosX64",
+        "iosArm64",
+        "iosSimulatorArm64",
+        "macosX64",
+        "macosArm64"
+    )
 
 fun KotlinMultiplatformExtension.commonDarwinMultiplatformConfig() {
     iosX64()
