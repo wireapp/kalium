@@ -85,7 +85,7 @@ expect fun userDatabaseBuilder(
 
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
-    private val sqlDriver: SqlDriver,
+    internal val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
@@ -138,7 +138,7 @@ class UserDatabaseBuilder internal constructor(
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
-        get() = DatabaseImporterImpl(sqlDriver)
+        get() = DatabaseImporterImpl(this, database.importContentQueries)
 
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, sqlDriver)
