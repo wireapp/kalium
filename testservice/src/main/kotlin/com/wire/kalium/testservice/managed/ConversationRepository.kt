@@ -131,10 +131,10 @@ sealed class ConversationRepository {
             mentions: List<MessageMention>,
             quotedMessageId: String?
         ): Response = instance.coreLogic.globalScope {
-            when (val session = session.currentSession()) {
+            return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                        text?.let {
+                        if (text != null) {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             runBlocking {
                                 messages.sendTextMessage(
@@ -146,8 +146,9 @@ sealed class ConversationRepository {
                                         .entity(SendTextResponse(instance.instanceId, "", "")).build()
                                 })
                             }
+                        } else {
+                            Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
-                        Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                     }
                 }
 
