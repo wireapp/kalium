@@ -44,6 +44,7 @@ import com.wire.kalium.calling.types.Uint32_t
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
 
+@Suppress("FunctionNaming")
 interface Calling : Library {
 
     fun wcall_create(
