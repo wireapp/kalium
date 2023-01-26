@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -9,15 +27,11 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.scan
 
 /**
  * Get notifications for the current user
@@ -48,7 +62,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return incrementalSyncRepository.incrementalSyncState
-            .isLiveDebounced()
+            .map { it != IncrementalSyncStatus.FetchingPendingEvents }
             .flatMapLatest { isLive ->
                 if (isLive) {
                     merge(
@@ -63,7 +77,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             }
             .distinctUntilChanged()
             .filter { it.isNotEmpty() }
-            .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
     }
 
     private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
@@ -76,26 +89,5 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     .filterIsInstance<ConversationDetails.Connection>()
                     .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
             }
-    }
-
-    /**
-     * In case of push notification we close the connection immediately after syncing finished.
-     * So event `IncrementalSyncStatus.Pending` after `IncrementalSyncStatus.Live` may come sooner
-     * than notifications are handled, and cancel it.
-     * This `debounce` only for the case when we were Live and non-Live event comes helps to avoid such a scenario.
-     */
-    private fun Flow<IncrementalSyncStatus>.isLiveDebounced(): Flow<Boolean> =
-        this.map { it == IncrementalSyncStatus.Live }
-            .distinctUntilChanged()
-            .scan(false to false) { prevPair, isLive -> prevPair.second to isLive }
-            .drop(1) // initial value of scan
-            .debounce { (prevValue, newValue) ->
-                if (prevValue && !newValue) AFTER_LIVE_DELAY_MS
-                else 0
-            }
-            .map { it.second }
-
-    companion object {
-        private const val AFTER_LIVE_DELAY_MS = 100L
     }
 }
