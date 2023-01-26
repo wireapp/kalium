@@ -83,7 +83,6 @@ class JoinSubconversationUseCaseImpl(
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
-                        // Try again
                         joinOrEstablishSubconversation(conversationId, subconversationId)
                     } else {
                         Either.Left(failure)
