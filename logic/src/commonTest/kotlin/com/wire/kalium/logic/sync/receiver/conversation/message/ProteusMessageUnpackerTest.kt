@@ -80,7 +80,6 @@ class ProteusMessageUnpackerTest {
             .wasInvoked(exactly = once)
     }
 
-    @IgnoreIOS // TODO generateRandomAES256Key is not implemented
     @Test
     fun givenNewMessageEventWithExternalContent_whenUnpacking_shouldReturnDecryptedExternalMessage() = runTest {
         val aesKey = generateRandomAES256Key()
