@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.CALL_SUBCONVERSATION_ID
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
