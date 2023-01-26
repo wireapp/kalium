@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.base.authenticated.conversation
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.SerialName
@@ -226,7 +227,7 @@ data class ServiceReferenceDTO(
 @Serializable
 data class SubconversationResponse(
     @SerialName("subconv_id")
-    val id: String,
+    val id: SubconversationId,
 
     @SerialName("parent_qualified_id")
     val parentId: ConversationId,

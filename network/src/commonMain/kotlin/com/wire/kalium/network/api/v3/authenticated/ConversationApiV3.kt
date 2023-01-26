@@ -36,6 +36,7 @@ import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
@@ -140,32 +141,32 @@ internal open class ConversationApiV3 internal constructor(
 
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
         wrapKaliumResponse {
             httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
             )
         }
 
     override suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
             httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation/groupinfo"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId/groupinfo"
             )
         }
 
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
-        subconversation: String,
+        subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversation"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
             ) {
                 setBody(deleteRequest)
             }

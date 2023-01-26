@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -25,28 +26,28 @@ import kotlin.time.Duration
  * Join a sub-conversation of a MLS conversation
  */
 interface JoinSubconversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, subconversationId: String): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
 class JoinSubconversationUseCaseImpl(
     val conversationApi: ConversationApi,
     val mlsConversationRepository: MLSConversationRepository
 ) : JoinSubconversationUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId, subconversationId: String): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
     private suspend fun joinOrEstablishSubconversation(
         conversationId: ConversationId,
-        subconversationId: String
+        subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId)
+            conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
         }.flatMap { subconversationDetails ->
             if (subconversationDetails.epoch > INITIAL_EPOCH) {
                 if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
                     wrapApiRequest {
                         conversationApi.deleteSubconversation(
                             conversationId.toApi(),
-                            subconversationId,
+                            subconversationId.toApi(),
                             SubconversationDeleteRequest(
                                 subconversationDetails.epoch,
                                 subconversationDetails.groupId
@@ -60,7 +61,7 @@ class JoinSubconversationUseCaseImpl(
                     }
                 } else {
                     wrapApiRequest {
-                        conversationApi.fetchSubconversationGroupInfo(conversationId.toApi(), subconversationId)
+                        conversationApi.fetchSubconversationGroupInfo(conversationId.toApi(), subconversationId.toApi())
                     }.flatMap { groupInfo ->
                         mlsConversationRepository.joinGroupByExternalCommit(
                             GroupID(subconversationDetails.groupId),
@@ -75,7 +76,7 @@ class JoinSubconversationUseCaseImpl(
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
         conversationId: ConversationId,
-        subconversationId: String
+        subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversation(conversationId, subconversationId)
             .flatMapLeft { failure ->

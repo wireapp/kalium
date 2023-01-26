@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
@@ -245,7 +246,7 @@ internal open class ConversationApiV0 internal constructor(
 
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
         NetworkResponse.Error(
             APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
@@ -253,7 +254,7 @@ internal open class ConversationApiV0 internal constructor(
 
     override suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
             APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
@@ -261,7 +262,7 @@ internal open class ConversationApiV0 internal constructor(
 
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
-        subconversation: String,
+        subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(

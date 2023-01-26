@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
@@ -108,17 +109,17 @@ interface ConversationApi {
 
     suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse>
 
     suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
-        subconversation: String
+        subconversationId: SubconversationId
     ): NetworkResponse<ByteArray>
 
     suspend fun deleteSubconversation(
         conversationId: ConversationId,
-        subconversation: String,
+        subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit>
 }

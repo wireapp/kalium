@@ -5,6 +5,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -205,9 +207,9 @@ class JoinSubconversationUseCaseTest {
                 )
             )
             val CONVERSATION_ID = ConversationId("id1", "domain")
-            const val SUBCONVERSATION_ID = "subconversation_id"
+            val SUBCONVERSATION_ID = SubconversationId("subconversation_id")
             val SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH = SubconversationResponse(
-                SUBCONVERSATION_ID,
+                SUBCONVERSATION_ID.toApi(),
                 QualifiedID(CONVERSATION_ID.value, CONVERSATION_ID.domain),
                 "groupid",
                 0UL,
