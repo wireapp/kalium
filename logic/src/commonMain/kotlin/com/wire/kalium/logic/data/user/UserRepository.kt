@@ -19,6 +19,7 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -71,8 +72,7 @@ internal interface UserRepository {
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
-    suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
-    suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
+    suspend fun getTeamRecipients(): Either<CoreFailure, List<Recipient>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
@@ -88,6 +88,7 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
+    private val teamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -318,22 +319,12 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>> {
-        return wrapStorageRequest {
-            val selfUserId = selfUserId.toDao()
-
-            userDAO.getAllUsersByTeam(teamId.value)
-                .filter { it.id != selfUserId }
-                .map(publicUserMapper::fromDaoModelToPublicUser)
+    override suspend fun getTeamRecipients(): Either<CoreFailure, List<Recipient>> =
+        teamIdProvider().flatMap { teamId ->
+            if (teamId == null) Either.Right(listOf())
+            else wrapStorageRequest { clientDAO.selectAllClientsByTeam(teamId.value) }
+                .map(memberMapper::fromMapOfClientsEntityToRecipients)
         }
-    }
-
-    override suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>> =
-        getUsersFromTeam(teamId)
-            .map { users ->
-                users.associate { user -> user.id to clientDAO.getClientsOfUserByQualifiedID(user.id.toDao()) }
-            }
-            .map(memberMapper::fromMapOfClientsToRecipients)
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
         val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)

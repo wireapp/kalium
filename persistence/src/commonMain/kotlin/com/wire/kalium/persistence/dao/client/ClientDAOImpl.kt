@@ -57,6 +57,11 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
+    override suspend fun selectAllClientsByTeam(teamId: String): Map<QualifiedIDEntity, List<Client>> =
+        clientsQueries.selectAllClientsByTeam(teamId, mapper::fromClient)
+            .executeAsList()
+            .groupBy { it.userId }
+
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()

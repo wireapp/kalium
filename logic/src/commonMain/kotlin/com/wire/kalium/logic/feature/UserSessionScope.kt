@@ -407,7 +407,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
             userId,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            selfTeamId
         )
 
     internal val pushTokenRepository: PushTokenRepository
@@ -980,7 +981,9 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
-            userPropertyRepository
+            userPropertyRepository,
+            messages.messageSender,
+            clientIdProvider
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase

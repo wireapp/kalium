@@ -10,12 +10,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
@@ -45,6 +47,8 @@ class UserScope internal constructor(
     private val selfUserId: UserId,
     private val metadataDAO: MetadataDAO,
     private val userPropertyRepository: UserPropertyRepository,
+    private val messageSender: MessageSender,
+    private val clientIdProvider: CurrentClientIdProvider
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -69,7 +73,7 @@ class UserScope internal constructor(
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() =
-            UpdateSelfAvailabilityStatusUseCase(userRepository)
+            UpdateSelfAvailabilityStatusUseCase(userRepository, messageSender, clientIdProvider, selfUserId)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 

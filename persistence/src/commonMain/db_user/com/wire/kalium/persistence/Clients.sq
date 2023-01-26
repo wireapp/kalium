@@ -47,3 +47,6 @@ UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :cl
 
 conversationRecipets:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
+
+selectAllClientsByTeam:
+SELECT * FROM Client WHERE user_id IN (SELECT qualified_id FROM User WHERE team = :teamId) GROUP BY user_id;
