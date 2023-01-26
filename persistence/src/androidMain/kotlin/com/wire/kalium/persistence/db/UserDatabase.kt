@@ -58,7 +58,7 @@ actual fun userDatabaseBuilder(
             schema = UserDatabase.Schema,
             context = platformDatabaseData.context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase.value, null, enableWAL)
+            factory = SupportOpenHelperFactory(passphrase.value, enableWAL)
         )
     } else {
         AndroidSqliteDriver(

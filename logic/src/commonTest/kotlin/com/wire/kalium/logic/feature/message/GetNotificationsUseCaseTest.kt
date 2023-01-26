@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -92,6 +93,100 @@ class GetNotificationsUseCaseTest {
                 .wasInvoked(exactly = once)
 
             syncStatusFlow.emit(IncrementalSyncStatus.Live)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(atLeast = once)
+
+            val result = awaitItem()
+            assertContentEquals(expectedConversations, result)
+        }
+    }
+
+    @Test
+    fun givenSyncStateChangedToPending_thenRepositoriesAreUsedToFetchNotifications() = runTest {
+        val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
+        val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
+        val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
+        val (arrange, getNotifications) = Arrangement()
+            .withEphemeralNotification()
+            .withIncrementalSyncState(syncStatusFlow)
+            .withConnectionList(listOf())
+            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+
+        getNotifications().test {
+            syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasNotInvoked()
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasNotInvoked()
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(exactly = once)
+
+            syncStatusFlow.emit(IncrementalSyncStatus.Pending)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(atLeast = once)
+
+            val result = awaitItem()
+            assertContentEquals(expectedConversations, result)
+        }
+    }
+
+    @Test
+    fun givenSyncStateChangedToFailure_thenRepositoriesAreUsedToFetchNotifications() = runTest {
+        val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
+        val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
+        val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
+        val (arrange, getNotifications) = Arrangement()
+            .withEphemeralNotification()
+            .withIncrementalSyncState(syncStatusFlow)
+            .withConnectionList(listOf())
+            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+
+        getNotifications().test {
+            syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasNotInvoked()
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasNotInvoked()
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(exactly = once)
+
+            syncStatusFlow.emit(IncrementalSyncStatus.Failed(CoreFailure.Unknown(null)))
 
             verify(arrange.messageRepository)
                 .suspendFunction(arrange.messageRepository::getNotificationMessage)
