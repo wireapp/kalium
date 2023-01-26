@@ -18,7 +18,11 @@
 
 package com.wire.kalium.logic.configuration
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ClassifiedDomainsStatus(val isClassifiedDomainsEnabled: Boolean, val trustedDomains: List<String>)
+data class ClassifiedDomainsStatus(
+    @SerialName("isClassifiedDomainsEnabled") val isClassifiedDomainsEnabled: Boolean,
+    @SerialName("trustedDomains") val trustedDomains: List<String>
+)

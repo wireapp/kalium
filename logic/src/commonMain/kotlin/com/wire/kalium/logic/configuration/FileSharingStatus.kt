@@ -18,7 +18,11 @@
 
 package com.wire.kalium.logic.configuration
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class FileSharingStatus(val isFileSharingEnabled: Boolean?, val isStatusChanged: Boolean?)
+data class FileSharingStatus(
+    @SerialName("isFileSharingEnabled") val isFileSharingEnabled: Boolean?,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+)
