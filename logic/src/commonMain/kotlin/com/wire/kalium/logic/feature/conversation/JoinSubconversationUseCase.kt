@@ -13,6 +13,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import kotlinx.datetime.Clock
@@ -40,9 +41,8 @@ class JoinSubconversationUseCaseImpl(
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId)
         }.flatMap { subconversationDetails ->
-            if (subconversationDetails.epoch > 0UL) {
-                val durationSinceLastEpoch = (subconversationDetails.epochTimestamp?.toInstant()?.timeElapsedUntilNow()?.inWholeHours ?: 0)
-                if (durationSinceLastEpoch > STALE_EPOCH_DURATION_IN_HOURS) {
+            if (subconversationDetails.epoch > INITIAL_EPOCH) {
+                if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
                     wrapApiRequest {
                         conversationApi.deleteSubconversation(
                             conversationId.toApi(),
@@ -93,9 +93,13 @@ class JoinSubconversationUseCaseImpl(
             }
 
     companion object {
+        const val INITIAL_EPOCH = 0UL
         const val STALE_EPOCH_DURATION_IN_HOURS = 24
     }
 
 }
 private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
+
+private fun SubconversationResponse.timeElapsedSinceLastEpochChange(): Duration =
+    epochTimestamp?.toInstant()?.timeElapsedUntilNow() ?: Duration.ZERO
