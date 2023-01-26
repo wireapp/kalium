@@ -64,6 +64,12 @@ interface Calling : Library {
         arg: Pointer?
     ): Handle
 
+    fun wcall_setup()
+
+    fun wcall_setup_ex(flags: Int)
+
+    fun wcall_run()
+
     fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int): Int
 
     fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
