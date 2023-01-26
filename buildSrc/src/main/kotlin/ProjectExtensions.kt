@@ -19,7 +19,9 @@
 import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.api.tasks.Copy
 import org.gradle.kotlin.dsl.ivy
+import org.gradle.kotlin.dsl.register
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -78,4 +80,12 @@ fun RepositoryHandler.wireDetektRulesRepo() {
             includeModule("com.wire", "detekt-rules")
         }
     }
+}
+
+fun Project.registerCopyTestResourcesTask(target: String) {
+    val task = tasks.register<Copy>("copy${target.capitalize()}TestResources") {
+        from("src/commonTest/resources")
+        into("build/bin/$target/debugTest/resources")
+    }
+    tasks.findByName("${target}Test")?.dependsOn(task)
 }
