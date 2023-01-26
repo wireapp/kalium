@@ -45,6 +45,7 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             ./gradlew :testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
+            ./gradlew :testservice:test
 
       - name: Verify DB Migrations
         run: |
