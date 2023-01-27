@@ -35,7 +35,6 @@ import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -73,7 +72,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result is RestoreBackupResult.Success)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -96,7 +95,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -119,7 +118,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -142,7 +141,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -166,7 +165,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -190,7 +189,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -213,7 +212,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -305,14 +304,14 @@ class RestoreBackupUseCaseTest {
         fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
         }
 
         fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any())
                 .thenThrow(RuntimeException("DB import failed"))
         }
 
