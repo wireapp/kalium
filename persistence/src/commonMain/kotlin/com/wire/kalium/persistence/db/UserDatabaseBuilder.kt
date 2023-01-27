@@ -170,7 +170,7 @@ class UserDatabaseBuilder internal constructor(
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
 
-    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
+    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.migrationQueries)
 
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist
