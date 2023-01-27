@@ -99,7 +99,6 @@ internal actual fun nuke(
     return platformDatabaseData.context.deleteDatabase(FileNameUtil.userDBName(userId))
 }
 
-
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity

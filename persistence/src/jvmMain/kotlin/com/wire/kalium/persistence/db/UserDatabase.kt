@@ -30,7 +30,7 @@ import java.util.Properties
 
 private const val DATABASE_NAME = "main.db"
 
- actual class PlatformDatabaseData(
+actual class PlatformDatabaseData(
     val storePath: File
 )
 
@@ -81,7 +81,6 @@ internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = platformDatabaseData.storePath.resolve(DATABASE_NAME).delete() ?: false
-
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
