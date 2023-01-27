@@ -36,15 +36,37 @@ ON CONFLICT(qualified_id) DO UPDATE SET
 importMessageTable:
 INSERT OR IGNORE INTO Message SELECT * FROM backup_db.Message;
 
--- UPDATE $BACKUP_DB_ALIAS.Call SET status = 'CLOSED' WHERE status != 'CLOSED' AND status != 'MISSED'
 -- this need to be called only if the client ID fron the backup and local match
 importCallsTable:
-INSERT OR IGNORE INTO Call SELECT * FROM backup_db.Call;
+INSERT OR IGNORE INTO Call SELECT
+    conversation_id,
+    id,
+    CASE WHEN status != 'MISSED' THEN 'CLOSED' ELSE status END,
+    caller_id,
+    conversation_type,
+    created_at
+    FROM backup_db.Call;
 
-
--- TODO: SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'
 importMessageAssetContentTable:
-INSERT OR IGNORE INTO MessageAssetContent SELECT * FROM backup_db.MessageAssetContent;
+INSERT OR IGNORE INTO MessageAssetContent SELECT
+    message_id,
+    conversation_id,
+    asset_size,
+    asset_name,
+    asset_mime_type,
+    'NOT_UPLOADED',
+    'NOT_DOWNLOADED',
+    asset_otr_key,
+    asset_sha256,
+    asset_id,
+    asset_token,
+    asset_domain,
+    asset_encryption_algorithm,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
+    asset_normalized_loudness
+    FROM backup_db.MessageAssetContent;
 
 importMessageRestrictedAssetContentTable:
 INSERT OR IGNORE INTO MessageRestrictedAssetContent SELECT * FROM backup_db.MessageRestrictedAssetContent;

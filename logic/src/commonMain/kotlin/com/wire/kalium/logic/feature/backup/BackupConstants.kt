@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.backup
 
 object BackupConstants {
+    // TODO: change the name to something more meaningful (e.g. "Wire-{user handle}-backup-timestamp.zip")
     const val BACKUP_ZIP_FILE_NAME = "user-backup.zip"
     const val BACKUP_ENCRYPTED_FILE_NAME = "user-backup.cc20"
     const val BACKUP_USER_DB_NAME = "user-backup-database.db"

@@ -91,7 +91,7 @@ internal class CreateBackupUseCaseImpl(
                     } else CreateBackupResult.Success(backupFilePath, backupSize, backupFilePath.name)
                 })
         } finally {
-//             databaseExporter.deleteBackupDBFile()
+            databaseExporter.deleteBackupDBFile()
         }
     }
 
