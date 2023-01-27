@@ -26,7 +26,7 @@ data class MigratedMessage(
     val conversationId: ConversationId,
     val senderUserId: UserId,
     val senderClientId: ClientId,
-    val timestampIso: String,
+    val timestamp: Long,
     val content: String,
     val encryptedProto: ByteArray?,
     val assetName: String?,
@@ -41,7 +41,7 @@ data class MigratedMessage(
         if (conversationId != other.conversationId) return false
         if (senderUserId != other.senderUserId) return false
         if (senderClientId != other.senderClientId) return false
-        if (timestampIso != other.timestampIso) return false
+        if (timestamp != other.timestamp) return false
         if (content != other.content) return false
         if (encryptedProto != null) {
             if (other.encryptedProto == null) return false
@@ -55,7 +55,7 @@ data class MigratedMessage(
         var result = conversationId.hashCode()
         result = 31 * result + senderUserId.hashCode()
         result = 31 * result + senderClientId.hashCode()
-        result = 31 * result + timestampIso.hashCode()
+        result = 31 * result + timestamp.hashCode()
         result = 31 * result + content.hashCode()
         result = 31 * result + (encryptedProto?.contentHashCode() ?: 0)
         return result
