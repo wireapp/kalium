@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.CoreFailure
@@ -84,16 +102,21 @@ actual fun checkIfCompressedFileContainsFileTypes(
         Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
     }
 
+@Suppress("TooGenericExceptionThrown")
 private fun readCompressedEntry(
     zipInputStream: ZipInputStream,
     outputRootPath: Path,
     fileSystem: KaliumFileSystem,
     entry: ZipEntry
 ): Pair<Long, ZipEntry?> {
+    if (isInvalidEntryPathDestination(entry.name)) {
+        throw RuntimeException("The provided zip file is invalid or has invalid data")
+    }
+
     var totalExtractedFilesSize = 0L
     var byteCount: Int
     val entryPathName = "$outputRootPath/${entry.name}"
-    val outputSink = fileSystem.sink(entryPathName.toPath())
+    val outputSink = fileSystem.sink(entryPathName.toPath().normalized())
     outputSink.buffer().use { output ->
         while (zipInputStream.read().also { byteCount = it } != -1) {
             output.writeByte(byteCount)
@@ -104,5 +127,10 @@ private fun readCompressedEntry(
     zipInputStream.closeEntry()
     return totalExtractedFilesSize to zipInputStream.nextEntry
 }
+
+/**
+ * Verification that the entry path is valid and does not contain any invalid characters leading to write in undesired directories.
+ */
+private fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L
