@@ -53,10 +53,15 @@ internal class PersistMigratedMessagesUseCaseImpl(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
 ) : PersistMigratedMessagesUseCase {
+
+    @Suppress("ComplexMethod", "LongMethod")
     override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> {
         val messageEntityList = messages.filter { it.encryptedProto != null }
             .map { migratedMessage ->
-                val (migratedsMessage, proto) = migratedMessage to protoContentMapper.decodeFromProtobuf(PlainMessageBlob(migratedMessage.encryptedProto!!))
+                val (migratedsMessage, proto) =
+                    migratedMessage to protoContentMapper.decodeFromProtobuf(
+                        PlainMessageBlob(migratedMessage.encryptedProto!!)
+                    )
                 when (proto) {
                     is ProtoContent.ExternalMessageInstructions -> {
                         kaliumLogger.w("Ignoring external migratedsMessage")
@@ -65,7 +70,10 @@ internal class PersistMigratedMessagesUseCaseImpl(
 
                     is ProtoContent.Readable -> {
                         val updatedProto =
-                            if (migratedsMessage.assetSize != null && migratedsMessage.assetName != null && proto.messageContent is MessageContent.Asset) {
+                            if (migratedsMessage.assetSize != null &&
+                                migratedsMessage.assetName != null &&
+                                proto.messageContent is MessageContent.Asset
+                            ) {
                                 proto.copy(
                                     messageContent = proto.messageContent.copy(
                                         value = proto.messageContent.value.copy(
@@ -82,7 +90,9 @@ internal class PersistMigratedMessagesUseCaseImpl(
                                     is MessageContent.DeleteMessage -> MessageEntity.Visibility.HIDDEN
                                     is MessageContent.TextEdited -> MessageEntity.Visibility.HIDDEN
                                     is MessageContent.DeleteForMe -> MessageEntity.Visibility.HIDDEN
-                                    is MessageContent.Unknown -> if (protoContent.hidden) MessageEntity.Visibility.HIDDEN else MessageEntity.Visibility.VISIBLE
+                                    is MessageContent.Unknown -> if (protoContent.hidden) MessageEntity.Visibility.HIDDEN
+                                    else MessageEntity.Visibility.VISIBLE
+
                                     is MessageContent.Text -> MessageEntity.Visibility.VISIBLE
                                     is MessageContent.Calling -> MessageEntity.Visibility.VISIBLE
                                     is MessageContent.Asset -> MessageEntity.Visibility.VISIBLE
@@ -95,7 +105,8 @@ internal class PersistMigratedMessagesUseCaseImpl(
 
                                 MessageEntity.Regular(
                                     id = updatedProto.messageUid,
-                                    content = protoContent.toMessageEntityContent(), // mapped from migratedMessage content to MessageEntityContent
+                                    // mapped from migratedMessage content to MessageEntityContent
+                                    content = protoContent.toMessageEntityContent(),
                                     conversationId = migratedsMessage.conversationId.toDao(),
                                     date = Instant.fromEpochMilliseconds(migratedsMessage.timestamp),
                                     senderUserId = migratedsMessage.senderUserId.toDao(),

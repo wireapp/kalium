@@ -403,6 +403,7 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun insertMessageOrIgnore(message: MessageEntity) {
         try {
             insertBaseMessageOrError(message)
