@@ -21,7 +21,7 @@ android-test-rules = "1.4.0"
 android-test-core = "1.4.0"
 androidx-arch = "2.1.0"
 androidx-test-orchestrator = "1.4.2"
-androidx-sqlite = "2.0.1"
+androidx-sqlite = "2.3.0"
 benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
@@ -29,7 +29,7 @@ ktx-atomicfu = "0.18.5"
 multiplatform-settings = "1.0.0-RC"
 android-security = "1.1.0-alpha03"
 sqldelight = "2.0.0-alpha04"
-sqlcipher-android = "4.5.2"
+sqlcipher-android = "4.5.3"
 pbandk = "0.14.2"
 turbine = "0.12.1"
 avs = "9.0.8"
@@ -135,8 +135,8 @@ okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
 okio-test = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
 # sql dependencies
-sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite"}
-sql-android-cipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher-android"}
+sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite" }
+sql-android-cipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher-android" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }

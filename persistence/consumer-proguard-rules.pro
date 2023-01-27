@@ -24,6 +24,20 @@
     native <methods>;
 }
 
+-keep class net.sqlcipher.** {
+    *;
+}
+
+-keep  class net.sqlcipher.database.** {
+    *;
+}
+-keep class net.zetetic.** {
+    *;
+}
+
+-keep  class net.zetetic.database.** {
+    *;
+}
 # Gson
 #-keepclassmembers,allowobfuscation class * {
 #    @com.google.gson.annotations.SerializedName <fields>;

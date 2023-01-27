@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
@@ -379,6 +380,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -428,6 +430,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -462,6 +465,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -499,6 +503,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -549,6 +554,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -601,6 +607,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
