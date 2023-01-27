@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MigrationQueries
 import kotlinx.datetime.Instant
 
 interface MigrationDAO {
@@ -26,25 +26,21 @@ interface MigrationDAO {
 }
 
 internal class MigrationDAOImpl(
-    private val conversationsQueries: ConversationsQueries
+    private val migrationQueries: MigrationQueries
 ) : MigrationDAO {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
-        conversationsQueries.transaction {
+        migrationQueries.transaction {
             conversationList.forEach {
                 with(it) {
-                    conversationsQueries.insertMigrationOnly(
+                    migrationQueries.insertConversation(
                         id,
                         name,
                         type,
                         teamId,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
-                        else null,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
-                        else ConversationEntity.GroupState.ESTABLISHED,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
-                        else MLS_DEFAULT_EPOCH,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
-                        else ConversationEntity.Protocol.PROTEUS,
+                        null,
+                        ConversationEntity.GroupState.ESTABLISHED,
+                        MLS_DEFAULT_EPOCH,
+                        ConversationEntity.Protocol.PROTEUS,
                         mutedStatus,
                         mutedTime,
                         creatorId,
@@ -53,10 +49,8 @@ internal class MigrationDAOImpl(
                         access,
                         accessRole,
                         lastReadDate,
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
-                        else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                        if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
-                        else MLS_DEFAULT_CIPHER_SUITE
+                        Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
+                        MLS_DEFAULT_CIPHER_SUITE
                     )
                 }
             }
