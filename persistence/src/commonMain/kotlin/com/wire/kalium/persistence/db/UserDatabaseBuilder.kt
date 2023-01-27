@@ -156,7 +156,7 @@ class UserDatabaseBuilder internal constructor(
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
 
-    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
+    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.migrationQueries)
 
     /**
      * drops DB connection and delete the DB file
