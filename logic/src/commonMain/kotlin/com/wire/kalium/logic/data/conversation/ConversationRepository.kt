@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -335,16 +336,13 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadMessages(),
-        ) { conversationList, lastMessageList, unreadMessageList ->
-            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
+            messageDAO.observeUnreadMessageCounter(),
+        ) { conversationList, lastMessageList, unreadMessageCount ->
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    groupedMessages[conversation.id]?.mapNotNull { message ->
-                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
-                    }?.groupingBy { it }?.eachCount()
+                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
                 )
             }
         }

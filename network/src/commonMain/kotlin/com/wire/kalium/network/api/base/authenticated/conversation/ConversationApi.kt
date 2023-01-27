@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
@@ -33,20 +34,33 @@ interface ConversationApi {
     /**
      * Fetch conversations id's in a paginated fashion, including federated conversations
      */
-    suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse>
+    suspend fun fetchConversationsIds(
+        pagingState: String?
+    ): NetworkResponse<ConversationPagingResponse>
 
     /**
      * Fetch conversations details by id's, including federated conversations
      */
-    suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO>
+    suspend fun fetchConversationsListDetails(
+        conversationsIds: List<ConversationId>
+    ): NetworkResponse<ConversationResponseDTO>
 
-    suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
+    suspend fun fetchConversationDetails(
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse>
+    suspend fun fetchGlobalTeamConversationDetails(
+        selfUserId: UserId,
+        teamId: TeamId
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
+    suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse>
 
-    suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
+    suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse>
 
     suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
@@ -74,13 +88,41 @@ interface ConversationApi {
         conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 
-    suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<ConversationRenameResponse>
+    suspend fun updateConversationName(
+        conversationId: QualifiedID,
+        conversationName: String
+    ): NetworkResponse<ConversationRenameResponse>
 
-    suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray>
+    suspend fun fetchGroupInfo(
+        conversationId: QualifiedID
+    ): NetworkResponse<ByteArray>
 
-    suspend fun joinConversation(code: String, key: String, uri: String?): NetworkResponse<ConversationMemberAddedResponse>
+    suspend fun joinConversation(
+        code: String,
+        key: String,
+        uri: String?
+    ): NetworkResponse<ConversationMemberAddedResponse>
 
-    suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo>
+    suspend fun fetchLimitedInformationViaCode(
+        code: String,
+        key: String
+    ): NetworkResponse<LimitedConversationInfo>
+
+    suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<SubconversationResponse>
+
+    suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray>
+
+    suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit>
 
     suspend fun updateReceiptMode(
         conversationId: ConversationId,

@@ -31,6 +31,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
@@ -42,6 +44,7 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
@@ -242,6 +245,31 @@ internal open class ConversationApiV0 internal constructor(
                parameter(QUERY_KEY_KEY, key)
            }
        }
+
+    override suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<SubconversationResponse> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
+        )
+
+    override suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
+        )
+
+    override suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: deleteSubconversation api is only available on API V3")
+        )
 
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse

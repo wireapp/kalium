@@ -63,7 +63,7 @@ class ReactionRepositoryTest {
         }
     }
 
-    @IgnoreIOS // TODO investigate why test is failing
+    @IgnoreIOS // TODO investigate why test is flaky
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenSelfUserReactionWasPersisted_whenObservingMessageReactions_thenShouldReturnReactionsPreviouslyStored() = runTest {

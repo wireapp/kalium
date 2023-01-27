@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
@@ -102,6 +103,7 @@ interface MessageDAO {
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
+    suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
     suspend fun resetAssetUploadStatus()
 

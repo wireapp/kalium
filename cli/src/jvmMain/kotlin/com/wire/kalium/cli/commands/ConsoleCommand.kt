@@ -143,10 +143,11 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
         val currentConversation = context.currentConversation ?: return -1
+        val isProteusConversation = currentConversation.protocol is Conversation.ProtocolInfo.Proteus
 
         val convType = when (currentConversation.type) {
             Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
-            Conversation.Type.GROUP -> ConversationType.Conference
+            Conversation.Type.GROUP -> if (isProteusConversation) ConversationType.Conference else ConversationType.ConferenceMls
             else -> ConversationType.Unknown
         }
 
