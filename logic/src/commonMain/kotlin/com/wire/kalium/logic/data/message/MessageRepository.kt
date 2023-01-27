@@ -107,7 +107,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotificationConversation>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -188,29 +188,32 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
-        messageDAO.getNotificationMessage(
-            listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.RESTRICTED_ASSET,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.KNOCK,
-                MessageEntity.ContentType.MISSED_CALL
-            )
-        ).mapLatest {
-            it.groupBy { item ->
-                item.conversationId
-            }.map { (conversationId, messages) ->
-                LocalNotificationConversation(
-                    // todo: needs some clean up!
-                    id = conversationId.toModel(),
-                    conversationName = messages.first().conversationName ?: "",
-                    messages = messages.take(messageSizePerConversation)
-                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
-                    isOneToOneConversation = messages.first().conversationType?.let { type ->
-                        type == ConversationEntity.Type.ONE_ON_ONE
-                    } ?: false
+    override suspend fun getNotificationMessage(messageSizePerConversation: Int)
+            : Either<CoreFailure, Flow<List<LocalNotificationConversation>>> =
+        wrapStorageRequest {
+            messageDAO.getNotificationMessage(
+                listOf(
+                    MessageEntity.ContentType.TEXT,
+                    MessageEntity.ContentType.RESTRICTED_ASSET,
+                    MessageEntity.ContentType.ASSET,
+                    MessageEntity.ContentType.KNOCK,
+                    MessageEntity.ContentType.MISSED_CALL
                 )
+            ).mapLatest {
+                it.groupBy { item ->
+                    item.conversationId
+                }.map { (conversationId, messages) ->
+                    LocalNotificationConversation(
+                        // todo: needs some clean up!
+                        id = conversationId.toModel(),
+                        conversationName = messages.first().conversationName ?: "",
+                        messages = messages.take(messageSizePerConversation)
+                            .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        isOneToOneConversation = messages.first().conversationType?.let { type ->
+                            type == ConversationEntity.Type.ONE_ON_ONE
+                        } ?: false
+                    )
+                }
             }
         }
 
