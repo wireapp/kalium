@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
@@ -9,6 +27,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
@@ -16,7 +36,7 @@ private class ConnectionMapper {
     fun toModel(state: SQLDelightConnection): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversation_id,
         from = state.from_id,
-        lastUpdate = state.last_update,
+        lastUpdateDate = state.last_update_date,
         qualifiedConversationId = state.qualified_conversation,
         qualifiedToId = state.qualified_to,
         status = state.status,
@@ -30,7 +50,7 @@ private class ConnectionMapper {
         conversation_id: String,
         qualified_conversation: QualifiedIDEntity,
         to_id: String,
-        last_update: String,
+        last_update_date: Instant,
         qualified_to: QualifiedIDEntity,
         status: ConnectionEntity.State,
         should_notify: Boolean?,
@@ -51,7 +71,7 @@ private class ConnectionMapper {
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
-        lastUpdate = last_update,
+        lastUpdateDate = last_update_date,
         qualifiedConversationId = qualified_conversation,
         qualifiedToId = qualified_to,
         status = status,
@@ -105,7 +125,7 @@ class ConnectionDAOImpl(
             conversation_id = connectionEntity.conversationId,
             qualified_conversation = connectionEntity.qualifiedConversationId,
             to_id = connectionEntity.toId,
-            last_update = connectionEntity.lastUpdate,
+            last_update_date = connectionEntity.lastUpdateDate,
             qualified_to = connectionEntity.qualifiedToId,
             status = connectionEntity.status
         )
@@ -119,7 +139,7 @@ class ConnectionDAOImpl(
                     conversation_id = connectionEntity.conversationId,
                     qualified_conversation = connectionEntity.qualifiedConversationId,
                     to_id = connectionEntity.toId,
-                    last_update = connectionEntity.lastUpdate,
+                    last_update_date = connectionEntity.lastUpdateDate,
                     qualified_to = connectionEntity.qualifiedToId,
                     status = connectionEntity.status
                 )
@@ -128,7 +148,7 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
-        connectionsQueries.updateConnectionLastUpdated(lastUpdate, id)
+        connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
     }
 
     override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {

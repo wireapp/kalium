@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
@@ -14,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -309,16 +328,13 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadMessages(),
-        ) { conversationList, lastMessageList, unreadMessageList ->
-            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
+            messageDAO.observeUnreadMessageCounter(),
+        ) { conversationList, lastMessageList, unreadMessageCount ->
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    groupedMessages[conversation.id]?.mapNotNull { message ->
-                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
-                    }?.groupingBy { it }?.eachCount()
+                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
                 )
             }
         }

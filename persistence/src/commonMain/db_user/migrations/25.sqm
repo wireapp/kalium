@@ -1,37 +1,25 @@
-DROP VIEW MessagePreview;
+DROP INDEX IF EXISTS CallDateIndex;
 
-CREATE VIEW IF NOT EXISTS MessagePreview
-AS SELECT
-Message.id AS id,
-Message.conversation_id AS conversationId,
-Message.content_type AS contentType,
-Message.date AS date,
-Message.visibility AS visibility,
-Message.sender_user_id AS senderUserId,
-User.name AS senderName,
-User.connection_status AS senderConnectionStatus,
-User.deleted AS senderIsDeleted,
-SelfUser.id AS selfUserId,
-(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-MemberChangeContent.member_change_list AS memberChangeList,
-MemberChangeContent.member_change_type AS memberChangeType,
-ConversationNameChangedContent.conversation_name AS updateConversationName,
-Conversation.name AS conversationName,
-(Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-TextContent.text_body AS text,
-AssetContent.asset_mime_type AS assetMimeType,
-(strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ', Conversation.last_read_date)) AS isUnread,
-IFNULL((strftime('%Y-%m-%dT%H:%M:%fZ', Message.date) > strftime('%Y-%m-%dT%H:%M:%fZ',IFNULL(  Conversation.last_notified_message_date, '1970-01-01T00:00:00.000Z' ))), FALSE) AS shouldNotify,
-Conversation.muted_status AS mutedStatus,
-Conversation.type AS conversationType
-FROM Message
-LEFT JOIN SelfUser
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
-LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+CREATE INDEX call_date_index ON Call(created_at);
+CREATE INDEX call_conversation_index ON Call(conversation_id);
+CREATE INDEX call_caller_index ON Call(caller_id);
+
+CREATE INDEX conversation_creator_index ON Conversation(creator_id);
+
+CREATE INDEX connection_qualified_to_index ON Connection(qualified_to);
+CREATE INDEX connection_qualified_conversation_index ON Connection(qualified_conversation);
+
+CREATE INDEX message_content_type_index ON Message(content_type);
+CREATE INDEX message_visibility_index ON Message(visibility);
+CREATE INDEX message_sender_user_index ON Message(sender_user_id);
+
+CREATE INDEX message_text_content_quoted_id_index ON MessageTextContent(quoted_message_id);
+
+CREATE INDEX message_mentioned_user_id_index ON MessageMention(user_id);
+
+CREATE INDEX message_missed_call_caller_index ON MessageMissedCallContent(caller_id);
+
+CREATE INDEX reaction_sender_index ON Reaction(sender_id);
+CREATE INDEX reaction_emoji_index ON Reaction(emoji);
+
+CREATE INDEX user_team_index ON User(team);

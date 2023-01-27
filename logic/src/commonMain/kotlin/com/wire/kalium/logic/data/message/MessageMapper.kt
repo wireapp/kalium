@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
@@ -20,7 +38,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -49,13 +69,13 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
+                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -67,7 +87,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 status = status,
                 visibility = visibility,
@@ -90,13 +110,13 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 senderClientId = ClientId(message.senderClientId),
                 status = status,
                 editStatus = when (val editStatus = message.editStatus) {
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
+                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
                 },
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -109,7 +129,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 status = status,
                 visibility = visibility,

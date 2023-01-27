@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.network.api.v3.authenticated
 
 import com.wire.kalium.util.DateTimeUtil
@@ -9,6 +27,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.GlobalTeamConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -16,6 +36,7 @@ import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
@@ -23,6 +44,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -103,7 +125,10 @@ internal open class ConversationApiV3 internal constructor(
             setBody(apiModelMapper.toApiV3(updateConversationAccessRequest))
         }.let { httpResponse ->
             when (httpResponse.status) {
-                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateConversationAccessResponse.AccessUnchanged,
+                    httpResponse
+                )
                 else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationAccessResponse.AccessUpdated(it)
@@ -113,6 +138,39 @@ internal open class ConversationApiV3 internal constructor(
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
+
+    override suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<SubconversationResponse> =
+        wrapKaliumResponse {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
+            )
+        }
+
+    override suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray> =
+        wrapKaliumResponse {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId/groupinfo"
+            )
+        }
+
+    override suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.delete(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
+            ) {
+                setBody(deleteRequest)
+            }
+        }
 
     companion object {
         const val PATH_TEAM = "team"

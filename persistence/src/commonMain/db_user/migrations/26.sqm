@@ -1,10 +1,21 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 -- Delete MessageDetails View
-DROP VIEW MessageDetailsView;
+DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS MessagePreview;
+
+-- Create new table for New Conversation Receipt Mode Content
+CREATE TABLE MessageNewConversationReceiptModeContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
 
 -- Create new table for Conversation Receipt Mode Changed Content
-
 
 CREATE TABLE MessageConversationReceiptModeChangedContent (
       message_id TEXT NOT NULL,
@@ -16,17 +27,16 @@ CREATE TABLE MessageConversationReceiptModeChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
--- Create MessageDetails View with conversation receipt mode changed
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
 Message.content_type AS contentType,
-Message.date AS date,
+Message.creation_date AS date,
 Message.sender_user_id AS senderUserId,
 Message.sender_client_id AS senderClientId,
 Message.status AS status,
-Message.last_edit_timestamp AS lastEditTimestamp,
+Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 User.name AS senderName,
@@ -107,8 +117,8 @@ QuotedMessage.quotedSenderId AS quotedSenderId,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 QuotedMessage.isQuoteVerified AS isQuoteVerified,
 QuotedMessage.quotedSenderName AS quotedSenderName,
-QuotedMessage.quotedMessageDateTime AS quotedMessageDateTime,
-QuotedMessage.quotedMessageEditTimestamp AS quotedMessageEditTimestamp,
+QuotedMessage.quotedMessageCreationInstant AS quotedMessageDateTime,
+QuotedMessage.quotedMessageEditInstant AS quotedMessageEditTimestamp,
 QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
@@ -130,3 +140,39 @@ LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.mes
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;

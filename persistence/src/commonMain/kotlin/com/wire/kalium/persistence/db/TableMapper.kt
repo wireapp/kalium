@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.EnumColumnAdapter
@@ -27,6 +45,7 @@ import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
@@ -44,7 +63,8 @@ internal object TableMapper {
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
         qualified_toAdapter = QualifiedIDAdapter,
-        statusAdapter = EnumColumnAdapter()
+        statusAdapter = EnumColumnAdapter(),
+        last_update_dateAdapter = InstantTypeAdapter,
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
@@ -55,7 +75,11 @@ internal object TableMapper {
         access_listAdapter = ConversationAccessListAdapter(),
         access_role_listAdapter = ConversationAccessRoleListAdapter(),
         mls_cipher_suiteAdapter = EnumColumnAdapter(),
-        receipt_modeAdapter = EnumColumnAdapter()
+        receipt_modeAdapter = EnumColumnAdapter(),
+        last_read_dateAdapter = InstantTypeAdapter,
+        last_modified_dateAdapter = InstantTypeAdapter,
+        last_notified_dateAdapter = InstantTypeAdapter,
+        mls_last_keying_material_update_dateAdapter = InstantTypeAdapter,
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
@@ -68,6 +92,8 @@ internal object TableMapper {
         statusAdapter = EnumColumnAdapter(),
         content_typeAdapter = ContentTypeAdapter(),
         visibilityAdapter = EnumColumnAdapter(),
+        creation_dateAdapter = InstantTypeAdapter,
+        last_edit_dateAdapter = InstantTypeAdapter,
     )
     val messageAssetContentAdapter = MessageAssetContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

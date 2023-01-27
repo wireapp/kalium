@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.ConversationId
@@ -6,10 +24,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.datetime.toInstant
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
-    const val TEST_DATE = "2000-01-01T12:00:00.000Z"
+    const val TEST_DATE_STRING = "2000-01-01T12:00:00.000Z"
+    val TEST_DATE = TEST_DATE_STRING.toInstant()
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
@@ -34,7 +54,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
         conversationId = TestConversation.ID,
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
@@ -45,7 +65,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = MessageContent.MissedCall,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.PENDING,
     )
@@ -54,7 +74,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = ASSET_CONTENT,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE,
+        date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
