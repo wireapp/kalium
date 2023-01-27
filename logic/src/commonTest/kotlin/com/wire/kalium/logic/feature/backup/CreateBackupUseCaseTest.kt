@@ -56,10 +56,13 @@ class CreateBackupUseCaseTest {
     @Test
     fun givenSomeValidData_whenCreatingNonEncryptedBackup_thenTheFinalBackupFileIsCreatedCorrectly() = runTest(dispatcher.default) {
         // Given
+        val plainDB = "some-dummy-plain.db"
         val password = ""
         val currentDB = "some-dummy.db".decodeBase64Bytes()
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
+            .withExportedDB(plainDB)
+            .withDeleteBackupDB(true)
             .withProvidedDB(currentDB)
             .arrange()
 
@@ -97,7 +100,6 @@ class CreateBackupUseCaseTest {
         val password = ""
         val dummyDB = null
         val (arrangement, createBackupUseCase) = Arrangement()
-            .withObservedClientId(ClientId("client-id"))
             .withExportedDB(dummyDB)
             .withProvidedDB(dummyDB)
             .arrange()
@@ -111,7 +113,7 @@ class CreateBackupUseCaseTest {
         assertTrue(result.coreFailure is StorageFailure.DataNotFound)
         verify(arrangement.clientIdProvider)
             .suspendFunction(arrangement.clientIdProvider::invoke)
-            .wasInvoked(once)
+            .wasNotInvoked()
     }
 
     @Test
