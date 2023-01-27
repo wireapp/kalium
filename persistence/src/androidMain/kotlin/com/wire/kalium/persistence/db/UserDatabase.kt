@@ -24,9 +24,10 @@ import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
-import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.io.File
 
 sealed interface DatabaseCredentials {
@@ -58,14 +59,17 @@ actual fun userDatabaseBuilder(
             schema = UserDatabase.Schema,
             context = platformDatabaseData.context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase.value, enableWAL)
+            factory = SupportOpenHelperFactory(
+                passphrase.value,
+                enableWriteAheadLogging = enableWAL
+            )
         )
     } else {
         AndroidSqliteDriver(
             schema = UserDatabase.Schema,
             context = platformDatabaseData.context,
             name = dbName,
-            callback = SqliteCallback(UserDatabase.Schema, enableWAL)
+            callback = SqliteCallback(UserDatabase.Schema, enableWAL = enableWAL)
         )
     }
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData)
