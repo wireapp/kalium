@@ -51,6 +51,8 @@ import pbandk.ByteArr
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
+    fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any>
+
 }
 
 @Suppress("TooManyFunctions")
@@ -74,7 +76,7 @@ class ProtoContentMapperImpl(
     }
 
     @Suppress("ComplexMethod")
-    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
+    override fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
 

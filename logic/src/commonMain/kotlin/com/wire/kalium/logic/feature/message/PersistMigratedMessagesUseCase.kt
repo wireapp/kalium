@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.persistence.dao.MigrationDAO
 
 /**
  * Persist migrated messages from old datasource
@@ -36,7 +36,7 @@ fun interface PersistMigratedMessagesUseCase {
 }
 
 internal class PersistMigratedMessagesUseCaseImpl(
-    private val applicationMessageHandler: ApplicationMessageHandler,
+    private val migrationDAO: MigrationDAO,
     private val protoContentMapper: ProtoContentMapper,
 ) : PersistMigratedMessagesUseCase {
     override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> {
@@ -58,13 +58,8 @@ internal class PersistMigratedMessagesUseCaseImpl(
                                     )
                                 )
                             } else proto
-                        applicationMessageHandler.handleContent(
-                            message.conversationId,
-                            message.timestampIso,
-                            message.senderUserId,
-                            message.senderClientId,
-                            updatedProto
-                        )
+                        val x = protoContentMapper.mapReadableContentToProtobuf(updatedProto)
+                        // TODO mapt to message entity and insert in bulk
                     }
                 }
             }
