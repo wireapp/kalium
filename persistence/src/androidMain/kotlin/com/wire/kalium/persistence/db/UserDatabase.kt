@@ -24,9 +24,10 @@ import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
-import net.sqlcipher.database.SupportFactory
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
@@ -53,17 +54,19 @@ fun userDatabaseBuilder(
     val dbName = FileNameUtil.userDBName(userId)
 
     val driver: AndroidSqliteDriver = if (encrypt) {
+        System.loadLibrary("sqlcipher")
         AndroidSqliteDriver(
             schema = UserDatabase.Schema,
             context = context,
             name = dbName,
-            factory = SupportFactory(passphrase.value)
+            factory = SupportOpenHelperFactory(passphrase.value, true)
         )
     } else {
         AndroidSqliteDriver(
             schema = UserDatabase.Schema,
             context = context,
-            name = dbName
+            name = dbName,
+            callback = SqliteCallback(UserDatabase.Schema)
         )
     }
     val credentials = if (encrypt) {
@@ -80,15 +83,20 @@ fun inMemoryDatabase(
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
     val passphrase = "testPass".toByteArray()
+    System.loadLibrary("sqlcipher")
     val driver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
         context = context,
         name = null,
-        factory = SupportFactory(passphrase)
+        factory = SupportOpenHelperFactory(passphrase)
     )
     return UserDatabaseBuilder(
-        userId, driver, dispatcher, PlatformDatabaseData(
-            context, DatabaseCredentials.Passphrase(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = PlatformDatabaseData(
+            context = context,
+            databaseCredentials = DatabaseCredentials.Passphrase(
                 UserDBSecret(passphrase)
             )
         )
