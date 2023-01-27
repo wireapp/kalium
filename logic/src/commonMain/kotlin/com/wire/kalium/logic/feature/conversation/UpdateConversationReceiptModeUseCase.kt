@@ -30,6 +30,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.DateTimeUtil
 
+/**
+ * Internal UseCase that updates Group Conversation Receipt Mode value
+ * Possible values: [Conversation.ReceiptMode.ENABLED] and [Conversation.ReceiptMode.DISABLED]
+ * Returns: [ConversationUpdateReceiptModeResult]
+ */
 interface UpdateConversationReceiptModeUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
