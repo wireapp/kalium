@@ -23,18 +23,20 @@ import com.waz.call.FlowManager
 import com.waz.log.LogHandler
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 actual class FlowManagerServiceImpl(
-    appContext: Context,
-    private val dispatcher: CoroutineDispatcher
+    appContext: PlatformContext,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : FlowManagerService {
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val flowManager: FlowManager = FlowManager(
-        appContext
+        appContext.context
     ) { manager, path, method, ctype, content, ctx ->
         // TODO(Calling) Not yet implemented
         callingLogger.i("FlowManager -> RequestHandler -> $path : $method")

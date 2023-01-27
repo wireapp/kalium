@@ -22,15 +22,16 @@ import android.content.Context
 import com.waz.media.manager.MediaManager
 import com.waz.media.manager.MediaManagerListener
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 actual class MediaManagerServiceImpl(
-    appContext: Context
+    appContext: PlatformContext
 ) : MediaManagerService {
 
-    private val mediaManager: MediaManager = MediaManager.getInstance(appContext).apply {
+    private val mediaManager: MediaManager = MediaManager.getInstance(appContext.context).apply {
         addListener(object : MediaManagerListener {
             override fun onPlaybackRouteChanged(route: Int) {
                 _isLoudSpeakerOnFlow.value = this@apply.isLoudSpeakerOn

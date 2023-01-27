@@ -84,11 +84,11 @@ class CallManagerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val videoStateChecker: VideoStateChecker
+    private val videoStateChecker: VideoStateChecker,
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
@@ -115,53 +115,61 @@ class CallManagerImpl internal constructor(
         }
     }
 
-    private fun startHandleAsync(): Deferred<Handle> = scope.async(start = CoroutineStart.LAZY) {
-        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
-        val selfClientId = clientId.await().value
+    @Suppress("UNUSED_ANONYMOUS_PARAMETER")
+    private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
+        callingLogger.i("$TAG -> metricsHandler")
+    }.keepingStrongReference()
 
-        val waitInitializationJob = Job()
+    @Suppress("UNUSED_ANONYMOUS_PARAMETER")
+    private val constantBitRateStateChangeHandler =
+        ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
+            callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
+        }.keepingStrongReference()
 
-        val handle = calling.wcall_create(
-            userId = selfUserId,
-            clientId = selfClientId,
-            readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
-                callingLogger.i("$TAG -> readyHandler; version=$version; arg=$arg")
-                onCallingReady()
-                waitInitializationJob.complete()
-                Unit
-            }.keepingStrongReference(),
-            // TODO(refactor): inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(
-                deferredHandle,
-                calling,
-                qualifiedIdMapper,
-                selfUserId,
-                selfClientId,
-                messageSender,
-                scope,
-                callMapper
-            ).keepingStrongReference(),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall,
-            answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-            establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-            metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
-                callingLogger.i("$TAG -> metricsHandler")
-            }.keepingStrongReference(),
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope).keepingStrongReference(),
-            constantBitRateStateChangeHandler =
-            ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
-                callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
-            }.keepingStrongReference(),
-            videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
-            arg = null
-        )
-        callingLogger.d("$TAG - wcall_create() called")
-        // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
-        waitInitializationJob.join()
-        handle
+    private fun startHandleAsync(): Deferred<Handle> {
+        return scope.async(start = CoroutineStart.LAZY) {
+            val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+            val selfClientId = clientId.await().value
+
+            val waitInitializationJob = Job()
+
+            val handle = calling.wcall_create(
+                userId = selfUserId,
+                clientId = selfClientId,
+                readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
+                    callingLogger.i("$TAG -> readyHandler; version=$version; arg=$arg")
+                    onCallingReady()
+                    waitInitializationJob.complete()
+                    Unit
+                }.keepingStrongReference(),
+                // TODO(refactor): inject all of these CallbackHandlers in class constructor
+                sendHandler = OnSendOTR(
+                    deferredHandle,
+                    calling,
+                    qualifiedIdMapper,
+                    selfUserId,
+                    selfClientId,
+                    messageSender,
+                    scope,
+                    callMapper
+                ),
+                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
+                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
+                missedCallHandler = OnMissedCall,
+                answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+                establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+                metricsHandler = metricsHandler,
+                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope).keepingStrongReference(),
+                constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
+                videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
+                arg = null
+            )
+            callingLogger.d("$TAG - wcall_create() called")
+            // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
+            waitInitializationJob.join()
+            handle
+        }
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
