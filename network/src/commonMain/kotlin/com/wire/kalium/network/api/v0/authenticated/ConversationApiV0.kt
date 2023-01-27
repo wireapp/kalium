@@ -239,12 +239,12 @@ internal open class ConversationApiV0 internal constructor(
         }
 
     override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
-       wrapKaliumResponse {
-           httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
+        wrapKaliumResponse {
+            httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
-               parameter(QUERY_KEY_KEY, key)
-           }
-       }
+                parameter(QUERY_KEY_KEY, key)
+            }
+        }
 
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
@@ -297,7 +297,11 @@ internal open class ConversationApiV0 internal constructor(
             setBody(receiptMode)
         }.let { httpResponse ->
             when (httpResponse.status) {
-                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationReceiptModeResponse.ReceiptModeUnchanged, httpResponse)
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateConversationReceiptModeResponse.ReceiptModeUnchanged,
+                    httpResponse
+                )
+
                 else -> wrapKaliumResponse<EventContentDTO.Conversation.ReceiptModeUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationReceiptModeResponse.ReceiptModeUpdated(it)
