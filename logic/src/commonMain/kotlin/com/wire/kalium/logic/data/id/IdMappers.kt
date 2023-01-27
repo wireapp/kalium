@@ -36,3 +36,5 @@ internal fun NetworkQualifiedId.toDao(): PersistenceQualifiedId = PersistenceQua
 
 internal fun UserAssetDTO.toDao(domain: String): QualifiedIDEntity = PersistenceQualifiedId(key, domain)
 internal fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key, domain)
+
+internal fun SubconversationId.toApi(): String = value
