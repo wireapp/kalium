@@ -10,7 +10,7 @@ fun interface IsSelfATeamMemberUseCase {
 /**
  * Return if self user is part of a team or not
  */
-class IsSelfATeamMemberUseCaseImpl internal constructor(
+internal class IsSelfATeamMemberUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ): IsSelfATeamMemberUseCase {
     override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {

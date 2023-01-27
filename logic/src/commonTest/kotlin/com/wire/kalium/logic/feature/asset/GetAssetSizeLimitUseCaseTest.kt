@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.asset;
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.ASSET_SIZE_DEFAULT_LIMIT_BYTES
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.ASSET_SIZE_TEAM_USER_LIMIT_BYTES
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.IMAGE_SIZE_LIMIT_BYTES
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
