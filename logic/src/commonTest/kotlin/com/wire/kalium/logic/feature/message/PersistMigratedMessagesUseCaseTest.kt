@@ -19,20 +19,17 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.message.MigratedMessage
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,7 +44,7 @@ class PersistMigratedMessagesUseCaseTest {
     fun givenAValidProtoMessage_whenMigratingMessage_thenShouldReturnASuccessResult() = runTest {
         // Given
         val (arrangement, persistMigratedMessages) = Arrangement()
-            .withSuccessfulHandling()
+            .withMessagesInsertedSuccessfully()
             .arrange()
 
         // When
@@ -58,12 +55,10 @@ class PersistMigratedMessagesUseCaseTest {
     }
 
     private class Arrangement {
+        val selfUserId: UserId = SELF_USER_ID
 
         @Mock
-        private val persistMessage = mock(classOf<PersistMessageUseCase>())
-
-        @Mock
-        private val applicationMessageHandler = mock(classOf<ApplicationMessageHandler>())
+        val migrationDAO: MigrationDAO = mock(MigrationDAO::class)
 
         val genericMessage = GenericMessage("uuid", GenericMessage.Content.Text(Text("some_text")))
 
@@ -71,25 +66,22 @@ class PersistMigratedMessagesUseCaseTest {
             conversationId = TestConversation.ID,
             senderUserId = TestUser.USER_ID,
             senderClientId = TestClient.CLIENT_ID,
-            "",
+            0,
             "some_content",
             genericMessage.encodeToByteArray(),
             null,
             null
         )
 
-        fun withSuccessfulHandling(): Arrangement {
-            given(applicationMessageHandler)
-                .suspendFunction(applicationMessageHandler::handleContent)
-                .whenInvokedWith(any(), any(), any(), any(), any())
+        fun withMessagesInsertedSuccessfully(): Arrangement {
+            given(migrationDAO)
+                .suspendFunction(migrationDAO::insertMessages)
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
             return this
         }
 
-        fun arrange() = this to PersistMigratedMessagesUseCaseImpl(
-            applicationMessageHandler,
-            MapperProvider.protoContentMapper(selfUserId = SELF_USER_ID)
-        )
+        fun arrange() = this to PersistMigratedMessagesUseCaseImpl(selfUserId, migrationDAO)
     }
 
     companion object {
