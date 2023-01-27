@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.call
 
-import android.content.Context
 import com.waz.media.manager.MediaManager
 import com.waz.media.manager.MediaManagerListener
 import com.wire.kalium.logic.kaliumLogger

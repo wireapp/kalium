@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.call
 
-import android.content.Context
 import com.waz.call.FlowManager
 import com.waz.log.LogHandler
 import com.wire.kalium.logic.callingLogger
