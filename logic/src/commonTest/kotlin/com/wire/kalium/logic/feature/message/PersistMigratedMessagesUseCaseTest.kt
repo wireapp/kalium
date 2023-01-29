@@ -33,6 +33,7 @@ import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -48,7 +49,7 @@ class PersistMigratedMessagesUseCaseTest {
             .arrange()
 
         // When
-        val result = persistMigratedMessages(listOf(arrangement.fakeMigratedMessage()))
+        val result = persistMigratedMessages(listOf(arrangement.fakeMigratedMessage()), TestScope())
 
         // Then
         assertTrue(result is Either.Right)
