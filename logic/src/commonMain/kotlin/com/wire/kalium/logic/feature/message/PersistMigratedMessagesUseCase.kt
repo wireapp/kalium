@@ -48,7 +48,7 @@ import kotlinx.datetime.Instant
  * Persist migrated messages from old datasource
  */
 fun interface PersistMigratedMessagesUseCase {
-    suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit>
+    suspend operator fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit>
 }
 
 internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesApi::class) constructor(
