@@ -33,99 +33,109 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
 /**
  * Persist migrated messages from old datasource
  */
 fun interface PersistMigratedMessagesUseCase {
-    suspend operator fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit>
+    suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit>
 }
 
-internal class PersistMigratedMessagesUseCaseImpl(
+internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val selfUserId: UserId,
     private val migrationDAO: MigrationDAO,
+    private val coroutineContext: CoroutineDispatcher = KaliumDispatcherImpl.default.limitedParallelism(2),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
 ) : PersistMigratedMessagesUseCase {
 
     @Suppress("ComplexMethod", "LongMethod")
-    override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> {
-        val messageEntityList = messages.filter { it.encryptedProto != null }
-            .map { migratedMessage ->
-                val (migratedsMessage, proto) =
+    override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
+        val protoMessages: MutableList<Pair<MigratedMessage, ProtoContent>> = mutableListOf()
+        messages.filter { it.encryptedProto != null }.map { migratedMessage ->
+            coroutineScope.launch(coroutineContext) {
+                protoMessages.add(
                     migratedMessage to protoContentMapper.decodeFromProtobuf(
                         PlainMessageBlob(migratedMessage.encryptedProto!!)
                     )
-                when (proto) {
-                    is ProtoContent.ExternalMessageInstructions -> {
-                        kaliumLogger.w("Ignoring external migratedsMessage")
-                        null
-                    }
+                )
+            }
+        }.joinAll()
+        val messageEntityList = protoMessages.mapNotNull { (migratedMessage, proto) ->
+            when (proto) {
+                is ProtoContent.ExternalMessageInstructions -> {
+                    null
+                }
 
-                    is ProtoContent.Readable -> {
-                        val updatedProto =
-                            if (migratedsMessage.assetSize != null &&
-                                migratedsMessage.assetName != null &&
-                                proto.messageContent is MessageContent.Asset
-                            ) {
-                                proto.copy(
-                                    messageContent = proto.messageContent.copy(
-                                        value = proto.messageContent.value.copy(
-                                            name = migratedsMessage.assetName,
-                                            sizeInBytes = migratedsMessage.assetSize.toLong()
-                                        )
+                is ProtoContent.Readable -> {
+                    val updatedProto =
+                        if (migratedMessage.assetSize != null &&
+                            migratedMessage.assetName != null &&
+                            proto.messageContent is MessageContent.Asset
+                        ) {
+                            proto.copy(
+                                messageContent = proto.messageContent.copy(
+                                    value = proto.messageContent.value.copy(
+                                        name = migratedMessage.assetName,
+                                        sizeInBytes = migratedMessage.assetSize.toLong()
                                     )
                                 )
-                            } else proto
+                            )
+                        } else proto
 
-                        when (val protoContent = updatedProto.messageContent) {
-                            is MessageContent.Regular -> {
-                                val visibility = when (protoContent) {
-                                    is MessageContent.DeleteMessage -> MessageEntity.Visibility.HIDDEN
-                                    is MessageContent.TextEdited -> MessageEntity.Visibility.HIDDEN
-                                    is MessageContent.DeleteForMe -> MessageEntity.Visibility.HIDDEN
-                                    is MessageContent.Unknown -> if (protoContent.hidden) MessageEntity.Visibility.HIDDEN
-                                    else MessageEntity.Visibility.VISIBLE
+                    when (val protoContent = updatedProto.messageContent) {
+                        is MessageContent.Regular -> {
+                            val visibility = when (protoContent) {
+                                is MessageContent.DeleteMessage -> MessageEntity.Visibility.HIDDEN
+                                is MessageContent.TextEdited -> MessageEntity.Visibility.HIDDEN
+                                is MessageContent.DeleteForMe -> MessageEntity.Visibility.HIDDEN
+                                is MessageContent.Unknown -> if (protoContent.hidden) MessageEntity.Visibility.HIDDEN
+                                else MessageEntity.Visibility.VISIBLE
 
-                                    is MessageContent.Text -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.Calling -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.Asset -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.Knock -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.RestrictedAsset -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.FailedDecryption -> MessageEntity.Visibility.VISIBLE
-                                    is MessageContent.LastRead -> MessageEntity.Visibility.HIDDEN
-                                    is MessageContent.Cleared -> MessageEntity.Visibility.HIDDEN
-                                }
-
-                                MessageEntity.Regular(
-                                    id = updatedProto.messageUid,
-                                    // mapped from migratedMessage content to MessageEntityContent
-                                    content = protoContent.toMessageEntityContent(),
-                                    conversationId = migratedsMessage.conversationId.toDao(),
-                                    date = Instant.fromEpochMilliseconds(migratedsMessage.timestamp),
-                                    senderUserId = migratedsMessage.senderUserId.toDao(),
-                                    senderClientId = migratedsMessage.senderClientId.value,
-                                    status = MessageEntity.Status.SENT,
-                                    editStatus = MessageEntity.EditStatus.NotEdited, // TODO: get edit time form scala db
-                                    visibility = visibility,
-                                    senderName = null,
-                                    expectsReadConfirmation = updatedProto.expectsReadConfirmation
-                                )
+                                is MessageContent.Text -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.Calling -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.Asset -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.Knock -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.RestrictedAsset -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.FailedDecryption -> MessageEntity.Visibility.VISIBLE
+                                is MessageContent.LastRead -> MessageEntity.Visibility.HIDDEN
+                                is MessageContent.Cleared -> MessageEntity.Visibility.HIDDEN
                             }
 
-                            is MessageContent.Signaling -> {
-                                null
-                            }
+                            MessageEntity.Regular(
+                                id = updatedProto.messageUid,
+                                // mapped from migratedMessage content to MessageEntityContent
+                                content = protoContent.toMessageEntityContent(),
+                                conversationId = migratedMessage.conversationId.toDao(),
+                                date = Instant.fromEpochMilliseconds(migratedMessage.timestamp),
+                                senderUserId = migratedMessage.senderUserId.toDao(),
+                                senderClientId = migratedMessage.senderClientId.value,
+                                status = MessageEntity.Status.SENT,
+                                editStatus = MessageEntity.EditStatus.NotEdited, // TODO: get edit time form scala db
+                                visibility = visibility,
+                                senderName = null,
+                                expectsReadConfirmation = updatedProto.expectsReadConfirmation
+                            )
+                        }
+
+                        is MessageContent.Signaling -> {
+                            null
                         }
                     }
                 }
-            }.filterNotNull()
+            }
+        }.sortedBy { it.date.epochSeconds }
         migrationDAO.insertMessages(messageEntityList)
         return Either.Right(Unit)
     }
