@@ -110,7 +110,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotificationConversation>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -136,9 +136,8 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
-    ): Either<CoreFailure, List<Message>>
+    ): Either<CoreFailure, List<String>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -191,7 +190,9 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(
+        messageSizePerConversation: Int
+    ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -212,10 +213,10 @@ class MessageDataSource(
                         .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
-                    } ?: false
-                )
+                    } ?: false)
             }
         }
+    }
 
     @DelicateKaliumApi(
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
@@ -376,14 +377,12 @@ class MessageDataSource(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             conversationId.toDao(),
-            date,
             visibility.map { it.toEntityVisibility() }
-        ).map(messageMapper::fromEntityToMessage)
+        )
     }
 
     override suspend fun updateTextMessage(
