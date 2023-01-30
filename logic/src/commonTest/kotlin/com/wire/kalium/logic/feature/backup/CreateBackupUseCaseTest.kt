@@ -37,14 +37,19 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import okio.Path.Companion.toPath
 import okio.buffer
 import okio.use
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,17 +58,26 @@ class CreateBackupUseCaseTest {
     private val fakeFileSystem = FakeKaliumFileSystem()
     private val dispatcher = TestKaliumDispatcher
 
+    @BeforeTest
+    fun before() {
+        Dispatchers.setMain(dispatcher.default)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
     fun givenSomeValidData_whenCreatingNonEncryptedBackup_thenTheFinalBackupFileIsCreatedCorrectly() = runTest(dispatcher.default) {
         // Given
         val plainDB = "some-dummy-plain.db"
         val password = ""
-        val currentDB = "some-dummy.db".decodeBase64Bytes()
+        val currentDBData = "some-dummy.db".decodeBase64Bytes()
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
-            .withExportedDB(plainDB)
+            .withExportedDB(plainDB, currentDBData)
             .withDeleteBackupDB(true)
-            .withProvidedDB(currentDB)
             .arrange()
 
         // When
@@ -84,13 +98,14 @@ class CreateBackupUseCaseTest {
             extractCompressedFile(source(result.backupFilePath), extractedFilesPath, fakeFileSystem)
 
             assertTrue(listDirectories(extractedFilesPath).firstOrNull { it.name == BACKUP_METADATA_FILE_NAME } != null)
-            assertTrue(listDirectories(extractedFilesPath).firstOrNull {
+            val extractedDB = listDirectories(extractedFilesPath).firstOrNull {
                 it.name.contains(".db")
             }?.let {
                 source(it).buffer().use { bufferedSource ->
                     bufferedSource.readByteArray()
                 }
-            }.contentEquals(currentDB))
+            }
+            assertTrue(extractedDB.contentEquals(currentDBData))
         }
     }
 
@@ -98,10 +113,8 @@ class CreateBackupUseCaseTest {
     fun givenSomeInvalidDBData_whenCreatingNonEncryptedBackup_thenTheRightErrorIsThrown() = runTest(dispatcher.default) {
         // Given
         val password = ""
-        val dummyDB = null
         val (arrangement, createBackupUseCase) = Arrangement()
-            .withExportedDB(dummyDB)
-            .withProvidedDB(dummyDB)
+            .withExportedDBError()
             .arrange()
 
         // When
@@ -122,12 +135,11 @@ class CreateBackupUseCaseTest {
 
         val plainDBFileLocation = "backup-encrypted.db"
         val password = "S0m3T0pS3CR3tP4\$\$w0rd"
-        val dummyDB = "some-dummy.db".decodeBase64Bytes()
+        val dummyDBData = "some-dummy.db".decodeBase64Bytes()
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
-            .withExportedDB(plainDBFileLocation)
+            .withExportedDB(plainDBFileLocation, dummyDBData)
             .withDeleteBackupDB(true)
-            .withProvidedDB(dummyDB)
             .arrange()
 
         // When
@@ -135,7 +147,7 @@ class CreateBackupUseCaseTest {
         advanceUntilIdle()
 
         // Then
-        assertIs<CreateBackupResult.Success>(result)
+        assertTrue(result is CreateBackupResult.Success)
         verify(arrangement.clientIdProvider)
             .suspendFunction(arrangement.clientIdProvider::invoke)
             .wasInvoked(once)
@@ -145,8 +157,8 @@ class CreateBackupUseCaseTest {
             val extractedFilesPath = tempFilePath()
             createDirectory(extractedFilesPath)
             extractCompressedFile(source(result.backupFilePath), extractedFilesPath, fakeFileSystem)
-            val result = listDirectories(extractedFilesPath).firstOrNull()
-            assertEquals(BACKUP_ENCRYPTED_FILE_NAME, result?.name)
+            val extractedDBPath = listDirectories(extractedFilesPath).firstOrNull { it.name.contains(".cc20") }
+            assertEquals(BACKUP_ENCRYPTED_FILE_NAME, extractedDBPath?.name)
         }
     }
 
@@ -168,24 +180,22 @@ class CreateBackupUseCaseTest {
                 }
         }
 
-        fun withProvidedDB(dbData: ByteArray?) = apply {
+        fun withExportedDB(dbName: String?, dbData: ByteArray) = apply {
             with(fakeFileSystem) {
-                dbData?.let { rawData ->
-                    sink(rootDBPath).buffer().use { it.write(rawData) }
-                }
+                val exportedDBPath = dbName?.let { rootDBPath / it } ?: "null".toPath()
+                sink(exportedDBPath).buffer().use { it.write(dbData) }
+                given(databaseExporter)
+                    .function(databaseExporter::exportToPlainDB)
+                    .whenInvoked()
+                    .thenReturn(exportedDBPath.toString())
             }
         }
 
-        fun withExportedDB(result: String?) = apply {
-            with(fakeFileSystem) {
-                result?.let { rawData ->
-                    sink(rootDBPath).buffer().use { it.write(rawData.toByteArray()) }
-                }
-            }
+        fun withExportedDBError() = apply {
             given(databaseExporter)
                 .function(databaseExporter::exportToPlainDB)
                 .whenInvoked()
-                .thenReturn(result)
+                .thenReturn(null)
         }
 
         fun withDeleteBackupDB(result: Boolean, throwable: Throwable? = null) = apply {
@@ -207,7 +217,5 @@ class CreateBackupUseCaseTest {
                 databaseExporter,
                 dispatcher
             )
-
     }
-
 }
