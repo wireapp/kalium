@@ -49,6 +49,7 @@ interface MessageMapper {
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
+    fun toMessageEntityContent(regulerMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
 class MessageMapperImpl(
@@ -69,7 +70,7 @@ class MessageMapperImpl(
         return when (message) {
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
-                content = message.content.toMessageEntityContent(),
+                content = toMessageEntityContent(message.content),
                 conversationId = message.conversationId.toDao(),
                 date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
@@ -178,6 +179,7 @@ class MessageMapperImpl(
                     null
                 ), message.date, content.messageBody
             )
+
             is MessagePreviewEntityContent.Asset -> {
                 val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
@@ -190,17 +192,20 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
+
             is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
                 LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 message.date,
                 LocalNotificationCommentType.KNOCK
             )
+
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 time = message.date,
                 text = content.messageBody,
                 isMentionedSelf = true,
             )
+
             is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
                 time = message.date,
@@ -216,15 +221,15 @@ class MessageMapperImpl(
         }
 
     @Suppress("ComplexMethod")
-    private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
+    override fun toMessageEntityContent(regulerMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regulerMessage) {
         is MessageContent.Text -> MessageEntityContent.Text(
-            messageBody = this.value,
-            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified,
+            messageBody = regulerMessage.value,
+            mentions = regulerMessage.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = regulerMessage.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = regulerMessage.quotedMessageReference?.isVerified,
         )
 
-        is MessageContent.Asset -> with(this.value) {
+        is MessageContent.Asset -> with(regulerMessage.value) {
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
                 is Video -> metadata.width
@@ -259,22 +264,26 @@ class MessageMapperImpl(
             )
         }
 
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
+            regulerMessage.mimeType,
+            regulerMessage.sizeInBytes,
+            regulerMessage.name
+        )
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
-            this.encodedData,
-            this.isDecryptionResolved,
-            this.senderUserId.toDao(),
-            this.clientId?.value
+            regulerMessage.encodedData,
+            regulerMessage.isDecryptionResolved,
+            regulerMessage.senderUserId.toDao(),
+            regulerMessage.clientId?.value
         )
 
         // We store the unknown fields of the message in case we want to start handling them in the future
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(regulerMessage.typeName, regulerMessage.encodedData)
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
+        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regulerMessage.hotKnock)
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
