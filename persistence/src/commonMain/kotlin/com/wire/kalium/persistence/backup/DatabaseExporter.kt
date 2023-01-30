@@ -28,33 +28,30 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 interface DatabaseExporter {
-    // dump the user DB into a plain DB and return the location of the file
+
+    /**
+     * Export the user DB to a plain DB
+     * @return the path to the plain DB file, null if the file was not created
+     */
     fun exportToPlainDB(): String?
 
-    // deleted the plain DB file
+    /**
+     * Delete the backup file and any temp data was created during the backup process
+     * need to be called after the backup is done wether the user exported the file or not
+     * even if the backup failed
+     * @return true if the file was deleted, false otherwise
+     */
     fun deleteBackupDBFile(): Boolean
 }
 
 internal class DatabaseExporterImpl internal constructor(
-    uerId: UserIDEntity,
+    user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
     private val dumpContentQueries: DumpContentQueries,
     private val sqlDriver: SqlDriver
 ) : DatabaseExporter {
 
-    private val backupUserId = uerId.copy(value = "backup-${uerId.value}")
-
-    /*
-    https://www.sqlite.org/c3ref/c_checkpoint_full.html
-
-    #define SQLITE_CHECKPOINT_PASSIVE  0  /* Do as much as possible w/o blocking */
-    #define SQLITE_CHECKPOINT_FULL     1  /* Wait for writers, then checkpoint */
-    #define SQLITE_CHECKPOINT_RESTART  2  /* Like FULL but wait for readers */
-    #define SQLITE_CHECKPOINT_TRUNCATE 3  /* Like RESTART but also truncate WAL */
-     */
-//     override fun beforeBackup() {
-//         sqlDriver.executeQuery(null, "PRAGMA wal_checkpoint(3)", {}, 0)
-//     }
+    private val backupUserId = user.copy(value = "backup-${user.value}")
 
     override fun exportToPlainDB(): String? {
         // delete the backup DB file if it exists

@@ -74,7 +74,6 @@ internal class CreateBackupUseCaseImpl(
 ) : CreateBackupUseCase {
 
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.default) {
-        // TODO: delete backup DB after creating the zip
         val backupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ZIP_FILE_NAME)
         deletePreviousBackupFiles(backupFilePath)
 

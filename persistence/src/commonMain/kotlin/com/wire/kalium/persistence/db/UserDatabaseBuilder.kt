@@ -75,6 +75,14 @@ value class UserDBSecret(val value: ByteArray)
  */
 expect class PlatformDatabaseData
 
+/**
+ * Creates a [UserDatabaseBuilder] for the given [userId] and [passphrase]
+ * @param platformDatabaseData Platform-specific data used to create the database
+ * @param userId The user id of the database
+ * @param passphrase The passphrase used to encrypt the database
+ * @param dispatcher The dispatcher used to perform database operations
+ * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
+ **/
 expect fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,

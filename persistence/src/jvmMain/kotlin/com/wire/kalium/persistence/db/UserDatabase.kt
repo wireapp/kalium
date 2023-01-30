@@ -45,17 +45,13 @@ actual fun userDatabaseBuilder(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    if (enableWAL) {
-        throw NotImplementedError("WAL is not supported on JVM")
-    }
-
     val databasePath = platformDatabaseData.storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
     platformDatabaseData.storePath.mkdirs()
 
-    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")
+    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}", enableWAL)
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
@@ -63,16 +59,20 @@ actual fun userDatabaseBuilder(
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData)
 }
 
-private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
+private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
     driverUri,
     Properties(1).apply {
         put("foreign_keys", "true")
-        put("journal_mode", "wal")
+        if (enableWAL) {
+            put("journal_mode", "wal")
+        } else {
+            put("journal_mode", "delete")
+        }
     }
 )
 
 fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
-    val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY)
+    val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
     UserDatabase.Schema.create(driver)
     return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
 }
