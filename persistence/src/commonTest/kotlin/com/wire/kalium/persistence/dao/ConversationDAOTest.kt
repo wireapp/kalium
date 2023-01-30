@@ -38,6 +38,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -266,8 +267,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // Updating the last notified date to later than last modified
         conversationDAO
             .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z".toInstant()
+                QualifiedIDEntity("2", "wire.com")
             )
 
         val result = conversationDAO.getConversationsForNotifications().first()
@@ -292,8 +292,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // Updating the last notified date to later than last modified
         conversationDAO
             .updateConversationNotificationDate(
-                conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z".toInstant()
+                conversationEntity2.id
             )
 
         val result = conversationDAO.getConversationsForNotifications().first()
@@ -911,7 +910,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdated() = runTest {
+    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdatedWithTheDateOfTheNewestMessage() = runTest {
+
         conversationDAO.insertConversation(
             conversationEntity1.copy(
                 lastNotificationDate = Instant.DISTANT_FUTURE,
@@ -924,9 +924,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 lastModifiedDate = Instant.DISTANT_FUTURE
             )
         )
+
         val instant = Clock.System.now()
 
-        conversationDAO.updateAllConversationsNotificationDate(instant)
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+
+        conversationDAO.updateAllConversationsNotificationDate()
 
         conversationDAO.getAllConversations().first().forEach {
             assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
