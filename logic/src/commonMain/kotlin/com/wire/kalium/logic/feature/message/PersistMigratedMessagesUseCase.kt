@@ -61,7 +61,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
 ) : PersistMigratedMessagesUseCase {
 
-    @Suppress("ComplexMethod", "LongMethod")
+    @Suppress("ComplexMethod", "LongMethod", "TooGenericExceptionCaught")
     override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
         val protoMessages: ConcurrentMap<MigratedMessage, ProtoContent> = ConcurrentMap()
         messages.filter { it.encryptedProto != null }.map { migratedMessage ->
