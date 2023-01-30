@@ -487,11 +487,6 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
-getLatestMessageFromOtherUsers:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.isSelfMessage = FALSE
-ORDER BY MessageDetailsView.date DESC LIMIT 1;
-
 updateMessageDate:
 UPDATE Message
 SET creation_date = ?

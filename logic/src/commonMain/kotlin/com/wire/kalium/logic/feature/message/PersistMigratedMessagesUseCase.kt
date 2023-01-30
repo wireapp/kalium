@@ -64,6 +64,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
     @Suppress("ComplexMethod", "LongMethod", "TooGenericExceptionCaught")
     override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
         val protoMessages: ConcurrentMap<MigratedMessage, ProtoContent> = ConcurrentMap()
+
         messages.filter { it.encryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {
                 (try {
@@ -137,7 +138,19 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
                         }
 
                         is MessageContent.Signaling -> {
-                            null
+                            when(protoContent) {
+                                is MessageContent.Availability -> TODO()
+                                is MessageContent.Calling -> TODO()
+                                is MessageContent.Cleared -> TODO()
+                                MessageContent.ClientAction -> TODO()
+                                is MessageContent.DeleteForMe -> TODO()
+                                is MessageContent.DeleteMessage -> TODO()
+                                MessageContent.Ignored -> TODO()
+                                is MessageContent.LastRead -> TODO()
+                                is MessageContent.Reaction -> TODO()
+                                is MessageContent.Receipt -> TODO()
+                                is MessageContent.TextEdited -> TODO()
+                            }
                         }
                     }
                 }

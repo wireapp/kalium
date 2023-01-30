@@ -95,10 +95,6 @@ class MessageDAOImpl(
         }
     }
 
-    override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? = withContext(coroutineContext) {
-        queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
-    }
-
     override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         nonSuspendNeedsToBeNotified(id, conversationId)
     }
