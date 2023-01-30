@@ -138,18 +138,34 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
                         }
 
                         is MessageContent.Signaling -> {
-                            when(protoContent) {
-                                is MessageContent.Availability -> TODO()
-                                is MessageContent.Calling -> TODO()
-                                is MessageContent.Cleared -> TODO()
-                                MessageContent.ClientAction -> TODO()
-                                is MessageContent.DeleteForMe -> TODO()
-                                is MessageContent.DeleteMessage -> TODO()
-                                MessageContent.Ignored -> TODO()
-                                is MessageContent.LastRead -> TODO()
-                                is MessageContent.Reaction -> TODO()
-                                is MessageContent.Receipt -> TODO()
-                                is MessageContent.TextEdited -> TODO()
+                            if (protoContent is MessageContent.TextEdited) {
+                                MessageEntity.Regular(
+                                    id = updatedProto.messageUid,
+                                    // mapped from migratedMessage content to MessageEntityContent
+                                    content = MessageEntityContent.Text(
+                                        protoContent.newContent,
+                                        protoContent.newMentions.map {
+                                            MessageEntity.Mention(
+                                                it.start,
+                                                it.length,
+                                                it.userId.toDao()
+                                            )
+                                        }
+                                    ),
+                                    conversationId = migratedMessage.conversationId.toDao(),
+                                    date = Instant.fromEpochMilliseconds(migratedMessage.timestamp),
+                                    senderUserId = migratedMessage.senderUserId.toDao(),
+                                    senderClientId = migratedMessage.senderClientId.value,
+                                    status = MessageEntity.Status.SENT,
+                                    editStatus = migratedMessage.editTime?.let {
+                                        MessageEntity.EditStatus.Edited(Instant.fromEpochMilliseconds(it))
+                                    } ?: MessageEntity.EditStatus.NotEdited,
+                                    visibility = MessageEntity.Visibility.VISIBLE,
+                                    senderName = null,
+                                    expectsReadConfirmation = updatedProto.expectsReadConfirmation
+                                )
+                            } else {
+                                null
                             }
                         }
                     }
