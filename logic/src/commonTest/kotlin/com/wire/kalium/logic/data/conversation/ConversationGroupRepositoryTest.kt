@@ -542,7 +542,7 @@ class ConversationGroupRepositoryTest {
 
         fun withConversationDetailsById(conversation: Conversation) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
+                .suspendFunction(conversationRepository::baseInfoById)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(conversation))
         }

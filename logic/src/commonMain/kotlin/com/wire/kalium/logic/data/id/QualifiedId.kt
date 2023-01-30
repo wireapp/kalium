@@ -46,3 +46,6 @@ typealias ConversationId = QualifiedID
 
 @JvmInline
 value class GroupID(val value: String)
+
+@JvmInline
+value class SubconversationId(val value: String)

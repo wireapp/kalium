@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -98,6 +99,7 @@ interface ConversationRepository {
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
@@ -327,16 +329,13 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadMessages(),
-        ) { conversationList, lastMessageList, unreadMessageList ->
-            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
+            messageDAO.observeUnreadMessageCounter(),
+        ) { conversationList, lastMessageList, unreadMessageCount ->
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    groupedMessages[conversation.id]?.mapNotNull { message ->
-                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
-                    }?.groupingBy { it }?.eachCount()
+                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
                 )
             }
         }
@@ -390,9 +389,15 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationBaseInfoByQualifiedID(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao()).first()?.protocolInfo?.let {
+            conversationDAO.getConversationProtocolInfo(conversationId.toDao()).let {
                 protocolInfoMapper.fromEntity(it)
             }
         }
@@ -593,9 +598,9 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
         conversationDAO.whoDeletedMeInConversation(
-                conversationId.toDao(),
-                idMapper.toStringDaoModel(selfUserId)
-            )?.toModel()
+            conversationId.toDao(),
+            idMapper.toStringDaoModel(selfUserId)
+        )?.toModel()
     }
 
     override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
