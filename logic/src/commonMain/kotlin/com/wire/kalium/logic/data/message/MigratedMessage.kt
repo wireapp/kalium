@@ -31,10 +31,11 @@ data class MigratedMessage(
     val encryptedProto: ByteArray?,
     val assetName: String?,
     val assetSize: Int?,
+    val editTime: Long?
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || this::class != other::class) return false
+        if (javaClass != other?.javaClass) return false
 
         other as MigratedMessage
 
@@ -47,6 +48,9 @@ data class MigratedMessage(
             if (other.encryptedProto == null) return false
             if (!encryptedProto.contentEquals(other.encryptedProto)) return false
         } else if (other.encryptedProto != null) return false
+        if (assetName != other.assetName) return false
+        if (assetSize != other.assetSize) return false
+        if (editTime != other.editTime) return false
 
         return true
     }
@@ -58,6 +62,9 @@ data class MigratedMessage(
         result = 31 * result + timestamp.hashCode()
         result = 31 * result + content.hashCode()
         result = 31 * result + (encryptedProto?.contentHashCode() ?: 0)
+        result = 31 * result + (assetName?.hashCode() ?: 0)
+        result = 31 * result + (assetSize ?: 0)
+        result = 31 * result + (editTime?.hashCode() ?: 0)
         return result
     }
 }
