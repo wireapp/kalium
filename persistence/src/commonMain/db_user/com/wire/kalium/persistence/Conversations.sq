@@ -72,11 +72,14 @@ WHERE mls_group_id = ?;
 
 updateConversationNotificationsDateWithTheLastMessage:
 UPDATE Conversation
-SET last_notified_date = (SELECT creation_date FROM Message
-                            LEFT JOIN SelfUser
-                            WHERE Message.sender_user_id != SelfUser.id
-                            AND Message.conversation_id = :conversationId
-                            ORDER BY Message.creation_date DESC LIMIT 1)
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    LEFT JOIN SelfUser
+    WHERE Message.sender_user_id != SelfUser.id
+        AND Message.conversation_id = :conversationId
+    ORDER BY Message.creation_date DESC LIMIT 1
+)
 WHERE qualified_id = :conversationId;
 
 
@@ -87,10 +90,13 @@ WHERE qualified_id = :conversationId;
 
 updateAllNotifiedConversationsNotificationsDate:
 UPDATE Conversation
-SET last_notified_date = (SELECT creation_date FROM Message
-                         LEFT JOIN SelfUser
-                         WHERE Message.sender_user_id != SelfUser.id
-                         ORDER BY Message.creation_date DESC LIMIT 1);
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    LEFT JOIN SelfUser
+    WHERE Message.sender_user_id != SelfUser.id
+    ORDER BY Message.creation_date DESC LIMIT 1
+);
 
 updateConversationModifiedDate:
 UPDATE Conversation
