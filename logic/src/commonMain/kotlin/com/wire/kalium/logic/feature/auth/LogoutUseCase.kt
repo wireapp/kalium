@@ -59,6 +59,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)
+        logoutRepository.onLogout(reason)
 
         when (reason) {
             LogoutReason.SELF_HARD_LOGOUT -> {
@@ -74,17 +75,17 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 clearClientDataUseCase()
                 clientRepository.clearCurrentClientId()
                 clientRepository.clearHasRegisteredMLSClient()
+                // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
+                pushTokenRepository.setUpdateFirebaseTokenFlag(true)
             }
 
             LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
                 clientRepository.clearCurrentClientId()
+                // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
+                pushTokenRepository.setUpdateFirebaseTokenFlag(true)
             }
         }
 
-        // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
-        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
-
-        logoutRepository.onLogout(reason)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
     }
