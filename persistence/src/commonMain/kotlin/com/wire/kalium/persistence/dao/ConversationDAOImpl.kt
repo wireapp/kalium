@@ -285,8 +285,8 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationModifiedDate(date.toInstant(), qualifiedID)
     }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.updateConversationNotificationsDateWithTheLastMessage(qualifiedID)
     }
 
     override suspend fun updateAllConversationsNotificationDate() = withContext(coroutineContext) {

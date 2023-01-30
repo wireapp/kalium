@@ -71,7 +71,8 @@ class PersistMigratedMessagesUseCaseTest {
             "some_content",
             genericMessage.encodeToByteArray(),
             null,
-            null
+            null,
+            null,
         )
 
         fun withMessagesInsertedSuccessfully(): Arrangement {
