@@ -35,7 +35,6 @@ interface MemberMapper {
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
     fun fromMapOfClientsEntityToRecipients(qualifiedMap: Map<QualifiedIDEntity, List<Client>>): List<Recipient>
-    fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Conversation.Member
     fun toDaoModel(member: Conversation.Member): PersistedMember
@@ -80,13 +79,6 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
     override fun fromMapOfClientsEntityToRecipients(qualifiedMap: Map<QualifiedIDEntity, List<Client>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->
             val id = entry.key.toModel()
-            val clients = entry.value.map(idMapper::fromClient)
-            Recipient(id, clients)
-        }
-
-    override fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient> =
-        qualifiedMap.entries.map { entry ->
-            val id = entry.key
             val clients = entry.value.map(idMapper::fromClient)
             Recipient(id, clients)
         }

@@ -49,4 +49,4 @@ conversationRecipets:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
 
 selectAllClientsByTeam:
-SELECT * FROM Client WHERE user_id IN (SELECT qualified_id FROM User WHERE team = :teamId) GROUP BY user_id;
+SELECT * FROM Client WHERE user_id IN (SELECT User.qualified_id FROM User WHERE team = :teamId) GROUP BY user_id;
