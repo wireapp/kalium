@@ -35,6 +35,8 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.CurrentPlatform
+import com.wire.kalium.logic.util.PlatformType
 import io.ktor.util.collections.ConcurrentMap
 
 actual class GlobalCallManager(
@@ -47,9 +49,12 @@ actual class GlobalCallManager(
 
     private val calling by lazy {
         Calling.INSTANCE.apply {
-            wcall_init(env = ENVIRONMENT_DEFAULT)
-//             wcall_setup() jvm
-//             wcall_run() jvm
+            if (CurrentPlatform().name == PlatformType.ANDROID)
+                wcall_init(env = ENVIRONMENT_DEFAULT)
+            else {
+                wcall_setup()
+                wcall_run()
+            }
             wcall_set_log_handler(
                 logHandler = LogHandlerImpl,
                 arg = null
