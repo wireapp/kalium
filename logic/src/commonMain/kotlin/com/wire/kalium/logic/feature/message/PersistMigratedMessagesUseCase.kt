@@ -37,13 +37,12 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 
 /**
@@ -62,11 +61,9 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
 ) : PersistMigratedMessagesUseCase {
 
-    private val lock: Mutex = Mutex()
-
     @Suppress("ComplexMethod", "LongMethod")
     override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
-        val protoMessages: MutableList<Pair<MigratedMessage, ProtoContent>> = mutableListOf()
+        val protoMessages: ConcurrentMap<MigratedMessage, ProtoContent> = ConcurrentMap()
         messages.filter { it.encryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {
                 (try {
@@ -76,9 +73,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
                 } catch (e: Exception) {
                     null
                 })?.let {
-                    lock.withLock {
-                        protoMessages.add(migratedMessage to it)
-                    }
+                    protoMessages[migratedMessage] = it
                 }
             }
         }.joinAll()
@@ -133,88 +128,84 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
                                 senderClientId = migratedMessage.senderClientId.value,
                                 status = MessageEntity.Status.SENT,
                                 editStatus = migratedMessage.editTime?.let {
-                                    MessageEntity.EditStatus.EDITED(Instant.fromEpochMilliseconds(it))
-                                } ?: MessageEntity.EditStatus.NONE,
+                                    MessageEntity.EditStatus.Edited(Instant.fromEpochMilliseconds(it))
+                                } ?: MessageEntity.EditStatus.NotEdited,
+                                visibility = visibility,
+                                senderName = null,
+                                expectsReadConfirmation = updatedProto.expectsReadConfirmation
+                            )
                         }
 
-                            ,
-                        visibility = visibility,
-                        senderName = null,
-                        expectsReadConfirmation = updatedProto.expectsReadConfirmation
-                            )
-                    }
-
-                    is MessageContent.Signaling -> {
-                        null
+                        is MessageContent.Signaling -> {
+                            null
+                        }
                     }
                 }
             }
-        }
-    }.sortedBy
-    { it.date.epochSeconds }
-    migrationDAO.insertMessages(messageEntityList)
-    return Either.Right(Unit)
-}
-
-@Suppress("ComplexMethod")
-private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
-    is MessageContent.Text -> MessageEntityContent.Text(
-        messageBody = this.value,
-        mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-        quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-        isQuoteVerified = this.quotedMessageReference?.isVerified,
-    )
-
-    is MessageContent.Asset -> with(this.value) {
-        val assetWidth = when (metadata) {
-            is Image -> metadata.width
-            is Video -> metadata.width
-            else -> null
-        }
-        val assetHeight = when (metadata) {
-            is Image -> metadata.height
-            is Video -> metadata.height
-            else -> null
-        }
-        val assetDurationMs = when (metadata) {
-            is Video -> metadata.durationMs
-            is Audio -> metadata.durationMs
-            else -> null
-        }
-        MessageEntityContent.Asset(
-            assetSizeInBytes = sizeInBytes,
-            assetName = name,
-            assetMimeType = mimeType,
-            assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
-            assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
-            assetOtrKey = remoteData.otrKey,
-            assetSha256Key = remoteData.sha256,
-            assetId = remoteData.assetId,
-            assetDomain = remoteData.assetDomain,
-            assetToken = remoteData.assetToken,
-            assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
-            assetWidth = assetWidth,
-            assetHeight = assetHeight,
-            assetDurationMs = assetDurationMs,
-            assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-        )
+        }.sortedBy { it.date.epochSeconds }
+        migrationDAO.insertMessages(messageEntityList)
+        return Either.Right(Unit)
     }
 
-    is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
+    @Suppress("ComplexMethod")
+    private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
+        is MessageContent.Text -> MessageEntityContent.Text(
+            messageBody = this.value,
+            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = this.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = this.quotedMessageReference?.isVerified,
+        )
 
-    // We store the encoded data in case we decide to try to decrypt them again in the future
-    is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
-        this.encodedData,
-        this.isDecryptionResolved,
-        this.senderUserId.toDao(),
-        this.clientId?.value
-    )
+        is MessageContent.Asset -> with(this.value) {
+            val assetWidth = when (metadata) {
+                is Image -> metadata.width
+                is Video -> metadata.width
+                else -> null
+            }
+            val assetHeight = when (metadata) {
+                is Image -> metadata.height
+                is Video -> metadata.height
+                else -> null
+            }
+            val assetDurationMs = when (metadata) {
+                is Video -> metadata.durationMs
+                is Audio -> metadata.durationMs
+                else -> null
+            }
+            MessageEntityContent.Asset(
+                assetSizeInBytes = sizeInBytes,
+                assetName = name,
+                assetMimeType = mimeType,
+                assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
+                assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                assetOtrKey = remoteData.otrKey,
+                assetSha256Key = remoteData.sha256,
+                assetId = remoteData.assetId,
+                assetDomain = remoteData.assetDomain,
+                assetToken = remoteData.assetToken,
+                assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                assetDurationMs = assetDurationMs,
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
+            )
+        }
 
-    // We store the unknown fields of the message in case we want to start handling them in the future
-    is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
-    // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
-    // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-    is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
-}
+        // We store the encoded data in case we decide to try to decrypt them again in the future
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
+            this.encodedData,
+            this.isDecryptionResolved,
+            this.senderUserId.toDao(),
+            this.clientId?.value
+        )
+
+        // We store the unknown fields of the message in case we want to start handling them in the future
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+
+        // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
+        // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
+        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
+    }
 }
