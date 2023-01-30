@@ -83,10 +83,18 @@ class LogoutUseCaseTest {
                 .function(arrangement.userSessionScopeProvider::delete)
                 .with(any())
                 .wasInvoked(exactly = once)
-            verify(arrangement.pushTokenRepository)
-                .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-                .with(eq(true))
-                .wasInvoked(exactly = once)
+
+            if(reason == LogoutReason.SELF_HARD_LOGOUT) {
+                verify(arrangement.pushTokenRepository)
+                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                    .with(eq(true))
+                    .wasNotInvoked()
+            } else {
+                verify(arrangement.pushTokenRepository)
+                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                    .with(eq(true))
+                    .wasInvoked(exactly = once)
+            }
         }
     }
 
