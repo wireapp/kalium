@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
@@ -27,7 +26,6 @@ import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -47,7 +45,10 @@ import kotlinx.datetime.Instant
  * Persist migrated messages from old datasource
  */
 fun interface PersistMigratedMessagesUseCase {
-    suspend operator fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        messages: List<MigratedMessage>,
+        coroutineScope: CoroutineScope
+    ): Either<CoreFailure, Unit>
 }
 
 internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesApi::class) constructor(
@@ -55,8 +56,6 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
     private val migrationDAO: MigrationDAO,
     private val coroutineContext: CoroutineDispatcher = KaliumDispatcherImpl.default.limitedParallelism(2),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
 ) : PersistMigratedMessagesUseCase {
 
@@ -82,6 +81,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
                 is ProtoContent.ExternalMessageInstructions -> {
                     null
                 }
+
                 is ProtoContent.Readable -> {
                     val updatedProto =
                         if (migratedMessage.assetSize != null &&
@@ -113,7 +113,6 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
         migrationDAO.insertMessages(messageEntityList)
         return Either.Right(Unit)
     }
-
 
     private fun onRegularMessage(
         messageId: String,
@@ -167,6 +166,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
             null
         }
 
+    @Suppress("ComplexMethod")
     private fun MessageContent.FromProto.visibility() = when (this) {
         is MessageContent.DeleteMessage -> MessageEntity.Visibility.HIDDEN
         is MessageContent.TextEdited -> MessageEntity.Visibility.HIDDEN
