@@ -152,7 +152,6 @@ class JoinExistingMLSConversationUseCaseTest {
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
             .withFetchConversationSuccessful()
             .withFetchingGroupInfoSuccessful()
-            .withGetConversationByIdSuccessful()
             .arrange()
 
         joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
@@ -211,9 +210,9 @@ class JoinExistingMLSConversationUseCaseTest {
         fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
             apply {
                 given(conversationRepository)
-                    .suspendFunction(conversationRepository::getConversationById)
+                    .suspendFunction(conversationRepository::baseInfoById)
                     .whenInvokedWith(anything())
-                    .then { conversation }
+                    .then { Either.Right(conversation) }
             }
 
         fun withFetchConversationSuccessful() = apply {
@@ -221,13 +220,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 .suspendFunction(conversationRepository::fetchConversation)
                 .whenInvokedWith(anything())
                 .then { Either.Right(Unit) }
-        }
-
-        fun withGetConversationByIdSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
-                .whenInvokedWith(anything())
-                .then { Either.Right(MLS_CONVERSATION1) }
         }
 
         fun withEstablishMLSGroupSuccessful() = apply {
