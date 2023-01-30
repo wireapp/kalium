@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.id
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.jvm.JvmInline
 
 @Serializable
 data class QualifiedID(
@@ -30,6 +29,7 @@ data class QualifiedID(
     val domain: String
 ) {
     companion object {
+        // TODO: this may be problematic for premiss backends
         const val WIRE_PRODUCTION_DOMAIN = "wire.com"
     }
 

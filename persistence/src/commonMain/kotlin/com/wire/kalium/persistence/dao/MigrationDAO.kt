@@ -18,16 +18,23 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.MigrationQueries
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageInsertExtension
+import com.wire.kalium.persistence.dao.message.MessageInsertExtensionImpl
 import kotlinx.datetime.Instant
 
 interface MigrationDAO {
     suspend fun insertConversation(conversationList: List<ConversationEntity>)
+
+    suspend fun insertMessages(messageList: List<MessageEntity>)
 }
 
 internal class MigrationDAOImpl(
-    private val migrationQueries: MigrationQueries
-) : MigrationDAO {
+    private val migrationQueries: MigrationQueries,
+    messagesQueries: MessagesQueries
+) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(messagesQueries) {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
         migrationQueries.transaction {
             conversationList.forEach {
@@ -56,4 +63,19 @@ internal class MigrationDAOImpl(
             }
         }
     }
+
+    override suspend fun insertMessages(messageList: List<MessageEntity>) {
+        migrationQueries.transaction {
+            for (message in messageList) {
+                // do not add withContext
+                if (isValidAssetMessageUpdate(message)) {
+                    updateAssetMessage(message)
+                    continue
+                } else {
+                    insertMessageOrIgnore(message)
+                }
+            }
+        }
+    }
+
 }
