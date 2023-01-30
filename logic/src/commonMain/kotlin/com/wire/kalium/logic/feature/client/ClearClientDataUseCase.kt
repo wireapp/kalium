@@ -28,6 +28,9 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for clearing the client data.
@@ -39,19 +42,22 @@ interface ClearClientDataUseCase {
 
 internal class ClearClientDataUseCaseImpl internal constructor(
     private val mlsClientProvider: MLSClientProvider,
-    private val proteusClientProvider: ProteusClientProvider
+    private val proteusClientProvider: ProteusClientProvider,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ClearClientDataUseCase {
 
     override suspend operator fun invoke() {
-        clearCrypto()
-            .onSuccess { success ->
-                if (!success) {
-                    kaliumLogger.e("Did not clear crypto storage")
+        withContext(dispatchers.io) {
+            clearCrypto()
+                .onSuccess { success ->
+                    if (!success) {
+                        kaliumLogger.e("Did not clear crypto storage")
+                    }
                 }
-            }
-            .onFailure {
-                kaliumLogger.e("Error clearing crypto storage: $it")
-            }
+                .onFailure {
+                    kaliumLogger.e("Error clearing crypto storage: $it")
+                }
+        }
     }
 
     private suspend fun clearCrypto(): Either<CoreFailure, Boolean> =
