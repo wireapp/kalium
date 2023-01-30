@@ -22,9 +22,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 interface UserConfigRepository {
@@ -42,50 +40,31 @@ interface UserConfigRepository {
 }
 
 class UserConfigDataSource(
-//     private val userConfigStorage: UserConfigStorage,
     private val metadataDAO: MetadataDAO
 ) : UserConfigRepository {
     override suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            metadataDAO.insertValue(
-                JsonSerializer().encodeToString(FileSharingStatus.serializer(), FileSharingStatus(status, isStatusChanged)),
-                FILE_SHARING
-            )
+            metadataDAO.insertSerializable(FILE_SHARING, FileSharingStatus(status, isStatusChanged), FileSharingStatus.serializer())
         }
 
     override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
         wrapStorageRequest {
-            metadataDAO.valueByKey(FILE_SHARING)?.let {
-                JsonSerializer().decodeFromString(FileSharingStatus.serializer(), it)
-            }?.let {
-                FileSharingStatus(it.isFileSharingEnabled, it.isStatusChanged)
-            }
+            metadataDAO.getSerializable(FILE_SHARING, FileSharingStatus.serializer())
         }
 
     override suspend fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> {
-        return flowOf(isFileSharingEnabled())
+        return metadataDAO.getSerializableFlow(FILE_SHARING, FileSharingStatus.serializer()).wrapStorageRequest()
     }
 
     override suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         wrapStorageRequest {
-            metadataDAO.insertValue(
-                JsonSerializer().encodeToString(
-                    ClassifiedDomainsStatus.serializer(),
-                    ClassifiedDomainsStatus(enabled, domains)
-                ),
-                ENABLE_CLASSIFIED_DOMAINS
+            metadataDAO.insertSerializable(
+                ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsStatus(enabled, domains), ClassifiedDomainsStatus.serializer()
             )
         }
 
     override suspend fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>> =
-        flowOf(wrapStorageRequest {
-            metadataDAO.valueByKey(ENABLE_CLASSIFIED_DOMAINS)?.let {
-                JsonSerializer().decodeFromString(ClassifiedDomainsStatus.serializer(), it)
-            }?.let {
-                ClassifiedDomainsStatus(it.isClassifiedDomainsEnabled, it.trustedDomains)
-            }
-        }
-        )
+        metadataDAO.getSerializableFlow(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsStatus.serializer()).wrapStorageRequest()
 
     override suspend fun isMLSEnabled(): Either<StorageFailure, Boolean> =
         wrapStorageRequest { metadataDAO.valueByKey(ENABLE_MLS)?.toBoolean() }
