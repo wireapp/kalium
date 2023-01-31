@@ -97,8 +97,12 @@ fun inMemoryDatabase(
 
 internal actual fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
     return NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storePath, null)
 }
+
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? = TODO()

@@ -472,7 +472,7 @@ class UserSessionScope internal constructor(
     val createBackup: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
             userId,
-            client.observeCurrentClientId,
+            clientIdProvider,
             kaliumFileSystem,
             SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
             kaliumConfigs.shouldEncryptData,

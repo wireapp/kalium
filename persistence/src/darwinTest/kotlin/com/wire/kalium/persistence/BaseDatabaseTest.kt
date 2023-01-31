@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
+
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
@@ -47,8 +48,11 @@ actual open class BaseDatabaseTest actual constructor() {
         deleteDatabase(FileNameUtil.userDBName(userId), storePath)
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return userDatabaseBuilder(userId, storePath, dispatcher)
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
+    ): UserDatabaseBuilder {
+        return userDatabaseBuilder(PlatformDatabaseData(), userId, null, dispatcher, false)
     }
-
 }
