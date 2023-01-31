@@ -22,6 +22,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 typealias ConversationId = QualifiedID
+typealias SubconversationId = String
 typealias NonQualifiedConversationId = String
 typealias UserId = QualifiedID
 typealias NonQualifiedUserId = String

@@ -151,4 +151,32 @@ class ReceiptModeMapperTest {
         // then
         assertEquals(expectedResult, result)
     }
+
+    @Test
+    fun givenAConversationReceiptModeEnabled_whenMappingFromModelToApi_thenReturnApiReceiptModeEnabled() {
+        // given
+        val conversationReceiptMode = Conversation.ReceiptMode.ENABLED
+
+        val expectedResult = ReceiptMode.ENABLED
+
+        // when
+        val result = receiptModeMapper.fromModelToApi(conversationReceiptMode)
+
+        // then
+        assertEquals(expectedResult, result)
+    }
+
+    @Test
+    fun givenAConversationReceiptModeDisabled_whenMappingFromModelToApi_thenReturnApiReceiptModeDisabled() {
+        // given
+        val conversationReceiptMode = Conversation.ReceiptMode.DISABLED
+
+        val expectedResult = ReceiptMode.DISABLED
+
+        // when
+        val result = receiptModeMapper.fromModelToApi(conversationReceiptMode)
+
+        // then
+        assertEquals(expectedResult, result)
+    }
 }

@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
@@ -43,7 +44,9 @@ import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -486,10 +489,17 @@ class MessageDAOImpl(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-            queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
-        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        flowOf(emptyList())
+    // FIXME: Re-enable gradually as we improve its performance
+    //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+
+    override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
+        queries.getUnreadMessagesCount { conversationId, count ->
+            conversationId to count.toInt()
+        }.asFlow().flowOn(coroutineContext).mapToList().map { it.toMap() }
 
     @Suppress("ComplexMethod")
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
@@ -532,14 +542,10 @@ class MessageDAOImpl(
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        date: String,
         visibility: List<MessageEntity.Visibility>
-    ): List<MessageEntity> = withContext(coroutineContext) {
-        queries.selectPendingMessagesByConversationIdAndVisibilityAfterDate(
-            conversationId,
-            visibility,
-            date.toInstant(),
-            mapper::toEntityMessageFromView
+    ): List<String> = withContext(coroutineContext) {
+        queries.selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate(
+            conversationId, visibility
         ).executeAsList()
     }
 

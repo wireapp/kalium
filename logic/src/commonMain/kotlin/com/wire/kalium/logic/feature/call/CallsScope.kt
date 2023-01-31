@@ -52,6 +52,7 @@ import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcherImpl
 
@@ -66,7 +67,8 @@ class CallsScope internal constructor(
     private val syncManager: SyncManager,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val joinSubconversationUseCase: JoinSubconversationUseCase
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
@@ -94,7 +96,7 @@ class CallsScope internal constructor(
             callRepository = callRepository,
         )
 
-    val startCall: StartCallUseCase get() = StartCallUseCase(callManager, syncManager)
+    val startCall: StartCallUseCase get() = StartCallUseCase(callManager, syncManager, joinSubconversationUseCase)
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 

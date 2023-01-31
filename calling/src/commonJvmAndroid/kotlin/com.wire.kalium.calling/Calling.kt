@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-@file:Suppress("FunctionNaming")
 package com.wire.kalium.calling
 
 import com.sun.jna.Library
@@ -45,6 +44,7 @@ import com.wire.kalium.calling.types.Uint32_t
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
 
+@Suppress("FunctionNaming")
 interface Calling : Library {
 
     fun wcall_create(
@@ -66,6 +66,7 @@ interface Calling : Library {
     ): Handle
 
     fun wcall_setup()
+
     fun wcall_setup_ex(flags: Int)
 
     fun wcall_run()
