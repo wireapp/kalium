@@ -153,7 +153,7 @@ class CallManagerImpl internal constructor(
                     messageSender,
                     scope,
                     callMapper
-                ),
+                ).keepingStrongReference(),
                 sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
                 incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
                 missedCallHandler = OnMissedCall,
@@ -181,26 +181,25 @@ class CallManagerImpl internal constructor(
     override suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,
-    ) =
-        withCalling {
-            callingLogger.i("$TAG - onCallingMessageReceived called")
-            val msg = content.value.toByteArray()
+    ) = withCalling {
+        callingLogger.i("$TAG - onCallingMessageReceived called")
+        val msg = content.value.toByteArray()
 
-            val currTime = System.currentTimeMillis()
-            val msgTime = message.date.toEpochMillis()
+        val currTime = System.currentTimeMillis()
+        val msgTime = message.date.toEpochMillis()
 
-            wcall_recv_msg(
-                inst = deferredHandle.await(),
-                msg = msg,
-                len = msg.size,
-                curr_time = Uint32_t(value = currTime / 1000),
-                msg_time = Uint32_t(value = msgTime / 1000),
-                convId = federatedIdMapper.parseToFederatedId(message.conversationId),
-                userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-                clientId = message.senderClientId.value
-            )
-            callingLogger.i("$TAG - wcall_recv_msg() called")
-        }
+        wcall_recv_msg(
+            inst = deferredHandle.await(),
+            msg = msg,
+            len = msg.size,
+            curr_time = Uint32_t(value = currTime / 1000),
+            msg_time = Uint32_t(value = msgTime / 1000),
+            convId = federatedIdMapper.parseToFederatedId(message.conversationId),
+            userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
+            clientId = message.senderClientId.value
+        )
+        callingLogger.i("$TAG - wcall_recv_msg() called")
+    }
 
     override suspend fun startCall(
         conversationId: ConversationId,

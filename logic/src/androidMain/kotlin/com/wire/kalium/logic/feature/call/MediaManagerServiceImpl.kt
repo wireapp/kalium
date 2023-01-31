@@ -27,10 +27,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 actual class MediaManagerServiceImpl(
-    appContext: PlatformContext
+    platformContext: PlatformContext
 ) : MediaManagerService {
 
-    private val mediaManager: MediaManager = MediaManager.getInstance(appContext.context).apply {
+    private val mediaManager: MediaManager = MediaManager.getInstance(platformContext.context).apply {
         addListener(object : MediaManagerListener {
             override fun onPlaybackRouteChanged(route: Int) {
                 _isLoudSpeakerOnFlow.value = this@apply.isLoudSpeakerOn

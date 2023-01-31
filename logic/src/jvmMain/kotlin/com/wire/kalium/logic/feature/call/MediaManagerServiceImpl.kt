@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 actual class MediaManagerServiceImpl(
-    appContext: PlatformContext
+    platformContext: PlatformContext
 ) : MediaManagerService {
     override fun turnLoudSpeakerOn() {
         kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
