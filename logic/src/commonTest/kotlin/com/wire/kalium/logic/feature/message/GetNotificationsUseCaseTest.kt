@@ -343,7 +343,7 @@ class GetNotificationsUseCaseTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getNotificationMessage)
                 .whenInvokedWith(any())
-                .thenReturn(list)
+                .thenReturn(Either.Right(list))
 
             return this
         }
