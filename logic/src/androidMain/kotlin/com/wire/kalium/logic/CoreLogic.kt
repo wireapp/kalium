@@ -27,6 +27,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -64,7 +65,7 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = appContext
+        appContext = PlatformContext(appContext)
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
