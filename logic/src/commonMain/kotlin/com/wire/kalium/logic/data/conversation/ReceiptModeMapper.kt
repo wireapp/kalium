@@ -28,6 +28,7 @@ interface ReceiptModeMapper {
     fun fromApiToModel(receiptMode: ReceiptMode): Conversation.ReceiptMode
     fun fromApiToDaoModel(receiptMode: ReceiptMode): ConversationEntity.ReceiptMode
     fun fromEntityToModel(receiptMode: ConversationEntity.ReceiptMode): Conversation.ReceiptMode
+    fun fromModelToApi(receiptMode: Conversation.ReceiptMode): ReceiptMode
 }
 
 class ReceiptModeMapperImpl(
@@ -51,5 +52,10 @@ class ReceiptModeMapperImpl(
     override fun fromEntityToModel(receiptMode: ConversationEntity.ReceiptMode): Conversation.ReceiptMode = when (receiptMode) {
         ConversationEntity.ReceiptMode.DISABLED -> Conversation.ReceiptMode.DISABLED
         ConversationEntity.ReceiptMode.ENABLED -> Conversation.ReceiptMode.ENABLED
+    }
+
+    override fun fromModelToApi(receiptMode: Conversation.ReceiptMode): ReceiptMode = when (receiptMode) {
+        Conversation.ReceiptMode.ENABLED -> ReceiptMode.ENABLED
+        Conversation.ReceiptMode.DISABLED -> ReceiptMode.DISABLED
     }
 }
