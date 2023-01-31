@@ -82,19 +82,24 @@ internal class DatabaseExporterImpl internal constructor(
     override fun deleteBackupDBFile(): Boolean = nuke(backupUserId, platformDatabaseData)
 
     private fun dumpContent() {
-        // dump the content of the user DB into the plain DB must be done in this order
-        dumpContentQueries.dumpUserTable()
-        dumpContentQueries.dumpConversationTable()
-        dumpContentQueries.dumpMessageTable()
-        dumpContentQueries.dumpCallTable()
-        dumpContentQueries.dumpMessageAssetContentTable()
-        dumpContentQueries.dumpMessageRestrictedAssetContentTable()
-        dumpContentQueries.dumpMessageMemberChangeContentTable()
-        dumpContentQueries.dumpMessageMentionTable()
-        dumpContentQueries.dumpMessageMissedCallContentTable()
-        dumpContentQueries.dumpMessageTextContentTable()
-        dumpContentQueries.dumpMessageUnknownContentTable()
-        dumpContentQueries.dumpReactionTable()
+        with(dumpContentQueries) {
+            // dump the content of the user DB into the plain DB must be done in this order
+            dumpUserTable()
+            dumpConversationTable()
+            dumpMessageTable()
+            dumpCallTable()
+            dumpMessageAssetContentTable()
+            dumpMessageRestrictedAssetContentTable()
+            dumpMessageFailedToDecryptContentTable()
+            dumpMessageConversationChangedContentTable()
+            dumpMessageMemberChangeContentTable()
+            dumpMessageMentionTable()
+            dumpMessageMissedCallContentTable()
+            dumpMessageTextContentTable()
+            dumpMessageUnknownContentTable()
+            dumpReactionTable()
+            dumpRecieptTable()
+        }
     }
 
     private companion object {

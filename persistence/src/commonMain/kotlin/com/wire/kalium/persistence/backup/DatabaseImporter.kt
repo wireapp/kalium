@@ -53,6 +53,7 @@ internal class DatabaseImporterImpl internal constructor(
                 importMessageTextContentTable()
                 importMessageUnknownContentTable()
                 importReactionTable()
+                importRecieptTable()
             }
         }
     }

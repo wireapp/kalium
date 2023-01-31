@@ -40,3 +40,6 @@ INSERT INTO plain_db.MessageUnknownContent SELECT * FROM MessageUnknownContent;
 
 dumpReactionTable:
 INSERT INTO plain_db.Reaction SELECT * FROM Reaction;
+
+dumpRecieptTable:
+INSERT INTO plain_db.Receipt SELECT * FROM Receipt;
