@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 interface DatabaseExporter {
@@ -62,20 +63,23 @@ internal class DatabaseExporterImpl internal constructor(
         // create a new backup DB file
         val plainDatabase: UserDatabaseBuilder =
             userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
+        plainDatabase.sqlDriver.close()
 
         // copy the data from the user DB to the backup DB
-        sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
-            bindString(1, plainDatabase.dbFileLocation())
-        }
 
         try {
-            plainDatabase.database.transaction {
-                dumpContent()
+            sqlDriver.execute(null, "BEGIN", 0)
+            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
+                bindString(0, plainDatabase.dbFileLocation())
             }
-        } finally {
-            sqlDriver.execute(null, "DETACH DATABASE $PLAIN_DB_ALIAS", 0)
+            dumpContent()
+            sqlDriver.execute(null, "COMMIT", 0)
+        } catch (e: Exception) {
+            kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
+            // if the dump failed, delete the backup DB file
+            deleteBackupDBFile()
+            return null
         }
-
         return plainDatabase.dbFileLocation()
     }
 
@@ -102,7 +106,7 @@ internal class DatabaseExporterImpl internal constructor(
         }
     }
 
-    private companion object {
+    private companion object {teq3hqu0brt.avb4MRN
         // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
         const val PLAIN_DB_ALIAS = "plain_db"
     }
