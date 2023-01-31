@@ -19,9 +19,10 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
@@ -29,6 +30,7 @@ import java.nio.file.Files
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
+    actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
     val UserIDEntity.databaseFile
         get() = Files.createTempDirectory("test-storage").toFile().resolve("test-$domain-$value.db")
@@ -43,10 +45,17 @@ actual open class BaseDatabaseTest actual constructor() {
         userId.databaseFile.delete()
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return userDatabaseBuilder(userId, userId.databaseFile, dispatcher = dispatcher)
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
+    ): UserDatabaseBuilder {
+        return userDatabaseBuilder(
+            platformDatabaseData = PlatformDatabaseData(userId.databaseFile),
+            userId = userId,
+            passphrase = null,
+            dispatcher = dispatcher,
+            enableWAL = enableWAL
+        )
     }
-
-    actual val encryptedDBSecret: UserDBSecret = UserDBSecret(ByteArray(0))
-
 }

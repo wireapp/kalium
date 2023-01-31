@@ -32,7 +32,11 @@ actual open class BaseDatabaseTest actual constructor() {
         // TODO delete test database
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
+    ): UserDatabaseBuilder {
         TODO("Not yet implemented")
     }
 
