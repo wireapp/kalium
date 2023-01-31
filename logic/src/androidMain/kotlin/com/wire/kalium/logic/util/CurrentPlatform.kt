@@ -14,22 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
  */
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.PlatformContext
-import com.wire.kalium.logic.util.PlatformView
-
-actual class FlowManagerServiceImpl(
-    appContext: PlatformContext
-) : FlowManagerService {
-    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setUIRotation(rotation: Int) {
-        TODO("Not yet implemented")
-    }
-}
+actual class CurrentPlatform(
+    val type: PlatformType = PlatformType.ANDROID
+)
