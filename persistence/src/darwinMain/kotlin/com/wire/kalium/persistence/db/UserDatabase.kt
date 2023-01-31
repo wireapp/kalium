@@ -105,4 +105,4 @@ internal actual fun nuke(
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = TODO()
+): String? = platformDatabaseData.storePath

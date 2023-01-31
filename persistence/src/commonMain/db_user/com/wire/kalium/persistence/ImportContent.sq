@@ -95,5 +95,5 @@ INSERT OR IGNORE INTO MessageUnknownContent SELECT * FROM backup_db.MessageUnkno
 importReactionTable:
 INSERT OR IGNORE INTO Reaction SELECT * FROM backup_db.Reaction;
 
-importRecieptTable:
+importReceiptTable:
 INSERT OR IGNORE INTO Receipt SELECT * FROM backup_db.Receipt;
