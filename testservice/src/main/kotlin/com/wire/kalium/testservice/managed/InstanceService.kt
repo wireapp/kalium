@@ -43,6 +43,7 @@ import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -167,6 +168,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                     )) {
                         is RegisterClientResult.Failure ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")
+
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance $instanceId: Login with new device $clientId successful")
@@ -247,33 +249,38 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
-    fun getFingerprint(id: String): Response {
+    suspend fun getFingerprint(id: String): Response {
         log.info("Instance $id: Get fingerprint of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
-            val result = session.currentSession()
-            if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                    return runBlocking {
-                        when (val fingerprint = client.getProteusFingerprint()) {
-                            is GetProteusFingerprintResult.Success -> {
-                                return@runBlocking Response.status(Response.Status.OK).entity(
-                                    FingerprintResponse(fingerprint.fingerprint, id)
-                                ).build()
-                            }
+            scope.async {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        return@async runBlocking {
+                            when (val fingerprint = client.getProteusFingerprint()) {
+                                is GetProteusFingerprintResult.Success -> {
+                                    return@runBlocking Response.status(Response.Status.OK).entity(
+                                        FingerprintResponse(fingerprint.fingerprint, id)
+                                    ).build()
+                                }
 
-                            is GetProteusFingerprintResult.Failure -> {
-                                return@runBlocking Response.status(Response.Status.NO_CONTENT)
-                                    .entity("Instance $id: Cannot get fingerprint: "
-                                            + fingerprint.genericFailure).build()
+                                is GetProteusFingerprintResult.Failure -> {
+                                    return@runBlocking Response.status(Response.Status.NO_CONTENT)
+                                        .entity(
+                                            "Instance $id: Cannot get fingerprint: "
+                                                    + fingerprint.genericFailure
+                                        ).build()
+                                }
                             }
                         }
                     }
+                } else {
+                    return@async Response.status(Response.Status.NOT_FOUND)
+                        .entity("Instance $id: No current session found").build()
                 }
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Instance $id: No current session found").build()
-            }
+            }.await()
+
         }
         throw WebApplicationException("Instance $id: No client assigned to instance yet")
     }
