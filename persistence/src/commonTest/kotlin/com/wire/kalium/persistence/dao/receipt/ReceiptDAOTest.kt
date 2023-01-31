@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -34,6 +35,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReceiptDAOTest : BaseDatabaseTest() {
 
     private lateinit var receiptDAO: ReceiptDAO
@@ -44,7 +46,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(SELF_USER_ID)
-        val db = createDatabase(SELF_USER_ID)
+        val db = createDatabase(SELF_USER_ID, encryptedDBSecret, true)
         receiptDAO = db.receiptDAO
         userDAO = db.userDAO
         conversationDAO = db.conversationDAO

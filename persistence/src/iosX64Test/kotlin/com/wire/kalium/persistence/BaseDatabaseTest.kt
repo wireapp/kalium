@@ -46,7 +46,11 @@ actual open class BaseDatabaseTest actual constructor() {
         deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
+    ): UserDatabaseBuilder {
         return userDatabaseBuilder(PlatformDatabaseData(), userId, null, dispatcher, false)
     }
 

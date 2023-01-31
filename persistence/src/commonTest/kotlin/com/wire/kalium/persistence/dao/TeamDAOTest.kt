@@ -27,13 +27,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class TeamDAOTest : BaseDatabaseTest() {
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     private lateinit var teamDAO: TeamDAO
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         teamDAO = db.teamDAO
     }
 

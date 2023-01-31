@@ -46,7 +46,6 @@ import kotlin.test.assertTrue
 @IgnoreJvm
 class DatabaseImporterTest : BaseDatabaseTest() {
 
-    private val backupUserIdEntity = UserIDEntity("backupValue", "backupDomain")
 
     private lateinit var userDatabaseBuilder: UserDatabaseBuilder
     private lateinit var backupDatabaseBuilder: UserDatabaseBuilder
@@ -54,17 +53,20 @@ class DatabaseImporterTest : BaseDatabaseTest() {
     private lateinit var backupDatabaseDataGenerator: UserDatabaseDataGenerator
     private lateinit var userDatabaseDataGenerator: UserDatabaseDataGenerator
 
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
+    private val backupUserIdEntity = UserIDEntity("backup-${selfUserId.value}", selfUserId.domain)
+
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        userDatabaseBuilder = createDatabase()
+        deleteDatabase(selfUserId)
+        userDatabaseBuilder = createDatabase(selfUserId, passphrase = null, enableWAL = false)
         userDatabaseDataGenerator = UserDatabaseDataGenerator(
             userDatabaseBuilder = userDatabaseBuilder,
             databasePrefix = "user"
 
         )
         deleteDatabase(backupUserIdEntity)
-        backupDatabaseBuilder = createDatabase(backupUserIdEntity)
+        backupDatabaseBuilder = createDatabase(backupUserIdEntity, null, false)
         backupDatabaseDataGenerator = UserDatabaseDataGenerator(
             userDatabaseBuilder = backupDatabaseBuilder,
             databasePrefix = "backup"

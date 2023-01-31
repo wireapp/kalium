@@ -40,13 +40,13 @@ actual open class BaseDatabaseTest actual constructor() {
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
+    actual fun createDatabase(userId: UserIDEntity, passphrase: UserDBSecret?, enableWAL: Boolean): UserDatabaseBuilder {
         return userDatabaseBuilder(
             platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
             userId = userId,
-            passphrase = encryptedDBSecret,
+            passphrase = passphrase,
             dispatcher = dispatcher,
-            enableWAL = true
+            enableWAL = enableWAL
         )
     }
 
