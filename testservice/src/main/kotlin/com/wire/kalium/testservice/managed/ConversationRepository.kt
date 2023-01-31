@@ -82,7 +82,9 @@ sealed class ConversationRepository {
                             runBlocking {
                                 val sendResult = debug.sendConfirmation(conversationId, type, messageId, listOf())
                                 if (sendResult.isLeft()) {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.value}")
+                                    throw WebApplicationException(
+                                        "Instance ${instance.instanceId}: Sending failed with ${sendResult.value}"
+                                    )
                                 }
                             }
                         }
