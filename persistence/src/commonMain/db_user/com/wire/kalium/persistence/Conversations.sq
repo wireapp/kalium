@@ -192,6 +192,13 @@ SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER B
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
+selectConversationByQualifiedId:
+SELECT * FROM Conversation WHERE qualified_id = ?;
+
+selectProtocolInfoByQualifiedId:
+SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
+mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
+
 selectReceiptModeFromGroupConversationByQualifiedId:
 SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
 

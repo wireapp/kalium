@@ -139,14 +139,10 @@ class MLSConversationDataSource(
     ): Either<CoreFailure, DecryptedMessageBundle?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
-                conversationDAO.observeGetConversationByQualifiedID(
-                    messageEvent.conversationId.toDao()
-                ).first()
-            }.flatMap { conversation ->
-                if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
-                    val groupID = idMapper.fromGroupIDEntity(
-                        (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-                    )
+                conversationDAO.getConversationProtocolInfo(messageEvent.conversationId.toDao())
+            }.flatMap { protocolInfo ->
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
+                    val groupID = idMapper.fromGroupIDEntity(protocolInfo.groupId)
                     wrapMLSRequest {
                         mlsClient.decryptMessage(
                             idMapper.toCryptoModel(groupID),
