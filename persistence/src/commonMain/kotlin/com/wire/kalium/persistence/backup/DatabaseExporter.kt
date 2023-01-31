@@ -54,6 +54,7 @@ internal class DatabaseExporterImpl internal constructor(
 
     private val backupUserId = user.copy(value = "backup-${user.value}")
 
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     override fun exportToPlainDB(): String? {
         // delete the backup DB file if it exists
         if (deleteBackupDBFile()) {
