@@ -56,8 +56,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -71,7 +73,6 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.util.DateTimeUtil
@@ -781,6 +782,29 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversationReceiptMode_whenUpdatingConversationReceiptMode_thenShouldUpdateLocally() = runTest {
+        // given
+        val apiReceiptMode = ReceiptMode.ENABLED
+        val receiptMode = Conversation.ReceiptMode.ENABLED
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateReceiptModeSuccess(apiReceiptMode)
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateReceiptMode(CONVERSATION_ID, receiptMode)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationReceiptMode)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1048,6 +1072,25 @@ class ConversationRepositoryTest {
                     .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
                     .then { result }
             }
+
+        fun withUpdateReceiptModeSuccess(receiptMode: ReceiptMode) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateReceiptMode)
+                .whenInvokedWith(any(), eq(ConversationReceiptModeDTO(receiptMode)))
+                .thenReturn(
+                    NetworkResponse.Success(
+                        UpdateConversationReceiptModeResponse.ReceiptModeUpdated(
+                            event = EventContentDTO.Conversation.ReceiptModeUpdate(
+                                qualifiedConversation = CONVERSATION_ID.toApi(),
+                                data = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED),
+                                qualifiedFrom = USER_ID.toApi()
+                            )
+                        ),
+                        emptyMap(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
 
         fun arrange() = this to conversationRepository
     }
