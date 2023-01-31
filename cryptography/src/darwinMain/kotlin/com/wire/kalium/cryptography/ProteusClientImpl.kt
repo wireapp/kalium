@@ -18,8 +18,15 @@
 
 package com.wire.kalium.cryptography
 
+import kotlin.coroutines.CoroutineContext
+
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(private val rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    private val rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    ioContext: CoroutineContext,
+    defaultContext: CoroutineContext
+) : ProteusClient {
     private var client: ProteusClient = databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
     } ?: throw IllegalArgumentException("Unencrypted proteus storage not supported")
@@ -83,5 +90,4 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
     override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
-
 }
