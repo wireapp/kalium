@@ -107,7 +107,7 @@ internal class DatabaseExporterImpl internal constructor(
         }
     }
 
-    private companion object {teq3hqu0brt.avb4MRN
+    private companion object {
         // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
         const val PLAIN_DB_ALIAS = "plain_db"
     }
