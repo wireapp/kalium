@@ -127,11 +127,12 @@ sealed class ConversationRepository {
                                 runBlocking {
                                     val sendResult = messages.sendTextMessage(
                                         conversationId, text, mentions, quotedMessageId
-                                    )                                    if (sendResult.isLeft()) {
-                                    throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with ${sendResult.value}"
                                     )
-                                }
+                                    if (sendResult.isLeft()) {
+                                        throw WebApplicationException(
+                                            "Instance ${instance.instanceId}: Sending failed with ${sendResult.value}"
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -243,8 +244,10 @@ sealed class ConversationRepository {
                                     }
 
                                     is SendBrokenAssetMessageResult.Failure -> {
-                                        throw WebApplicationException("Instance ${instance.instanceId}: " +
-                                                "Sending broken file $fileName failed")
+                                        throw WebApplicationException(
+                                            "Instance ${instance.instanceId}: " +
+                                                    "Sending broken file $fileName failed"
+                                        )
                                     }
 
                                     else -> {
