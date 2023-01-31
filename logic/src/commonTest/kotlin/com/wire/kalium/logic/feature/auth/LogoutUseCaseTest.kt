@@ -84,16 +84,16 @@ class LogoutUseCaseTest {
                 .with(any())
                 .wasInvoked(exactly = once)
 
-            if(reason == LogoutReason.SELF_HARD_LOGOUT) {
-                verify(arrangement.pushTokenRepository)
-                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-                    .with(eq(true))
-                    .wasNotInvoked()
-            } else {
+            if (reason == LogoutReason.SELF_SOFT_LOGOUT || reason == LogoutReason.SESSION_EXPIRED) {
                 verify(arrangement.pushTokenRepository)
                     .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
                     .with(eq(true))
                     .wasInvoked(exactly = once)
+            } else {
+                verify(arrangement.pushTokenRepository)
+                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                    .with(eq(true))
+                    .wasNotInvoked()
             }
         }
     }
@@ -144,12 +144,6 @@ class LogoutUseCaseTest {
                 .wasInvoked(exactly = once)
             verify(arrangement.clearUserDataUseCase)
                 .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-                .wasNotInvoked()
-            verify(arrangement.clientRepository)
-                .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
-                .wasInvoked(exactly = once)
-            verify(arrangement.clientRepository)
-                .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
                 .wasInvoked(exactly = once)
         }
     }
