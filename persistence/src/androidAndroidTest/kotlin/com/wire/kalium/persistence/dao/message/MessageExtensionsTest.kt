@@ -45,11 +45,12 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @Before
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
 
         val messagesQueries = db.database.messagesQueries
         messageDAO = db.messageDAO
@@ -60,7 +61,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
     @After
     fun tearDown() {
-        deleteDatabase()
+        deleteDatabase(selfUserId)
     }
 
     @Test

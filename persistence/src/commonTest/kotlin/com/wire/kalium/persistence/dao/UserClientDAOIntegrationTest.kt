@@ -31,14 +31,15 @@ import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
 class UserClientDAOIntegrationTest : BaseDatabaseTest() {
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     private lateinit var clientDAO: ClientDAO
     private lateinit var userDAO: UserDAO
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         clientDAO = db.clientDAO
         userDAO = db.userDAO
     }
