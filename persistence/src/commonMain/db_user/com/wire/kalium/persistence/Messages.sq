@@ -533,13 +533,6 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
-getNotificationsMessages:
-SELECT * FROM MessagePreview AS message
-WHERE shouldNotify == 1
-AND visibility = 'VISIBLE'
-AND isSelfMessage == 0
-AND contentType IN ? ORDER BY message.date DESC;
-
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 
