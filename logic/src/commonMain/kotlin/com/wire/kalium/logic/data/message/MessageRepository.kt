@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
@@ -39,7 +57,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -81,7 +98,6 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
@@ -92,7 +108,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotificationConversation>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -118,9 +134,8 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
-    ): Either<CoreFailure, List<Message>>
+    ): Either<CoreFailure, List<String>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -173,7 +188,9 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
+    override suspend fun getNotificationMessage(
+        messageSizePerConversation: Int
+    ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage(
             listOf(
                 MessageEntity.ContentType.TEXT,
@@ -194,10 +211,10 @@ class MessageDataSource(
                         .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
-                    } ?: false
-                )
+                    } ?: false)
             }
         }
+    }
 
     @DelicateKaliumApi(
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
@@ -290,10 +307,6 @@ class MessageDataSource(
             )
         }
 
-    override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
-        wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { it.date }
-
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
             messageDAO.updateMessageDate(date, messageUuid, conversationId.toDao())
@@ -358,14 +371,12 @@ class MessageDataSource(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             conversationId.toDao(),
-            date,
             visibility.map { it.toEntityVisibility() }
-        ).map(messageMapper::fromEntityToMessage)
+        )
     }
 
     override suspend fun updateTextMessage(

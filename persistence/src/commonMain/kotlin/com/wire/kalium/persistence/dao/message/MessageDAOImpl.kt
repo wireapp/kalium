@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
@@ -5,27 +23,15 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.HISTORY_LOST
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -38,7 +44,7 @@ class MessageDAOImpl(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext
-) : MessageDAO {
+) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries) {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = withContext(coroutineContext) {
@@ -75,10 +81,6 @@ class MessageDAOImpl(
                 conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
             }
         }
-    }
-
-    override suspend fun getLatestMessageFromOtherUsers(): MessageEntity? = withContext(coroutineContext) {
-        queries.getLatestMessageFromOtherUsers(mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
     override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
@@ -118,185 +120,8 @@ class MessageDAOImpl(
                 updateAssetMessage(message)
                 return
             } else {
-                insertBaseMessage(message)
-                insertMessageContent(message)
+                insertMessageOrIgnore(message)
             }
-        }
-    }
-
-    private fun insertBaseMessage(message: MessageEntity) {
-        // do not add withContext
-        queries.insertOrIgnoreMessage(
-            id = message.id,
-            conversation_id = message.conversationId,
-            creation_date = message.date,
-            sender_user_id = message.senderUserId,
-            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-            visibility = message.visibility,
-            status = message.status,
-            content_type = contentTypeOf(message.content),
-            expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false
-        )
-    }
-
-    @Suppress("LongMethod", "ComplexMethod")
-    private fun insertMessageContent(message: MessageEntity) {
-        when (val content = message.content) {
-            is MessageEntityContent.Text -> {
-                queries.insertMessageTextContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    text_body = content.messageBody,
-                    quoted_message_id = content.quotedMessageId,
-                    is_quote_verified = content.isQuoteVerified
-                )
-                content.mentions.forEach {
-                    queries.insertMessageMention(
-                        message_id = message.id,
-                        conversation_id = message.conversationId,
-                        start = it.start,
-                        length = it.length,
-                        user_id = it.userId
-                    )
-                }
-            }
-
-            is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                asset_mime_type = content.mimeType,
-                asset_size = content.assetSizeInBytes,
-                asset_name = content.assetName
-            )
-
-            is MessageEntityContent.Asset -> {
-                queries.insertMessageAssetContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName,
-                    asset_mime_type = content.assetMimeType,
-                    asset_upload_status = content.assetUploadStatus,
-                    asset_download_status = content.assetDownloadStatus,
-                    asset_otr_key = content.assetOtrKey,
-                    asset_sha256 = content.assetSha256Key,
-                    asset_id = content.assetId,
-                    asset_token = content.assetToken,
-                    asset_domain = content.assetDomain,
-                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
-                    asset_width = content.assetWidth,
-                    asset_height = content.assetHeight,
-                    asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness
-                )
-            }
-
-            is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                unknown_encoded_data = content.encodedData,
-                unknown_type_name = content.typeName
-            )
-
-            is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                unknown_encoded_data = content.encodedData,
-            )
-
-            is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                member_change_list = content.memberUserIdList,
-                member_change_type = content.memberChangeType
-            )
-
-            is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                caller_id = message.senderUserId
-            )
-
-            is MessageEntityContent.NewConversationReceiptMode -> queries.insertNewConversationReceiptMode(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                receipt_mode = content.receiptMode
-            )
-
-            is MessageEntityContent.ConversationReceiptModeChanged -> queries.insertConversationReceiptModeChanged(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                receipt_mode = content.receiptMode
-            )
-
-            is MessageEntityContent.Knock -> {
-                /** NO-OP. No need to insert any content for Knock messages */
-            }
-
-            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                conversation_name = content.conversationName
-            )
-
-            is MessageEntityContent.TeamMemberRemoved -> {
-                // TODO: What needs to be done here?
-                //       When migrating to Kotlin 1.7, when branches must be exhaustive!
-                kaliumLogger.w("TeamMemberRemoved message insertion not handled")
-            }
-
-            is MessageEntityContent.CryptoSessionReset -> {
-                // NOTHING TO DO
-            }
-
-            is MessageEntityContent.HistoryLost -> {
-                // NOTHING TO DO
-            }
-        }
-    }
-
-    /**
-     * Returns true if the [message] is an asset message that is already in the DB and any of its decryption keys are null/empty. This means
-     * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
-     * separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.
-     */
-    private fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
-        if (message !is MessageEntity.Regular) return false
-        // If asset has no valid keys, no need to query the DB
-        val hasValidKeys = message.content is MessageEntityContent.Asset && message.content.hasValidRemoteData()
-        val currentMessageHasMissingAssetInformation =
-            hasValidKeys && queries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
-                val isFromSameSender = message.senderUserId == it.senderUserId
-                        && message.senderClientId == it.senderClientId
-                (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
-            } ?: false
-        return currentMessageHasMissingAssetInformation
-    }
-
-    private fun updateAssetMessage(message: MessageEntity) {
-        if (message.content !is MessageEntityContent.Asset) {
-            kaliumLogger.e("The message can't be updated because it is not an asset")
-            return
-        }
-        val assetMessageContent = message.content as MessageEntityContent.Asset
-        with(assetMessageContent) {
-            // This will ONLY update the VISIBILITY of the original base message and all the asset content related fields
-            queries.updateAssetContent(
-                messageId = message.id,
-                conversationId = message.conversationId,
-                visibility = message.visibility,
-                assetId = assetId,
-                assetDomain = assetDomain,
-                assetToken = assetToken,
-                assetSize = assetSizeInBytes,
-                assetMimeType = assetMimeType,
-                assetName = assetName,
-                assetOtrKey = assetOtrKey,
-                assetSha256 = assetSha256Key,
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
-                assetEncryptionAlgorithm = assetEncryptionAlgorithm
-            )
         }
     }
 
@@ -468,28 +293,17 @@ class MessageDAOImpl(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-            queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
-        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        flowOf(emptyList())
+    // FIXME: Re-enable gradually as we improve its performance
+    //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
-    @Suppress("ComplexMethod")
-    private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
-        is MessageEntityContent.Text -> TEXT
-        is MessageEntityContent.Asset -> ASSET
-        is MessageEntityContent.Knock -> KNOCK
-        is MessageEntityContent.MemberChange -> MEMBER_CHANGE
-        is MessageEntityContent.MissedCall -> MISSED_CALL
-        is MessageEntityContent.Unknown -> UNKNOWN
-        is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
-        is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
-        is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
-        is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
-        is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
-        is MessageEntityContent.NewConversationReceiptMode -> NEW_CONVERSATION_RECEIPT_MODE
-        is MessageEntityContent.ConversationReceiptModeChanged -> CONVERSATION_RECEIPT_MODE_CHANGED
-        is MessageEntityContent.HistoryLost -> HISTORY_LOST
-    }
+    override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
+        queries.getUnreadMessagesCount { conversationId, count ->
+            conversationId to count.toInt()
+        }.asFlow().flowOn(coroutineContext).mapToList().map { it.toMap() }
 
     override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {
         queries.resetAssetDownloadStatus()
@@ -514,14 +328,10 @@ class MessageDAOImpl(
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        date: String,
         visibility: List<MessageEntity.Visibility>
-    ): List<MessageEntity> = withContext(coroutineContext) {
-        queries.selectPendingMessagesByConversationIdAndVisibilityAfterDate(
-            conversationId,
-            visibility,
-            date.toInstant(),
-            mapper::toEntityMessageFromView
+    ): List<String> = withContext(coroutineContext) {
+        queries.selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate(
+            conversationId, visibility
         ).executeAsList()
     }
 
@@ -533,8 +343,4 @@ class MessageDAOImpl(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
-    private fun MessageEntityContent.Asset.hasValidRemoteData() =
-        assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
 }
-
-internal fun ByteArray?.isNullOrEmpty() = this?.isEmpty() ?: true

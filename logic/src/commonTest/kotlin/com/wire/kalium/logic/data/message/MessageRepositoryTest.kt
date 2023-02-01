@@ -1,9 +1,28 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
@@ -206,83 +225,6 @@ class MessageRepositoryTest {
             )
     }
 
-    @Test
-    fun givenABaseMessageEntityAndMapper_whenGettingPendingConfirmationMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
-        // Given
-        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        val entity = TEST_MESSAGE_ENTITY.copy(expectsReadConfirmation = true)
-        val mappedMessage = TEST_MESSAGE.copy(expectsReadConfirmation = true)
-
-        val (arrangement, messageRepository) = Arrangement()
-            .withMockedMessages(listOf(entity))
-            .withMappedMessageModel(mappedMessage)
-            .arrange()
-
-        // When
-        val messageList = messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
-            TEST_CONVERSATION_ID,
-            "2022-03-30T15:36:00.000Z"
-        ).shouldSucceed {
-            assertEquals(listOf(mappedMessage), it)
-        }
-
-        // Then
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .with(eq(entity))
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenANewConversationSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
-        val message = TEST_SYSTEM_MESSAGE
-        val mappedEntity = TEST_MESSAGE_ENTITY
-        val (arrangement, messageRepository) = Arrangement()
-            .withMappedMessageEntity(mappedEntity)
-            .arrange()
-
-        messageRepository.persistMessage(message)
-
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
-
-            verify(messageDAO)
-                .suspendFunction(messageDAO::insertOrIgnoreMessage)
-                .with(eq(mappedEntity), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenAConversationReceiptModeChangedSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
-        val message = TEST_SYSTEM_MESSAGE.copy(
-            content = TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT
-        )
-        val mappedEntity = TEST_MESSAGE_ENTITY
-        val (arrangement, messageRepository) = Arrangement()
-            .withMappedMessageEntity(mappedEntity)
-            .arrange()
-
-        messageRepository.persistMessage(message)
-
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
-
-            verify(messageDAO)
-                .suspendFunction(messageDAO::insertOrIgnoreMessage)
-                .with(eq(mappedEntity), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
-    }
-
     private class Arrangement {
 
         @Mock
@@ -309,8 +251,8 @@ class MessageRepositoryTest {
                 .then { _, _, _, _ -> flowOf(messages) }
             given(messageDAO)
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .then { _, _, _ -> messages }
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> messages.map { it.id } }
             return this
         }
 
@@ -385,20 +327,6 @@ class MessageRepositoryTest {
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
-        )
-        val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
-            receiptMode = true
-        )
-        val TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT = MessageContent.ConversationReceiptModeChanged(
-            receiptMode = true
-        )
-        val TEST_SYSTEM_MESSAGE = Message.System(
-            id = "uid",
-            content = TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT,
-            conversationId = TEST_CONVERSATION_ID,
-            date = TEST_DATETIME,
-            senderUserId = TEST_USER_ID,
-            status = Message.Status.SENT,
         )
     }
 }

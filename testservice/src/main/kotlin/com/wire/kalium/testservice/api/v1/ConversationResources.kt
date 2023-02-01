@@ -1,8 +1,28 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.testservice.api.v1
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
@@ -23,6 +43,7 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
+import kotlin.streams.toList
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -219,16 +240,31 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Path("/instance/{id}/sendText")
     @Operation(
         summary = "Send a text message to a conversation",
-        description = "This can include mentions, reply, buttons and link previews"
+        description = "This can include mentions and reply (buttons and link previews not yet implemented)"
     )
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement mentions, reply and ephemeral messages here
+        // TODO Implement buttons, link previews and ephemeral messages here
+        val quotedMessageId = sendTextRequest.quote?.quotedMessageId
+        val mentions = when (sendTextRequest.mentions.size) {
+            0 -> emptyList<MessageMention>()
+            else -> {
+                sendTextRequest.mentions.stream().map { mention ->
+                    MessageMention(
+                        mention.start,
+                        mention.length,
+                        UserId(mention.userId, mention.userDomain)
+                    )
+                }.toList()
+            }
+        }
         with(sendTextRequest) {
             ConversationRepository.sendTextMessage(
                 instance,
                 ConversationId(conversationId, conversationDomain),
-                text
+                text,
+                mentions,
+                quotedMessageId
             )
         }
         return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()

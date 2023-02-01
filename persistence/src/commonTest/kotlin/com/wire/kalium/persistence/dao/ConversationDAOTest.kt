@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
@@ -20,6 +38,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -247,10 +266,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"))
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
@@ -273,10 +289,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(conversationEntity2.id)
 
         val result = conversationDAO.getConversationsForNotifications().first()
         // THEN
@@ -866,6 +879,75 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(1L, result?.isCreator)
+    }
+
+    @Test
+    fun givenAnMLSConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity2.id)
+
+        // then
+        assertEquals(conversationEntity2.protocolInfo, result)
+    }
+
+    @Test
+    fun givenAProteusConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity1.id)
+
+        // then
+        assertEquals(conversationEntity1.protocolInfo, result)
+    }
+
+    @Test
+    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdatedWithTheDateOfTheNewestMessage() = runTest {
+
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastNotificationDate = Instant.DISTANT_FUTURE,
+                lastModifiedDate = Instant.fromEpochSeconds(0)
+            )
+        )
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                lastNotificationDate = null,
+                lastModifiedDate = Instant.DISTANT_FUTURE
+            )
+        )
+
+        val instant = Clock.System.now()
+
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+        // TODO: insert another message from self user to check if it is not ignored
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+
+        conversationDAO.updateAllConversationsNotificationDate()
+
+        conversationDAO.getAllConversations().first().forEach {
+            assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
+        }
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {

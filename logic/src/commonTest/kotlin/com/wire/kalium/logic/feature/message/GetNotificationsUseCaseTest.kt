@@ -1,6 +1,25 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -32,15 +51,12 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -77,6 +93,100 @@ class GetNotificationsUseCaseTest {
                 .wasInvoked(exactly = once)
 
             syncStatusFlow.emit(IncrementalSyncStatus.Live)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(atLeast = once)
+
+            val result = awaitItem()
+            assertContentEquals(expectedConversations, result)
+        }
+    }
+
+    @Test
+    fun givenSyncStateChangedToPending_thenRepositoriesAreUsedToFetchNotifications() = runTest {
+        val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
+        val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
+        val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
+        val (arrange, getNotifications) = Arrangement()
+            .withEphemeralNotification()
+            .withIncrementalSyncState(syncStatusFlow)
+            .withConnectionList(listOf())
+            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+
+        getNotifications().test {
+            syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasNotInvoked()
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasNotInvoked()
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(exactly = once)
+
+            syncStatusFlow.emit(IncrementalSyncStatus.Pending)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(atLeast = once)
+
+            val result = awaitItem()
+            assertContentEquals(expectedConversations, result)
+        }
+    }
+
+    @Test
+    fun givenSyncStateChangedToFailure_thenRepositoriesAreUsedToFetchNotifications() = runTest {
+        val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
+        val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
+        val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
+        val (arrange, getNotifications) = Arrangement()
+            .withEphemeralNotification()
+            .withIncrementalSyncState(syncStatusFlow)
+            .withConnectionList(listOf())
+            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+
+        getNotifications().test {
+            syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
+
+            verify(arrange.messageRepository)
+                .suspendFunction(arrange.messageRepository::getNotificationMessage)
+                .with(any())
+                .wasNotInvoked()
+
+            verify(arrange.connectionRepository)
+                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
+                .wasNotInvoked()
+
+            verify(arrange.ephemeralNotifications)
+                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
+                .wasInvoked(exactly = once)
+
+            syncStatusFlow.emit(IncrementalSyncStatus.Failed(CoreFailure.Unknown(null)))
 
             verify(arrange.messageRepository)
                 .suspendFunction(arrange.messageRepository::getNotificationMessage)
@@ -217,11 +327,12 @@ class GetNotificationsUseCaseTest {
         init {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> Either.Right(Unit) }
+                .whenInvokedWith(any())
+                .then { _ -> Either.Right(Unit) }
+
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
-                .whenInvokedWith(any())
+                .whenInvoked()
                 .then { Either.Right(Unit) }
             given(incrementalSyncRepository)
                 .getter(incrementalSyncRepository::incrementalSyncState)
@@ -233,7 +344,7 @@ class GetNotificationsUseCaseTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getNotificationMessage)
                 .whenInvokedWith(any())
-                .thenReturn(list)
+                .thenReturn(Either.Right(list))
 
             return this
         }
