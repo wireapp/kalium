@@ -14,17 +14,16 @@ AS SELECT
     Conversation.type AS conversationType
 FROM Message
 LEFT JOIN SelfUser
-JOIN User ON Message.sender_user_id = User.qualified_id
-JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0)) == 1
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL')
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE
-Message.visibility = 'visible' AND
-(Message.sender_user_id == SelfUser.id) == 0 AND
-(Message.creation_date > Conversation.last_read_date) == 1 AND
+Message.visibility = 'VISIBLE' AND
+(Message.sender_user_id != SelfUser.id) AND
+(Message.creation_date > Conversation.last_read_date) AND
 Conversation.muted_status != 'ALL_MUTED'
 ORDER BY Message.creation_date DESC;
 
 getNotificationsMessages:
-SELECT * FROM NotificationMessage AS message WHERE
-contentType IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL');
+SELECT * FROM NotificationMessage;

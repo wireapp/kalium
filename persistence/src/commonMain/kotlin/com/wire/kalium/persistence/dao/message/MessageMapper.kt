@@ -164,8 +164,8 @@ object MessageMapper {
         conversationName: String?,
         text: String?,
         assetMimeType: String?,
-        mutedStatus: ConversationEntity.MutedStatus,
-        conversationType: ConversationEntity.Type,
+        mutedStatus: ConversationEntity.MutedStatus?,
+        conversationType: ConversationEntity.Type?,
     ): NotificationMessageEntity = NotificationMessageEntity(
         id = id,
         contentType = contentType,

@@ -30,10 +30,11 @@ class PrekeyDAOTest : BaseDatabaseTest() {
 
     private lateinit var prekeyDAO: PrekeyDAO
 
+    private val selfUserID = UserIDEntity("selfUserID", "selfDomain")
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserID)
+        val db = createDatabase(selfUserID, encryptedDBSecret, true)
         prekeyDAO = db.prekeyDAO
     }
 
