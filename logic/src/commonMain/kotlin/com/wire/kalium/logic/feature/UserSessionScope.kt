@@ -56,6 +56,8 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.event.EventDataSource
@@ -387,6 +389,8 @@ class UserSessionScope internal constructor(
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
+    private val subconversationRepository = SubconversationRepositoryImpl()
+
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userId,
@@ -505,10 +509,15 @@ class UserSessionScope internal constructor(
             qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userStorage.database.callDAO,
             conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            subconversationRepository = subconversationRepository,
+            joinSubconversationUseCase = joinSubconversationUseCase,
+            mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
-            callMapper = callMapper
+            callMapper = callMapper,
+            federatedIdMapper = federatedIdMapper
         )
     }
 
@@ -623,7 +632,8 @@ class UserSessionScope internal constructor(
     private val joinSubconversationUseCase: JoinSubconversationUseCase
         get() = JoinSubconversationUseCaseImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            mlsConversationRepository
+            mlsConversationRepository,
+            subconversationRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
@@ -1058,8 +1068,7 @@ class UserSessionScope internal constructor(
             syncManager,
             qualifiedIdMapper,
             clientIdProvider,
-            userConfigRepository,
-            joinSubconversationUseCase
+            userConfigRepository
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
