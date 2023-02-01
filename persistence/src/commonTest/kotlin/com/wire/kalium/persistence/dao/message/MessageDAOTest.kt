@@ -703,7 +703,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         conversationDAO.insertConversation(
-            newConversationEntity(id = conversationId)
+            newConversationEntity(id = conversationId2)
         )
 
         userDAO.insertUser(userEntity1)
@@ -718,7 +718,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
                 ),
                 newRegularMessageEntity(
-                    id = messageId,
+                    id = messageId2,
                     date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId2,
                     senderUserId = userEntity1.id,
