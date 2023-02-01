@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -10,6 +11,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -31,7 +33,8 @@ interface JoinSubconversationUseCase {
 
 class JoinSubconversationUseCaseImpl(
     val conversationApi: ConversationApi,
-    val mlsConversationRepository: MLSConversationRepository
+    val mlsConversationRepository: MLSConversationRepository,
+    val subconversationRepository: SubconversationRepository
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
@@ -42,36 +45,48 @@ class JoinSubconversationUseCaseImpl(
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
         }.flatMap { subconversationDetails ->
-            if (subconversationDetails.epoch > INITIAL_EPOCH) {
-                if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
-                    wrapApiRequest {
-                        conversationApi.deleteSubconversation(
-                            conversationId.toApi(),
-                            subconversationId.toApi(),
-                            SubconversationDeleteRequest(
-                                subconversationDetails.epoch,
-                                subconversationDetails.groupId
-                            )
+            joinOrEstablishWithSubconversationDetails(subconversationDetails).onSuccess {
+                subconversationRepository.insertSubconversation(
+                    conversationId,
+                    subconversationId,
+                    GroupID(subconversationDetails.groupId)
+                )
+            }
+        }
+
+    private suspend fun joinOrEstablishWithSubconversationDetails(subconversationDetails: SubconversationResponse): Either<CoreFailure, Unit> =
+        if (subconversationDetails.epoch > INITIAL_EPOCH) {
+            if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
+                wrapApiRequest {
+                    conversationApi.deleteSubconversation(
+                        subconversationDetails.parentId,
+                        subconversationDetails.id,
+                        SubconversationDeleteRequest(
+                            subconversationDetails.epoch,
+                            subconversationDetails.groupId
                         )
-                    }.flatMap {
-                        mlsConversationRepository.establishMLSGroup(
-                            GroupID(subconversationDetails.groupId),
-                            emptyList()
-                        )
-                    }
-                } else {
-                    wrapApiRequest {
-                        conversationApi.fetchSubconversationGroupInfo(conversationId.toApi(), subconversationId.toApi())
-                    }.flatMap { groupInfo ->
-                        mlsConversationRepository.joinGroupByExternalCommit(
-                            GroupID(subconversationDetails.groupId),
-                            groupInfo
-                        )
-                    }
+                    )
+                }.flatMap {
+                    mlsConversationRepository.establishMLSGroup(
+                        GroupID(subconversationDetails.groupId),
+                        emptyList()
+                    )
                 }
             } else {
-                mlsConversationRepository.establishMLSGroup(GroupID(subconversationDetails.groupId), emptyList())
+                wrapApiRequest {
+                    conversationApi.fetchSubconversationGroupInfo(
+                        subconversationDetails.parentId,
+                        subconversationDetails.id
+                    )
+                }.flatMap { groupInfo ->
+                    mlsConversationRepository.joinGroupByExternalCommit(
+                        GroupID(subconversationDetails.groupId),
+                        groupInfo
+                    )
+                }
             }
+        } else {
+            mlsConversationRepository.establishMLSGroup(GroupID(subconversationDetails.groupId), emptyList())
         }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
