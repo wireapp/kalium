@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
@@ -73,33 +91,21 @@ internal class SendConfirmationUseCase internal constructor(
     }
 
     private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
-        conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
-            emptyList()
-        }, { conversation ->
+        if (isReceiptsEnabledForConversation(conversationId)) {
+            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId)
+                .fold({
+                    logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
+                    emptyList()
+                }, { it })
+        } else emptyList()
 
-            val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
-            if (!readReceiptsEnabled) {
-                emptyList()
-            } else {
-                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
-                    .fold({
-                        logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
-                        emptyList()
-                    }, { messages ->
-                        messages.map { it.id }
-                    })
+    private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
+        conversationRepository.baseInfoById(conversationId).fold({
+            false
+        }, { conversation ->
+            when (conversation.type) {
+                Conversation.Type.ONE_ON_ONE -> userPropertyRepository.getReadReceiptsStatus()
+                else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
-
-    private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
-        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
-            userPropertyRepository.getReadReceiptsStatus()
-        } else {
-            when (conversation.receiptMode) {
-                Conversation.ReceiptMode.DISABLED -> false
-                Conversation.ReceiptMode.ENABLED -> true
-            }
-        }
-
 }

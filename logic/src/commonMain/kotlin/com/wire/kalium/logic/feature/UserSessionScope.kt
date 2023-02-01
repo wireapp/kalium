@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.CoreFailure
@@ -113,14 +131,16 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
@@ -455,7 +475,8 @@ class UserSessionScope internal constructor(
             client.observeCurrentClientId,
             kaliumFileSystem,
             SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-            kaliumConfigs.shouldEncryptData
+            kaliumConfigs.shouldEncryptData,
+            userStorage.database.databaseExporter
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
@@ -597,6 +618,12 @@ class UserSessionScope internal constructor(
             clientRepository,
             conversationRepository,
             joinExistingMLSConversationUseCase
+        )
+
+    private val joinSubconversationUseCase: JoinSubconversationUseCase
+        get() = JoinSubconversationUseCaseImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            mlsConversationRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
@@ -1031,7 +1058,8 @@ class UserSessionScope internal constructor(
             syncManager,
             qualifiedIdMapper,
             clientIdProvider,
-            userConfigRepository
+            userConfigRepository,
+            joinSubconversationUseCase
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

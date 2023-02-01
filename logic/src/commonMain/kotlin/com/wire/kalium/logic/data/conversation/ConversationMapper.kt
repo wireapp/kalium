@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
@@ -39,6 +57,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
+    fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
         lastMessage: MessagePreview?,
@@ -114,6 +133,27 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
+            creatorId = creatorId,
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+        )
+    }
+
+    override fun fromDaoModel(daoModel: ConversationEntity): Conversation = with(daoModel) {
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
+        else lastReadDate.toIsoDateTimeString()
+        Conversation(
+            id = id.toModel(),
+            name = name,
+            type = type.fromDaoModelToType(),
+            teamId = teamId?.let { TeamId(it) },
+            protocol = protocolInfoMapper.fromEntity(protocolInfo),
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
+            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastReadDate = lastReadDateEntity,
+            access = access.map { it.toDAO() },
+            accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
         )

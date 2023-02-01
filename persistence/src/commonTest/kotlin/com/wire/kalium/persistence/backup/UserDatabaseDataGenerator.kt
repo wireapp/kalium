@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 @file:Suppress("StringTemplate")
 
 package com.wire.kalium.persistence.backup
@@ -20,6 +38,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
+import kotlin.random.Random
 
 class UserDatabaseDataGenerator(
     private val userDatabaseBuilder: UserDatabaseBuilder,
@@ -264,6 +283,34 @@ class UserDatabaseDataGenerator(
         }
 
         return userDatabaseBuilder.conversationDAO.getAllConversations().first()
+    }
+
+    suspend fun generateAndInsertConversationWithLastReadDate(
+        lastReadDate: Instant,
+        conversationId: ConversationIDEntity? = null,
+        index: Int = Random.nextInt(0, 5)
+    ): ConversationEntity {
+        val randomID = Random.nextBytes(16).decodeToString()
+        val type = if (index % 2 == 0) ConversationEntity.Type.ONE_ON_ONE else ConversationEntity.Type.GROUP
+        val conversation = ConversationEntity(
+            id = conversationId ?: ConversationIDEntity(randomID, "some-domain-$index"),
+            name = "name-$index",
+            type = type,
+            teamId = null,
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            mutedTime = 0,
+            removedBy = null,
+            creatorId = "creatorId$index",
+            lastNotificationDate = DEFAULT_DATE,
+            lastModifiedDate = DEFAULT_DATE,
+            lastReadDate = lastReadDate,
+            access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
+            accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        )
+        userDatabaseBuilder.conversationDAO.insertConversation(conversation)
+        return conversation
     }
 
     @Suppress("StringTemplate")

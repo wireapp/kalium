@@ -26,6 +26,9 @@ CREATE TABLE Message (
 
 -- Allows optimized querying of messages sorting by date.
 CREATE INDEX message_creation_date_index ON Message(creation_date);
+CREATE INDEX message_content_type_index ON Message(content_type);
+CREATE INDEX message_visibility_index ON Message(visibility);
+CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -38,6 +41,7 @@ CREATE TABLE MessageMention (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
 );
+CREATE INDEX message_mentioned_user_id_index ON MessageMention(user_id);
 
 CREATE TABLE MessageTextContent (
       message_id TEXT NOT NULL,
@@ -50,6 +54,7 @@ CREATE TABLE MessageTextContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
+CREATE INDEX message_text_content_quoted_id_index ON MessageTextContent(quoted_message_id) WHERE quoted_message_id IS NOT NULL;
 
 CREATE TABLE MessageRestrictedAssetContent (
       message_id TEXT NOT NULL,
@@ -133,6 +138,7 @@ CREATE TABLE MessageMissedCallContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
+CREATE INDEX message_missed_call_caller_index ON MessageMissedCallContent(caller_id);
 
 CREATE TABLE MessageConversationChangedContent (
       message_id TEXT NOT NULL,
@@ -373,15 +379,32 @@ SELECT (
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
-WHERE visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
-GROUP BY conversationId
-HAVING date = MAX(date)
-ORDER BY message.date ASC;
+WHERE id IN (
+	SELECT id FROM Message
+	WHERE
+		Message.visibility = 'VISIBLE' AND
+		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
+	GROUP BY Message.conversation_id
+	HAVING Message.creation_date = MAX(Message.creation_date)
+);
 
 getUnreadMessages:
 SELECT * FROM MessagePreview AS message
 WHERE isUnread AND isSelfMessage = 0
 AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
+
+getUnreadMessagesCount:
+SELECT
+    conversation_id,
+    COUNT()
+FROM Message
+JOIN SelfUser
+JOIN Conversation ON Conversation.qualified_id = Message.conversation_id
+WHERE Message.creation_date > Conversation.last_read_date
+AND Message.sender_user_id != SelfUser.id
+AND visibility = 'VISIBLE'
+AND content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
+GROUP BY conversation_id;
 
 deleteAllMessages:
 DELETE FROM Message;
@@ -416,6 +439,10 @@ WHERE id = ? AND conversation_id = ?;
 
 insertOrIgnoreMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertMessage:
+INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
@@ -496,11 +523,6 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
-getLatestMessageFromOtherUsers:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.isSelfMessage = FALSE
-ORDER BY MessageDetailsView.date DESC LIMIT 1;
-
 updateMessageDate:
 UPDATE Message
 SET creation_date = ?
@@ -552,7 +574,7 @@ SELECT * FROM MessagePreview AS message
 WHERE shouldNotify == 1
 AND visibility = 'VISIBLE'
 AND isSelfMessage == 0
-AND contentType IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', message.date) DESC;
+AND contentType IN ? ORDER BY message.date DESC;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
@@ -567,13 +589,13 @@ UPDATE MessageAssetContent
 SET asset_download_status = 'FAILED'
 WHERE asset_download_status = 'IN_PROGRESS';
 
-selectPendingMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.conversationId = ?
-AND visibility IN ?
-AND (expectsReadConfirmation = 1)
-AND date > ?
-ORDER BY date DESC;
+selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate:
+SELECT Message.id FROM Message LEFT JOIN Conversation ON Message.conversation_id = Conversation.qualified_id
+WHERE Message.conversation_id = ?
+AND Message.visibility IN ?
+AND (Message.expects_read_confirmation = 1)
+AND Message.creation_date > Conversation.last_read_date
+ORDER BY Message.creation_date DESC;
 
 markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent

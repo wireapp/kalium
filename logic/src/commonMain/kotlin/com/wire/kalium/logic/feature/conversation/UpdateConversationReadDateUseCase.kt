@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
@@ -13,7 +31,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -36,14 +53,14 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        selfConversationIdProvider().flatMap { selfConversationIds ->
-            sendConfirmation(conversationId)
-            conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
-            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-            }
-        }
-        return
+        // TODO: Disabled for now as we are still figuring out performance and STORAGE_ERROR issues.
+        // sendConfirmation(conversationId)
+        conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
+        // selfConversationIdProvider().flatMap { selfConversationIds ->
+        //    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+        //        sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+        //    }
+        // }
     }
 
     private suspend fun sendLastReadMessageToOtherClients(

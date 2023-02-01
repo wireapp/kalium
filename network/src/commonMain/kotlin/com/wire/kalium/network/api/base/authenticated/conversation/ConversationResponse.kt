@@ -1,8 +1,27 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.SerialName
@@ -203,4 +222,35 @@ data class ServiceReferenceDTO(
 
     @SerialName("provider")
     val provider: String
+)
+
+@Serializable
+data class SubconversationResponse(
+    @SerialName("subconv_id")
+    val id: SubconversationId,
+
+    @SerialName("parent_qualified_id")
+    val parentId: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String,
+
+    @SerialName("epoch")
+    val epoch: ULong,
+
+    @SerialName("epoch_timestamp")
+    val epochTimestamp: String?,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int,
+
+    @SerialName("members")
+    val members: List<SubconversationMember>,
+)
+
+@Serializable
+data class SubconversationMember(
+    @SerialName("client_id") val clientId: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("domain") val domain: String
 )

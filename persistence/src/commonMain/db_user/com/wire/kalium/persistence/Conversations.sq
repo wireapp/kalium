@@ -30,6 +30,7 @@ CREATE TABLE Conversation (
 CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
+CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 
 deleteAllConversations:
 DELETE FROM Conversation;
@@ -59,10 +60,6 @@ mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update
 mls_cipher_suite = excluded.mls_cipher_suite,
 receipt_mode = excluded.receipt_mode;
 
-insertMigrationOnly:
-INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);
-
 updateConversation:
 UPDATE Conversation
 SET name = ?, type = ?, team_id = ?
@@ -73,16 +70,30 @@ UPDATE Conversation
 SET mls_group_state = ?
 WHERE mls_group_id = ?;
 
+updateConversationNotificationsDateWithTheLastMessage:
+UPDATE Conversation
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    WHERE
+        Message.conversation_id = :conversationId
+    ORDER BY Message.creation_date DESC LIMIT 1
+)
+WHERE qualified_id = :conversationId;
+
+
 updateConversationNotificationsDate:
 UPDATE Conversation
-SET last_notified_date = ?
-WHERE qualified_id = ?;
+SET last_notified_date = :last_notified_date
+WHERE qualified_id = :conversationId;
 
-updateAllUnNotifiedConversationsNotificationsDate:
+updateAllNotifiedConversationsNotificationsDate:
 UPDATE Conversation
-SET last_notified_date = ?
-WHERE last_modified_date ISNULL
-OR last_modified_date > last_notified_date;
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    ORDER BY Message.creation_date DESC LIMIT 1
+);
 
 updateConversationModifiedDate:
 UPDATE Conversation
@@ -190,6 +201,13 @@ SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER B
 
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
+
+selectConversationByQualifiedId:
+SELECT * FROM Conversation WHERE qualified_id = ?;
+
+selectProtocolInfoByQualifiedId:
+SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
+mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
 
 selectReceiptModeFromGroupConversationByQualifiedId:
 SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
