@@ -188,15 +188,7 @@ class MessageDataSource(
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
     ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
-        messageDAO.getNotificationMessage(
-            listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.RESTRICTED_ASSET,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.KNOCK,
-                MessageEntity.ContentType.MISSED_CALL
-            )
-        ).mapLatest {
+        messageDAO.getNotificationMessage().mapLatest {
             it.groupBy { item ->
                 item.conversationId
             }.map { (conversationId, messages) ->

@@ -221,11 +221,8 @@ class MessageDAOImpl(
             .flowOn(coroutineContext)
             .mapToList()
 
-    override suspend fun getNotificationMessage(
-        filteredContent: List<MessageEntity.ContentType>
-    ): Flow<List<NotificationMessageEntity>> =
+    override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
         notificationQueries.getNotificationsMessages(
-            filteredContent,
             mapper::toNotificationEntity
         ).asFlow()
             .flowOn(coroutineContext)

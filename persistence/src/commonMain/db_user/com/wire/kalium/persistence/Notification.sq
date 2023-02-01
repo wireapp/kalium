@@ -1,4 +1,4 @@
- CREATE VIEW IF NOT EXISTS NotificationMessage
+CREATE VIEW IF NOT EXISTS NotificationMessage
 AS SELECT
     Message.id AS id,
     Message.conversation_id AS conversationId,
@@ -27,4 +27,4 @@ ORDER BY Message.creation_date DESC;
 
 getNotificationsMessages:
 SELECT * FROM NotificationMessage AS message WHERE
-contentType IN ?;
+contentType IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL');
