@@ -23,8 +23,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 
 /**
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
