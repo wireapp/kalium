@@ -19,9 +19,12 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView
 
-actual class FlowManagerServiceImpl : FlowManagerService {
+actual class FlowManagerServiceImpl(
+    appContext: PlatformContext
+) : FlowManagerService {
     override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         TODO("Not yet implemented")
     }
