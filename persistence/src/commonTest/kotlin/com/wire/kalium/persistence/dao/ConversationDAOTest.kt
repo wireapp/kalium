@@ -932,7 +932,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = instant
         ).also { messageDAO.insertOrIgnoreMessage(it) }
 
-        // TODO: insert another message from self user to check if it is ignored
+        // TODO: insert another message from self user to check if it is not ignored
         userDAO.insertUser(user1)
 
         newRegularMessageEntity(
