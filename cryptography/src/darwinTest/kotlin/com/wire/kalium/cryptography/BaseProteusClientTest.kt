@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.Dispatchers
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 
@@ -32,7 +33,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, ProteusDBSecret("secret"))
+        return ProteusClientImpl(proteusStore.value, ProteusDBSecret("secret"), Dispatchers.Default, Dispatchers.Default)
     }
 
 }
