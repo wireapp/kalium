@@ -51,6 +51,7 @@ CREATE TABLE MessageTextContent (
       text_body TEXT,
       quoted_message_id TEXT,
       is_quote_verified INTEGER AS Boolean,
+      is_quoting_self INTEGER AS Boolean NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -303,7 +304,7 @@ AS SELECT
     ConversationNameChangedContent.conversation_name AS updateConversationName,
     Conversation.name AS conversationName,
     (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
     TextContent.text_body AS text,
     AssetContent.asset_mime_type AS assetMimeType,
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
@@ -313,7 +314,6 @@ AS SELECT
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
@@ -396,6 +396,7 @@ deleteMessageById:
 DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
+   BEGIN;
    UPDATE Message
    SET visibility = 'DELETED'
    WHERE id = :message_id AND conversation_id = :conversation_id;
@@ -405,8 +406,9 @@ markMessageAsDeleted {
    DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
-
-   INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
+   -- deleted messages will not have a quote 100%
+   INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
+   COMMIT;
 }
 
 markMessageAsEdited:
@@ -427,8 +429,19 @@ INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length,
 VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
-INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
-VALUES(?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, is_quoting_self)
+VALUES(:message_id, :conversatopn_id, :text_body, :quoted_message_id, :is_quote_verified,
+CASE WHEN
+                quoted_message_id IS NULL
+                    THEN 0
+                    ELSE (
+                        SELECT (Message.sender_user_id == SelfUser.id)
+                        FROM Message
+                        LEFT JOIN SelfUser
+                         WHERE
+                            Message.id = quoted_message_id AND
+                            conversation_id = :conversatopn_id
+                         )END);
 
 insertMessageRestrictedAssetContent:
 INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
