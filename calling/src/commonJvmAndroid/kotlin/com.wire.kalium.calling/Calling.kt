@@ -159,7 +159,7 @@ interface Calling : Library {
         activeSpeakersHandler: ActiveSpeakersHandler
     )
 
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionNaming", "LongParameterList")
     fun wcall_set_epoch_info(
         inst: Handle,
         conversationId: String,

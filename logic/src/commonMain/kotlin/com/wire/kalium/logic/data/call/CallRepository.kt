@@ -62,6 +62,7 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,7 +104,11 @@ interface CallRepository {
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
-    suspend fun joinMlsConference(conversationId: ConversationId, scope: CoroutineScope, onEpochChange: suspend (ConversationId, EpochInfo) -> Unit): Either<CoreFailure, Unit>
+    suspend fun joinMlsConference(
+        conversationId: ConversationId,
+        scope: CoroutineScope,
+        onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
+    ): Either<CoreFailure, Unit>
     suspend fun leaveMlsConference(conversationId: ConversationId)
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
 }
@@ -490,6 +495,7 @@ internal class CallDataSource(
             }
         }
 
+    @OptIn(FlowPreview::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {

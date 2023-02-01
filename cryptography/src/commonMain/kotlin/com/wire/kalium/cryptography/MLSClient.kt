@@ -221,7 +221,6 @@ interface MLSClient {
         message: ApplicationMessage
     ): DecryptedMessageBundle
 
-
     /**
      * Current members of the group.
      *
@@ -261,7 +260,7 @@ interface MLSClient {
      * Derive a secret key from the current MLS group state
      *
      * @param groupId MLS group
-     * @param keySize size of derived key in bytes
+     * @param keyLength length of derived key in bytes
      *
      * @return secret key
      */

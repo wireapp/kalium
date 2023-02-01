@@ -207,8 +207,8 @@ actual class MLSClientImpl actual constructor(
         return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
     }
 
-    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt):  ByteArray {
-        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()),  keyLength))
+    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
+        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
     companion object {

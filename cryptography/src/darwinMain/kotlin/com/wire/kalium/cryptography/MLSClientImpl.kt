@@ -224,7 +224,7 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
-        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()),  keyLength))
+        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
     companion object {
@@ -270,7 +270,8 @@ actual class MLSClientImpl actual constructor(
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
-            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) }
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
+            value.hasEpochChanged
         )
     }
 

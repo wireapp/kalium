@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -189,7 +188,10 @@ class MLSConversationDataSource(
                     wrapStorageRequest {
                         if (conversationDAO.getConversationByGroupID(groupID).first() != null) {
                             // Welcome arrived after the conversation create event, updating existing conversation.
-                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
+                            conversationDAO.updateConversationGroupState(
+                                ConversationEntity.GroupState.ESTABLISHED,
+                                groupID
+                            )
                             kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
                         }
                     }
@@ -270,7 +272,10 @@ class MLSConversationDataSource(
                     sendCommitBundle(groupID, commitBundle)
                 }.flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), DateTimeUtil.currentInstant())
+                        conversationDAO.updateKeyingMaterial(
+                            idMapper.toCryptoModel(groupID),
+                            DateTimeUtil.currentInstant()
+                        )
                     }
                 }
             }

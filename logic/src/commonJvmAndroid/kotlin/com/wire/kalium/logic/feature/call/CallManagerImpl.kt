@@ -64,11 +64,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChang
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.util.KaliumDispatcher
@@ -351,8 +347,9 @@ class CallManagerImpl internal constructor(
     override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
         withCalling {
             com.wire.kalium.logic.callingLogger.d(
-                "${com.wire.kalium.logic.feature.call.CallManagerImpl.TAG} - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
-                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} for epoch = ${epochInfo.epoch}")
+                "$TAG - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} for epoch = ${epochInfo.epoch}"
+            )
 
             wcall_set_epoch_info(
                 it,

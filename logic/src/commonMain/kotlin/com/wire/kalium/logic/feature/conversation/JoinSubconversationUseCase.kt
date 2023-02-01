@@ -36,7 +36,10 @@ class JoinSubconversationUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
     val subconversationRepository: SubconversationRepository
 ) : JoinSubconversationUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
     private suspend fun joinOrEstablishSubconversation(
         conversationId: ConversationId,
@@ -54,7 +57,9 @@ class JoinSubconversationUseCaseImpl(
             }
         }
 
-    private suspend fun joinOrEstablishWithSubconversationDetails(subconversationDetails: SubconversationResponse): Either<CoreFailure, Unit> =
+    private suspend fun joinOrEstablishWithSubconversationDetails(
+        subconversationDetails: SubconversationResponse
+    ): Either<CoreFailure, Unit> =
         if (subconversationDetails.epoch > INITIAL_EPOCH) {
             if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
                 wrapApiRequest {
