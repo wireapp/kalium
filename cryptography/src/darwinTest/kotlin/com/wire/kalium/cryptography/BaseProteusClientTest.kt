@@ -19,11 +19,14 @@
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 
 @OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
+
+    private val standardScope = TestCoroutineScheduler()
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
@@ -34,7 +37,12 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, defaultContext = standardScope, ioContext = standardScope)
+        return ProteusClientImpl(
+            rootDir = proteusStore.value,
+            databaseKey = ProteusDBSecret("secret"),
+            defaultContext = standardScope,
+            ioContext = standardScope
+        )
     }
 
 }
