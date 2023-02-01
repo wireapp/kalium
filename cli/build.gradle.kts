@@ -31,8 +31,18 @@ application {
     mainClass.set(mainFunctionClassName)
 }
 
+tasks.jar {
+    manifest.attributes["Main-Class"] = mainFunctionClassName
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 kotlin {
-    jvm() {
+    val jvmTarget = jvm() {
         commonJvmConfig(includeNativeInterop = false)
         tasks.named("run", JavaExec::class) {
             isIgnoreExitValue = true
@@ -85,6 +95,18 @@ kotlin {
         }
         val macosArm64Main by getting {
             dependsOn(darwinMain)
+        }
+
+        tasks.withType<JavaExec> {
+            // code to make run task in kotlin multiplatform work
+            val compilation = jvmTarget.compilations.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation>("main")
+
+            val classes = files(
+                compilation.runtimeDependencyFiles,
+                compilation.output.allOutputs
+            )
+            classpath(classes)
+            setJvmArgs(listOf("-Djava.library.path=/usr/local/lib/:./native/libs"))
         }
     }
 }
