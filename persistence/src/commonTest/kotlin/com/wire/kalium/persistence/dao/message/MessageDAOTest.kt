@@ -694,13 +694,18 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessageFailedToDecrypt_WhenMarkingAsResolved_ThenTheValuesShouldBeUpdated() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
+        val conversationId2 = QualifiedIDEntity("2", "someDomain")
+
         val messageId = "textMessage"
+        val messageId2 = "textMessage2"
         conversationDAO.insertConversation(
-            newConversationEntity(
-                id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
-            )
+            newConversationEntity(id = conversationId)
         )
+
+        conversationDAO.insertConversation(
+            newConversationEntity(id = conversationId)
+        )
+
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -708,6 +713,14 @@ class MessageDAOTest : BaseDatabaseTest() {
                     id = messageId,
                     date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    senderClientId = "someClient",
+                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
+                ),
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId2,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
                     content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
@@ -721,6 +734,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
+        val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2).firstOrNull()
+        assertTrue((updatedMessage2?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
     }
 
     @Test
