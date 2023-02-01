@@ -34,11 +34,13 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -62,7 +64,11 @@ import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChang
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.util.KaliumDispatcher
@@ -211,6 +217,7 @@ class CallManagerImpl internal constructor(
             "$TAG -> starting call for conversation = " +
                     "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
         )
+        val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
@@ -226,7 +233,7 @@ class CallManagerImpl internal constructor(
             // TODO: Handle response. Possible failure?
             wcall_start(
                 deferredHandle.await(),
-                federatedIdMapper.parseToFederatedId(conversationId),
+                federatedId,
                 avsCallType.avsValue,
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
@@ -237,23 +244,39 @@ class CallManagerImpl internal constructor(
                         "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} started"
             )
         }
+
+        if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+                updateEpochInfo(conversationId, epochInfo)
+            }
+        }
     }
 
-    override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d(
-            "$TAG -> answering call for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
-        )
-        wcall_answer(
-            inst = deferredHandle.await(),
-            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-            callType = CallTypeCalling.AUDIO.avsValue,
-            cbrEnabled = false
-        )
-        callingLogger.d(
-            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} answered"
-        )
+    override suspend fun answerCall(conversationId: ConversationId) {
+        val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
+
+        withCalling {
+            callingLogger.d(
+                "$TAG -> answering call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+            )
+            wcall_answer(
+                inst = deferredHandle.await(),
+                conversationId = federatedId,
+                callType = CallTypeCalling.AUDIO.avsValue,
+                cbrEnabled = false
+            )
+            callingLogger.d(
+                "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} answered"
+            )
+        }
+
+        if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+                updateEpochInfo(conversationId, epochInfo)
+            }
+        }
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
@@ -321,6 +344,23 @@ class CallManagerImpl internal constructor(
                 conversationId = conversationIdString,
                 mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
                 json = clientsJson
+            )
+        }
+    }
+
+    override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
+        withCalling {
+            com.wire.kalium.logic.callingLogger.d(
+                "${com.wire.kalium.logic.feature.call.CallManagerImpl.TAG} - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
+                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} for epoch = ${epochInfo.epoch}")
+
+            wcall_set_epoch_info(
+                it,
+                federatedIdMapper.parseToFederatedId(conversationId),
+                Uint32_t(epochInfo.epoch.toLong()),
+                epochInfo.members.toJsonString(),
+                epochInfo.sharedSecret,
+                Uint32_t(epochInfo.sharedSecret.size.toLong())
             )
         }
     }
