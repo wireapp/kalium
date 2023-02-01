@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.call
 
-import android.content.Context
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
@@ -35,11 +34,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.CurrentPlatform
+import com.wire.kalium.logic.util.PlatformType
 import io.ktor.util.collections.ConcurrentMap
-import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
-    appContext: Context
+    appContext: PlatformContext
 ) {
 
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
@@ -48,7 +49,12 @@ actual class GlobalCallManager(
 
     private val calling by lazy {
         Calling.INSTANCE.apply {
-            wcall_init(env = ENVIRONMENT_DEFAULT)
+            if (CurrentPlatform().type == PlatformType.ANDROID)
+                wcall_init(env = ENVIRONMENT_DEFAULT)
+            else {
+                wcall_setup()
+                wcall_run()
+            }
             wcall_set_log_handler(
                 logHandler = LogHandlerImpl,
                 arg = null
@@ -94,12 +100,13 @@ actual class GlobalCallManager(
     }
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
-    private val flowManager = FlowManagerServiceImpl(appContext, Dispatchers.Default)
+    private val flowManager = FlowManagerServiceImpl(appContext)
 
     actual fun getFlowManager(): FlowManagerService = flowManager
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
     private val mediaManager = MediaManagerServiceImpl(appContext)
+
     actual fun getMediaManager(): MediaManagerService = mediaManager
 }
 
