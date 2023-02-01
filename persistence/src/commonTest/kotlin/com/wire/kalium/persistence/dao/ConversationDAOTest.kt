@@ -266,10 +266,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z".toInstant()
-            )
+            .updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"))
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
@@ -292,10 +289,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z".toInstant()
-            )
+            .updateConversationNotificationDate(conversationEntity2.id)
 
         val result = conversationDAO.getConversationsForNotifications().first()
         // THEN
@@ -929,6 +923,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val instant = Clock.System.now()
 
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+        // TODO: insert another message from self user to check if it is ignored
         userDAO.insertUser(user1)
 
         newRegularMessageEntity(

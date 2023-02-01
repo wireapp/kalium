@@ -37,7 +37,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -529,14 +528,28 @@ internal class MessageInsertExtensionImpl(
             )
 
             is MessageEntityContent.TeamMemberRemoved -> {
-                // TODO: What needs to be done here?
-                //       When migrating to Kotlin 1.7, when branches must be exhaustive!
-                kaliumLogger.w("TeamMemberRemoved message insertion not handled")
+                /* no-op */
             }
 
             is MessageEntityContent.CryptoSessionReset -> {
-                // NOTHING TO DO
+                /* no-op */
             }
+
+            is MessageEntityContent.HistoryLost -> {
+                /* no-op */
+            }
+
+            is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertConversationReceiptModeChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                receipt_mode = content.receiptMode
+            )
+
+            is MessageEntityContent.NewConversationReceiptMode -> messagesQueries.insertNewConversationReceiptMode(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                receipt_mode = content.receiptMode
+            )
         }
     }
 
@@ -552,6 +565,9 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
+        is MessageEntityContent.NewConversationReceiptMode -> MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
+        is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
+        is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
     }
 }
 
