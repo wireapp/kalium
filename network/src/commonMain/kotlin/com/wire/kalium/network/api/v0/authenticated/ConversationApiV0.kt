@@ -31,15 +31,20 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
@@ -234,12 +239,37 @@ internal open class ConversationApiV0 internal constructor(
         }
 
     override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
-       wrapKaliumResponse {
-           httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
+        wrapKaliumResponse {
+            httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
-               parameter(QUERY_KEY_KEY, key)
-           }
-       }
+                parameter(QUERY_KEY_KEY, key)
+            }
+        }
+
+    override suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<SubconversationResponse> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
+        )
+
+    override suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
+        )
+
+    override suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: deleteSubconversation api is only available on API V3")
+        )
 
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse
@@ -259,6 +289,29 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
+    override suspend fun updateReceiptMode(
+        conversationId: ConversationId,
+        receiptMode: ConversationReceiptModeDTO
+    ): NetworkResponse<UpdateConversationReceiptModeResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_RECEIPT_MODE") {
+            setBody(receiptMode)
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateConversationReceiptModeResponse.ReceiptModeUnchanged,
+                    httpResponse
+                )
+
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.ReceiptModeUpdate> { httpResponse }
+                    .mapSuccess {
+                        UpdateConversationReceiptModeResponse.ReceiptModeUpdated(it)
+                    }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -270,6 +323,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_ACCESS = "access"
         const val PATH_NAME = "name"
         const val PATH_JOIN = "join"
+        const val PATH_RECEIPT_MODE = "receipt-mode"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"

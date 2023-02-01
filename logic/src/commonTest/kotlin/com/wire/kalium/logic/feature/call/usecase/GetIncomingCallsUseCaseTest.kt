@@ -213,7 +213,7 @@ class GetIncomingCallsUseCaseTest {
 
         fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Conversation>): Arrangement {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
+                .suspendFunction(conversationRepository::baseInfoById)
                 .whenInvokedWith(any())
                 .then { id -> detailsGetter(id) }
             return this

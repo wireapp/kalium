@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -56,7 +57,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -99,6 +102,7 @@ interface ConversationRepository {
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
@@ -178,6 +182,11 @@ interface ConversationRepository {
         conversationId: ConversationId,
         conversationName: String
     ): Either<CoreFailure, ConversationRenameResponse>
+
+    suspend fun updateReceiptMode(
+        conversationId: ConversationId,
+        receiptMode: Conversation.ReceiptMode
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -197,6 +206,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -328,16 +338,13 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadMessages(),
-        ) { conversationList, lastMessageList, unreadMessageList ->
-            val groupedMessages = unreadMessageList.groupBy { it.conversationId }
+            messageDAO.observeUnreadMessageCounter(),
+        ) { conversationList, lastMessageList, unreadMessageCount ->
+            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageList.firstOrNull { it.conversationId == conversation.id }
-                        ?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    groupedMessages[conversation.id]?.mapNotNull { message ->
-                        messageMapper.fromPreviewEntityToUnreadEventCount(message)
-                    }?.groupingBy { it }?.eachCount()
+                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
                 )
             }
         }
@@ -391,9 +398,15 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationBaseInfoByQualifiedID(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao()).first()?.protocolInfo?.let {
+            conversationDAO.getConversationProtocolInfo(conversationId.toDao()).let {
                 protocolInfoMapper.fromEntity(it)
             }
         }
@@ -594,9 +607,9 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
         conversationDAO.whoDeletedMeInConversation(
-                conversationId.toDao(),
-                idMapper.toStringDaoModel(selfUserId)
-            )?.toModel()
+            conversationId.toDao(),
+            idMapper.toStringDaoModel(selfUserId)
+        )?.toModel()
     }
 
     override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
@@ -622,6 +635,36 @@ internal class ConversationDataSource internal constructor(
         conversationName: String
     ): Either<CoreFailure, ConversationRenameResponse> = wrapApiRequest {
         conversationApi.updateConversationName(conversationId.toApi(), conversationName)
+    }
+
+    override suspend fun updateReceiptMode(
+        conversationId: ConversationId,
+        receiptMode: Conversation.ReceiptMode
+    ): Either<CoreFailure, Unit> = ConversationReceiptModeDTO(
+        receiptMode = receiptModeMapper.fromModelToApi(receiptMode)
+    ).let { conversationReceiptModeDTO ->
+        wrapApiRequest {
+            conversationApi.updateReceiptMode(
+                conversationId = conversationId.toApi(),
+                receiptMode = conversationReceiptModeDTO
+            )
+        }
+    }.flatMap { response ->
+        when (response) {
+            UpdateConversationReceiptModeResponse.ReceiptModeUnchanged -> {
+                // no need to update conversation
+                Either.Right(Unit)
+            }
+
+            is UpdateConversationReceiptModeResponse.ReceiptModeUpdated -> {
+                wrapStorageRequest {
+                    conversationDAO.updateConversationReceiptMode(
+                        conversationID = response.event.qualifiedConversation.toDao(),
+                        receiptMode = receiptModeMapper.fromApiToDaoModel(response.event.data.receiptMode)
+                    )
+                }
+            }
+        }
     }
 
     companion object {

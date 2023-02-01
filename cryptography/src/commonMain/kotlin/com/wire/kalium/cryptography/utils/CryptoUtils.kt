@@ -18,8 +18,18 @@
 
 package com.wire.kalium.cryptography.utils
 
+import com.wire.kalium.cryptography.kaliumLogger
+import io.ktor.util.encodeBase64
+import okio.Buffer
+import okio.HashingSink
 import okio.Sink
 import okio.Source
+import okio.blackholeSink
+import okio.buffer
+import okio.use
+
+fun calcMd5(bytes: ByteArray): String =
+    Buffer().use { it.write(bytes).md5().toByteArray().encodeBase64() }
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
@@ -27,7 +37,22 @@ import okio.Source
  * @return the digested md5 hash of the input [bytes] data
  * @see calcFileMd5
  */
-expect fun calcMd5(bytes: ByteArray): String
+@Suppress("TooGenericExceptionCaught")
+fun calcFileMd5(dataSource: Source): String? =
+    try {
+        dataSource.buffer().peek().use { source ->
+            HashingSink.md5(blackholeSink()).use { sink ->
+                source.readAll(sink)
+                sink.hash.toByteArray().encodeBase64()
+            }
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e("There was an error while calculating the md5")
+        null
+    }
+
+fun calcSHA256(bytes: ByteArray): ByteArray =
+    Buffer().use { it.write(bytes).sha256().toByteArray() }
 
 /**
  * Method used to calculate the digested SHA256 hash of a relatively small byte array
@@ -35,23 +60,19 @@ expect fun calcMd5(bytes: ByteArray): String
  * @return the digested SHA256 hash of the input [bytes] data
  * @see calcFileSHA256
  */
-expect fun calcSHA256(bytes: ByteArray): ByteArray
-
-/**
- * Method used to calculate the digested MD5 hash of a given file
- * @param dataSource the data stream used to read the stored data and hash it
- * @return the digested md5 hash of the input [dataSource]
- * @see calcMd5
- */
-expect fun calcFileMd5(dataSource: Source): String?
-
-/**
- * Method used to calculate the digested MD5 hash of a given file
- * @param dataSource the data stream used to read the stored data and hash it
- * @return the digested md5 hash of the input [dataSource]
- * @see calcSHA256
- */
-expect fun calcFileSHA256(dataSource: Source): ByteArray?
+@Suppress("TooGenericExceptionCaught")
+fun calcFileSHA256(dataSource: Source): ByteArray? =
+    try {
+        dataSource.buffer().peek().use { source ->
+            HashingSink.sha256(blackholeSink()).use { sink ->
+                source.readAll(sink)
+                sink.hash.toByteArray()
+            }
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e("There was an error while calculating the SHA256")
+        null
+    }
 
 /**
  * Method used to encrypt a relatively small array of bytes using the AES256 encryption algorithm
