@@ -73,6 +73,27 @@ class JoinSubconversationUseCaseTest {
         }
 
     @Test
+    fun givenJoiningSubconversation_whenInvokingUseCase_ThenSubconversationIsPersisted() =
+        runTest {
+            val (arrangement, joinSubconversationUseCase) = Arrangement()
+                .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
+                .withFetchingSubconversationGroupInfoSuccessful()
+                .withJoinByExternalCommitSuccessful()
+                .arrange()
+
+            joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
+
+            verify(arrangement.subconversationRepository)
+                .suspendFunction(arrangement.subconversationRepository::insertSubconversation)
+                .with(
+                    eq(Arrangement.CONVERSATION_ID),
+                    eq(Arrangement.SUBCONVERSATION_ID,),
+                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId))
+                )
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
     fun givenStaleEpoch_whenInvokingUseCase_ThenDeleteAndEstablishGroup() =
         runTest {
             val (arrangement, joinSubconversationUseCase) = Arrangement()
