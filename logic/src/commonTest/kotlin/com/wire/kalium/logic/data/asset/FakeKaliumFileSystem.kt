@@ -52,6 +52,7 @@ class FakeKaliumFileSystem(
         fakeFileSystem.createDirectories(userHomePath)
         fakeFileSystem.createDirectory(dataStoragePaths.cachePath.value.toPath())
         fakeFileSystem.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
+        fakeFileSystem.createDirectory(dataStoragePaths.dbPath.value.toPath())
     }
 
     override val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()

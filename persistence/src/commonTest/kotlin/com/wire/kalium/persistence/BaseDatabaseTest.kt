@@ -29,19 +29,17 @@ expect open class BaseDatabaseTest() {
     val encryptedDBSecret: UserDBSecret
 
     fun databasePath(
-        userId: UserIDEntity = DefaultDatabaseTestValues.userId
+        userId: UserIDEntity
     ): String
 
     fun deleteDatabase(
-        userId: UserIDEntity = DefaultDatabaseTestValues.userId
+        userId: UserIDEntity
     )
 
-    fun createDatabase(
-        userId: UserIDEntity = DefaultDatabaseTestValues.userId
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
     ): UserDatabaseBuilder
 
-}
-
-object DefaultDatabaseTestValues {
-    val userId = UserIDEntity("78dd6502-ab84-40f7-a8b3-1e7e1eb4cc8c", "user_12_domain")
 }

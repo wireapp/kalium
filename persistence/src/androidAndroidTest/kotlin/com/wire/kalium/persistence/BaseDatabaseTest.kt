@@ -21,15 +21,17 @@ package com.wire.kalium.persistence
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
+@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseDatabaseTest actual constructor() {
-
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
@@ -38,13 +40,13 @@ actual open class BaseDatabaseTest actual constructor() {
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
+    actual fun createDatabase(userId: UserIDEntity, passphrase: UserDBSecret?, enableWAL: Boolean): UserDatabaseBuilder {
         return userDatabaseBuilder(
-            context = ApplicationProvider.getApplicationContext(),
+            platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
             userId = userId,
-            encrypt = true,
-            passphrase = encryptedDBSecret,
-            dispatcher = dispatcher
+            passphrase = passphrase,
+            dispatcher = dispatcher,
+            enableWAL = enableWAL
         )
     }
 
@@ -52,5 +54,4 @@ actual open class BaseDatabaseTest actual constructor() {
         val context: Context = ApplicationProvider.getApplicationContext()
         return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
     }
-
 }
