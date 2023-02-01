@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -48,9 +49,11 @@ interface MessageMapper {
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
+    fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
 class MessageMapperImpl(
+    private val idMapper: IdMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
@@ -67,7 +70,7 @@ class MessageMapperImpl(
         return when (message) {
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
-                content = message.content.toMessageEntityContent(),
+                content = toMessageEntityContent(message.content),
                 conversationId = message.conversationId.toDao(),
                 date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
@@ -181,6 +184,7 @@ class MessageMapperImpl(
                     null
                 ), message.date, content.messageBody
             )
+
             is MessagePreviewEntityContent.Asset -> {
                 val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
@@ -193,16 +197,19 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
+
             is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Knock(
                 LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 message.date
             )
+
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 time = message.date,
                 text = content.messageBody,
                 isMentionedSelf = true,
             )
+
             is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
                 time = message.date,
@@ -218,15 +225,15 @@ class MessageMapperImpl(
         }
 
     @Suppress("ComplexMethod")
-    private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
+    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
         is MessageContent.Text -> MessageEntityContent.Text(
-            messageBody = this.value,
-            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified,
+            messageBody = regularMessage.value,
+            mentions = regularMessage.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
         )
 
-        is MessageContent.Asset -> with(this.value) {
+        is MessageContent.Asset -> with(regularMessage.value) {
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
                 is Video -> metadata.width
@@ -261,22 +268,26 @@ class MessageMapperImpl(
             )
         }
 
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
+            regularMessage.mimeType,
+            regularMessage.sizeInBytes,
+            regularMessage.name
+        )
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
-            this.encodedData,
-            this.isDecryptionResolved,
-            this.senderUserId.toDao(),
-            this.clientId?.value
+            regularMessage.encodedData,
+            regularMessage.isDecryptionResolved,
+            regularMessage.senderUserId.toDao(),
+            regularMessage.clientId?.value
         )
 
         // We store the unknown fields of the message in case we want to start handling them in the future
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(regularMessage.typeName, regularMessage.encodedData)
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
+        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -406,11 +417,13 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserAdded = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+
     is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
         senderName = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
