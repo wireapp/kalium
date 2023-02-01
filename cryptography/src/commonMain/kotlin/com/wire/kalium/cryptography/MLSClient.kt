@@ -52,7 +52,8 @@ open class CommitBundle(
 class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
-    val senderClientId: CryptoQualifiedClientId?
+    val senderClientId: CryptoQualifiedClientId?,
+    val hasEpochChanged: Boolean
 )
 @JvmInline
 value class Ed22519Key(
@@ -220,13 +221,23 @@ interface MLSClient {
         message: ApplicationMessage
     ): DecryptedMessageBundle
 
+
+    /**
+     * Current members of the group.
+     *
+     * @param groupId MLS group
+     *
+     * @return list of client IDs for all current members.
+     */
+    fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId>
+
     /**
      * Add a user/client to an existing MLS group
      *
      * @param groupId MLS group
      * @param members list of clients with a claimed key package for each client.
      *
-     * * @return commit bundle, which needs to be sent to the distribution service.
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun addMember(
         groupId: MLSGroupId,
@@ -245,6 +256,16 @@ interface MLSClient {
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
     ): CommitBundle
+
+    /**
+     * Derive a secret key from the current MLS group state
+     *
+     * @param groupId MLS group
+     * @param keySize size of derived key in bytes
+     *
+     * @return secret key
+     */
+    fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

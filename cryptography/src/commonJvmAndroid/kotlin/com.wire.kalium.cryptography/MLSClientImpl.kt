@@ -175,6 +175,12 @@ actual class MLSClientImpl actual constructor(
         coreCrypto.clearPendingCommit(toUByteList(groupId.decodeBase64Bytes()))
     }
 
+    override fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
+        return coreCrypto.getClientIds(toUByteList(groupId.decodeBase64Bytes())).mapNotNull {
+            CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it)))
+        }
+    }
+
     override fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
@@ -199,6 +205,10 @@ actual class MLSClientImpl actual constructor(
         }
 
         return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
+    }
+
+    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt):  ByteArray {
+        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()),  keyLength))
     }
 
     companion object {
@@ -244,7 +254,8 @@ actual class MLSClientImpl actual constructor(
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
-            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) }
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) },
+            value.hasEpochChanged
         )
     }
 
