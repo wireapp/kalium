@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -7,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -25,6 +44,7 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 
@@ -46,7 +66,9 @@ class ConversationScope internal constructor(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
-    private val renamedConversationHandler: RenamedConversationEventHandler
+    private val renamedConversationHandler: RenamedConversationEventHandler,
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -89,7 +111,15 @@ class ConversationScope internal constructor(
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider)
+        get() = CreateGroupConversationUseCase(
+            conversationRepository,
+            conversationGroupRepository,
+            syncManager,
+            currentClientIdProvider,
+            selfUserId,
+            persistMessage,
+            isSelfATeamMember
+        )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
@@ -141,5 +171,22 @@ class ConversationScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider
+        )
+
+    val joinConversationViaCode: JoinConversationViaCodeUseCase
+        get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
+
+    val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
+        get() = CheckConversationInviteCodeUseCase(
+            conversationGroupRepository,
+            conversationRepository,
+            selfUserId
+        )
+
+    val updateConversationReceiptMode: UpdateConversationReceiptModeUseCase
+        get() = UpdateConversationReceiptModeUseCaseImpl(
+            conversationRepository = conversationRepository,
+            persistMessage = persistMessage,
+            selfUserId = selfUserId
         )
 }

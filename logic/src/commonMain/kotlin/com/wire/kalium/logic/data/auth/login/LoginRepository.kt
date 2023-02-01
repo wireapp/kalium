@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.NetworkFailure
@@ -15,19 +33,20 @@ internal interface LoginRepository {
     suspend fun loginWithEmail(
         email: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
 internal class LoginRepositoryImpl internal constructor(
     private val loginApi: LoginApi,
-    private val clientLabel: String,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : LoginRepository {
@@ -35,16 +54,18 @@ internal class LoginRepositoryImpl internal constructor(
     override suspend fun loginWithEmail(
         email: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
+        login(LoginApi.LoginParam.LoginWithEmail(email, password, label), shouldPersistClient)
 
     override suspend fun loginWithHandle(
         handle: String,
         password: String,
+        label: String?,
         shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
+        login(LoginApi.LoginParam.LoginWithHandel(handle, password, label), shouldPersistClient)
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,

@@ -1,18 +1,37 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
@@ -31,33 +50,39 @@ interface GetNotificationsUseCase {
  *
  * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
- * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
- * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
- * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
  * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
  */
 @Suppress("LongParameterList")
 internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
-    private val selfUserId: UserId,
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return merge(
-            messageRepository.getNotificationMessage(),
-            observeConnectionRequests(),
-            ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
-        )
+        return incrementalSyncRepository.incrementalSyncState
+            .map { it != IncrementalSyncStatus.FetchingPendingEvents }
+            .flatMapLatest { isLive ->
+                if (isLive) {
+                    merge(
+                        messageRepository.getNotificationMessage().fold({ flowOf() }, { it }),
+                        observeConnectionRequests(),
+                        observeEphemeralNotifications()
+                    )
+                } else {
+                    observeEphemeralNotifications()
+                }
+                    .map { list -> list.filter { it.messages.isNotEmpty() } }
+            }
             .distinctUntilChanged()
-            .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
+            .filter { it.isNotEmpty() }
     }
+
+    private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
+        ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
         return connectionRepository.observeConnectionRequestsForNotification()
@@ -66,12 +91,5 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     .filterIsInstance<ConversationDetails.Connection>()
                     .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
             }
-    }
-
-    // TODO: will consider these values in query lever after SQLDelight added window functions
-    companion object {
-        private const val DEFAULT_MESSAGE_LIMIT = 100
-        private const val DEFAULT_MESSAGE_OFFSET = 0
-        private const val NOTIFICATION_DATE_OFFSET = 1000L
     }
 }

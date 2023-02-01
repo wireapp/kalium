@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
@@ -54,13 +72,13 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenStoredConfig_thenItCanBeRetrievedAsList() {
+    fun givenStoredConfig_thenItCanBeRetrievedAsList() = runTest {
         val (arrangement, repository) = Arrangement().withDaoEntityResponse().arrange()
         val expected = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3))
 
         repository.configList().shouldSucceed { assertEquals(it, expected) }
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::allConfig)
+            .suspendFunction(arrangement.serverConfigDAO::allConfig)
             .wasInvoked(exactly = once)
     }
 
@@ -75,12 +93,12 @@ class ServerConfigRepositoryTest {
         assertEquals(expected.first(), actual.value.first()[0])
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::allConfigFlow)
+            .suspendFunction(arrangement.serverConfigDAO::allConfigFlow)
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenStoredConfig_thenItCanBeRetrievedById() {
+    fun givenStoredConfig_thenItCanBeRetrievedById() = runTest {
         val (arrangement, repository) = Arrangement()
             .withConfigById(newServerConfigEntity(1))
             .arrange()
@@ -97,7 +115,7 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenStoredConfig_thenItCanBeDeleted() {
+    fun givenStoredConfig_thenItCanBeDeleted() = runTest {
         val serverConfigId = "1"
         val (arrangement, repository) = Arrangement()
             .withConfigById(newServerConfigEntity(1))
@@ -107,13 +125,13 @@ class ServerConfigRepositoryTest {
 
         actual.shouldSucceed()
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::deleteById)
+            .suspendFunction(arrangement.serverConfigDAO::deleteById)
             .with(any())
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenStoredConfig_whenDeleting_thenItCanBeDeleted() {
+    fun givenStoredConfig_whenDeleting_thenItCanBeDeleted() = runTest {
         val serverConfig = newServerConfig(1)
         val (arrangement, repository) = Arrangement()
             .withConfigById(newServerConfigEntity(1))
@@ -123,7 +141,7 @@ class ServerConfigRepositoryTest {
 
         actual.shouldSucceed()
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::deleteById)
+            .suspendFunction(arrangement.serverConfigDAO::deleteById)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -155,7 +173,7 @@ class ServerConfigRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::insert)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -186,18 +204,18 @@ class ServerConfigRepositoryTest {
             .wasNotInvoked()
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configByLinks)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
             .with(any())
             .wasNotInvoked()
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::insert)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
             .with(any())
             .wasNotInvoked()
     }
 
     @Test
-    fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() {
+    fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() = runTest {
         val (arrangement, repository) = Arrangement()
             .withUpdatedServerConfig()
             .arrange()
@@ -207,19 +225,19 @@ class ServerConfigRepositoryTest {
             .shouldSucceed { assertEquals(arrangement.expectedServerConfig, it) }
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configByLinks)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::insert)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
             .with(any())
             .wasNotInvoked()
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::updateApiVersion)
+            .suspendFunction(arrangement.serverConfigDAO::updateApiVersion)
             .with(any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::setFederationToTrue)
+            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
@@ -229,7 +247,7 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() {
+    fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() = runTest {
         val expected = newServerConfig(1)
         val (arrangement, repository) = Arrangement()
             .withConfigForNewRequest(newServerConfigEntity(1))
@@ -240,19 +258,19 @@ class ServerConfigRepositoryTest {
             .shouldSucceed { assertEquals(it, expected) }
 
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configByLinks)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::insert)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::updateApiVersion)
+            .suspendFunction(arrangement.serverConfigDAO::updateApiVersion)
             .with(any(), any())
             .wasNotInvoked()
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::setFederationToTrue)
+            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
             .with(any())
             .wasNotInvoked()
         verify(arrangement.serverConfigDAO)
@@ -262,7 +280,7 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenStoredConfigLinksAndVersionInfoData_whenAddingNewOne_thenCommonApiShouldBeCalculatedAndConfigShouldBeStored() {
+    fun givenStoredConfigLinksAndVersionInfoData_whenAddingNewOne_thenCommonApiShouldBeCalculatedAndConfigShouldBeStored() = runTest {
         val expectedServerConfig = newServerConfig(1)
         val expectedServerConfigDTO = newServerConfigDTO(1)
         val expectedVersionInfo = ServerConfig.VersionInfo(
@@ -285,19 +303,19 @@ class ServerConfigRepositoryTest {
             .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configByLinks)
+            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::insert)
+            .suspendFunction(arrangement.serverConfigDAO::insert)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::updateApiVersion)
+            .suspendFunction(arrangement.serverConfigDAO::updateApiVersion)
             .with(any(), any())
             .wasNotInvoked()
         verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::setFederationToTrue)
+            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
             .with(any())
             .wasNotInvoked()
         verify(arrangement.serverConfigDAO)
@@ -337,9 +355,9 @@ class ServerConfigRepositoryTest {
             )
         )
 
-        fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
+        suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             given(serverConfigDAO)
-                .invocation { configByLinks(serverConfigEntity.links) }
+                .coroutine { configByLinks(serverConfigEntity.links) }
                 .then { null }
             given(serverConfigDAO)
                 .function(serverConfigDAO::configById)
@@ -355,8 +373,8 @@ class ServerConfigRepositoryTest {
             return this
         }
 
-        fun withDaoEntityResponse(): Arrangement {
-            given(serverConfigDAO).invocation { allConfig() }
+        suspend fun withDaoEntityResponse(): Arrangement {
+            given(serverConfigDAO).coroutine { allConfig() }
                 .then { listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3)) }
             return this
         }
@@ -371,14 +389,14 @@ class ServerConfigRepositoryTest {
 
         fun withConfigByLinks(serverConfigEntity: ServerConfigEntity?): Arrangement {
             given(serverConfigDAO)
-                .function(serverConfigDAO::configByLinks)
+                .suspendFunction(serverConfigDAO::configByLinks)
                 .whenInvokedWith(any())
                 .thenReturn(serverConfigEntity)
             return this
         }
 
-        fun withDaoEntityFlowResponse(): Arrangement {
-            given(serverConfigDAO).invocation { allConfigFlow() }
+        suspend fun withDaoEntityFlowResponse(): Arrangement {
+            given(serverConfigDAO).coroutine { allConfigFlow() }
                 .then { flowOf(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))) }
             return this
         }
@@ -392,7 +410,7 @@ class ServerConfigRepositoryTest {
             return this
         }
 
-        fun withUpdatedServerConfig(): Arrangement {
+        suspend fun withUpdatedServerConfig(): Arrangement {
             val newServerConfigEntity = serverConfigEntity.copy(
                 metaData = serverConfigEntity.metaData.copy(
                     apiVersion = 5,
@@ -401,7 +419,7 @@ class ServerConfigRepositoryTest {
             )
 
             given(serverConfigDAO)
-                .invocation { configByLinks(serverConfigEntity.links) }
+                .coroutine { configByLinks(serverConfigEntity.links) }
                 .then { serverConfigEntity }
             given(serverConfigDAO)
                 .function(serverConfigDAO::configById)

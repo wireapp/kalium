@@ -1,21 +1,43 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.MemberUpdateRequestJson
+import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
@@ -262,6 +284,70 @@ class ConversationApiV0Test : ApiTest {
         assertTrue(response.isSuccessful())
     }
 
+    @Test
+    fun whenJoiningConversationViaCode_whenResponseWith200_thenEventIsParsedCorrectly() = runTest {
+        val request = JoinConversationRequest("code", "key", null)
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("$PATH_CONVERSATIONS/$PATH_JOIN")
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+
+        assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
+        assertIs<ConversationMemberAddedResponse.Changed>(response.value)
+        assertEquals(
+            EventContentDTOJson.validMemberJoin.serializableData,
+            (response.value as ConversationMemberAddedResponse.Changed).event
+        )
+    }
+
+    @Test
+    fun whenJoiningConversationViaCode_whenResponseWith204_thenEventIsParsedCorrectly() = runTest {
+        val request = JoinConversationRequest("code", "key", null)
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPost()
+                assertPathEqual("$PATH_CONVERSATIONS/$PATH_JOIN")
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+
+        assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
+        assertIs<ConversationMemberAddedResponse.Unchanged>(response.value)
+    }
+
+    @Test
+    fun givenReceiptMode_whenUpdatingConversationReceiptMode_thenRequestIsConfiguredCorrectly() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val receiptMode = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED)
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validUpdateReceiptMode.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPut()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/${PATH_RECEIPT_MODE}")
+            }
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+
+        // when
+        val response = conversationApi.updateReceiptMode(conversationId, receiptMode)
+
+        // then
+        assertTrue(response.isSuccessful())
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
@@ -269,6 +355,8 @@ class ConversationApiV0Test : ApiTest {
         const val PATH_SELF = "/self"
         const val PATH_MEMBERS = "members"
         const val PATH_V2 = "v2"
+        const val PATH_JOIN = "join"
+        const val PATH_RECEIPT_MODE = "receipt-mode"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds

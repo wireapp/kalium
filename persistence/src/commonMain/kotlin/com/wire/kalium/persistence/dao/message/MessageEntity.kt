@@ -1,8 +1,28 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,7 +31,7 @@ sealed class MessageEntity(
     open val id: String,
     open val content: MessageEntityContent,
     open val conversationId: QualifiedIDEntity,
-    open val date: String,
+    open val date: Instant,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
     open val visibility: Visibility,
@@ -21,7 +41,7 @@ sealed class MessageEntity(
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -38,7 +58,7 @@ sealed class MessageEntity(
         override val id: String,
         override val content: MessageEntityContent.System,
         override val conversationId: QualifiedIDEntity,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -52,12 +72,12 @@ sealed class MessageEntity(
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
-        data class Edited(val lastTimeStamp: String) : EditStatus()
+        data class Edited(val lastDate: Instant) : EditStatus()
 
         override fun toString(): String {
             return when (this) {
                 is NotEdited -> "NOT_EDITED"
-                is Edited -> "EDITED_AT: ${this.lastTimeStamp}"
+                is Edited -> "EDITED_AT: ${this.lastDate}"
             }
         }
     }
@@ -116,10 +136,15 @@ sealed class MessageEntity(
         FAILED
     }
 
+    enum class ConfirmationType {
+        READ, DELIVERED, UNRECOGNIZED
+    }
+
     @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET
+        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
+        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST
     }
 
     enum class MemberChangeType {
@@ -238,6 +263,9 @@ sealed class MessageEntityContent {
     object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
+    data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
+    data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
+    object HistoryLost : System()
 }
 
 /**
@@ -251,7 +279,8 @@ data class MessagePreviewEntity(
     val content: MessagePreviewEntityContent,
     val date: String,
     val visibility: MessageEntity.Visibility,
-    val isSelfMessage: Boolean
+    val isSelfMessage: Boolean,
+    val senderUserId: QualifiedIDEntity,
 )
 
 data class NotificationMessageEntity(
@@ -277,11 +306,21 @@ sealed class MessagePreviewEntityContent {
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
 
-    data class MemberChange(
-        val adminName: String?,
-        val count: Int, // TODO add usernames
-        val type: MessageEntity.MemberChangeType
+    data class MembersAdded(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
+
+    data class MembersRemoved(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class MemberJoined(val senderName: String?) : MessagePreviewEntityContent()
+
+    data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 

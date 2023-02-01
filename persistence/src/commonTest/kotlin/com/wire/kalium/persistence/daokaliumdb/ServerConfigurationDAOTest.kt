@@ -1,3 +1,23 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.wire.kalium.persistence.daokaliumdb
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
@@ -34,7 +54,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenServerConfig_ThenItCanBeInsertedAndRetrieved() {
+    fun givenServerConfig_ThenItCanBeInsertedAndRetrieved() = runTest {
         val expect = config1
         insertConfig(expect)
         val actual = db.serverConfigurationDAO.configById(expect.id)
@@ -43,7 +63,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameApiBaseUrl_thenNothingChanges() {
+    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameApiBaseUrl_thenNothingChanges() = runTest {
         val newLinks = config1.links.copy(api = "new_base_url.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
@@ -57,7 +77,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameTitle_thenNothingChanges() {
+    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameTitle_thenNothingChanges() = runTest {
         val newLinks = config1.links.copy(title = "title")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
@@ -72,7 +92,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameWSUrl_thenNothingChanges() {
+    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameWSUrl_thenNothingChanges() = runTest {
         val newLinks = config1.links.copy(website = "ws_de.berlin.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
@@ -87,7 +107,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameDomain_thenNothingChanges() {
+    fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameDomain_thenNothingChanges() = runTest {
         val newMetaData = config1.metaData.copy(domain = "new_domain")
         val duplicatedConfig = config1.copy(metaData = newMetaData)
         insertConfig(config1)
@@ -102,7 +122,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenExistingConfig_thenItCanBeDeleted() {
+    fun givenExistingConfig_thenItCanBeDeleted() = runTest {
         insertConfig(config1)
         db.serverConfigurationDAO.deleteById(config1.id)
 
@@ -121,7 +141,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenNewApiVersion_thenItCanBeUpdated() {
+    fun givenNewApiVersion_thenItCanBeUpdated() = runTest {
         insertConfig(config1)
         val newVersion = config1.metaData.copy(apiVersion = 2)
         val expected = config1.copy(metaData = newVersion)
@@ -132,7 +152,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenNewApiVersionAndDomain_thenItCanBeUpdated() {
+    fun givenNewApiVersionAndDomain_thenItCanBeUpdated() = runTest {
         insertConfig(config1)
         val newVersion = 2
         val newDomain = "new.domain.de"
@@ -144,7 +164,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
-    fun givenFederationEnabled_thenItCanBeUpdated() {
+    fun givenFederationEnabled_thenItCanBeUpdated() = runTest {
         insertConfig(
             config1.copy(metaData = config1.metaData.copy(federation = true))
         )
@@ -155,7 +175,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertEquals(expected, actual)
     }
 
-    private fun insertConfig(serverConfigEntity: ServerConfigEntity) {
+    private suspend fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
             db.serverConfigurationDAO.insert(
                 ServerConfigurationDAO.InsertData(

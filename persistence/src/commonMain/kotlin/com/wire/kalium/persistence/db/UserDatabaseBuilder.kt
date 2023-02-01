@@ -1,7 +1,27 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.backup.DatabaseExporter
+import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
@@ -33,11 +53,13 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
 internal const val USER_CACHE_SIZE = 125
@@ -57,7 +79,8 @@ class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
-    private val platformDatabaseData: PlatformDatabaseData
+    private val platformDatabaseData: PlatformDatabaseData,
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -80,7 +103,9 @@ class UserDatabaseBuilder internal constructor(
         ReactionAdapter = TableMapper.reactionAdapter,
         ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
-        UserAdapter = TableMapper.userAdapter
+        UserAdapter = TableMapper.userAdapter,
+        MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
+        MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter
     )
 
     init {
@@ -91,44 +116,47 @@ class UserDatabaseBuilder internal constructor(
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
     private val userCache = LRUCache<UserIDEntity, Flow<UserEntity?>>(USER_CACHE_SIZE)
     val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, userCache, databaseScope)
+        get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
 
     val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries, queriesContext)
 
     val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
+        get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries, queriesContext)
 
     private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
     val metadataDAO: MetadataDAO
-        get() = MetadataDAOImpl(database.metadataQueries, metadataCache, databaseScope)
+        get() = MetadataDAOImpl(database.metadataQueries, metadataCache, databaseScope, queriesContext)
 
     val clientDAO: ClientDAO
-        get() = ClientDAOImpl(database.clientsQueries)
+        get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
         get() = DatabaseImporterImpl(sqlDriver)
 
+    val databaseExporter: DatabaseExporter
+        get() = DatabaseExporterImpl(sqlDriver)
+
     val callDAO: CallDAO
-        get() = CallDAOImpl(database.callsQueries)
+        get() = CallDAOImpl(database.callsQueries, queriesContext)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries, queriesContext)
 
     val assetDAO: AssetDAO
-        get() = AssetDAOImpl(database.assetsQueries)
+        get() = AssetDAOImpl(database.assetsQueries, queriesContext)
 
     val teamDAO: TeamDAO
-        get() = TeamDAOImpl(database.teamsQueries)
+        get() = TeamDAOImpl(database.teamsQueries, queriesContext)
 
     val reactionDAO: ReactionDAO
-        get() = ReactionDAOImpl(database.reactionsQueries)
+        get() = ReactionDAOImpl(database.reactionsQueries, queriesContext)
 
     val receiptDAO: ReceiptDAO
-        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter)
+        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, queriesContext)
 
     val prekeyDAO: PrekeyDAO
-        get() = PrekeyDAOImpl(database.metadataQueries)
+        get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
 
     val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.conversationsQueries)
 

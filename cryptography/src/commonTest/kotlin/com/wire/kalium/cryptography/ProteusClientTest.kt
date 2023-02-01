@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -8,7 +26,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@IgnoreIOS
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProteusClientTest : BaseProteusClientTest() {
 
@@ -20,6 +37,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     private val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
 
     @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrError_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)
@@ -36,6 +54,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     }
 
     @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrCreate_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)

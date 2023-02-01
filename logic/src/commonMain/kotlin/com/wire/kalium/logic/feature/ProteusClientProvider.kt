@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.cryptography.ProteusClient
@@ -13,7 +31,6 @@ import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.cancellation.CancellationException
 
 interface ProteusClientProvider {
     suspend fun clearLocalFiles()
@@ -39,7 +56,6 @@ class ProteusClientProviderImpl(
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
 
-    @Throws(ProteusException::class)
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             _proteusClient?.clearLocalFiles()
@@ -47,7 +63,6 @@ class ProteusClientProviderImpl(
         }
     }
 
-    @Throws(ProteusException::class, CancellationException::class)
     override suspend fun getOrCreate(): ProteusClient {
         mutex.withLock {
             return _proteusClient ?: createProteusClient().also {

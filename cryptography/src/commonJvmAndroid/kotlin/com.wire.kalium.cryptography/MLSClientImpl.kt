@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CiphersuiteName
@@ -6,14 +24,19 @@ import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
+import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.Invitee
 import com.wire.crypto.MlsPublicGroupStateEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
+import com.wire.crypto.MlsWirePolicy
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
-import java.time.Duration
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
+import kotlin.time.toJavaDuration
 
 private class Callbacks : CoreCryptoCallbacks {
 
@@ -50,15 +73,15 @@ actual class MLSClientImpl actual constructor(
 ) : MLSClient {
 
     private val coreCrypto: CoreCrypto
-    private val keyRotationDuration: Duration = Duration.ofDays(30)
+    private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
+    private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
 
     init {
-        coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString(), null)
+        coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), null)
         coreCrypto.setCallbacks(Callbacks())
     }
 
     override fun clearLocalFiles(): Boolean {
-        coreCrypto.close()
         return File(rootDir).deleteRecursively()
     }
 
@@ -96,19 +119,12 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState)))
+        return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState), defaultGroupConfiguration))
     }
 
     override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
-        val conf = ConversationConfiguration(
-            emptyList(),
-            CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
-            keyRotationDuration,
-            emptyList<Ed22519Key>().map { toUByteList(it.value) }
-        )
-
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
-        coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes, conf)
+        coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes)
     }
 
     override fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
@@ -120,10 +136,9 @@ actual class MLSClientImpl actual constructor(
         externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
-            emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
-            keyRotationDuration,
-            externalSenders.map { toUByteList(it.value) }
+            externalSenders.map { toUByteList(it.value) },
+            defaultGroupConfiguration
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
@@ -135,7 +150,7 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
-        val conversationId = coreCrypto.processWelcomeMessage(toUByteList(message))
+        val conversationId = coreCrypto.processWelcomeMessage(toUByteList(message), defaultGroupConfiguration)
         return toByteArray(conversationId).encodeBase64()
     }
 

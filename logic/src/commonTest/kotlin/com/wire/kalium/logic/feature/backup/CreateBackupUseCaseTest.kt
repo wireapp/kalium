@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.StorageFailure
@@ -9,7 +27,9 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.client.ObserveCurrentClientIdUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.extractCompressedFile
+import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
@@ -28,6 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when backup support is implemented
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 
@@ -133,6 +154,8 @@ class CreateBackupUseCaseTest {
         @Mock
         val observeClientId = mock(classOf<ObserveCurrentClientIdUseCase>())
 
+        @Mock
+        val databaseExporter = mock(classOf<DatabaseExporter>())
         fun withObservedClientId(clientId: ClientId?) = apply {
             given(observeClientId)
                 .suspendFunction(observeClientId::invoke)
@@ -149,7 +172,15 @@ class CreateBackupUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =
-            this to CreateBackupUseCaseImpl(userId, observeClientId, fakeFileSystem, userDBSecret, isUserDBSQLCiphered, dispatcher)
+            this to CreateBackupUseCaseImpl(
+                userId,
+                observeClientId,
+                fakeFileSystem,
+                userDBSecret,
+                isUserDBSQLCiphered,
+                databaseExporter,
+                dispatcher
+            )
 
     }
 

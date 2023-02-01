@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -183,6 +201,14 @@ sealed class MessageContent {
 
     data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling()
 
+    data class NewConversationReceiptMode(
+        val receiptMode: Boolean
+    ) : System()
+
+    data class ConversationReceiptModeChanged(
+        val receiptMode: Boolean
+    ) : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
@@ -196,6 +222,8 @@ sealed class MessageContent {
     object ClientAction : Signaling()
 
     object CryptoSessionReset : System()
+
+    object HistoryLost : System()
 }
 
 sealed class MessagePreviewContent {
@@ -212,15 +240,21 @@ sealed class MessagePreviewContent {
 
         data class Knock(override val username: String?) : WithUser(username)
 
+        data class MemberLeft(override val username: String?) : WithUser(username)
+
+        data class MemberJoined(override val username: String?) : WithUser(username)
+
         data class MembersAdded(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserAdded: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class MembersRemoved(
-            val adminName: String?,
-            val count: Int, // TODO add usernames
-        ) : WithUser(adminName)
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
 
         data class ConversationNameChange(val adminName: String?) : WithUser(adminName)
 

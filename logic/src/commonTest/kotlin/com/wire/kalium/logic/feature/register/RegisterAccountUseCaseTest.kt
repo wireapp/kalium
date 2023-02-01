@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
@@ -51,7 +69,7 @@ class RegisterAccountUseCaseTest {
         val expected = Pair(ssoId, authTokens)
 
         given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
         val actual = registerAccountUseCase(param)
@@ -62,7 +80,7 @@ class RegisterAccountUseCaseTest {
         assertEquals(userServerConfig.id, actual.serverConfigId)
 
         verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
         }.wasInvoked(exactly = once)
     }
 
@@ -76,7 +94,7 @@ class RegisterAccountUseCaseTest {
 
         given(registerAccountRepository).coroutine {
             registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
+                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, param.cookieLabel
             )
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
@@ -89,7 +107,7 @@ class RegisterAccountUseCaseTest {
 
         verify(registerAccountRepository).coroutine {
             registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
+                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, param.cookieLabel
             )
         }.wasInvoked(exactly = once)
     }
@@ -100,7 +118,7 @@ class RegisterAccountUseCaseTest {
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
         given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
         }.then { Either.Left(expected) }
 
         val actual = registerAccountUseCase(param)
@@ -110,7 +128,13 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
 
         verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(
+                param.email,
+                param.emailActivationCode,
+                param.name,
+                param.password,
+                cookieLabel = param.cookieLabel
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -143,7 +167,7 @@ class RegisterAccountUseCaseTest {
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
 
         given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
         }.then { Either.Left(expected) }
 
         val actual = registerAccountUseCase(param)
@@ -152,7 +176,7 @@ class RegisterAccountUseCaseTest {
         assertEquals(error, actual)
 
         verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
         }.wasInvoked(exactly = once)
     }
 
@@ -162,7 +186,12 @@ class RegisterAccountUseCaseTest {
         const val TEST_PASSWORD = "password"
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_PRIVATE_ACCOUNT_PARAM = RegisterParam.PrivateAccount(
-            firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE
+            firstName = "first",
+            lastName = "last",
+            email = TEST_EMAIL,
+            password = TEST_PASSWORD,
+            emailActivationCode = TEST_CODE,
+            cookieLabel = "cookie_label"
         )
         val TEST_TEAM_ACCOUNT_PARAM = RegisterParam.Team(
             firstName = "first",
@@ -171,7 +200,8 @@ class RegisterAccountUseCaseTest {
             password = TEST_PASSWORD,
             emailActivationCode = TEST_CODE,
             teamName = "teamName",
-            teamIcon = "teamIcon"
+            teamIcon = "teamIcon",
+            cookieLabel = "cookie_label"
         )
         val TEST_SELF_USER = SelfUser(
             id = UserId(value = "user_id", domain = "domain.com"),
@@ -190,7 +220,8 @@ class RegisterAccountUseCaseTest {
             accessToken = "access_token",
             refreshToken = "refresh_token",
             tokenType = "token_type",
-            userId = TEST_SELF_USER.id
+            userId = TEST_SELF_USER.id,
+            cookieLabel = "cookie_label"
         )
         val TEST_SSO_ID = SsoId(null, null, null)
         val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")

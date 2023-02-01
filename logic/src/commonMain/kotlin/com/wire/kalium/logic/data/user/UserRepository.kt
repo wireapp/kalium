@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
@@ -29,6 +47,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
@@ -60,6 +79,7 @@ internal interface UserRepository {
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
+    suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
     fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
@@ -210,9 +230,13 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    // FIXME(refactor): user info can be updated with null, null and null
+    @Deprecated(
+        message = "Create a dedicated function to update the corresponding user property, instead of updating the whole user",
+        replaceWith = ReplaceWith("eg: updateSelfDisplayName(displayName: String)")
+    )
+    // FIXME(refactor): create a dedicated function to update avatar, as this is the only usage of this function.
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user = observeSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
+        val user = getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
@@ -229,6 +253,14 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
         selfApi.changeHandle(ChangeHandleRequest(handle))
+    }
+
+    override suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit> = wrapApiRequest {
+        selfApi.updateSelf(UserUpdateRequest(displayName, null, null))
+    }.flatMap {
+        wrapStorageRequest {
+            userDAO.updateUserDisplayName(selfUserId.toDao(), displayName)
+        }
     }
 
     override suspend fun updateLocalSelfUserHandle(handle: String) =
