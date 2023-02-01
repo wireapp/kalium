@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -46,6 +47,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -65,14 +67,22 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.expect
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -1328,6 +1338,208 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMlsConferenceCall_whenJoinMlsConference_thenJoinSubconversation() = runTest {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(mlsProtocolInfo))
+
+        given(joinSubconversationUseCase)
+            .suspendFunction(joinSubconversationUseCase::invoke)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+
+        callRepository.joinMlsConference(conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ -> }
+
+        verify(joinSubconversationUseCase)
+            .suspendFunction(joinSubconversationUseCase::invoke)
+            .with(eq(conversationId), eq(CALL_SUBCONVERSATION_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenJoinSubconversationSuccessful_whenJoinMlsConference_thenStartObservingEpoch() = runTest(TestKaliumDispatcher.default) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(mlsProtocolInfo))
+
+        given(joinSubconversationUseCase)
+            .suspendFunction(joinSubconversationUseCase::invoke)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::observeEpochChanges)
+            .whenInvoked()
+            .thenReturn(emptyFlow())
+
+        given(subconversationRepository)
+            .suspendFunction(subconversationRepository::getSubconversationInfo)
+            .whenInvokedWith(any(), any())
+            .thenReturn(subconversationGroupId)
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(null))
+            .thenReturn(Either.Right(mlsClient))
+
+        given(mlsClient)
+            .function(mlsClient::conversationEpoch)
+            .whenInvokedWith(any())
+            .thenReturn(1UL)
+
+        given(mlsClient)
+            .function(mlsClient::members)
+            .whenInvokedWith(any())
+            .thenReturn(emptyList())
+
+        given(mlsClient)
+            .function(mlsClient::deriveSecret)
+            .whenInvokedWith(any(), any())
+            .thenReturn(ByteArray(32))
+
+        var onEpochChangeCallCount = 0
+        callRepository.joinMlsConference(conversationId, CoroutineScope(TestKaliumDispatcher.default)) { _, _ ->
+            onEpochChangeCallCount += 1
+        }
+        yield()
+        advanceUntilIdle()
+
+        verify(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::observeEpochChanges)
+            .wasInvoked(exactly = once)
+
+        assertEquals(1, onEpochChangeCallCount)
+    }
+
+    @Test
+    fun givenEpochChange_whenJoinMlsConference_thenInvokeOnEpochChange() = runTest(TestKaliumDispatcher.default) {
+
+        val epochFlow = MutableSharedFlow<GroupID>()
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(mlsProtocolInfo))
+
+        given(joinSubconversationUseCase)
+            .suspendFunction(joinSubconversationUseCase::invoke)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::observeEpochChanges)
+            .whenInvoked()
+            .thenReturn(epochFlow)
+
+        given(subconversationRepository)
+            .suspendFunction(subconversationRepository::getSubconversationInfo)
+            .whenInvokedWith(any(), any())
+            .thenReturn(subconversationGroupId)
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(null))
+            .thenReturn(Either.Right(mlsClient))
+
+        given(mlsClient)
+            .function(mlsClient::conversationEpoch)
+            .whenInvokedWith(any())
+            .thenReturn(1UL)
+
+        given(mlsClient)
+            .function(mlsClient::members)
+            .whenInvokedWith(any())
+            .thenReturn(emptyList())
+
+        given(mlsClient)
+            .function(mlsClient::deriveSecret)
+            .whenInvokedWith(any(), any())
+            .thenReturn(ByteArray(32))
+
+        var onEpochChangeCallCount = 0
+        callRepository.joinMlsConference(conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ ->
+            onEpochChangeCallCount += 1
+        }
+        yield()
+        advanceUntilIdle()
+
+        epochFlow.emit(groupId)
+        yield()
+        advanceUntilIdle()
+
+        epochFlow.emit(subconversationGroupId)
+        yield()
+        advanceUntilIdle()
+
+        assertEquals(3, onEpochChangeCallCount)
+    }
+
+    @Test
+    fun givenMlsConferenceCall_whenLeaveMlsConference_thenEpochObservingStops() = runTest(TestKaliumDispatcher.default) {
+        val epochFlow = MutableSharedFlow<GroupID>()
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(mlsProtocolInfo))
+
+        given(joinSubconversationUseCase)
+            .suspendFunction(joinSubconversationUseCase::invoke)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::observeEpochChanges)
+            .whenInvoked()
+            .thenReturn(epochFlow)
+
+        given(subconversationRepository)
+            .suspendFunction(subconversationRepository::getSubconversationInfo)
+            .whenInvokedWith(any(), any())
+            .thenReturn(subconversationGroupId)
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(null))
+            .thenReturn(Either.Right(mlsClient))
+
+        given(mlsClient)
+            .function(mlsClient::conversationEpoch)
+            .whenInvokedWith(any())
+            .thenReturn(1UL)
+
+        given(mlsClient)
+            .function(mlsClient::members)
+            .whenInvokedWith(any())
+            .thenReturn(emptyList())
+
+        given(mlsClient)
+            .function(mlsClient::deriveSecret)
+            .whenInvokedWith(any(), any())
+            .thenReturn(ByteArray(32))
+
+        var onEpochChangeCallCount = 0
+        callRepository.joinMlsConference(conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ ->
+            onEpochChangeCallCount += 1
+        }
+        yield()
+        advanceUntilIdle()
+
+        callRepository.leaveMlsConference(conversationId)
+        yield()
+        advanceUntilIdle()
+
+        epochFlow.emit(subconversationGroupId)
+        yield()
+        advanceUntilIdle()
+
+        assertEquals(1, onEpochChangeCallCount)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1368,6 +1580,8 @@ class CallRepositoryTest {
         private const val randomConversationIdString = "random@domain"
         private val randomConversationId = ConversationId("value", "domain")
 
+        private val groupId = GroupID("groupid")
+        private val subconversationGroupId = GroupID("subconversation_groupid")
         private val conversationId = ConversationId(value = "convId", domain = "domainId")
         private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
         private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
@@ -1381,6 +1595,14 @@ class CallRepositoryTest {
             userType = UserType.INTERNAL,
             lastMessage = null,
             unreadEventCount = emptyMap()
+        )
+
+        private val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
+            groupId,
+            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+            1UL,
+            Clock.System.now(),
+            Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
     }
 }
