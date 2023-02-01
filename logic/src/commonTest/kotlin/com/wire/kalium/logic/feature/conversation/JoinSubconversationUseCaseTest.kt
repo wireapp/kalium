@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -138,9 +139,13 @@ class JoinSubconversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val subconversationRepository = mock(classOf<SubconversationRepository>())
+
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
-            mlsConversationRepository
+            mlsConversationRepository,
+            subconversationRepository
         )
 
         fun withEstablishMLSGroupSuccessful() = apply {

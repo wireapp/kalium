@@ -19,21 +19,29 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -84,10 +92,28 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
+    private val sessionRepository = mock(classOf<SessionRepository>())
+
+    @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
     @Mock
     private val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+    @Mock
+    private val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
+    @Mock
+    private val mlsClient = mock(classOf<MLSClient>())
+
+    @Mock
+    private val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
+
+    @Mock
+    private val subconversationRepository = mock(classOf<SubconversationRepository>())
+
+    @Mock
+    private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
     @Mock
     private val callDAO = configure(mock(classOf<CallDAO>())) {
@@ -95,6 +121,7 @@ class CallRepositoryTest {
     }
 
     private val callMapper = CallMapperImpl(qualifiedIdMapper)
+    private val federatedIdMapper = FederatedIdMapperImpl(TestUser.SELF.id, qualifiedIdMapper, sessionRepository)
 
     private lateinit var callRepository: CallRepository
 
@@ -105,10 +132,15 @@ class CallRepositoryTest {
             callDAO = callDAO,
             qualifiedIdMapper = qualifiedIdMapper,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
-            callMapper = callMapper
+            mlsClientProvider = mlsClientProvider,
+            joinSubconversationUseCase = joinSubconversationUseCase,
+            callMapper = callMapper,
+            federatedIdMapper = federatedIdMapper
         )
         given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
             .whenInvokedWith(eq("convId@domainId"))
@@ -1327,7 +1359,8 @@ class CallRepositoryTest {
         conversationName = null,
         conversationType = Conversation.Type.GROUP,
         callerName = null,
-        callerTeamName = null
+        callerTeamName = null,
+        protocol = Conversation.ProtocolInfo.Proteus
     )
 
     private companion object {
