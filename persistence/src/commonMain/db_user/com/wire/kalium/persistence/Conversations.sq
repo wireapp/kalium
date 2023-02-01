@@ -96,9 +96,7 @@ SET last_notified_date = (
     LEFT JOIN SelfUser
     WHERE Message.sender_user_id != SelfUser.id
     ORDER BY Message.creation_date DESC LIMIT 1
-)
-WHERE last_modified_date ISNULL
-OR last_modified_date > last_notified_date;
+);
 
 updateConversationModifiedDate:
 UPDATE Conversation
