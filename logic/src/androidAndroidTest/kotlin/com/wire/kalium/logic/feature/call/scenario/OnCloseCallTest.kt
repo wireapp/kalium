@@ -164,7 +164,8 @@ class OnCloseCallTest {
             conversationType = Conversation.Type.GROUP,
             callerName = null,
             callerTeamName = null,
-            establishedTime = null
+            establishedTime = null,
+            protocol = Conversation.ProtocolInfo.Proteus
         )
     }
 }
