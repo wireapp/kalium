@@ -4,32 +4,25 @@ AS SELECT
     Message.conversation_id AS conversationId,
     Message.content_type AS contentType,
     Message.creation_date AS date,
-    Message.visibility AS visibility,
     Message.sender_user_id AS senderUserId,
     User.name AS senderName,
-    User.connection_status AS senderConnectionStatus,
-    SelfUser.id AS selfUserId,
-    MemberChangeContent.member_change_list AS memberChangeList,
-    MemberChangeContent.member_change_type AS memberChangeType,
-    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    User.preview_asset_id AS senderPreviewAssetId,
     Conversation.name AS conversationName,
     TextContent.text_body AS text,
     AssetContent.asset_mime_type AS assetMimeType,
-    (Message.creation_date > Conversation.last_read_date) AS isUnread,
     Conversation.muted_status AS mutedStatus,
     Conversation.type AS conversationType
 FROM Message
 LEFT JOIN SelfUser
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0)) == 1
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+JOIN User ON Message.sender_user_id = User.qualified_id
+JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0)) == 1
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE
-Message.visibility = 'VISIBLE' AND
-(Message.sender_user_id == SelfUser.id) == 0
+Message.visibility = 'visible' AND
+(Message.sender_user_id == SelfUser.id) == 0 AND
+(Message.creation_date > Conversation.last_read_date) == 1 AND
+Conversation.muted_status != 'ALL_MUTED'
 ORDER BY Message.creation_date DESC;
 
 getNotificationsMessages:

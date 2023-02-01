@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -52,6 +53,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
+    private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
@@ -222,7 +224,7 @@ class MessageDAOImpl(
     override suspend fun getNotificationMessage(
         filteredContent: List<MessageEntity.ContentType>
     ): Flow<List<NotificationMessageEntity>> =
-        queries.getNotificationsMessages(
+        notificationQueries.getNotificationsMessages(
             filteredContent,
             mapper::toNotificationEntity
         ).asFlow()
