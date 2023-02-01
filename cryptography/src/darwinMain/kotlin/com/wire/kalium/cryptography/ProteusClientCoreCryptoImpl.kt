@@ -190,7 +190,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId.value)
         }
