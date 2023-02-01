@@ -223,7 +223,7 @@ class MessageMapperImpl(
         }
 
     @Suppress("ComplexMethod")
-    override fun toMessageEntityContent(regulerMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regulerMessage) {
+    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
         is MessageContent.Text -> MessageEntityContent.Text(
             messageBody = regulerMessage.value,
             mentions = regulerMessage.mentions.map { messageMentionMapper.fromModelToDao(it) },
