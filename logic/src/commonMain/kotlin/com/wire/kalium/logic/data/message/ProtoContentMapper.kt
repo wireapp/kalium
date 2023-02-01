@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -74,7 +73,7 @@ class ProtoContentMapperImpl(
     }
 
     @Suppress("ComplexMethod")
-    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
+    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
@@ -117,11 +116,6 @@ class ProtoContentMapperImpl(
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
         val protobufModel = genericMessage.content
-        protobufModel?.let {
-            kaliumLogger.d(
-                "Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," + "content: ${it::class}}"
-            )
-        }
 
         return if (protobufModel is GenericMessage.Content.External) {
             val external = protobufModel.value
