@@ -396,7 +396,6 @@ deleteMessageById:
 DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
-   BEGIN;
    UPDATE Message
    SET visibility = 'DELETED'
    WHERE id = :message_id AND conversation_id = :conversation_id;
@@ -408,7 +407,6 @@ markMessageAsDeleted {
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    -- deleted messages will not have a quote 100%
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
-   COMMIT;
 }
 
 markMessageAsEdited:
@@ -430,18 +428,19 @@ VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
 INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, is_quoting_self)
-VALUES(:message_id, :conversatopn_id, :text_body, :quoted_message_id, :is_quote_verified,
+VALUES(:message_id, :conversation_id, :text_body, :quoted_message_id, :is_quote_verified,
 CASE WHEN
-                quoted_message_id IS NULL
+                :quoted_message_id IS NULL
                     THEN 0
                     ELSE (
-                        SELECT (Message.sender_user_id == SelfUser.id)
-                        FROM Message
-                        LEFT JOIN SelfUser
-                         WHERE
-                            Message.id = quoted_message_id AND
-                            conversation_id = :conversatopn_id
-                         )END);
+                        IFNULL(
+                        (SELECT (Message.sender_user_id == SelfUser.id)
+                            FROM Message
+                            LEFT JOIN SelfUser
+                            WHERE
+                                Message.id = :quoted_message_id AND
+                                conversation_id = :conversation_id),
+                        0 ))END);
 
 insertMessageRestrictedAssetContent:
 INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
