@@ -286,7 +286,6 @@ LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.mes
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
-
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT
     Message.id AS id,
