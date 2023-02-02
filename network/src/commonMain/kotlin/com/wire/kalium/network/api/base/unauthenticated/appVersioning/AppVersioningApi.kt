@@ -43,7 +43,9 @@ class AppVersioningApiImpl internal constructor(
                     val url = Url(blackListUrl)
                     host = url.host
                     protocol = url.protocol
-                    pathSegments = url.pathSegments + appVersioningUrlPlatformPath()
+                    // blackListUrl could already contain platform in path (after migrating from scala app)
+                    pathSegments = if (url.pathSegments.lastOrNull() == appVersioningUrlPlatformPath()) url.pathSegments
+                    else url.pathSegments + appVersioningUrlPlatformPath()
                 }.buildString()
 
                 setUrl(platformBlackListUrl)
