@@ -185,7 +185,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.ASSET -> {
                 val type = message.assetMimeType?.contains("image/")?.let {
                     if (it) LocalNotificationCommentType.PICTURE else LocalNotificationCommentType.FILE
-                }  ?: LocalNotificationCommentType.FILE
+                } ?: LocalNotificationCommentType.FILE
 
                 LocalNotificationMessage.Comment(sender, message.date, type)
             }
