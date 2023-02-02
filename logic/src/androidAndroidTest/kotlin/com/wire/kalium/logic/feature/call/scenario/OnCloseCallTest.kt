@@ -99,6 +99,14 @@ class OnCloseCallTest {
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = testScope.runTest {
         // given
+        given(callRepository)
+            .function(callRepository::getCallMetadataProfile)
+            .whenInvoked()
+            .thenReturn(
+                CallMetadataProfile(mapOf(conversationIdString to callMetadata))
+            )
+
+
         // when
         onCloseCall.onClosedCall(
             reason = 4,
@@ -123,7 +131,7 @@ class OnCloseCallTest {
     }
 
     @Test
-    fun givenAMMissedGroupCall_whenOnCloseCallbackOccurred_thenPersistMissedCall() = testScope.runTest {
+    fun givenAMissedGroupCall_whenOnCloseCallbackOccurred_thenPersistMissedCall() = testScope.runTest {
         given(callRepository)
             .function(callRepository::getCallMetadataProfile)
             .whenInvoked()
