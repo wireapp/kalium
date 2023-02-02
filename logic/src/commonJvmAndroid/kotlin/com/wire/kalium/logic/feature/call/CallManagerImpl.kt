@@ -455,7 +455,11 @@ class CallManagerImpl internal constructor(
     private fun initRequestNewEpochHandler() {
         scope.launch {
             withCalling {
-                val requestNewEpochHandler = OnRequestNewEpoch().keepingStrongReference()
+                val requestNewEpochHandler = OnRequestNewEpoch(
+                    scope = scope,
+                    callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference()
 
                 wcall_set_req_new_epoch_handler(
                     inst = deferredHandle.await(),

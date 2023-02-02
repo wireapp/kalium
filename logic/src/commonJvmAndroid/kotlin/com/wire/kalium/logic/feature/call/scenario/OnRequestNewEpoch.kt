@@ -20,9 +20,21 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.RequestNewEpochHandler
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
-class OnRequestNewEpoch : RequestNewEpochHandler {
+class OnRequestNewEpoch(
+    private val scope: CoroutineScope,
+    private val callRepository: CallRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper,
+) : RequestNewEpochHandler {
     override fun onRequestNewEpoch(inst: Handle, conversationId: String, arg: Pointer?) {
-        TODO("Not yet implemented")
+        callingLogger.i("[OnRequestNewEpoch] - STARTED")
+        scope.launch {
+            callRepository.advanceEpoch(qualifiedIdMapper.fromStringToQualifiedID(conversationId))
+        }
     }
 }
