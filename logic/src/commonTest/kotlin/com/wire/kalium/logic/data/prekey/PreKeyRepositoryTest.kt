@@ -107,7 +107,7 @@ class PreKeyRepositoryTest {
         }
 
         verify(arrange.proteusClient)
-            .function(arrange.proteusClient::newLastPreKey)
+            .suspendFunction(arrange.proteusClient::newLastPreKey)
             .wasInvoked(exactly = once)
     }
 
@@ -156,7 +156,7 @@ class PreKeyRepositoryTest {
 
         suspend fun withGenerateLastPreKeysSuccess(expected: PreKeyCrypto) = apply {
             given(proteusClient)
-                .invocation { proteusClient.newLastPreKey() }
+                .coroutine { proteusClient.newLastPreKey() }
                 .then { expected }
         }
 
