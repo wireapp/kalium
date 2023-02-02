@@ -25,7 +25,7 @@ data class Instance(
     val clientId: String?,
     val instanceId: String,
     val name: String?,
-    val coreLogic: CoreLogic?,
+    val coreLogic: CoreLogic,
     val instancePath: String?,
     val password: String,
     val startupTime: Long?

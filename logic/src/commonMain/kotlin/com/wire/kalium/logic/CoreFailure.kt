@@ -136,11 +136,19 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
     return try {
         Either.Right(cryptoRequest())
     } catch (e: ProteusException) {
+        kaliumLogger.e(
+            """{ "ProteusException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(e))
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "ProteusException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)))
     }
 }
 

@@ -116,7 +116,7 @@ class ResetSessionUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(proteusClient)
-            .function(proteusClient::deleteSession)
+            .suspendFunction(proteusClient::deleteSession)
             .with(anything())
             .wasInvoked(exactly = once)
 
@@ -158,7 +158,7 @@ class ResetSessionUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(proteusClient)
-            .function(proteusClient::deleteSession)
+            .suspendFunction(proteusClient::deleteSession)
             .with(anything())
             .wasInvoked(exactly = once)
 
@@ -200,7 +200,7 @@ class ResetSessionUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(proteusClient)
-            .function(proteusClient::deleteSession)
+            .suspendFunction(proteusClient::deleteSession)
             .with(anything())
             .wasInvoked(exactly = once)
 

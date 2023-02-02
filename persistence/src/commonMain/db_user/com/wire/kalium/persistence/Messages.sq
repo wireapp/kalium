@@ -441,6 +441,10 @@ insertOrIgnoreMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertMessage:
+INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
@@ -519,11 +523,6 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
-getLatestMessageFromOtherUsers:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.isSelfMessage = FALSE
-ORDER BY MessageDetailsView.date DESC LIMIT 1;
-
 updateMessageDate:
 UPDATE Message
 SET creation_date = ?
@@ -575,7 +574,7 @@ SELECT * FROM MessagePreview AS message
 WHERE shouldNotify == 1
 AND visibility = 'VISIBLE'
 AND isSelfMessage == 0
-AND contentType IN ? ORDER BY strftime('%Y-%m-%d %H:%M:%f', message.date) DESC;
+AND contentType IN ? ORDER BY message.date DESC;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
@@ -598,14 +597,12 @@ AND (Message.expects_read_confirmation = 1)
 AND Message.creation_date > Conversation.last_read_date
 ORDER BY Message.creation_date DESC;
 
-selectFailedDecryptedByConversationIdAndSenderIdAndClientId:
-SELECT id FROM MessageDetailsView
-WHERE conversationId = ?
-AND senderUserId = ?
-AND senderClientId = ?
-AND contentType = 'FAILED_DECRYPTION';
-
 markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
-WHERE message_id IN ?;
+WHERE message_id IN (
+            SELECT id FROM MessageDetailsView
+            WHERE senderUserId = ?
+            AND senderClientId = ?
+            AND contentType = 'FAILED_DECRYPTION'
+            );
