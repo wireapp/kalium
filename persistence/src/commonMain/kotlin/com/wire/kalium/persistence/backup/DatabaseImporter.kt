@@ -27,16 +27,16 @@ interface DatabaseImporter {
 
 internal class DatabaseImporterImpl internal constructor(
     private val localDatabase: UserDatabaseBuilder,
-    private val importContentQueries: ImportContentQueries
+    private val importContentQueries: ImportContentQueries,
+    private val isDataEncrypted: Boolean
 ) : DatabaseImporter {
+    val localDBDriver = localDatabase.sqlDriver
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
-        val localDBDriver = localDatabase.sqlDriver
+
 
         localDatabase.database.transaction {
-            localDBDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
-                bindString(0, filePath)
-            }
+            attachBackupDB(filePath)
 
             with(importContentQueries) {
                 importUserTable()
@@ -54,6 +54,18 @@ internal class DatabaseImporterImpl internal constructor(
                 importMessageUnknownContentTable()
                 importReactionTable()
                 importRecieptTable()
+            }
+        }
+    }
+
+    private fun attachBackupDB(filePath: String) {
+        if (isDataEncrypted) {
+            localDBDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS KEY ''""", 1) {
+                bindString(0, filePath)
+            }
+        } else {
+            localDBDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
+                bindString(0, filePath)
             }
         }
     }
