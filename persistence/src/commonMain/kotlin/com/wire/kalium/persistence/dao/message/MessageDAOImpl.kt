@@ -314,12 +314,7 @@ class MessageDAOImpl(
         userId: QualifiedIDEntity,
         clientId: String,
     ) = withContext(coroutineContext) {
-        // TODO: mark all messages form the user client as resolved regardless of the conversation
-        queries.transaction {
-            val messages =
-                queries.selectFailedDecryptedByConversationIdAndSenderIdAndClientId(conversationId, userId, clientId).executeAsList()
-            queries.markMessagesAsDecryptionResolved(messages)
-        }
+        queries.markMessagesAsDecryptionResolved(userId, clientId)
     }
 
     override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
