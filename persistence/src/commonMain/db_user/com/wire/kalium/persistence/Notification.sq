@@ -1,5 +1,5 @@
-CREATE VIEW IF NOT EXISTS NotificationMessage
-AS SELECT
+getNotificationsMessages:
+SELECT
     Message.id AS id,
     Message.conversation_id AS conversationId,
     Message.content_type AS contentType,
@@ -25,5 +25,3 @@ Message.visibility = 'VISIBLE' AND
 Conversation.muted_status != 'ALL_MUTED'
 ORDER BY Message.creation_date DESC;
 
-getNotificationsMessages:
-SELECT * FROM NotificationMessage;
