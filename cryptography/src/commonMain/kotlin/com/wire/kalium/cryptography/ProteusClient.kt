@@ -76,7 +76,7 @@ interface ProteusClient {
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class, CancellationException::class)
-    fun newLastPreKey(): PreKeyCrypto
+    suspend fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
@@ -117,6 +117,6 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
 expect class ProteusClientImpl(
     rootDir: String,
     databaseKey: ProteusDBSecret? = null,
-    ioContext: CoroutineContext,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient

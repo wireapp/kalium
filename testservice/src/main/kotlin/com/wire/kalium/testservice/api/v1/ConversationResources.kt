@@ -33,7 +33,6 @@ import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
-import com.wire.kalium.testservice.models.SendTextResponse
 import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
@@ -72,7 +71,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/delete")
     @Operation(summary = "Delete a message locally")
-    fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
+    fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(deleteMessageRequest) {
             ConversationRepository.deleteConversation(
@@ -82,14 +81,15 @@ class ConversationResources(private val instanceService: InstanceService) {
                 false
             )
         }
+        return Response.status(Response.Status.OK).build()
     }
 
     @POST
     @Path("/instance/{id}/deleteEverywhere")
     @Operation(summary = "Delete a message for everyone")
-    fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
+    fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(deleteMessageRequest) {
+        return with(deleteMessageRequest) {
             ConversationRepository.deleteConversation(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -123,7 +123,7 @@ class ConversationResources(private val instanceService: InstanceService) {
         @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendConfirmationReadRequest) {
+        return with(sendConfirmationReadRequest) {
             ConversationRepository.sendConfirmation(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -131,7 +131,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 firstMessageId
             )
         }
-        return Response.status(Response.Status.OK).build()
     }
 
     @POST
@@ -142,7 +141,7 @@ class ConversationResources(private val instanceService: InstanceService) {
         @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendConfirmationReadRequest) {
+        return with(sendConfirmationReadRequest) {
             ConversationRepository.sendConfirmation(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -150,7 +149,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 firstMessageId
             )
         }
-        return Response.status(Response.Status.OK).build()
     }
 
     // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationDelivered
@@ -165,7 +163,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
         log.info("Instance $id: Send file with name ${sendFileRequest.fileName}")
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendFileRequest) {
+        return with(sendFileRequest) {
             ConversationRepository.sendFile(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -177,7 +175,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 otherHash
             )
         }
-        return Response.status(Response.Status.OK).build()
     }
 
     @POST
@@ -185,7 +182,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Operation(summary = "Send an image to a conversation")
     fun sendImage(@PathParam("id") id: String, @Valid sendImageRequest: SendImageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendImageRequest) {
+        return with(sendImageRequest) {
             ConversationRepository.sendImage(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -195,7 +192,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 width
             )
         }
-        return Response.status(Response.Status.OK).build()
     }
 
     // POST /api/v1/instance/{instanceId}/sendLocation
@@ -204,9 +200,9 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendPing")
     @Operation(summary = "Send a ping to a conversation")
-    fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest) {
+    fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendPingRequest) {
+        return with(sendPingRequest) {
             ConversationRepository.sendPing(
                 instance,
                 ConversationId(conversationId, conversationDomain)
@@ -225,7 +221,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Operation(summary = "Send a reaction to a message")
     fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(sendReactionRequest) {
+        return with(sendReactionRequest) {
             ConversationRepository.sendReaction(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -233,7 +229,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 type
             )
         }
-        return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
     }
 
     @POST
@@ -258,7 +253,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                 }.toList()
             }
         }
-        with(sendTextRequest) {
+        return with(sendTextRequest) {
             ConversationRepository.sendTextMessage(
                 instance,
                 ConversationId(conversationId, conversationDomain),
@@ -267,7 +262,6 @@ class ConversationResources(private val instanceService: InstanceService) {
                 quotedMessageId
             )
         }
-        return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
     }
 
     // POST /api/v1/instance/{instanceId}/sendTyping

@@ -1,0 +1,17 @@
+insertConversation:
+INSERT OR IGNORE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+    last_read_date =
+        CASE WHEN
+            last_read_date > excluded.last_read_date
+            THEN last_read_date
+            ELSE excluded.last_read_date END,
+    last_modified_date =
+        CASE WHEN last_modified_date > excluded.last_modified_date
+            THEN last_modified_date
+            ELSE excluded.last_modified_date END,
+    last_notified_date =
+        CASE WHEN last_notified_date > excluded.last_notified_date
+            THEN last_notified_date
+            ELSE excluded.last_notified_date END;

@@ -24,8 +24,8 @@ import kotlin.coroutines.CoroutineContext
 actual class ProteusClientImpl actual constructor(
     private val rootDir: String,
     databaseKey: ProteusDBSecret?,
-    ioContext: CoroutineContext,
-    defaultContext: CoroutineContext
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
 ) : ProteusClient {
     private var client: ProteusClient = databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
@@ -59,7 +59,7 @@ actual class ProteusClientImpl actual constructor(
         return client.newPreKeys(from, count)
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return client.newLastPreKey()
     }
 

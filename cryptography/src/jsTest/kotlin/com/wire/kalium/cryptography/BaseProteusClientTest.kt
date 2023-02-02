@@ -19,7 +19,9 @@
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
 
     private val standardScope = StandardTestDispatcher()
