@@ -73,7 +73,7 @@ class ProteusClientCryptoBoxImpl constructor(
      * this must be called only one time
      */
     override suspend fun openOrError() = withContext(ioContext) {
-        if (!this::box.isInitialized) {
+        if (!this@ProteusClientCryptoBoxImpl::box.isInitialized) {
             val directory = File(path)
             if (directory.exists()) {
                 box = wrapException {
@@ -89,6 +89,7 @@ class ProteusClientCryptoBoxImpl constructor(
             }
         }
     }
+
 
     override fun getIdentity(): ByteArray = wrapException { box.copyIdentity() }
 
@@ -115,8 +116,8 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) = lock.withLock {
-        withContext(ioContext) {
+    override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
+        lock.withLock {
             withContext(ioContext) {
                 wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
             }
@@ -219,9 +220,9 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-        companion object {
-            private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
-                com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
+    companion object {
+        private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
+            com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
 
         private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
             PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
