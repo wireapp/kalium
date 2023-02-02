@@ -59,10 +59,6 @@ interface MessageDAO {
 
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
-    /**
-     * Returns the most recent message sent from other users, _i.e._ not self user
-     */
-    suspend fun getLatestMessageFromOtherUsers(): MessageEntity?
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)

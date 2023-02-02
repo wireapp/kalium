@@ -14,14 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
  */
 
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.framework.TestUser
+expect class CurrentPlatform
 
-class MessageMappersTest {
-
-    private val messageMapper = MessageMapperImpl(selfUserId = TestUser.USER_ID)
-
+enum class PlatformType(val value: String) {
+    ANDROID("Android"),
+    JVM("Jvm"),
+    DARWIN("Darwin")
 }
