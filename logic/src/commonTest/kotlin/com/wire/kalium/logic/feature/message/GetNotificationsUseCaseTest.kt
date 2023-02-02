@@ -327,11 +327,12 @@ class GetNotificationsUseCaseTest {
         init {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> Either.Right(Unit) }
+                .whenInvokedWith(any())
+                .then { _ -> Either.Right(Unit) }
+
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
-                .whenInvokedWith(any())
+                .whenInvoked()
                 .then { Either.Right(Unit) }
             given(incrementalSyncRepository)
                 .getter(incrementalSyncRepository::incrementalSyncState)
