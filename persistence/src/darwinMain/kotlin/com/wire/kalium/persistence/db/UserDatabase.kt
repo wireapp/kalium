@@ -105,4 +105,5 @@ internal actual fun nuke(
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = platformDatabaseData.storePath
+): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storePath)?.checkResourceIsReachableAndReturnError(null) ?: false)
+    platformDatabaseData.storePath else null

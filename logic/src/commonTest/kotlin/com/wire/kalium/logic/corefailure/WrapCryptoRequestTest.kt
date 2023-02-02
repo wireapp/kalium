@@ -40,7 +40,7 @@ class WrapCryptoRequestTest {
 
     @Test
     fun whenApiRequestReturnNoInternetConnection_thenCorrectErrorIsPropagated() {
-        val expected = ProteusException(null, ProteusException.Code.PANIC)
+        val expected = ProteusException(null, ProteusException.Code.PANIC, RuntimeException())
         val actual = wrapCryptoRequest { throw expected }
 
         assertIs<Either.Left<ProteusFailure>>(actual)

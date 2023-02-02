@@ -29,6 +29,8 @@ import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -50,7 +52,8 @@ class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
@@ -90,9 +93,18 @@ class ProteusClientProviderImpl(
 
     private fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId))
+            ProteusClientImpl(
+                rootProteusPath,
+                SecurityHelper(passphraseStorage).proteusDBSecret(userId),
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         } else {
-            ProteusClientImpl(rootProteusPath)
+            ProteusClientImpl(
+                rootProteusPath, null,
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         }
     }
 }
