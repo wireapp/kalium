@@ -30,10 +30,9 @@ internal class DatabaseImporterImpl internal constructor(
     private val importContentQueries: ImportContentQueries,
     private val isDataEncrypted: Boolean
 ) : DatabaseImporter {
-    val localDBDriver = localDatabase.sqlDriver
+    private val localDBDriver = localDatabase.sqlDriver
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
-
 
         localDatabase.database.transaction {
             attachBackupDB(filePath)

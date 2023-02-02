@@ -67,7 +67,7 @@ internal class DatabaseExporterImpl internal constructor(
             userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
         plainDatabase.sqlDriver.close()
 
-        val plainDBPath = plainDatabase.dbFileLocation()?: run{
+        val plainDBPath = plainDatabase.dbFileLocation() ?: run {
             kaliumLogger.e("Failed to get the plain DB path")
             return null
         }
