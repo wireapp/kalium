@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -58,6 +59,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -378,7 +380,8 @@ class GetNotificationsUseCaseTest {
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         private val MY_ID = TestUser.USER_ID
-        private const val TIME = "2000-01-23T01:23:35.678+09:00"
+        private val TIME = Instant.fromEpochMilliseconds(948558215).toIsoDateTimeString()
+        private val TIME_INSTANCE = Instant.fromEpochMilliseconds(948558215)
         private const val TIME_EARLIER = "2000-01-23T01:23:30.678+09:00"
 
         private fun conversationId(number: Int = 0) =
@@ -463,7 +466,7 @@ class GetNotificationsUseCaseTest {
 
         private fun notificationMessageText(
             authorName: String = "Author Name",
-            time: String = TIME,
+            time: Instant = TIME_INSTANCE,
             text: String = "test text"
         ) =
             LocalNotificationMessage.Text(
@@ -474,7 +477,7 @@ class GetNotificationsUseCaseTest {
 
         private fun notificationMessageComment(
             authorName: String = "Author Name",
-            time: String = TIME,
+            time: Instant = TIME_INSTANCE,
             commentType: LocalNotificationCommentType = LocalNotificationCommentType.PICTURE
         ) =
             LocalNotificationMessage.Comment(
@@ -485,7 +488,7 @@ class GetNotificationsUseCaseTest {
 
         private fun notificationMessageConnectionRequest(
             authorName: String = "Author Name",
-            time: String = TIME
+            time: Instant = TIME_INSTANCE
         ) =
             LocalNotificationMessage.ConnectionRequest(
                 LocalNotificationMessageAuthor(authorName, null),
@@ -495,7 +498,7 @@ class GetNotificationsUseCaseTest {
 
         private fun notificationConversationDeleted(
             authorName: String = "Author Name",
-            time: String = TIME
+            time: Instant = TIME_INSTANCE
         ) = LocalNotificationMessage.ConversationDeleted(
             LocalNotificationMessageAuthor(authorName, null),
             time

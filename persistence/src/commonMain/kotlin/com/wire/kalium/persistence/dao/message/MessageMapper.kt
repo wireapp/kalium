@@ -56,18 +56,22 @@ object MessageMapper {
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
+
             (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
+
             (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
                 senderName = senderName, messageBody = text.requireField("text")
             )
+
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
         }
+
         MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
             type = assetMimeType?.let {
@@ -116,6 +120,7 @@ object MessageMapper {
             senderName = senderName,
             type = AssetTypeEntity.ASSET
         )
+
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
             adminName = senderName
         )
@@ -187,50 +192,29 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        visibility: MessageEntity.Visibility,
+        senderUserId: QualifiedIDEntity,
         senderUserId: UserIDEntity,
         senderName: String?,
-        senderConnectionStatus: ConnectionEntity.State?,
-        senderIsDeleted: Boolean?,
-        selfUserId: QualifiedIDEntity?,
-        isSelfMessage: Boolean,
-        memberChangeList: List<QualifiedIDEntity>?,
-        memberChangeType: MessageEntity.MemberChangeType?,
-        updatedConversationName: String?,
+        senderPreviewAssetId: QualifiedIDEntity?,
         conversationName: String?,
-        isMentioningSelfUser: Boolean,
-        isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
-        isUnread: Boolean,
-        isNotified: Long,
-        mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?
-    ): NotificationMessageEntity {
-        val content = toMessagePreviewEntityContent(
-            contentType = contentType,
-            senderName = senderName,
-            isSelfMessage = isSelfMessage,
-            memberChangeList = memberChangeList,
-            memberChangeType = memberChangeType,
-            isMentioningSelfUser = isMentioningSelfUser,
-            isQuotingSelfUser = isQuotingSelfUser,
-            text = text,
-            assetMimeType = assetMimeType,
-            selfUserId = selfUserId,
-            senderUserId = senderUserId
-        )
-
-        return NotificationMessageEntity(
-            id = id,
-            content = content,
-            conversationId = conversationId,
-            conversationName = conversationName,
-            conversationType = conversationType,
-            date = date.toIsoDateTimeString()
-        )
-
-    }
+        mutedStatus: ConversationEntity.MutedStatus,
+        conversationType: ConversationEntity.Type,
+    ): NotificationMessageEntity = NotificationMessageEntity(
+        id = id,
+        contentType = contentType,
+        senderUserId = senderUserId,
+        senderImage = senderPreviewAssetId,
+        date = date,
+        senderName = senderName,
+        text = text,
+        assetMimeType = assetMimeType,
+        conversationId = conversationId,
+        conversationName = conversationName,
+        mutedStatus = mutedStatus,
+        conversationType = conversationType
+    )
 
     private fun createMessageEntity(
         id: String,
