@@ -71,6 +71,7 @@ actual fun userDatabaseBuilder(
         driver,
         dispatcher,
         PlatformDatabaseData(platformDatabaseData.storePath),
+        passphrase != null
     )
 }
 
@@ -96,7 +97,8 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData("inMemory"),
+        PlatformDatabaseData(),
+        false
     )
 }
 
