@@ -20,6 +20,7 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.databasePath
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
