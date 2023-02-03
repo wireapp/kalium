@@ -1296,6 +1296,33 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAMissedCallAndNoCallerId_whenPersistMissedCallInvoked_thenDontStoreMissedCallInDatabase() = runTest {
+
+        val qualifiedIdEntity = QualifiedIDEntity(conversationId.value, conversationId.domain)
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(any())
+            .thenReturn(null)
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        callRepository.persistMissedCall(conversationId)
+
+        verify(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .with(eq(qualifiedIdEntity))
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = Times(0))
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
