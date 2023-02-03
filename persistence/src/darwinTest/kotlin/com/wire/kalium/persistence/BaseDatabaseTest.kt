@@ -54,6 +54,6 @@ actual open class BaseDatabaseTest actual constructor() {
         passphrase: UserDBSecret?,
         enableWAL: Boolean
     ): UserDatabaseBuilder {
-        return userDatabaseBuilder(PlatformDatabaseData(), userId, null, dispatcher, false)
+        return userDatabaseBuilder(PlatformDatabaseData(storePath), userId, null, dispatcher, false)
     }
 }
