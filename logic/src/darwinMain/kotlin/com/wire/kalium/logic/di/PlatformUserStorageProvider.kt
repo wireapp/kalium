@@ -29,9 +29,11 @@ internal actual class PlatformUserStorageProvider actual constructor() : UserSto
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.rootPath, shouldEncryptData)
         val database = userDatabaseBuilder(
+            PlatformDatabaseData(platformProperties.rootStoragePath),
             userIdEntity,
-            platformProperties.rootStoragePath,
-            KaliumDispatcherImpl.io
+            null,
+            KaliumDispatcherImpl.io,
+            false
         )
         return UserStorage(database, pref)
     }

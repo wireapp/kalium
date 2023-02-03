@@ -448,7 +448,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
         val allCalls = userDatabaseBuilder.callDAO.observeCalls().first()
         assertEquals(allCalls, userCalls)
-        assertEquals(allCalls.minus(backupCalls), allCalls)
+        assertEquals(allCalls.minus(backupCalls.toSet()), allCalls)
     }
 
     @Test
