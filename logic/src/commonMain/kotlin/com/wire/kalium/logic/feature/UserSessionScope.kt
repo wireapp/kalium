@@ -474,8 +474,6 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             kaliumFileSystem,
-            SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-            kaliumConfigs.shouldEncryptData,
             userStorage.database.databaseExporter
         )
 
