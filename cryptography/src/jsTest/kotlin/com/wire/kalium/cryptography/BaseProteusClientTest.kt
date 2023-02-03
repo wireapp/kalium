@@ -18,13 +18,13 @@
 
 package com.wire.kalium.cryptography
 
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestCoroutineScheduler
 
 @OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
 
-    private val standardScope = StandardTestDispatcher()
+    private val testCoroutineScheduler = TestCoroutineScheduler()
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         // TODO currently expects an in memory proteus client
@@ -35,7 +35,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, ioContext = standardScope, defaultContext = standardScope)
+        return ProteusClientImpl(proteusStore.value, ioContext = testCoroutineScheduler, defaultContext = testCoroutineScheduler)
     }
 
 }
