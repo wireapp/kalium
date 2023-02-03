@@ -46,7 +46,8 @@ actual fun userDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData()
+        PlatformDatabaseData(),
+        passphrase != null
     )
 }
 
@@ -72,7 +73,8 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData()
+        PlatformDatabaseData(),
+        false
     )
 }
 
