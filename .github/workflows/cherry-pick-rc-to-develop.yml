@@ -9,7 +9,7 @@ jobs:
     cherry_pick_rc-to-develop:
         runs-on: ubuntu-latest
         name: Cherry pick into develop
-        #    if: contains(github.event.pull_request.labels.*.name, 'release-v2.0')
+        #  if: contains(github.event.pull_request.labels.*.name, 'release-v2.0')
         steps:
             - name: Checkout
               uses: actions/checkout@v2
