@@ -90,7 +90,6 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-
     override fun getIdentity(): ByteArray = wrapException { box.copyIdentity() }
 
     override fun getLocalFingerprint(): ByteArray = wrapException { box.localFingerprint }
