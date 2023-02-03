@@ -708,7 +708,7 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        callRepository.updateCallParticipants(Arrangement.randomConversationIdString, emptyList())
+        callRepository.updateCallParticipants(Arrangement.randomConversationIdString, emptyList(), CoroutineScope(TestKaliumDispatcher.main))
 
         assertFalse {
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
@@ -728,7 +728,8 @@ class CallRepositoryTest {
                 isSpeaking = false,
                 isCameraOn = false,
                 isSharingScreen = false,
-                avatarAssetId = null
+                avatarAssetId = null,
+                hasEstablishedAudio = true
             )
         )
         callRepository.updateCallMetadataProfileFlow(
@@ -743,7 +744,7 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList)
+        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList, CoroutineScope(TestKaliumDispatcher.main))
 
         // then
         val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]
@@ -775,7 +776,8 @@ class CallRepositoryTest {
             isSpeaking = false,
             isCameraOn = false,
             avatarAssetId = null,
-            isSharingScreen = false
+            isSharingScreen = false,
+            hasEstablishedAudio = true
         )
         val participantsList = listOf(participant)
         val expectedParticipantsList = listOf(participant.copy(isSpeaking = true))
@@ -800,7 +802,7 @@ class CallRepositoryTest {
             )
         )
 
-        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList)
+        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList, CoroutineScope(TestKaliumDispatcher.main))
 
         // when
         callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId.toString(), activeSpeakers)

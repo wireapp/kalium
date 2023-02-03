@@ -185,21 +185,24 @@ class CallingParticipantsOrderTest {
             clientId = selfClientId,
             isMuted = false,
             isCameraOn = false,
-            name = "self user"
+            name = "self user",
+            hasEstablishedAudio = true
         )
         val participant2 = Participant(
             id = QualifiedID("participant2", "domain"),
             clientId = "client2",
             isMuted = false,
             isCameraOn = true,
-            name = "user name"
+            name = "user name",
+            hasEstablishedAudio = true
         )
         val participant3 = Participant(
             id = QualifiedID("participant3", "domain"),
             clientId = "client3",
             isMuted = false,
             isCameraOn = false,
-            name = "A random name"
+            name = "A random name",
+            hasEstablishedAudio = true
         )
         val participant4 = Participant(
             id = QualifiedID("participant4", "domain"),
@@ -207,14 +210,16 @@ class CallingParticipantsOrderTest {
             isMuted = false,
             isCameraOn = false,
             isSharingScreen = true,
-            name = "A random name"
+            name = "A random name",
+            hasEstablishedAudio = true
         )
         val participant11 = Participant(
             id = selfUserId,
             clientId = "client11",
             isMuted = false,
             isCameraOn = false,
-            name = "self user"
+            name = "self user",
+            hasEstablishedAudio = true
         )
         val participants = listOf(participant1, participant2, participant3, participant4, participant11)
         val otherParticipants = listOf(participant2, participant3, participant4, participant11)
