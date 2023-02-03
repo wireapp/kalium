@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -57,11 +56,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true)
         conversationDAO = db.conversationDAO
         messageDAO = db.messageDAO
         userDAO = db.userDAO
@@ -869,7 +869,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
-        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = DefaultDatabaseTestValues.userId.value))
+        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
         teamDAO.insertTeam(team)
         userDAO.insertUser(user2)
         insertTeamUserAndMember(team, user2, conversationEntity3.id)
@@ -957,7 +957,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembersWithQualifiedId(
             listOf(
                 Member(user.id, Member.Role.Member),
-                Member(DefaultDatabaseTestValues.userId, Member.Role.Member) // adding SelfUser as a member too
+                Member(selfUserId, Member.Role.Member) // adding SelfUser as a member too
             ),
             conversationId
         )

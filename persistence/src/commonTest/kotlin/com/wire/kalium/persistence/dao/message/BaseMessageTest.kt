@@ -38,7 +38,7 @@ open class BaseMessageTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(SELF_USER_ID)
-        val db = createDatabase(SELF_USER_ID)
+        val db = createDatabase(SELF_USER_ID, encryptedDBSecret, true)
 
         reactionDAO = db.reactionDAO
         messageDAO = db.messageDAO
