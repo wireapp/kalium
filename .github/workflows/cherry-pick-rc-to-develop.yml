@@ -1,0 +1,29 @@
+name: Cherry pick hotfix from release candidate and raise PR to develop
+on:
+    pull_request:
+        branches:
+            - feat/rc-cherry-pick
+        types: ["closed"]
+
+jobs:
+    cherry_pick_rc-to-develop:
+        runs-on: ubuntu-latest
+        name: Cherry pick into develop
+        #    if: contains(github.event.pull_request.labels.*.name, 'release-v2.0')
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+            - name: Cherry pick into develop
+              uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
+              with:
+                  branch: develop
+                  labels: |
+                      cherry-pick
+                  reviewers: |
+                  title: '{old_title} (cherry-pick)'
+                  body: 'Cherry picking #{old_pull_request_id} onto this branch'
+env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GITHUB_USER: ${{ github.actor }}
