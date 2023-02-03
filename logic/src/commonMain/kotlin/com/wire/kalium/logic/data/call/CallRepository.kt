@@ -26,6 +26,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -54,6 +55,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -65,6 +67,7 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -76,6 +79,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlin.math.max
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
 
@@ -100,7 +106,7 @@ interface CallRepository {
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
-    fun updateCallParticipants(conversationId: String, participants: List<Participant>)
+    fun updateCallParticipants(conversationId: String, participants: List<Participant>, scope: CoroutineScope)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
@@ -136,6 +142,7 @@ internal class CallDataSource(
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
 
     private val callJobs = mutableMapOf<ConversationId, Job>()
+    private val staleParticipantJobs = mutableMapOf<Pair<ClientId, UserId>, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -358,7 +365,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
+    override fun updateCallParticipants(conversationId: String, participants: List<Participant>, scope: CoroutineScope) {
         val callMetadataProfile = _callMetadataProfile.value
         val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -378,6 +385,45 @@ internal class CallDataSource(
 
                 _callMetadataProfile.value = callMetadataProfile.copy(
                     data = updatedCallMetadata
+                )
+            }
+        }
+
+        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+            participants.forEach { participant ->
+                if (participant.hasEstablishedAudio) {
+                    clearStaleParticipantTimeout(participant)
+                } else {
+                    removeStaleParticipantAfterTimeout(participant, conversationIdToLog, scope)
+                }
+            }
+        }
+    }
+
+    private fun clearStaleParticipantTimeout(participant: Participant) {
+        callingLogger.i("Clear stale participant timer")
+        val qualifiedClient = Pair(ClientId(participant.clientId), participant.id)
+        staleParticipantJobs.remove(qualifiedClient)?.cancel()
+    }
+
+    private fun removeStaleParticipantAfterTimeout(
+        participant: Participant,
+        conversationId: ConversationId,
+        scope: CoroutineScope
+    ) {
+        val qualifiedClient = Pair(ClientId(participant.clientId), participant.id)
+        if (staleParticipantJobs.containsKey(qualifiedClient)) {
+            return
+        }
+
+        staleParticipantJobs[qualifiedClient] = scope.launch {
+            callingLogger.i("Start stale participant timer")
+            delay(STALE_PARTICIPANT_TIMEOUT)
+            callingLogger.i("Removing stale participant")
+            subconversationRepository.getSubconversationInfo(conversationId,  CALL_SUBCONVERSATION_ID)?.let { groupId ->
+                mlsConversationRepository.removeClientsFromMLSGroup(
+                    groupId,
+                    listOf(qualifiedClient)
                 )
             }
         }
@@ -470,6 +516,10 @@ internal class CallDataSource(
         // Cancels flow observing epoch changes
         callJobs.remove(conversationId)?.cancel()
 
+        // Cancel all jobs for removing stale participants
+        staleParticipantJobs.values.forEach { it.cancel() }
+        staleParticipantJobs.clear()
+
         // TODO leaveSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID)
     }
 
@@ -525,5 +575,9 @@ internal class CallDataSource(
                 .onSuccess { callingLogger.e("[CallRepository] -> Generated new epoch") }
                 .onFailure { callingLogger.e("[CallRepository] -> Failure generating new epoch: $it") }
         } ?: callingLogger.w("[CallRepository] -> Requested new epoch but there's no conference subconversation")
+    }
+
+    companion object {
+        val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)
     }
 }
