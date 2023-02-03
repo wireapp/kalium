@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -84,6 +85,7 @@ interface MLSConversationRepository {
     suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<Pair<ClientId, UserId>>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
@@ -404,6 +406,26 @@ class MLSConversationDataSource(
                         }.flatMap {
                             sendCommitBundle(groupID, it)
                         }
+                    }
+                }
+            }
+        }
+
+    // TODO share logic with removeMembersFromMLSGroup()
+    override suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<Pair<ClientId, UserId>>): Either<CoreFailure, Unit> =
+        commitPendingProposals(groupID).flatMap {
+            retryOnCommitFailure(groupID) {
+                val qualifiedClientIDs = clientIdList.map { userClient ->
+                    CryptoQualifiedClientId(
+                        userClient.first.value,
+                        userClient.second.toCrypto()
+                    )
+                }
+                return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                    wrapMLSRequest {
+                        mlsClient.removeMember(groupID.toCrypto(), qualifiedClientIDs)
+                    }.flatMap {
+                        sendCommitBundle(groupID, it)
                     }
                 }
             }
