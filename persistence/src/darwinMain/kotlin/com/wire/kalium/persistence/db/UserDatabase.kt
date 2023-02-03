@@ -23,6 +23,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
+import co.touchlab.sqliter.JournalMode
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -52,6 +53,7 @@ actual fun userDatabaseBuilder(
         DatabaseConfiguration(
             name = FileNameUtil.userDBName(userId),
             version = schema.version,
+            journalMode = if (enableWAL) JournalMode.WAL else JournalMode.DELETE,
             create = { connection ->
                 wrapConnection(connection) { schema.create(it) }
             },
