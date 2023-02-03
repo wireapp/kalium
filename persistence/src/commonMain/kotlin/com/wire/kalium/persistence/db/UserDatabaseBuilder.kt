@@ -158,6 +158,7 @@ class UserDatabaseBuilder internal constructor(
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
             database.messagesQueries,
+            database.notificationQueries,
             database.conversationsQueries,
             userId,
             database.reactionsQueries,

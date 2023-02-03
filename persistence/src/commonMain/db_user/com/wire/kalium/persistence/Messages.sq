@@ -29,6 +29,7 @@ CREATE INDEX message_creation_date_index ON Message(creation_date);
 CREATE INDEX message_content_type_index ON Message(content_type);
 CREATE INDEX message_visibility_index ON Message(visibility);
 CREATE INDEX message_sender_user_index ON Message(sender_user_id);
+CREATE INDEX message_conversation_index ON Message(conversation_id);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -50,6 +51,7 @@ CREATE TABLE MessageTextContent (
       text_body TEXT,
       quoted_message_id TEXT,
       is_quote_verified INTEGER AS Boolean,
+      is_quoting_self INTEGER AS Boolean NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -284,7 +286,6 @@ LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.mes
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
-
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT
     Message.id AS id,
@@ -302,7 +303,7 @@ AS SELECT
     ConversationNameChangedContent.conversation_name AS updateConversationName,
     Conversation.name AS conversationName,
     (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
     TextContent.text_body AS text,
     AssetContent.asset_mime_type AS assetMimeType,
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
@@ -312,7 +313,6 @@ AS SELECT
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
@@ -404,8 +404,8 @@ markMessageAsDeleted {
    DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
-
-   INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
+   -- deleted messages will not have a quote 100%
+   INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
 }
 
 markMessageAsEdited:
@@ -426,8 +426,20 @@ INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length,
 VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
-INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified)
-VALUES(?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, is_quoting_self)
+VALUES(:message_id, :conversation_id, :text_body, :quoted_message_id, :is_quote_verified,
+CASE WHEN
+                :quoted_message_id IS NULL
+                    THEN 0
+                    ELSE (
+                        IFNULL(
+                        (SELECT (Message.sender_user_id == SelfUser.id)
+                            FROM Message
+                            LEFT JOIN SelfUser
+                            WHERE
+                                Message.id = :quoted_message_id AND
+                                conversation_id = :conversation_id),
+                        0 ))END);
 
 insertMessageRestrictedAssetContent:
 INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
@@ -532,13 +544,6 @@ WHERE MessageDetailsView.conversationId = :conversation_id AND contentType = :co
 deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
-
-getNotificationsMessages:
-SELECT * FROM MessagePreview AS message
-WHERE shouldNotify == 1
-AND visibility = 'VISIBLE'
-AND isSelfMessage == 0
-AND contentType IN ? ORDER BY message.date DESC;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
