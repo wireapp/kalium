@@ -49,7 +49,7 @@ interface CallDAO {
     suspend fun observeEstablishedCalls(): Flow<List<CallEntity>>
     suspend fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
-    suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String
+    suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
     suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type?
