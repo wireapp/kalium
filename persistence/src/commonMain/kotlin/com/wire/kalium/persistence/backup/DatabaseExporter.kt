@@ -19,25 +19,96 @@
 package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
+import com.wire.kalium.persistence.DumpContentQueries
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.nuke
+import com.wire.kalium.persistence.db.userDatabaseBuilder
+import com.wire.kalium.persistence.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcherImpl
 
 interface DatabaseExporter {
-    fun beforeBackup()
+
+    /**
+     * Export the user DB to a plain DB
+     * @return the path to the plain DB file, null if the file was not created
+     */
+    fun exportToPlainDB(): String?
+
+    /**
+     * Delete the backup file and any temp data was created during the backup process
+     * need to be called after the backup is done wether the user exported the file or not
+     * even if the backup failed
+     * @return true if the file was deleted, false otherwise
+     */
+    fun deleteBackupDBFile(): Boolean
 }
 
 internal class DatabaseExporterImpl internal constructor(
+    user: UserIDEntity,
+    private val platformDatabaseData: PlatformDatabaseData,
+    private val dumpContentQueries: DumpContentQueries,
     private val sqlDriver: SqlDriver
 ) : DatabaseExporter {
 
-    /*
-    https://www.sqlite.org/c3ref/c_checkpoint_full.html
+    private val backupUserId = user.copy(value = "backup-${user.value}")
 
-    #define SQLITE_CHECKPOINT_PASSIVE  0  /* Do as much as possible w/o blocking */
-    #define SQLITE_CHECKPOINT_FULL     1  /* Wait for writers, then checkpoint */
-    #define SQLITE_CHECKPOINT_RESTART  2  /* Like FULL but wait for readers */
-    #define SQLITE_CHECKPOINT_TRUNCATE 3  /* Like RESTART but also truncate WAL */
-     */
-    override fun beforeBackup() {
-        sqlDriver.executeQuery(null, "PRAGMA wal_checkpoint(3)", {}, 0)
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    override fun exportToPlainDB(): String? {
+        // delete the backup DB file if it exists
+        if (deleteBackupDBFile()) {
+            return null
+        }
+
+        // create a new backup DB file
+        val plainDatabase: UserDatabaseBuilder =
+            userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
+        plainDatabase.sqlDriver.close()
+
+        // copy the data from the user DB to the backup DB
+
+        try {
+            sqlDriver.execute(null, "BEGIN", 0)
+            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
+                bindString(0, plainDatabase.dbFileLocation())
+            }
+            dumpContent()
+            sqlDriver.execute(null, "COMMIT", 0)
+        } catch (e: Exception) {
+            kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
+            // if the dump failed, delete the backup DB file
+            deleteBackupDBFile()
+            return null
+        }
+        return plainDatabase.dbFileLocation()
     }
 
+    override fun deleteBackupDBFile(): Boolean = nuke(backupUserId, platformDatabaseData)
+
+    private fun dumpContent() {
+        with(dumpContentQueries) {
+            // dump the content of the user DB into the plain DB must be done in this order
+            dumpUserTable()
+            dumpConversationTable()
+            dumpMessageTable()
+            dumpCallTable()
+            dumpMessageAssetContentTable()
+            dumpMessageRestrictedAssetContentTable()
+            dumpMessageFailedToDecryptContentTable()
+            dumpMessageConversationChangedContentTable()
+            dumpMessageMemberChangeContentTable()
+            dumpMessageMentionTable()
+            dumpMessageMissedCallContentTable()
+            dumpMessageTextContentTable()
+            dumpMessageUnknownContentTable()
+            dumpReactionTable()
+            dumpReceiptTable()
+        }
+    }
+
+    private companion object {
+        // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
+        const val PLAIN_DB_ALIAS = "plain_db"
+    }
 }

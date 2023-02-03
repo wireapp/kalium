@@ -29,11 +29,12 @@ import kotlin.test.assertEquals
 class PrekeyDAOTest : BaseDatabaseTest() {
 
     private lateinit var prekeyDAO: PrekeyDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         prekeyDAO = db.prekeyDAO
     }
 

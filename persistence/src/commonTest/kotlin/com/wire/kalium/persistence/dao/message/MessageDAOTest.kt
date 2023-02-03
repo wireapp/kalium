@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
@@ -59,11 +60,12 @@ class MessageDAOTest : BaseDatabaseTest() {
     private val conversationEntity2 = newConversationEntity("Test2")
     private val userEntity1 = newUserEntity("userEntity1")
     private val userEntity2 = newUserEntity("userEntity2")
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
@@ -1201,13 +1203,15 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val result1 = messageDAO.getMessageById(
             id = messageId,
-            conversationId = conversationId1)
+            conversationId = conversationId1
+        )
         val result2 = messageDAO.getMessageById(
             id = messageId,
-            conversationId = conversationId2)
+            conversationId = conversationId2
+        )
         assertTrue {
             result1.first()?.content == MessageEntityContent.HistoryLost &&
-            result2.first()?.content == MessageEntityContent.HistoryLost
+                    result2.first()?.content == MessageEntityContent.HistoryLost
         }
     }
 
@@ -1215,25 +1219,35 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMixedTypeOfConversations_WhenPersistSystemMessageInBulk_ThenMessageShouldPersistedOnlyForOneOnOneAndGroups() = runTest {
         // given
         val selfConversation = QualifiedIDEntity("selfConversation", "someDomain")
-        conversationDAO.insertConversation(newConversationEntity(id = selfConversation).copy(
-            type = ConversationEntity.Type.SELF
-        ))
+        conversationDAO.insertConversation(
+            newConversationEntity(id = selfConversation).copy(
+                type = ConversationEntity.Type.SELF
+            )
+        )
         val oneOnOneConversation = QualifiedIDEntity("oneOnOneConversation", "someDomain")
-        conversationDAO.insertConversation(newConversationEntity(id = oneOnOneConversation).copy(
-            type = ConversationEntity.Type.ONE_ON_ONE
-        ))
+        conversationDAO.insertConversation(
+            newConversationEntity(id = oneOnOneConversation).copy(
+                type = ConversationEntity.Type.ONE_ON_ONE
+            )
+        )
         val groupConversation = QualifiedIDEntity("groupConversation", "someDomain")
-        conversationDAO.insertConversation(newConversationEntity(id = groupConversation).copy(
-            type = ConversationEntity.Type.GROUP
-        ))
+        conversationDAO.insertConversation(
+            newConversationEntity(id = groupConversation).copy(
+                type = ConversationEntity.Type.GROUP
+            )
+        )
         val connectionPendingConversation = QualifiedIDEntity("connectionPendingConversation", "someDomain")
-        conversationDAO.insertConversation(newConversationEntity(id = connectionPendingConversation).copy(
-            type = ConversationEntity.Type.CONNECTION_PENDING
-        ))
+        conversationDAO.insertConversation(
+            newConversationEntity(id = connectionPendingConversation).copy(
+                type = ConversationEntity.Type.CONNECTION_PENDING
+            )
+        )
         val globalTeamConversation = QualifiedIDEntity("globalTeamConversation", "someDomain")
-        conversationDAO.insertConversation(newConversationEntity(id = globalTeamConversation).copy(
-            type = ConversationEntity.Type.GLOBAL_TEAM
-        ))
+        conversationDAO.insertConversation(
+            newConversationEntity(id = globalTeamConversation).copy(
+                type = ConversationEntity.Type.GLOBAL_TEAM
+            )
+        )
 
         val messageId = "systemMessage"
         userDAO.insertUser(userEntity1)
@@ -1252,19 +1266,24 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val resultForSelfConversation = messageDAO.getMessageById(
             id = messageId,
-            conversationId = selfConversation)
+            conversationId = selfConversation
+        )
         val resultForOneOnOneConversation = messageDAO.getMessageById(
             id = messageId,
-            conversationId = oneOnOneConversation)
+            conversationId = oneOnOneConversation
+        )
         val resultForGroupConversation = messageDAO.getMessageById(
             id = messageId,
-            conversationId = groupConversation)
+            conversationId = groupConversation
+        )
         val resultForConnectionPendingConversation = messageDAO.getMessageById(
             id = messageId,
-            conversationId = connectionPendingConversation)
+            conversationId = connectionPendingConversation
+        )
         val resultForGlobalTeamConversation = messageDAO.getMessageById(
             id = messageId,
-            conversationId = globalTeamConversation)
+            conversationId = globalTeamConversation
+        )
 
         assertTrue {
             resultForSelfConversation.firstOrNull() == null &&
