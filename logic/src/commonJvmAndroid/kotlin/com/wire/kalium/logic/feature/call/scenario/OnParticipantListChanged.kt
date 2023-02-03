@@ -65,7 +65,8 @@ class OnParticipantListChanged internal constructor(
 
             callRepository.updateCallParticipants(
                 conversationId = conversationIdWithDomain.toString(),
-                participants = participants
+                participants = participants,
+                scope = callingScope
             )
             callingLogger.i(
                 "[onParticipantsChanged] - Total Participants: ${participants.size}" +
