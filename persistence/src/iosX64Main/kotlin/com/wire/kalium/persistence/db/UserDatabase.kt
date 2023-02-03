@@ -28,25 +28,26 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: String) : DatabaseCredentials
-    object NotSet : DatabaseCredentials
-}
+actual class PlatformDatabaseData()
 
-internal actual class PlatformDatabaseData(val credentials: DatabaseCredentials)
-
-fun userDatabaseBuilder(
+actual fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-    passphrase: String,
-    dispatcher: CoroutineDispatcher
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
 ): UserDatabaseBuilder {
+    if (passphrase != null) {
+        throw NotImplementedError("Encrypted DB is not supported on iOS")
+    }
     val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
 
     return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(DatabaseCredentials.Passphrase(passphrase))
+        PlatformDatabaseData(),
+        passphrase != null
     )
 }
 
@@ -72,12 +73,18 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(DatabaseCredentials.NotSet)
+        PlatformDatabaseData(),
+        false
     )
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = TODO()
+
+// TODO: implement this in Darwin main when merging with develop
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? = TODO()

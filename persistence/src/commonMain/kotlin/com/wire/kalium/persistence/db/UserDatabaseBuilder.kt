@@ -73,13 +73,30 @@ value class UserDBSecret(val value: ByteArray)
  * that might be necessary for future operations
  * in the future like [nuke]
  */
-internal expect class PlatformDatabaseData
+expect class PlatformDatabaseData
+
+/**
+ * Creates a [UserDatabaseBuilder] for the given [userId] and [passphrase]
+ * @param platformDatabaseData Platform-specific data used to create the database
+ * @param userId The user id of the database
+ * @param passphrase The passphrase used to encrypt the database
+ * @param dispatcher The dispatcher used to perform database operations
+ * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
+ **/
+expect fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean = true
+): UserDatabaseBuilder
 
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
-    private val sqlDriver: SqlDriver,
+    internal val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
+    private val isEncrypted: Boolean,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
 
@@ -130,16 +147,23 @@ class UserDatabaseBuilder internal constructor(
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
-        get() = DatabaseImporterImpl(sqlDriver)
+        get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted)
 
     val databaseExporter: DatabaseExporter
-        get() = DatabaseExporterImpl(sqlDriver)
+        get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, sqlDriver, isEncrypted)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId, database.reactionsQueries, queriesContext)
+        get() = MessageDAOImpl(
+            database.messagesQueries,
+            database.notificationQueries,
+            database.conversationsQueries,
+            userId,
+            database.reactionsQueries,
+            queriesContext
+        )
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries, queriesContext)
@@ -159,17 +183,26 @@ class UserDatabaseBuilder internal constructor(
     val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.migrationQueries, database.messagesQueries)
 
     /**
+     * @return the absolute path of the DB file or null if the DB file does not exist
+     */
+    fun dbFileLocation(): String? = getDatabaseAbsoluteFileLocation(platformDatabaseData, userId)
+
+    /**
      * drops DB connection and delete the DB file
      */
     fun nuke(): Boolean {
         sqlDriver.close()
         databaseScope.cancel()
-        return nuke(userId, database, platformDatabaseData)
+        return nuke(userId, platformDatabaseData)
     }
 }
 
 internal expect fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean
+
+internal expect fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String?
