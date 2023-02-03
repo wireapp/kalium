@@ -96,6 +96,7 @@ class UserDatabaseBuilder internal constructor(
     internal val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
+    private val isEncrypted: Boolean,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
 
@@ -146,10 +147,10 @@ class UserDatabaseBuilder internal constructor(
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
-        get() = DatabaseImporterImpl(this, database.importContentQueries)
+        get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted)
 
     val databaseExporter: DatabaseExporter
-        get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, sqlDriver)
+        get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, sqlDriver, isEncrypted)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)
@@ -157,6 +158,7 @@ class UserDatabaseBuilder internal constructor(
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
             database.messagesQueries,
+            database.notificationQueries,
             database.conversationsQueries,
             userId,
             database.reactionsQueries,
