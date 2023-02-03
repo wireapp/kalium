@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: String) : DatabaseCredentials
@@ -35,14 +36,16 @@ sealed interface DatabaseCredentials {
 }
 
 // TODO encrypt database using sqlcipher
-internal actual class PlatformDatabaseData(val storePath: String)
+actual class PlatformDatabaseData(val storePath: String)
 
-fun userDatabaseBuilder(
+actual fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-    storePath: String,
-    dispatcher: CoroutineDispatcher
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
 ): UserDatabaseBuilder {
-    NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
+    NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
 
     val schema = UserDatabase.Schema
     val driver = NativeSqliteDriver(
@@ -56,7 +59,7 @@ fun userDatabaseBuilder(
                 wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
             },
             extendedConfig = DatabaseConfiguration.Extended(
-                basePath = storePath
+                basePath = platformDatabaseData.storePath
             )
         )
     )
@@ -65,7 +68,7 @@ fun userDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(storePath)
+        PlatformDatabaseData(platformDatabaseData.storePath),
     )
 }
 
@@ -91,7 +94,7 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData("inMemory")
+        PlatformDatabaseData("inMemory"),
     )
 }
 
