@@ -62,11 +62,21 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         logoutRepository.onLogout(reason)
 
         when (reason) {
-            LogoutReason.SELF_HARD_LOGOUT, LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
+            LogoutReason.SELF_HARD_LOGOUT -> {
                 // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
                 delay(CLEAR_DATA_DELAY)
                 clearClientDataUseCase()
                 clearUserDataUseCase() // this clears also current client id
+            }
+
+            LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
+                // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
+                delay(CLEAR_DATA_DELAY)
+                clearClientDataUseCase()
+                clientRepository.clearCurrentClientId()
+                clientRepository.clearHasRegisteredMLSClient()
+                // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
+                pushTokenRepository.setUpdateFirebaseTokenFlag(true)
             }
 
             LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
