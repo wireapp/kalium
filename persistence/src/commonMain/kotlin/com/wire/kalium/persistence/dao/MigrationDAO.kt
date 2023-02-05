@@ -18,11 +18,12 @@
 
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.MigrationQueries
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageInsertExtension
 import com.wire.kalium.persistence.dao.message.MessageInsertExtensionImpl
+import com.wire.kalium.persistence.message.InsertMessageQueries
+import com.wire.kalium.persistence.message.MessagesQueries
 import kotlinx.datetime.Instant
 
 interface MigrationDAO {
@@ -33,8 +34,9 @@ interface MigrationDAO {
 
 internal class MigrationDAOImpl(
     private val migrationQueries: MigrationQueries,
+    private val insertQueries: InsertMessageQueries,
     messagesQueries: MessagesQueries
-) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(messagesQueries) {
+) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(messagesQueries, insertQueries) {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
         migrationQueries.transaction {
             conversationList.forEach {

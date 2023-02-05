@@ -25,28 +25,28 @@ import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
-import com.wire.kalium.persistence.Message
-import com.wire.kalium.persistence.MessageAssetContent
-import com.wire.kalium.persistence.MessageConversationChangedContent
-import com.wire.kalium.persistence.MessageFailedToDecryptContent
-import com.wire.kalium.persistence.MessageMemberChangeContent
-import com.wire.kalium.persistence.MessageMention
-import com.wire.kalium.persistence.MessageMissedCallContent
-import com.wire.kalium.persistence.MessageRestrictedAssetContent
-import com.wire.kalium.persistence.MessageTextContent
-import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
 import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
-import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.dao.MemberRoleAdapter
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.QualifiedIDListAdapter
+import com.wire.kalium.persistence.message.Message
+import com.wire.kalium.persistence.message.MessageAssetContent
+import com.wire.kalium.persistence.message.MessageConversationChangedContent
+import com.wire.kalium.persistence.message.MessageFailedToDecryptContent
+import com.wire.kalium.persistence.message.MessageMemberChangeContent
+import com.wire.kalium.persistence.message.MessageMention
+import com.wire.kalium.persistence.message.MessageMissedCallContent
+import com.wire.kalium.persistence.message.MessageRestrictedAssetContent
+import com.wire.kalium.persistence.message.MessageTextContent
+import com.wire.kalium.persistence.message.MessageUnknownContent
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(

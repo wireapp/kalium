@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.message.MessagesQueries
 import kotlin.coroutines.CoroutineContext
 
 expect interface MessageExtensions

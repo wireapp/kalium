@@ -139,6 +139,7 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageRemoteTime: String
     ) {
+        // TODO: can be done in one query
         messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
             .flatMap {
                 messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)

@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
-import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -40,6 +39,8 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRIC
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import com.wire.kalium.persistence.kaliumLogger
+import com.wire.kalium.persistence.message.InsertMessageQueries
+import com.wire.kalium.persistence.message.MessagesQueries
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -54,12 +55,13 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
+    private val insertQueries: InsertMessageQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext
-) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries) {
+) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries, insertQueries) {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = withContext(coroutineContext) {
@@ -88,7 +90,7 @@ class MessageDAOImpl(
                     (message.content as MessageEntityContent.Text).mentions.map { it.userId }.contains(selfUserId)
 
             var shouldNotify = true
-            queries.messageNotifyData(selfUserId, message.conversationId, message.id).executeAsOneOrNull()
+            insertQueries.messageNotifyData(selfUserId, message.conversationId, message.id).executeAsOneOrNull()
                 ?.let { (selfStatus, conversationStatus, isQuotingSelf) ->
                     if ((selfStatus == UserAvailabilityStatusEntity.AVAILABLE || selfStatus == UserAvailabilityStatusEntity.NONE) &&
                         (conversationStatus == ConversationEntity.MutedStatus.ALL_ALLOWED)
@@ -132,7 +134,7 @@ class MessageDAOImpl(
 
     @Deprecated("slow and should be removed")
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
-        queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
+        insertQueries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
@@ -298,7 +300,7 @@ class MessageDAOImpl(
             queries.deleteMessageMentions(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
             newTextContent.mentions.forEach {
-                queries.insertMessageMention(
+                insertQueries.insertMessageMention(
                     message_id = currentMessageId,
                     conversation_id = conversationId,
                     start = it.start,
@@ -394,7 +396,8 @@ internal interface MessageInsertExtension {
 }
 
 internal class MessageInsertExtensionImpl(
-    private val messagesQueries: MessagesQueries
+    private val messagesQueries: MessagesQueries,
+    private val insertQueries: InsertMessageQueries
 ) : MessageInsertExtension {
 
     override fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
@@ -448,7 +451,7 @@ internal class MessageInsertExtensionImpl(
 
     private fun insertBaseMessageOrError(message: MessageEntity) {
         // do not add withContext
-        messagesQueries.insertMessage(
+        insertQueries.insertMessage(
             id = message.id,
             conversation_id = message.conversationId,
             creation_date = message.date,
@@ -465,7 +468,7 @@ internal class MessageInsertExtensionImpl(
     private fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
-                messagesQueries.insertMessageTextContent(
+                insertQueries.insertMessageTextContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     text_body = content.messageBody,
@@ -473,7 +476,7 @@ internal class MessageInsertExtensionImpl(
                     is_quote_verified = content.isQuoteVerified
                 )
                 content.mentions.forEach {
-                    messagesQueries.insertMessageMention(
+                    insertQueries.insertMessageMention(
                         message_id = message.id,
                         conversation_id = message.conversationId,
                         start = it.start,
@@ -483,7 +486,7 @@ internal class MessageInsertExtensionImpl(
                 }
             }
 
-            is MessageEntityContent.RestrictedAsset -> messagesQueries.insertMessageRestrictedAssetContent(
+            is MessageEntityContent.RestrictedAsset -> insertQueries.insertMessageRestrictedAssetContent(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 asset_mime_type = content.mimeType,
@@ -492,7 +495,7 @@ internal class MessageInsertExtensionImpl(
             )
 
             is MessageEntityContent.Asset -> {
-                messagesQueries.insertMessageAssetContent(
+                insertQueries.insertMessageAssetContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     asset_size = content.assetSizeInBytes,
@@ -513,27 +516,27 @@ internal class MessageInsertExtensionImpl(
                 )
             }
 
-            is MessageEntityContent.Unknown -> messagesQueries.insertMessageUnknownContent(
+            is MessageEntityContent.Unknown -> insertQueries.insertMessageUnknownContent(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 unknown_encoded_data = content.encodedData,
                 unknown_type_name = content.typeName
             )
 
-            is MessageEntityContent.FailedDecryption -> messagesQueries.insertFailedDecryptionMessageContent(
+            is MessageEntityContent.FailedDecryption -> insertQueries.insertFailedDecryptionMessageContent(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 unknown_encoded_data = content.encodedData,
             )
 
-            is MessageEntityContent.MemberChange -> messagesQueries.insertMemberChangeMessage(
+            is MessageEntityContent.MemberChange -> insertQueries.insertMemberChangeMessage(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 member_change_list = content.memberUserIdList,
                 member_change_type = content.memberChangeType
             )
 
-            is MessageEntityContent.MissedCall -> messagesQueries.insertMissedCallMessage(
+            is MessageEntityContent.MissedCall -> insertQueries.insertMissedCallMessage(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 caller_id = message.senderUserId
@@ -543,7 +546,7 @@ internal class MessageInsertExtensionImpl(
                 /** NO-OP. No need to insert any content for Knock messages */
             }
 
-            is MessageEntityContent.ConversationRenamed -> messagesQueries.insertConversationRenamedMessage(
+            is MessageEntityContent.ConversationRenamed -> insertQueries.insertConversationRenamedMessage(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 conversation_name = content.conversationName
