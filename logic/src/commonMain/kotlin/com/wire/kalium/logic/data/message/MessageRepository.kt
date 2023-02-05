@@ -39,9 +39,9 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -151,6 +152,11 @@ interface MessageRepository {
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
 
+    suspend fun textOrAssetContent(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Pair<MessageContent.Regular, Instant>?>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -234,13 +240,9 @@ class MessageDataSource(
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-                .firstOrNull()?.run {
-                    messageMapper.fromEntityToMessage(this)
+                .firstOrNull()?.let {
+                    messageMapper.fromEntityToMessage(it)
                 }
-        }.onSuccess {
-            Either.Right(it)
-        }.onFailure {
-            Either.Left(it)
         }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
@@ -403,5 +405,18 @@ class MessageDataSource(
             .let {
                 receiptModeMapper.fromEntityToModel(it)
             }
+    }
+
+    override suspend fun textOrAssetContent(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Pair<MessageContent.Regular, Instant>?> = wrapStorageNullableRequest {
+        messageDAO.textOrAssetMessage(messageId, conversationId.toDao())
+    }.map {
+        val message = it?.first ?: return@map null
+        val date = it.second
+        message.let {
+            messageMapper.toMessageContent(message, false) to date
+        }
     }
 }

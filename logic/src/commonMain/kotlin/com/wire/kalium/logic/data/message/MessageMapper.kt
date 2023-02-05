@@ -49,6 +49,7 @@ interface MessageMapper {
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regulerMessage: MessageContent.Regular): MessageEntityContent.Regular
+    fun toMessageContent(messageContent: MessageEntityContent.Regular, hidden: Boolean): MessageContent.Regular
 }
 
 class MessageMapperImpl(
@@ -110,7 +111,7 @@ class MessageMapperImpl(
         return when (message) {
             is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
-                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
+                content = toMessageContent(message.content, visibility == Message.Visibility.HIDDEN),
                 conversationId = message.conversationId.toModel(),
                 date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
@@ -300,52 +301,55 @@ class MessageMapperImpl(
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
     }
 
-    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
-        is MessageEntityContent.Text -> {
-            val quotedMessageDetails = this.quotedMessage?.let {
-                MessageContent.QuotedMessageDetails(
-                    senderId = it.senderId.toModel(),
-                    senderName = it.senderName,
-                    isQuotingSelfUser = it.isQuotingSelfUser,
-                    isVerified = it.isVerified,
-                    messageId = it.id,
-                    timeInstant = Instant.parse(it.dateTime),
-                    editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                    quotedContent = quotedContentFromEntity(it)
+    override fun toMessageContent(messageContent: MessageEntityContent.Regular, hidden: Boolean): MessageContent.Regular =
+        with(messageContent) {
+            when (this) {
+                is MessageEntityContent.Text -> {
+                    val quotedMessageDetails = this.quotedMessage?.let {
+                        MessageContent.QuotedMessageDetails(
+                            senderId = it.senderId.toModel(),
+                            senderName = it.senderName,
+                            isQuotingSelfUser = it.isQuotingSelfUser,
+                            isVerified = it.isVerified,
+                            messageId = it.id,
+                            timeInstant = Instant.parse(it.dateTime),
+                            editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                            quotedContent = quotedContentFromEntity(it)
+                        )
+                    }
+                    MessageContent.Text(
+                        value = this.messageBody,
+                        mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
+                        quotedMessageReference = quotedMessageDetails?.let {
+                            MessageContent.QuoteReference(
+                                quotedMessageId = it.messageId,
+                                quotedMessageSha256 = null,
+                                isVerified = it.isVerified
+                            )
+                        },
+                        quotedMessageDetails = quotedMessageDetails
+                    )
+                }
+
+                is MessageEntityContent.Asset -> MessageContent.Asset(
+                    value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+                )
+
+                is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
+
+                is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
+                    this.mimeType, this.assetSizeInBytes, this.assetName
+                )
+
+                is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
+                is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
+                    encodedData,
+                    isDecryptionResolved,
+                    senderUserId.toModel(),
+                    senderClientId?.let { ClientId(it) }
                 )
             }
-            MessageContent.Text(
-                value = this.messageBody,
-                mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.let {
-                    MessageContent.QuoteReference(
-                        quotedMessageId = it.messageId,
-                        quotedMessageSha256 = null,
-                        isVerified = it.isVerified
-                    )
-                },
-                quotedMessageDetails = quotedMessageDetails
-            )
         }
-
-        is MessageEntityContent.Asset -> MessageContent.Asset(
-            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
-        )
-
-        is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
-
-        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
-            this.mimeType, this.assetSizeInBytes, this.assetName
-        )
-
-        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
-            this.encodedData,
-            this.isDecryptionResolved,
-            this.senderUserId.toModel(),
-            ClientId(this.senderClientId.orEmpty())
-        )
-    }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
         // Prioritise Invalid and Deleted over content types

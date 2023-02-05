@@ -232,7 +232,7 @@ internal class ApplicationMessageHandlerImpl(
                 persistMessage(message)
             }
 
-            is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.RestrictedAsset -> Unit
         }
     }
 
@@ -266,8 +266,10 @@ internal class ApplicationMessageHandlerImpl(
         }
 
         val originalHash =
-            messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
-                messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
+            messageRepository.textOrAssetContent(quotedReference.quotedMessageId, message.conversationId).map {
+                val content = it?.first ?: return@map null
+                val date = it.second
+                messageEncoder.encodeMessageContent(date, content)
             }.getOrElse(null)
 
         return if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {

@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
@@ -81,26 +82,55 @@ class MessageDAOImpl(
     ) = withContext(coroutineContext) {
         queries.transaction {
             val messageCreationInstant = message.date
-            if (updateConversationReadDate) {
-                conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
-            }
 
             insertInDB(message)
+            val isMentioningSelf = (message.content is MessageEntityContent.Text) &&
+                    (message.content as MessageEntityContent.Text).mentions.map { it.userId }.contains(selfUserId)
 
-            if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
-                conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
-            }
+            var shouldNotify = true
+            queries.messageNotifyData(selfUserId, message.conversationId, message.id).executeAsOneOrNull()
+                ?.let { (selfStatus, conversationStatus, isQuotingSelf) ->
+                    if ((selfStatus == UserAvailabilityStatusEntity.AVAILABLE || selfStatus == UserAvailabilityStatusEntity.NONE) &&
+                        (conversationStatus == ConversationEntity.MutedStatus.ALL_ALLOWED)
+                    ) {
+                        shouldNotify = true
+                        return@let
+                    }
 
-            if (updateConversationModifiedDate) {
-                conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
-            }
+                    if ((message.senderUserId == selfUserId) ||
+                        (conversationStatus == ConversationEntity.MutedStatus.ALL_MUTED) ||
+                        (selfStatus == UserAvailabilityStatusEntity.AWAY)
+                    ) {
+                        shouldNotify = false
+                        return@let
+                    }
+
+                    if ((isQuotingSelf || isMentioningSelf) &&
+                        (selfStatus == UserAvailabilityStatusEntity.BUSY || conversationStatus == ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED)
+                    ) {
+                        shouldNotify = true
+                        return@let
+                    }
+                }
+
+            val newNotificationTime = if (shouldNotify) null else messageCreationInstant
+            val lastModificationDate = if (updateConversationModifiedDate) messageCreationInstant else null
+            val lastReadDate = if (updateConversationReadDate) messageCreationInstant else null
+            conversationsQueries.updateConversationAfterMessage(
+                conversation_id = message.conversationId,
+                last_read_date = lastReadDate?.toEpochMilliseconds(),
+                last_modified_date = lastModificationDate?.toEpochMilliseconds(),
+                last_notified_date = newNotificationTime?.toEpochMilliseconds()
+            )
         }
     }
 
+    @Deprecated("slow and should be removed")
     override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         nonSuspendNeedsToBeNotified(id, conversationId)
     }
 
+    @Deprecated("slow and should be removed")
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsOne() == 1L
 
@@ -204,6 +234,11 @@ class MessageDAOImpl(
             .flowOn(coroutineContext)
             .mapToOneOrNull()
 
+    override suspend fun textOrAssetMessage(id: String, conversationId: QualifiedIDEntity): Pair<MessageEntityContent.Regular?, Instant>? = withContext(coroutineContext) {
+        queries.selectTextOrAssetMessage(id, conversationId, mapper::fromTextOrAssetMessage)
+            .executeAsOneOrNull()
+    }
+
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
@@ -295,8 +330,8 @@ class MessageDAOImpl(
 
     override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
         flowOf(emptyList())
-    // FIXME: Re-enable gradually as we improve its performance
-    //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+// FIXME: Re-enable gradually as we improve its performance
+//        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
         queries.getUnreadMessagesCount { conversationId, count ->

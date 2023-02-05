@@ -394,6 +394,66 @@ object MessageMapper {
         )
     }
 
+    fun fromTextOrAssetMessage(
+        contentType: MessageEntity.ContentType,
+        date: Instant,
+        text: String?,
+        quotedMessageId: String?,
+        assetSize: Long?,
+        assetName: String?,
+        assetMimeType: String?,
+        assetUploadStatus: MessageEntity.UploadStatus?,
+        assetDownloadStatus: MessageEntity.DownloadStatus?,
+        assetOtrKey: ByteArray?,
+        assetSha256: ByteArray?,
+        assetId: String?,
+        assetToken: String?,
+        assetDomain: String?,
+        assetEncryptionAlgorithm: String?,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDuration: Long?,
+        assetNormalizedLoudness: ByteArray?,
+        mentions: String
+    ): Pair<MessageEntityContent.Regular?, Instant> {
+        val content = when (contentType) {
+            MessageEntity.ContentType.TEXT -> {
+                text?.let {
+                    MessageEntityContent.Text(
+                        messageBody = text,
+                        mentions = messageMentionsFromJsonString(mentions),
+                        quotedMessageId = quotedMessageId,
+                        quotedMessage = null,
+                    )
+                }
+            }
+
+            MessageEntity.ContentType.ASSET -> {
+                MessageEntityContent.Asset(
+                    assetSizeInBytes = assetSize.requireField("asset_size"),
+                    assetName = assetName,
+                    assetMimeType = assetMimeType.requireField("asset_mime_type"),
+                    assetUploadStatus = assetUploadStatus,
+                    assetDownloadStatus = assetDownloadStatus,
+                    assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
+                    assetSha256Key = assetSha256.requireField("asset_sha256"),
+                    assetId = assetId.requireField("asset_id"),
+                    assetToken = assetToken,
+                    assetDomain = assetDomain,
+                    assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                    assetWidth = assetWidth,
+                    assetHeight = assetHeight,
+                    assetDurationMs = assetDuration,
+                    assetNormalizedLoudness = assetNormalizedLoudness,
+                )
+            }
+
+            else -> null
+        }
+        return content to date
+    }
+
+
     /**
      * Used when unpacking a value from the database, and it is expected to not be null.
      * For example, if there's a quoted message ID, it is 100% expected that there is a quoted message content type

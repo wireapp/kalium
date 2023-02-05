@@ -82,12 +82,6 @@ SET last_notified_date = (
 )
 WHERE qualified_id = :conversationId;
 
-
-updateConversationNotificationsDate:
-UPDATE Conversation
-SET last_notified_date = :last_notified_date
-WHERE qualified_id = :conversationId;
-
 updateAllNotifiedConversationsNotificationsDate:
 UPDATE Conversation
 SET last_notified_date = (
@@ -273,3 +267,11 @@ updateConversationReceiptMode:
 UPDATE Conversation
 SET receipt_mode = ?
 WHERE qualified_id = ?;
+
+updateConversationAfterMessage:
+UPDATE Conversation
+SET
+    last_modified_date = IFNULL(:last_modified_date, Conversation.last_modified_date),
+    last_notified_date = IFNULL(:last_notified_date, Conversation.last_notified_date),
+    last_read_date = IFNULL(:last_read_date, Conversation.last_read_date)
+WHERE qualified_id = :conversation_id;

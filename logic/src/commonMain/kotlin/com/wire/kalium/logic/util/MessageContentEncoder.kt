@@ -25,8 +25,31 @@ import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
+import kotlinx.datetime.Instant
 
 class MessageContentEncoder {
+
+    fun encodeMessageContent(messageDate: Instant, messageContent: MessageContent): EncodedMessageContent? {
+        return when (messageContent) {
+            is MessageContent.Asset ->
+                encodeMessageAsset(
+                    messageTimeStampInMillis = messageDate.toEpochMilliseconds(),
+                    assetId = messageContent.value.remoteData.assetId
+                )
+
+            is MessageContent.Text ->
+                encodeMessageTextBody(
+                    messageTimeStampInMillis = messageDate.toEpochMilliseconds(),
+                    messageTextBody = messageContent.value
+                )
+
+            else -> {
+                kaliumLogger.w("Attempting to encode message with unsupported content type")
+                null
+            }
+        }
+    }
+
     fun encodeMessageContent(messageDate: String, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->

@@ -307,11 +307,13 @@ AS SELECT
     TextContent.text_body AS text,
     AssetContent.asset_mime_type AS assetMimeType,
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    -- should notify was used in getMNotifications, it is not anymore maybe delete ?
     IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
     Conversation.muted_status AS mutedStatus,
     Conversation.type AS conversationType
 FROM Message
 LEFT JOIN SelfUser
+-- User and conversation can be INNER JOIN this can speed stuff up a bit
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
@@ -320,6 +322,56 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
+selectTextOrAssetMessage:
+SELECT
+Message.content_type AS contentType,
+Message.creation_date AS date,
+TextContent.text_body AS text,
+TextContent.quoted_message_id AS quotedMessageId,
+AssetContent.asset_size AS assetSize,
+AssetContent.asset_name AS assetName,
+AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
+AssetContent.asset_download_status AS assetDownloadStatus,
+AssetContent.asset_otr_key AS assetOtrKey,
+AssetContent.asset_sha256 AS assetSha256,
+AssetContent.asset_id AS assetId,
+AssetContent.asset_token AS assetToken,
+AssetContent.asset_domain AS assetDomain,
+AssetContent.asset_encryption_algorithm AS assetEncryptionAlgorithm,
+AssetContent.asset_width AS assetWidth,
+AssetContent.asset_height AS assetHeight,
+AssetContent.asset_duration_ms AS assetDuration,
+AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions
+FROM Message
+JOIN User ON Message.sender_user_id = User.qualified_id
+JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+WHERE Message.id = :message_id AND Message.conversation_id = :conversation_id;
+
+messageNotifyData:
+SELECT User.user_availability_status, Conversation.muted_status, MessageTextContent.is_quoting_self
+ FROM User, Conversation, MessageTextContent
+WHERE
+    User.qualified_id = :self_user_id AND
+    Conversation.qualified_id = :conversation_id AND
+    MessageTextContent.message_id = :message_id AND
+    MessageTextContent.conversation_id = :conversation_id;
+
+-- TODO: delete this function since it does not scale and beomes slow as the DB grows
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
