@@ -453,7 +453,6 @@ object MessageMapper {
         return content to date
     }
 
-
     /**
      * Used when unpacking a value from the database, and it is expected to not be null.
      * For example, if there's a quoted message ID, it is 100% expected that there is a quoted message content type

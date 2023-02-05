@@ -52,7 +52,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val insertQueries: InsertMessageQueries,
@@ -77,6 +77,7 @@ class MessageDAOImpl(
         queries.deleteAllMessages()
     }
 
+    @Suppress("ComplexMethod")
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationReadDate: Boolean,
@@ -107,8 +108,10 @@ class MessageDAOImpl(
                         return@let
                     }
 
+                    @Suppress("ComplexCondition")
                     if ((isQuotingSelf || isMentioningSelf) &&
-                        (selfStatus == UserAvailabilityStatusEntity.BUSY || conversationStatus == ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED)
+                        (selfStatus == UserAvailabilityStatusEntity.BUSY ||
+                                conversationStatus == ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED)
                     ) {
                         shouldNotify = true
                         return@let
@@ -236,10 +239,11 @@ class MessageDAOImpl(
             .flowOn(coroutineContext)
             .mapToOneOrNull()
 
-    override suspend fun textOrAssetMessage(id: String, conversationId: QualifiedIDEntity): Pair<MessageEntityContent.Regular?, Instant>? = withContext(coroutineContext) {
-        queries.selectTextOrAssetMessage(id, conversationId, mapper::fromTextOrAssetMessage)
-            .executeAsOneOrNull()
-    }
+    override suspend fun textOrAssetMessage(id: String, conversationId: QualifiedIDEntity): Pair<MessageEntityContent.Regular?, Instant>? =
+        withContext(coroutineContext) {
+            queries.selectTextOrAssetMessage(id, conversationId, mapper::fromTextOrAssetMessage)
+                .executeAsOneOrNull()
+        }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
