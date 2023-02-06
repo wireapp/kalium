@@ -1,16 +1,26 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.featureFlags
 
 data class KaliumConfigs(
     val isChangeEmailEnabled: Boolean = false,
-    val isSSoEnabled: Boolean = false,
-    val isAccountCreationEnabled: Boolean = false,
-    val blockOnJailbreakOrRoot: Boolean = false,
-    val blockOnPasswordPolicy: Boolean = false,
     val forceConstantBitrateCalls: Boolean = false,
-    val keepWebSocketOn: Boolean = false,
-    val wipeOnCookieInvalid: Boolean = false,
-    val submitCrashReports: Boolean = false,
-    val webLinkPreview: Boolean = false,
     val developerFeaturesEnabled: Boolean = false,
     val isLoggingEnabled: Boolean = false,
     val isSafeLoggingEnabled: Boolean = false,
@@ -22,23 +32,9 @@ data class KaliumConfigs(
     val encryptProteusStorage: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
-    val customUrlScheme: String = "",
-    val fileRestrictionList: String = "",
-    val httpProxyPort: String = "",
-    val httpProxyUrl: String = "",
-    val websiteUrl: String = "",
-    val webSocketUrl: String = "",
     val certificate: String = "",
     val domain: String = "",
-    val supportEmail: String = "",
-    val teamsUrl: String = "",
-    val backendUrl: String = "",
     val blacklistHost: String = "",
-    val accountUrl: String = "",
     val maxAccount: Int = 0,
-    val newPasswordMaximumLength: Int = 0,
-    val newPasswordMinimumLength: Int = 0,
-    val passwordMaxAttempts: Int = 0,
-    val appLockTimeout: Int = 0,
     val developmentApiEnabled: Boolean = false
 )

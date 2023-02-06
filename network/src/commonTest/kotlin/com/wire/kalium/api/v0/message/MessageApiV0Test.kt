@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.api.v0.message
 
 import com.wire.kalium.api.ApiTest
@@ -5,9 +23,9 @@ import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.api.tools.IgnoreIOS
 import com.wire.kalium.model.SendMessageRequestJson
 import com.wire.kalium.model.SendMessageResponseJson
+import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.v0.authenticated.MessageApiV0
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.isSuccessful
@@ -38,7 +56,7 @@ class MessageApiV0Test : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -63,7 +81,7 @@ class MessageApiV0Test : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -88,7 +106,7 @@ class MessageApiV0Test : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -113,7 +131,7 @@ class MessageApiV0Test : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -140,7 +158,7 @@ class MessageApiV0Test : ApiTest {
                 statusCode = HttpStatusCode.PreconditionFailed
             )
 
-            val messageApi: MessageApi = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,

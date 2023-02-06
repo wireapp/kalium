@@ -1,7 +1,26 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -10,12 +29,18 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
     override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, shouldEncryptData)
+
+        val databasePassphrase = if (shouldEncryptData) {
+            platformProperties.securityHelper.userDBSecret(userId)
+        } else {
+            null
+        }
         val database = userDatabaseBuilder(
-            platformProperties.applicationContext,
-            userIdEntity,
-            platformProperties.securityHelper.userDBSecret(userId),
-            shouldEncryptData,
-            KaliumDispatcherImpl.io
+            platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
+            userId = userIdEntity,
+            passphrase = databasePassphrase,
+            dispatcher = KaliumDispatcherImpl.io,
+            enableWAL = true
         )
         return UserStorage(database, pref)
     }

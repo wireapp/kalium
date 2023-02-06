@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
@@ -21,7 +39,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -29,6 +49,7 @@ interface MessageMapper {
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
+    fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
 class MessageMapperImpl(
@@ -49,15 +70,15 @@ class MessageMapperImpl(
         return when (message) {
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
-                content = message.content.toMessageEntityContent(),
+                content = toMessageEntityContent(message.content),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
+                    is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -69,7 +90,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
-                date = message.date,
+                date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 status = status,
                 visibility = visibility,
@@ -92,13 +113,13 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 senderClientId = ClientId(message.senderClientId),
                 status = status,
                 editStatus = when (val editStatus = message.editStatus) {
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
+                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
                 },
                 visibility = visibility,
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -111,7 +132,7 @@ class MessageMapperImpl(
                 id = message.id,
                 content = message.content.toMessageContent(),
                 conversationId = message.conversationId.toModel(),
-                date = message.date,
+                date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 status = status,
                 visibility = visibility,
@@ -127,16 +148,17 @@ class MessageMapperImpl(
             content = message.content.toMessageContent(),
             date = message.date,
             visibility = message.visibility.toModel(),
-            isSelfMessage = message.isSelfMessage
+            isSelfMessage = message.isSelfMessage,
+            senderUserId = message.senderUserId.toModel()
         )
     }
 
+    @Suppress("ComplexMethod")
     override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
         return when (message.content) {
             is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
             is MessagePreviewEntityContent.ConversationNameChange -> null
             is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
-            is MessagePreviewEntityContent.MemberChange -> null
             is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
             is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
             is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
@@ -144,6 +166,10 @@ class MessageMapperImpl(
             is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
             is MessagePreviewEntityContent.CryptoSessionReset -> null
             MessagePreviewEntityContent.Unknown -> null
+            is MessagePreviewEntityContent.MembersRemoved -> null
+            is MessagePreviewEntityContent.MemberJoined -> null
+            is MessagePreviewEntityContent.MemberLeft -> null
+            is MessagePreviewEntityContent.MembersAdded -> null
         }
     }
 
@@ -158,6 +184,7 @@ class MessageMapperImpl(
                     null
                 ), message.date, content.messageBody
             )
+
             is MessagePreviewEntityContent.Asset -> {
                 val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
                 else LocalNotificationCommentType.FILE
@@ -170,17 +197,19 @@ class MessageMapperImpl(
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Comment(
+
+            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Knock(
                 LocalNotificationMessageAuthor(content.senderName ?: "", null),
-                message.date,
-                LocalNotificationCommentType.KNOCK
+                message.date
             )
+
             is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
                 time = message.date,
                 text = content.messageBody,
                 isMentionedSelf = true,
             )
+
             is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
                 author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
                 time = message.date,
@@ -196,15 +225,15 @@ class MessageMapperImpl(
         }
 
     @Suppress("ComplexMethod")
-    private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
+    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
         is MessageContent.Text -> MessageEntityContent.Text(
-            messageBody = this.value,
-            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = this.quotedMessageReference?.isVerified,
+            messageBody = regularMessage.value,
+            mentions = regularMessage.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
         )
 
-        is MessageContent.Asset -> with(this.value) {
+        is MessageContent.Asset -> with(regularMessage.value) {
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
                 is Video -> metadata.width
@@ -239,22 +268,26 @@ class MessageMapperImpl(
             )
         }
 
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
+            regularMessage.mimeType,
+            regularMessage.sizeInBytes,
+            regularMessage.name
+        )
 
         // We store the encoded data in case we decide to try to decrypt them again in the future
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
-            this.encodedData,
-            this.isDecryptionResolved,
-            this.senderUserId.toDao(),
-            this.clientId?.value
+            regularMessage.encodedData,
+            regularMessage.isDecryptionResolved,
+            regularMessage.senderUserId.toDao(),
+            regularMessage.clientId?.value
         )
 
         // We store the unknown fields of the message in case we want to start handling them in the future
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(regularMessage.typeName, regularMessage.encodedData)
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
+        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -273,6 +306,9 @@ class MessageMapperImpl(
         is MessageContent.MissedCall -> MessageEntityContent.MissedCall
         is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
         is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
+        is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
+        is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -351,6 +387,9 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
         is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
         is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
+        is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
+        is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
+        is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
     }
 }
 
@@ -366,14 +405,24 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
 }
 
+@Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
     is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
-    is MessagePreviewEntityContent.MemberChange -> when (type) {
-        MessageEntity.MemberChangeType.ADDED -> MessagePreviewContent.WithUser.MembersAdded(adminName = adminName, count = count)
-        MessageEntity.MemberChangeType.REMOVED -> MessagePreviewContent.WithUser.MembersRemoved(adminName = adminName, count = count)
-    }
+    is MessagePreviewEntityContent.MemberJoined -> MessagePreviewContent.WithUser.MemberJoined(senderName)
+    is MessagePreviewEntityContent.MemberLeft -> MessagePreviewContent.WithUser.MemberLeft(senderName)
+    is MessagePreviewEntityContent.MembersAdded -> MessagePreviewContent.WithUser.MembersAdded(
+        senderName = senderName,
+        isSelfUserAdded = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
+    is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
 
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)

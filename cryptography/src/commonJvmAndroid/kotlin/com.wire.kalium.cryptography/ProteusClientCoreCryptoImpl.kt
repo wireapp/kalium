@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
@@ -6,6 +24,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
+import java.io.FileNotFoundException
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, private val databaseKey: ProteusDBSecret) : ProteusClient {
@@ -14,7 +33,6 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
-        coreCrypto.close()
         return File(path).deleteRecursively()
     }
 
@@ -25,8 +43,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
-            // TODO client ID is not relevant for proteus but must be provided atm
-            val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -37,14 +54,17 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
-                // TODO client ID is not relevant for proteus but must be provided atm
-                val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto
             }
         } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                "Local files were not found",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
         }
     }
 
@@ -92,21 +112,14 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        // TODO hack until we have the proteusSessionExists API
-        try {
-            coreCrypto.proteusDecrypt(sessionId.value, toUByteList(""))
-        } catch (e: CryptoException) {
-            if (e.message == "Couldn't find conversation") {
-                return false
-            }
+        return wrapException {
+            coreCrypto.proteusSessionExists(sessionId.value)
         }
-
-        return true
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
@@ -137,6 +150,16 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return wrapException {
+            coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
+                CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
+                    sessionId to toByteArray(entry.value)
+                }
+            }.toMap()
+        }
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
@@ -150,7 +173,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId.value)
         }
@@ -162,9 +185,9 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
             return b()
         } catch (e: CryptoException) {
             // TODO underlying proteus error is not exposed atm
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
     }
 
@@ -177,7 +200,6 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         fun toPreKey(id: Int, data: ByteArray): PreKeyCrypto =
             PreKeyCrypto(id, data.encodeBase64())
 
-        val CLIENT_ID = CryptoQualifiedID("2380b74d-f321-4c11-b7dd-552a74502e30", "wire.com")
         val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
         const val KEYSTORE_NAME = "keystore"
     }

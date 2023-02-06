@@ -1,16 +1,40 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography
 
 import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.Base64
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
  *
  */
-class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(
+    rootDir: String,
+    private val defaultContext: CoroutineContext,
+    private val ioContext: CoroutineContext
+) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -44,7 +68,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
                 CryptoBox.open(path)
             }
         } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                "Local files were not found",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
         }
     }
 
@@ -56,7 +84,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.localFingerprint }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -80,6 +108,12 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromSession(sessionId.value, message) }
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return sessionIds.associateWith { sessionId ->
+            encrypt(message, sessionId)
+        }
+    }
+
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKeyCrypto: PreKeyCrypto,
@@ -88,7 +122,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         // TODO Delete session
     }
 
@@ -97,9 +131,9 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
+            throw ProteusException(e.message, e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
     }
 

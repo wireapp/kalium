@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
@@ -31,7 +49,7 @@ internal open class LoginApiV0 internal constructor(
         @SerialName("email") val email: String? = null,
         @SerialName("handle") val handle: String? = null,
         @SerialName("password") val password: String,
-        @SerialName("label") val label: String
+        @SerialName("label") val label: String?
     )
 
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
@@ -63,7 +81,7 @@ internal open class LoginApiV0 internal constructor(
             }
         }.mapSuccess { userDTO ->
             with(tokensPairResponse.value) {
-                Pair(first.toSessionDto(second, userDTO.id), userDTO)
+                Pair(first.toSessionDto(second, userDTO.id, param.label), userDTO)
             }
         }
     }

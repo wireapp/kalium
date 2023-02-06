@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
@@ -1276,6 +1294,33 @@ class CallRepositoryTest {
             .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAMissedCallAndNoCallerId_whenPersistMissedCallInvoked_thenDontStoreMissedCallInDatabase() = runTest {
+
+        val qualifiedIdEntity = QualifiedIDEntity(conversationId.value, conversationId.domain)
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(any())
+            .thenReturn(null)
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        callRepository.persistMissedCall(conversationId)
+
+        verify(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .with(eq(qualifiedIdEntity))
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = Times(0))
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(

@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
@@ -22,7 +40,8 @@ internal interface RegisterAccountRepository {
         email: String,
         code: String,
         name: String,
-        password: String
+        password: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 
     @Suppress("LongParameterList")
@@ -32,7 +51,8 @@ internal interface RegisterAccountRepository {
         name: String,
         password: String,
         teamName: String,
-        teamIcon: String
+        teamIcon: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 }
 
@@ -54,9 +74,18 @@ internal class RegisterAccountDataSource internal constructor(
         email: String,
         code: String,
         name: String,
-        password: String
+        password: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
-        register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password))
+        register(
+            RegisterApi.RegisterParam.PersonalAccount(
+                email = email,
+                emailCode = code,
+                name = name,
+                cookieLabel = cookieLabel,
+                password = password,
+            )
+        )
 
     override suspend fun registerTeamWithEmail(
         email: String,
@@ -64,9 +93,20 @@ internal class RegisterAccountDataSource internal constructor(
         name: String,
         password: String,
         teamName: String,
-        teamIcon: String
+        teamIcon: String,
+        cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
-        register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
+        register(
+            RegisterApi.RegisterParam.TeamAccount(
+                email = email,
+                emailCode = code,
+                name = name,
+                password = password,
+                cookieLabel = cookieLabel,
+                teamName = teamName,
+                teamIcon = teamIcon
+            )
+        )
 
     private suspend fun requestActivation(
         param: RegisterApi.RequestActivationCodeParam

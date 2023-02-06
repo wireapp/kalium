@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
@@ -23,7 +41,6 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -39,8 +56,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -54,9 +73,9 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -514,17 +533,11 @@ class ConversationRepositoryTest {
 
         val unreadMessagesCount = 5
 
-        val unreadMessages = List(unreadMessagesCount) {
-            TEST_MESSAGE_PREVIEW_ENTITY.copy(
-                id = "message$it",
-                conversationId = conversationIdEntity,
-                content = MessagePreviewEntityContent.Text("senderName", "body")
-            )
-        }
+        val unreadMessages = mapOf(conversationIdEntity to unreadMessagesCount)
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadMessages(unreadMessages)
+            .withUnreadMessageCounter(unreadMessages)
             .arrange()
 
         // when
@@ -600,17 +613,11 @@ class ConversationRepositoryTest {
         )
         val unreadMessagesCount = 5
 
-        val unreadMessages = List(unreadMessagesCount) {
-            TEST_MESSAGE_PREVIEW_ENTITY.copy(
-                id = "message$it",
-                conversationId = conversationIdEntity,
-                content = MessagePreviewEntityContent.Text("senderName", "body")
-            )
-        }
+        val unreadMessages = mapOf(conversationIdEntity to unreadMessagesCount)
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadMessages(unreadMessages)
+            .withUnreadMessageCounter(unreadMessages)
             .arrange()
 
         // when
@@ -625,36 +632,6 @@ class ConversationRepositoryTest {
 
             awaitComplete()
         }
-    }
-
-    @Test
-    fun givenUserHasUnReadMessagesInConversation_whenObservingConversationListDetails_ThenCorrectlyGetTheCount() = runTest {
-        // given
-        val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
-        val conversationId = QualifiedID("some_value", "some_domain")
-
-        val conversationEntity = TestConversation.VIEW_ENTITY.copy(id = conversationIdEntity, type = ConversationEntity.Type.GROUP)
-        val message = TEST_MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
-        val (_, conversationRepository) = Arrangement()
-            .withConversations(listOf(conversationEntity))
-            .withLastMessages(listOf())
-            .withUnreadMessages(listOf(message))
-            .arrange()
-
-        // when
-        conversationRepository.observeConversationListDetails().test {
-            val result = awaitItem()
-
-            // then
-            assertContains(result.map { it.conversation.id }, conversationId)
-            val conversation = result.first { it.conversation.id == conversationId }
-
-            assertIs<ConversationDetails.Group>(conversation)
-            assertEquals(conversation.unreadEventCount.size, 1)
-
-            awaitComplete()
-        }
-
     }
 
     @Test
@@ -805,6 +782,29 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversationReceiptMode_whenUpdatingConversationReceiptMode_thenShouldUpdateLocally() = runTest {
+        // given
+        val apiReceiptMode = ReceiptMode.ENABLED
+        val receiptMode = Conversation.ReceiptMode.ENABLED
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateReceiptModeSuccess(apiReceiptMode)
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateReceiptMode(CONVERSATION_ID, receiptMode)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationReceiptMode)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -941,6 +941,13 @@ class ConversationRepositoryTest {
                 .thenReturn(flowOf(messages))
         }
 
+        fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::observeUnreadMessageCounter)
+                .whenInvoked()
+                .thenReturn(flowOf(unreadCounter))
+        }
+
         fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getAllConversationDetails)
@@ -1066,6 +1073,25 @@ class ConversationRepositoryTest {
                     .then { result }
             }
 
+        fun withUpdateReceiptModeSuccess(receiptMode: ReceiptMode) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateReceiptMode)
+                .whenInvokedWith(any(), eq(ConversationReceiptModeDTO(receiptMode)))
+                .thenReturn(
+                    NetworkResponse.Success(
+                        UpdateConversationReceiptModeResponse.ReceiptModeUpdated(
+                            event = EventContentDTO.Conversation.ReceiptModeUpdate(
+                                qualifiedConversation = CONVERSATION_ID.toApi(),
+                                data = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED),
+                                qualifiedFrom = USER_ID.toApi()
+                            )
+                        ),
+                        emptyMap(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
         fun arrange() = this to conversationRepository
     }
 
@@ -1120,20 +1146,6 @@ class ConversationRepositoryTest {
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
 
-        val TEST_MESSAGE_ENTITY =
-            MessageEntity.Regular(
-                id = "uid",
-                content = MessageEntityContent.Text("content"),
-                conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
-                senderUserId = TEST_QUALIFIED_ID_ENTITY,
-                senderClientId = "sender",
-                status = MessageEntity.Status.SENT,
-                editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "sender",
-                expectsReadConfirmation = false
-            )
-
         val TEST_MESSAGE_PREVIEW_ENTITY =
             MessagePreviewEntity(
                 id = "uid",
@@ -1141,7 +1153,8 @@ class ConversationRepositoryTest {
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 isSelfMessage = false,
-                visibility = MessageEntity.Visibility.VISIBLE
+                visibility = MessageEntity.Visibility.VISIBLE,
+                senderUserId = TestUser.ENTITY_ID
             )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")

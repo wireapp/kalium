@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
@@ -46,7 +64,7 @@ interface SessionRepository {
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
-    fun currentSession(): Either<StorageFailure, AccountInfo>
+    suspend fun currentSession(): Either<StorageFailure, AccountInfo>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
@@ -55,6 +73,7 @@ interface SessionRepository {
     fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
 }
 
 @Suppress("TooManyFunctions")
@@ -135,7 +154,7 @@ internal class SessionDataSource(
             )
         }
 
-    override fun currentSession(): Either<StorageFailure, AccountInfo> =
+    override suspend fun currentSession(): Either<StorageFailure, AccountInfo> =
         wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }
 
     override fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>> =
@@ -181,5 +200,9 @@ internal class SessionDataSource(
 
     override suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         accountsDAO.persistentWebSocketStatus(userId.toDao())
+    }
+
+    override suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?> = wrapStorageNullableRequest {
+        authTokenStorage.getToken(userId.toDao())?.cookieLabel
     }
 }

@@ -3,15 +3,15 @@ kotlin = "1.7.20"
 activity-compose = "1.3.1"
 app-compat = "1.1.0"
 android-paging3 = "3.1.1"
-cli-kt = "3.3.0"
+cli-kt = "3.5.0"
 coroutines = "1.6.4"
 compose-compiler = "1.3.2"
 compose-ui = "1.3.2"
 compose-material = "1.3.1"
 cryptobox4j = "1.1.1"
-cryptobox-android = "1.1.3"
+cryptobox-android = "1.1.3-logging"
 javax-crypto = "1.1.0-alpha03"
-ktor = "2.2.1"
+ktor = "2.2.2"
 okio = "3.2.0"
 ok-http = "4.9.3"
 mockative = "1.2.6"
@@ -21,19 +21,22 @@ android-test-rules = "1.4.0"
 android-test-core = "1.4.0"
 androidx-arch = "2.1.0"
 androidx-test-orchestrator = "1.4.2"
-androidx-sqlite = "2.0.1"
+androidx-sqlite = "2.3.0"
 benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
+ktx-atomicfu = "0.18.5"
 multiplatform-settings = "1.0.0-RC"
 android-security = "1.1.0-alpha03"
 sqldelight = "2.0.0-alpha04"
-sqlcipher-android = "4.5.2"
+sqlcipher-android = "4.5.3"
 pbandk = "0.14.2"
 turbine = "0.12.1"
-avs = "8.2.16"
+avs = "9.0.20"
 jna = "5.6.0"
-core-crypto = "0.6.0-pre.4"
+core-crypto = "0.6.0-rc.3"
+core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
+completeKotlin = "1.1.0"
 desugar-jdk = "1.1.5"
 kermit = "1.2.2"
 detekt = "1.19.0"
@@ -47,9 +50,9 @@ annotation = "1.2.0"
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
-
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin"}
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -70,6 +73,7 @@ kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin",
 kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
+ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu"}
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
@@ -103,6 +107,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
 cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "javax-crypto" }
+coreCrypto = { module = "com.wire:core-crypto", version.ref = "core-crypto-multiplatform" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
@@ -130,8 +135,8 @@ okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
 okio-test = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
 # sql dependencies
-sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite"}
-sql-android-cipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher-android"}
+sqlite-androidx = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite" }
+sql-android-cipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher-android" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }

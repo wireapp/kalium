@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.serialization.mls
@@ -14,7 +32,6 @@ import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 
@@ -97,12 +114,6 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-internal class KaliumHttpLogger : Logger {
-    override fun log(message: String) {
-        kaliumLogger.d(message)
-    }
-}
-
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     installCompression: Boolean = true,
@@ -111,7 +122,6 @@ internal fun provideBaseHttpClient(
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
-            logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
     }

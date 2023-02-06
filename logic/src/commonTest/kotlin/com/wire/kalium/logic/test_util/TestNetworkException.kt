@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.logic.NetworkFailure
@@ -76,6 +94,21 @@ object TestNetworkException {
         ErrorResponse(404, "Team not found", "no-team")
     )
 
+    val noTeamMember = KaliumException.InvalidRequestError(
+        ErrorResponse(403, "Not a team member", "no-team-member")
+    )
+
+    val noConversation = KaliumException.InvalidRequestError(
+        ErrorResponse(404, "Conversation not found", "no-conversation")
+    )
+
+    val noConversationCode = KaliumException.InvalidRequestError(
+        ErrorResponse(404, "Conversation code not found", "no-conversation-code")
+    )
+
+    val guestLinkDisables = KaliumException.InvalidRequestError(
+        ErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
+    )
 }
 
 object TestNetworkResponseError {

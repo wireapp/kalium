@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
@@ -32,6 +50,11 @@ sealed class CoreFailure {
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
+
+    /**
+     * It's only allowed to insert system messages as bulk for all conversations.
+     */
+    object OnlySystemMessageAllowed : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure() {
@@ -113,11 +136,19 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
     return try {
         Either.Right(cryptoRequest())
     } catch (e: ProteusException) {
+        kaliumLogger.e(
+            """{ "ProteusException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(e))
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "ProteusException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)))
     }
 }
 

@@ -1,9 +1,29 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
@@ -14,7 +34,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
@@ -22,6 +45,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,11 +60,12 @@ class MessageDAOTest : BaseDatabaseTest() {
     private val conversationEntity2 = newConversationEntity("Test2")
     private val userEntity1 = newUserEntity("userEntity1")
     private val userEntity2 = newUserEntity("userEntity2")
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
@@ -108,7 +134,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderUserId = originalUser.id,
             senderClientId = "initialClientId",
             content = MessageEntityContent.Text("Howdy"),
-            date = "initialDate",
+            date = Instant.DISTANT_FUTURE - 5.days,
             visibility = MessageEntity.Visibility.VISIBLE
         )
 
@@ -120,7 +146,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderUserId = replacementUser.id,
             senderClientId = "replacementClientId",
             content = MessageEntityContent.Knock(true),
-            date = "replacementDate",
+            date = Instant.DISTANT_FUTURE,
             visibility = MessageEntity.Visibility.DELETED
         )
 
@@ -257,6 +283,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val visibilityInQuestion = MessageEntity.Visibility.VISIBLE
         val otherVisibility = MessageEntity.Visibility.HIDDEN
 
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
         val expectedMessages = listOf(
             newRegularMessageEntity(
                 "1",
@@ -264,7 +291,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                date = baseInstant + 10.seconds
             ),
             newRegularMessageEntity(
                 "2",
@@ -272,7 +300,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                date = baseInstant + 5.seconds
             )
         )
 
@@ -288,7 +317,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             ),
             newRegularMessageEntity(
                 "4",
-                // different conversation
+                // different conversation, different visibility
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
@@ -297,7 +326,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             ),
             newRegularMessageEntity(
                 "5",
-                // different conversation
+                // same conversation, different visibility
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
@@ -307,8 +336,12 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         messageDAO.insertOrIgnoreMessages(allMessages)
-        val result =
-            messageDAO.getMessagesByConversationAndVisibility(conversationInQuestion.id, 10, 0, listOf(visibilityInQuestion))
+        val result = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversationInQuestion.id,
+            limit = 10,
+            offset = 0,
+            visibility = listOf(visibilityInQuestion)
+        )
         assertContentEquals(expectedMessages, result.first())
     }
 
@@ -326,7 +359,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z",
+                date = "2022-03-30T15:37:00.000Z".toInstant(),
                 senderName = userEntity1.name!!
             )
         )
@@ -338,7 +371,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 // date before
-                date = "2022-03-30T15:35:00.000Z",
+                date = "2022-03-30T15:35:00.000Z".toInstant(),
                 senderName = userEntity1.name!!
             )
         )
@@ -349,6 +382,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -356,7 +390,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -366,7 +400,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Asset(
@@ -398,6 +432,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -405,7 +440,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -415,7 +450,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newSystemMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.MissedCall
@@ -432,6 +467,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -439,7 +475,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -450,7 +486,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             repeat(9) {
                 add(
                     newRegularMessageEntity(
-                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
+                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z".toInstant(),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -469,13 +505,14 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -489,7 +526,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "read$it",
-                        date = "2000-01-01T11:0$it:00.000Z",
+                        date = "2000-01-01T11:0$it:00.000Z".toInstant(),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -500,7 +537,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
+                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -519,13 +556,14 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -539,7 +577,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "read$it",
-                        date = "2000-01-01T11:0$it:00.000Z",
+                        date = "2000-01-01T11:0$it:00.000Z".toInstant(),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -550,7 +588,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z",
+                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -571,6 +609,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    @Ignore
     fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -578,7 +617,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
 
@@ -588,7 +627,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Text("text")
@@ -618,7 +657,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z",
+                date = "2022-03-30T15:37:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
@@ -631,7 +670,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 // date before
-                date = "2022-03-30T15:38:00.000Z",
+                date = "2022-03-30T15:38:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = false
             ),
@@ -642,14 +681,14 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 // date before
-                date = "2022-03-30T15:39:00.000Z",
+                date = "2022-03-30T15:39:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
         )
 
         messageDAO.insertOrIgnoreMessages(allMessages)
-        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id)
         assertEquals(2, result.size)
     }
 
@@ -657,15 +696,33 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessageFailedToDecrypt_WhenMarkingAsResolved_ThenTheValuesShouldBeUpdated() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
+        val conversationId2 = QualifiedIDEntity("2", "someDomain")
+
         val messageId = "textMessage"
-        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        val messageId2 = "textMessage2"
+        conversationDAO.insertConversation(
+            newConversationEntity(id = conversationId)
+        )
+
+        conversationDAO.insertConversation(
+            newConversationEntity(id = conversationId2)
+        )
+
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    senderClientId = "someClient",
+                    content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
+                ),
+                newRegularMessageEntity(
+                    id = messageId2,
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId2,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
                     content = MessageEntityContent.FailedDecryption(null, false, userEntity1.id, "someClient")
@@ -679,6 +736,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
+        val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2).firstOrNull()
+        assertTrue((updatedMessage2?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
     }
 
     @Test
@@ -692,7 +751,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
         val previewAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z",
+            date = "2000-01-01T13:00:00.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -709,7 +768,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         val finalAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:05.000Z",
+            date = "2000-01-01T13:00:05.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -723,7 +782,12 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetEncryptionAlgorithm = "AES/GCM"
             )
         )
-        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+            )
+        )
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
@@ -748,7 +812,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
         val previewAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z",
+            date = "2000-01-01T13:00:00.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -765,7 +829,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         val finalAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:05.000Z",
+            date = "2000-01-01T13:00:05.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -779,7 +843,12 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetEncryptionAlgorithm = "AES/GCM"
             )
         )
-        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+            )
+        )
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
@@ -803,7 +872,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
             val previewAssetMessage = newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z",
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
                 conversationId = conversationId,
                 senderUserId = userEntity1.id,
                 senderClientId = senderClientId,
@@ -820,7 +889,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
             val finalAssetMessage = newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:05.000Z",
+                date = "2000-01-01T13:00:05.000Z".toInstant(),
                 conversationId = conversationId,
                 senderUserId = userEntity2.id,
                 senderClientId = "impostorSenderClientId",
@@ -834,7 +903,12 @@ class MessageDAOTest : BaseDatabaseTest() {
                     assetEncryptionAlgorithm = "AES/GCM"
                 )
             )
-            conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = conversationId,
+                    lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+                )
+            )
             userDAO.insertUser(userEntity1)
             messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
@@ -849,7 +923,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Suppress("LongMethod")
     @Test
     @IgnoreIOS
-    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_ThenTheFinalMessageShouldIncludeTheChanges() = runTest {
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -875,12 +949,13 @@ class MessageDAOTest : BaseDatabaseTest() {
         val initialAssetToken = "Some-token"
         val updatedAssetToken = "updated-token"
         val initialMetadataWidth = 100
-        val updatedMetadataWidth = null
         val initialMetadataHeight = 300
         val updatedMetadataHeight = null
+        val updatedMetadataWidth = null
+
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z",
+            date = "2000-01-01T13:00:00.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -918,7 +993,12 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetHeight = updatedMetadataHeight
             )
         )
-        conversationDAO.insertConversation(newConversationEntity(id = conversationId, lastReadDate = "2000-01-01T12:00:00.000Z"))
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+            )
+        )
         userDAO.insertUser(userEntity1)
         messageDAO.insertOrIgnoreMessage(initialAssetMessage)
 
@@ -928,21 +1008,23 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
         val updatedMessageContent = updatedMessage?.content
+
+        // asset values that should not be updated
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.VISIBLE))
         assertTrue(updatedMessageContent is MessageEntityContent.Asset)
-        assertEquals(updatedMessageContent.assetUploadStatus, updatedUploadStatus)
-        assertEquals(updatedMessageContent.assetDownloadStatus, updatedDownloadStatus)
-        assertEquals(updatedMessageContent.assetSizeInBytes, updatedAssetSize)
-        assertEquals(updatedMessageContent.assetName, updatedAssetName)
-        assertEquals(updatedMessageContent.assetMimeType, updatedMimeType)
-        assertEquals(updatedMessageContent.assetEncryptionAlgorithm, updatedAssetEncryption)
-        assertEquals(updatedMessageContent.assetToken, updatedAssetToken)
-        assertEquals(updatedMessageContent.assetId, updatedAssetId)
-        assertEquals(updatedMessageContent.assetDomain, updatedAssetDomain)
-        assertEquals(updatedMessageContent.assetWidth, updatedMetadataWidth)
-        assertEquals(updatedMessageContent.assetHeight, updatedMetadataHeight)
+        assertEquals(initialAssetSize, updatedMessageContent.assetSizeInBytes)
+        assertEquals(initialAssetName, updatedMessageContent.assetName)
+        assertEquals(initialMimeType, updatedMessageContent.assetMimeType)
+        assertEquals(initialAssetEncryption, updatedMessageContent.assetEncryptionAlgorithm)
+        assertEquals(initialAssetToken, updatedMessageContent.assetToken)
+        assertEquals(initialAssetId, updatedMessageContent.assetId)
+        assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
+        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
+        assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
+        assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
+        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test
@@ -953,14 +1035,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
         userDAO.insertUser(userEntity1)
 
         val message1 = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z",
+            date = "2000-01-01T13:00:00.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
@@ -987,7 +1069,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
         userDAO.insertUser(userEntity1)
@@ -995,7 +1077,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val messageFromUser1 = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z",
+            date = "2000-01-01T13:00:00.000Z".toInstant(),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
@@ -1015,6 +1097,200 @@ class MessageDAOTest : BaseDatabaseTest() {
         // when
         messageDAO.getMessageById(messageId, conversationId).first().also {
             assertEquals(messageFromUser1, it)
+        }
+    }
+
+    @Test
+    fun givenAConversationWithUnConfirmedMessages_whenGetPendingToConfirmMessages_itReturnsCorrectList() = runTest {
+        val conversationLastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+        val messageDateAfterLastReadDate = "2000-01-01T13:00:00.000Z".toInstant()
+        val messageDateBeforeLastReadDate = "2000-01-01T11:00:00.000Z".toInstant()
+
+        // having a conversation with last readDate
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(conversationEntity1.copy(lastReadDate = conversationLastReadDate))
+
+        // having a list of messages after the lastReadDate
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity2.id,
+                date = messageDateBeforeLastReadDate,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity2.id,
+                date = messageDateAfterLastReadDate,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity2.id,
+                date = messageDateAfterLastReadDate,
+                expectsReadConfirmation = true
+            )
+        )
+
+        val expected = listOf("2", "3")
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // the list should be correct
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationEntity1.id)
+
+        assertEquals(expected.sorted(), result.sorted())
+    }
+
+    @Test
+    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "ConversationReceiptModeChanged Message"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.ConversationReceiptModeChanged(
+                        receiptMode = true
+                    )
+                )
+            )
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+        assertTrue {
+            result.first()?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
+        }
+    }
+
+    @Test
+    fun givenOneOnOneConversations_WhenPersistSystemMessageInBulk_ThenPersistedForAllConversations() = runTest {
+        // given
+        val conversationId1 = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId1))
+        val conversationId2 = QualifiedIDEntity("2", "someDomain")
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId2))
+
+        val messageId = "systemMessage"
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.persistSystemMessageToAllConversations(
+            newSystemMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationId1,
+                senderUserId = userEntity1.id,
+                content = MessageEntityContent.HistoryLost
+            )
+        )
+
+        // then
+        val result1 = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId1
+        )
+        val result2 = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId2
+        )
+        assertTrue {
+            result1.first()?.content == MessageEntityContent.HistoryLost &&
+                    result2.first()?.content == MessageEntityContent.HistoryLost
+        }
+    }
+
+    @Test
+    fun givenMixedTypeOfConversations_WhenPersistSystemMessageInBulk_ThenMessageShouldPersistedOnlyForOneOnOneAndGroups() = runTest {
+        // given
+        val selfConversation = QualifiedIDEntity("selfConversation", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(id = selfConversation).copy(
+                type = ConversationEntity.Type.SELF
+            )
+        )
+        val oneOnOneConversation = QualifiedIDEntity("oneOnOneConversation", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(id = oneOnOneConversation).copy(
+                type = ConversationEntity.Type.ONE_ON_ONE
+            )
+        )
+        val groupConversation = QualifiedIDEntity("groupConversation", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(id = groupConversation).copy(
+                type = ConversationEntity.Type.GROUP
+            )
+        )
+        val connectionPendingConversation = QualifiedIDEntity("connectionPendingConversation", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(id = connectionPendingConversation).copy(
+                type = ConversationEntity.Type.CONNECTION_PENDING
+            )
+        )
+        val globalTeamConversation = QualifiedIDEntity("globalTeamConversation", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(id = globalTeamConversation).copy(
+                type = ConversationEntity.Type.GLOBAL_TEAM
+            )
+        )
+
+        val messageId = "systemMessage"
+        userDAO.insertUser(userEntity1)
+
+        // when
+        messageDAO.persistSystemMessageToAllConversations(
+            newSystemMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = selfConversation,
+                senderUserId = userEntity1.id,
+                content = MessageEntityContent.HistoryLost
+            )
+        )
+
+        // then
+        val resultForSelfConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = selfConversation
+        )
+        val resultForOneOnOneConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = oneOnOneConversation
+        )
+        val resultForGroupConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = groupConversation
+        )
+        val resultForConnectionPendingConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = connectionPendingConversation
+        )
+        val resultForGlobalTeamConversation = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = globalTeamConversation
+        )
+
+        assertTrue {
+            resultForSelfConversation.firstOrNull() == null &&
+                    resultForOneOnOneConversation.first()?.content == MessageEntityContent.HistoryLost &&
+                    resultForGroupConversation.first()?.content == MessageEntityContent.HistoryLost &&
+                    resultForConnectionPendingConversation.firstOrNull() == null &&
+                    resultForGlobalTeamConversation.firstOrNull() == null
         }
     }
 

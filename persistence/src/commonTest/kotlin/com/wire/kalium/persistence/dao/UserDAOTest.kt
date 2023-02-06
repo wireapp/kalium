@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
@@ -25,11 +43,12 @@ class UserDAOTest : BaseDatabaseTest() {
     private val user3 = newUserEntity(id = "3")
 
     lateinit var db: UserDatabaseBuilder
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        db = createDatabase()
+        deleteDatabase(selfUserId)
+        db = createDatabase(selfUserId, encryptedDBSecret, true)
     }
 
     @Test
@@ -575,6 +594,20 @@ class UserDAOTest : BaseDatabaseTest() {
         // then
         val persistedUsers = db.userDAO.getAllUsers().first()
         assertEquals(expected, persistedUsers)
+    }
+
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheDisplayName_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewDisplayName = "new user display name"
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateUserDisplayName(user1.id, expectedNewDisplayName)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
     private companion object {

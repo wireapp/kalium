@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -8,6 +26,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
@@ -196,6 +215,50 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenANewDisplayName_whenUpdatingOk_thenShouldSucceedAndPersistTheNameLocally() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        val result = userRepository.updateSelfDisplayName("newDisplayName")
+
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSelf)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenANewDisplayName_whenUpdatingFails_thenShouldNotPersistLocallyTheName() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateDisplayNameApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        val result = userRepository.updateSelfDisplayName("newDisplayName")
+
+        with(result) {
+            shouldFail()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSelf)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
+                .with(any(), any())
+                .wasNotInvoked()
+        }
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -297,6 +360,14 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+            return this
+        }
+
+        fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::updateSelf)
+                .whenInvokedWith(any())
+                .thenReturn(response)
             return this
         }
 

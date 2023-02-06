@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
@@ -37,14 +55,14 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = false).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -68,13 +86,13 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -100,14 +118,14 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = false, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -128,14 +146,14 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -161,14 +179,14 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -188,14 +206,14 @@ class UpdateConversationAccessUseCaseTest {
             )
         )
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.detailsById(conversation.id) }
+        verify(arrangement.conversationRepository).coroutine { arrangement.conversationRepository.baseInfoById(conversation.id) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).coroutine {
@@ -208,10 +226,10 @@ class UpdateConversationAccessUseCaseTest {
     }
 
     @Test
-    fun givenError_whenCallingDetailsById_thenFailureIsPropagated() = runTest {
+    fun givenError_whenCallingbaseInfoById_thenFailureIsPropagated() = runTest {
         val conversation = conversationStub
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Left(StorageFailure.DataNotFound))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
@@ -219,7 +237,7 @@ class UpdateConversationAccessUseCaseTest {
             assertEquals(StorageFailure.DataNotFound, result.cause)
         }
 
-        verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::detailsById).with(any())
+        verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::baseInfoById).with(any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::updateAccessInfo)
@@ -230,7 +248,7 @@ class UpdateConversationAccessUseCaseTest {
     fun givenError_whenCallingUpdateAccessInfo_thenFailureIsPropagated() = runTest {
         val conversation = conversationStub
 
-        val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
+        val (arrangement, updateConversationAccess) = Arrangement().withbaseInfoByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Left(NetworkFailure.NoNetworkConnection(IOException()))).arrange()
 
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
@@ -238,7 +256,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<NetworkFailure.NoNetworkConnection>(result.cause)
         }
 
-        verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::detailsById).with(any())
+        verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::baseInfoById).with(any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::updateAccessInfo)
@@ -270,8 +288,8 @@ class UpdateConversationAccessUseCaseTest {
 
         val updateConversationAccess: UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCase(conversationRepository)
 
-        fun withDetailsByIdReturning(either: Either<StorageFailure, Conversation>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::detailsById).whenInvokedWith(any()).thenReturn(either)
+        fun withbaseInfoByIdReturning(either: Either<StorageFailure, Conversation>) = apply {
+            given(conversationRepository).suspendFunction(conversationRepository::baseInfoById).whenInvokedWith(any()).thenReturn(either)
         }
 
         fun withUpdateAccessInfoRetuning(either: Either<CoreFailure, Unit>) = apply {

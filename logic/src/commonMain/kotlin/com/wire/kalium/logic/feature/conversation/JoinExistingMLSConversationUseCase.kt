@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
@@ -15,6 +33,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
@@ -53,11 +72,13 @@ class JoinExistingMLSConversationUseCaseImpl(
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            conversationRepository.getConversationById(conversationId)?.let { conversation ->
+            conversationRepository.baseInfoById(conversationId).fold({
+                Either.Left(StorageFailure.DataNotFound)
+            }, { conversation ->
                 withContext(dispatcher) {
                     joinOrEstablishMLSGroupAndRetry(conversation)
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+            })
         }
 
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
@@ -100,7 +121,7 @@ class JoinExistingMLSConversationUseCaseImpl(
                         kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
                         // Re-fetch current epoch and try again
                         conversationRepository.fetchConversation(conversation.id).flatMap {
-                            conversationRepository.detailsById(conversation.id).flatMap { conversation ->
+                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(conversation)
                             }
                         }

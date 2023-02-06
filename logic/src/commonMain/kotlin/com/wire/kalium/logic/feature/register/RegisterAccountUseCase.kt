@@ -1,5 +1,24 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.register
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -23,6 +42,7 @@ sealed class RegisterParam(
     lastName: String,
     val email: String,
     val password: String,
+    val cookieLabel: String?
 ) {
     val name: String = "$firstName $lastName"
 
@@ -31,8 +51,9 @@ sealed class RegisterParam(
         lastName: String,
         email: String,
         password: String,
-        val emailActivationCode: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val emailActivationCode: String,
+        cookieLabel: String? = uuid4().toString(),
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 
     @Suppress("LongParameterList")
     class Team(
@@ -42,8 +63,9 @@ sealed class RegisterParam(
         password: String,
         val emailActivationCode: String,
         val teamName: String,
-        val teamIcon: String
-    ) : RegisterParam(firstName, lastName, email, password)
+        val teamIcon: String,
+        cookieLabel: String? = uuid4().toString()
+    ) : RegisterParam(firstName, lastName, email, password, cookieLabel)
 }
 
 /**
@@ -65,19 +87,26 @@ class RegisterAccountUseCase internal constructor(
     ): RegisterResult = when (param) {
         is RegisterParam.PrivateAccount -> {
             with(param) {
-                registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password)
+                registerAccountRepository.registerPersonalAccountWithEmail(
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    cookieLabel = cookieLabel
+                )
             }
         }
 
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
-                    email,
-                    emailActivationCode,
-                    name,
-                    password,
-                    teamName,
-                    teamIcon
+                    email = email,
+                    code = emailActivationCode,
+                    name = name,
+                    password = password,
+                    teamName = teamName,
+                    teamIcon = teamIcon,
+                    cookieLabel = cookieLabel
                 )
             }
         }

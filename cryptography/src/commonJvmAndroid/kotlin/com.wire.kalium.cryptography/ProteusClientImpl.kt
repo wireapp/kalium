@@ -1,14 +1,39 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography
+
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.jvmInitialization
  */
-actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(
+    rootDir: String,
+    databaseKey: ProteusDBSecret?,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+) : ProteusClient {
 
-    private var client: ProteusClient = databaseKey?.let {
+    private var client: ProteusClient = (databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)
-    } ?: ProteusClientCryptoBoxImpl(rootDir)
+    } ?: ProteusClientCryptoBoxImpl(rootDir, defaultContext = defaultContext, ioContext = ioContext))
 
     override fun clearLocalFiles(): Boolean {
         return client.clearLocalFiles()
@@ -38,7 +63,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.newPreKeys(from, count)
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return client.newLastPreKey()
     }
 
@@ -58,11 +83,15 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.encrypt(message, sessionId)
     }
 
+    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+        return client.encryptBatched(message, sessionIds)
+    }
+
     override suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray {
         return client.encryptWithPreKey(message, preKeyCrypto, sessionId)
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
 }

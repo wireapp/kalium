@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.MLSClient
@@ -15,10 +33,13 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
@@ -45,6 +66,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -70,6 +92,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(missingPasswordFailure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -92,6 +115,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(wrongPasswordFailure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -114,6 +138,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(genericFailure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -128,6 +153,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(tooManyClientsFailure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -140,6 +166,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -159,6 +186,7 @@ class RegisterClientUseCaseTest {
             .withMLSClient(Either.Right(MLS_CLIENT))
             .withGetMLSPublicKey(MLS_PUBLIC_KEY)
             .withRegisterMLSClient(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -179,6 +207,7 @@ class RegisterClientUseCaseTest {
             .withGetMLSPublicKey(MLS_PUBLIC_KEY)
             .withRegisterMLSClient(Either.Right(Unit))
             .withUploadNewKeyPackages(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -200,6 +229,7 @@ class RegisterClientUseCaseTest {
             .withRegisterMLSClient(Either.Right(Unit))
             .withUploadNewKeyPackages(Either.Right(Unit))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -214,6 +244,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withGenerateNewPreKeys(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -228,6 +259,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withGenerateNewLastKey(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -242,6 +274,7 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Left(badRequestFailure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -266,6 +299,7 @@ class RegisterClientUseCaseTest {
             .withIsAllowedToRegisterMLSClient(false)
             .withRegisterClient(Either.Right(registeredClient))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
@@ -296,7 +330,8 @@ class RegisterClientUseCaseTest {
             deviceType = null,
             label = null,
             model = null,
-            clientType = null
+            clientType = null,
+            cookieLabel = "cookieLabel"
         )
         val CLIENT = TestClient.CLIENT
 
@@ -304,8 +339,10 @@ class RegisterClientUseCaseTest {
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+        const val TEST_COOKIE_LABEL = "cookieLabel"
     }
 
+    @OptIn(DelicateKaliumApi::class)
     private class Arrangement {
 
         @Mock
@@ -326,13 +363,20 @@ class RegisterClientUseCaseTest {
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
+        @Mock
+        val sessionRepository = mock(classOf<SessionRepository>())
+
+        val selfUserId = UserId("selfUserId", "selfDomain")
+
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            mlsClientProvider
+            mlsClientProvider,
+            sessionRepository,
+            selfUserId
         )
 
         init {
@@ -417,6 +461,13 @@ class RegisterClientUseCaseTest {
             given(preKeyRepository)
                 .suspendFunction(preKeyRepository::updateOTRLastPreKeyId)
                 .whenInvokedWith(any())
+                .then { result }
+        }
+
+        fun withSelfCookieLabel(result: Either<StorageFailure, String?>) = apply {
+            given(sessionRepository)
+                .suspendFunction(sessionRepository::cookieLabel)
+                .whenInvokedWith(eq(selfUserId))
                 .then { result }
         }
         fun arrange() = this to registerClient

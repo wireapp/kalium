@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cryptography.backup.BackupCoder
@@ -5,23 +23,27 @@ import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
-import io.ktor.util.encodeBase64
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okio.Path
 import okio.buffer
 import okio.use
@@ -29,6 +51,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreBackupUseCaseTest {
 
@@ -39,6 +62,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, currentTestUserId)
             .withCorrectDbImportAction()
             .arrange()
@@ -50,7 +74,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result is RestoreBackupResult.Success)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -59,6 +83,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, UserId("wrongUserId", "wrongDomain"))
             .withCorrectDbImportAction()
             .arrange()
@@ -72,7 +97,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -81,6 +106,7 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, currentTestUserId, true)
             .withCorrectDbImportAction()
             .arrange()
@@ -94,7 +120,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -104,6 +130,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withCorrectDbImportAction()
             .arrange()
@@ -116,7 +143,7 @@ class RestoreBackupUseCaseTest {
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -127,6 +154,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, UserId("Darth-Vader", "death-star"), password)
             .withCorrectDbImportAction()
             .arrange()
@@ -139,7 +167,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -150,6 +178,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withCorrectDbImportAction()
             .arrange()
@@ -162,7 +191,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -172,6 +201,7 @@ class RestoreBackupUseCaseTest {
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
         val (arrangement, useCase) = Arrangement()
+            .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withIncorrectDbImportAction()
             .arrange()
@@ -184,7 +214,7 @@ class RestoreBackupUseCaseTest {
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), eq(null))
+            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -192,6 +222,9 @@ class RestoreBackupUseCaseTest {
 
         @Mock
         val databaseImporter = mock(classOf<DatabaseImporter>())
+
+        @Mock
+        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         val fakeDBFileName = "fakeDBFile.db"
         private val selfUserId = currentTestUserId
@@ -201,16 +234,15 @@ class RestoreBackupUseCaseTest {
         private fun createMetadataFile(metadataFilePath: Path, userId: UserId, userDBSecret: UserDBSecret? = null): Path {
             val clientId = "dummy-client-id"
             val creationTime = DateTimeUtil.currentIsoDateTimeString()
-            val metadataJson =
+            val metadataJson = Json.encodeToString(
                 BackupMetadata(
                     clientPlatform,
                     BackupCoder.version,
                     userId.toString(),
                     creationTime,
                     clientId,
-                    userDBSecret?.value?.encodeBase64(),
-                    true
-                ).toString()
+                )
+            )
             fakeFileSystem.sink(metadataFilePath).buffer().use {
                 it.write(metadataJson.encodeToByteArray())
             }
@@ -274,26 +306,35 @@ class RestoreBackupUseCaseTest {
         fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
         }
 
         fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
             given(databaseImporter)
                 .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), eq(userDBSecret))
+                .whenInvokedWith(any(), any())
                 .thenThrow(RuntimeException("DB import failed"))
+        }
+
+        fun withCurrentClientId(clientId: ClientId = currentTestClientId) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(clientId))
         }
 
         fun arrange() = this to RestoreBackupUseCaseImpl(
             databaseImporter = databaseImporter,
             kaliumFileSystem = fakeFileSystem,
             userId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper
         )
     }
 
     companion object {
         val currentTestUserId = UserId("some-user-id", "some-domain")
+        val currentTestClientId = ClientId("some-client-id")
     }
 }

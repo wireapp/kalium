@@ -1,8 +1,25 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -12,11 +29,15 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -35,11 +56,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true)
         conversationDAO = db.conversationDAO
         messageDAO = db.messageDAO
         userDAO = db.userDAO
@@ -244,10 +266,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"))
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
@@ -270,10 +289,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(conversationEntity2.id)
 
         val result = conversationDAO.getConversationsForNotifications().first()
         // THEN
@@ -327,13 +343,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @IgnoreIOS
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
         val convStored = conversationEntity1.copy(
-            lastNotificationDate = "2022-04-30T15:36:00.000Z", lastModifiedDate = "2022-03-30T15:36:00.000Z", name = "old name"
+            lastNotificationDate = "2022-04-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            name = "old name"
         )
         val convAfterSync = conversationEntity1.copy(
-            lastNotificationDate = "2023-04-30T15:36:00.000Z", lastModifiedDate = "2023-03-30T15:36:00.000Z", name = "new name"
+            lastNotificationDate = "2023-04-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = "2023-03-30T15:36:00.000Z".toInstant(),
+            name = "new name"
         )
 
-        val expected = convAfterSync.copy(lastModifiedDate = "2022-03-30T15:36:00.000Z", lastNotificationDate = "2022-04-30T15:36:00.000Z")
+        val expected = convAfterSync.copy(
+            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastNotificationDate = "2022-04-30T15:36:00.000Z".toInstant()
+        )
         conversationDAO.insertConversation(convStored)
         insertTeamUserAndMember(team, user1, convStored.id)
         conversationDAO.insertConversation(convAfterSync)
@@ -368,12 +391,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
         // given
-        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
+        val expectedLastReadDate = "2022-03-30T15:36:00.000Z".toInstant()
 
         conversationDAO.insertConversation(conversationEntity1)
 
         // when
-        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate.toString())
 
         // then
         val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
@@ -386,7 +409,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
         runTest {
             // given
-            val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
+            val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z".toInstant()
             teamDAO.insertTeam(team)
             launch {
                 // when
@@ -402,7 +425,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
                     assertTrue(conversationAfterInsert != null)
 
-                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
+                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate.toIsoDateTimeString())
 
                     val conversationAfterUpdate = awaitItem()
 
@@ -418,29 +441,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("1", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-                lastModified = "2000-01-01T12:30:00.000Z"
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("2", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-                lastModified = "2000-01-01T12:30:00.000Z"
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-                lastModified = "2000-01-01T12:30:00.000Z"
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z",
-                lastModified = "2000-01-01T12:00:00.000Z"
+                lastReadDate = "2000-01-01T12:30:00.000Z".toInstant(),
+                lastModified = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
 
@@ -686,7 +709,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = firstRemovalDate.toString(),
+            date = firstRemovalDate,
             conversationId = conversationEntity1.id
         )
         val message2 = newSystemMessageEntity(
@@ -696,7 +719,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(mySelfId),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = secondRemovalDate.toString(),
+            date = secondRemovalDate,
             conversationId = conversationEntity1.id
         )
         userDAO.insertUser(user1)
@@ -734,7 +757,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 listOf(member3.user),
                 MessageEntity.MemberChangeType.REMOVED
             ),
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             conversationId = conversationEntity1.id
         )
         messageDAO.insertOrIgnoreMessage(removalMessage)
@@ -846,7 +869,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
-        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = DefaultDatabaseTestValues.userId.value))
+        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
         teamDAO.insertTeam(team)
         userDAO.insertUser(user2)
         insertTeamUserAndMember(team, user2, conversationEntity3.id)
@@ -858,6 +881,75 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(1L, result?.isCreator)
     }
 
+    @Test
+    fun givenAnMLSConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity2.id)
+
+        // then
+        assertEquals(conversationEntity2.protocolInfo, result)
+    }
+
+    @Test
+    fun givenAProteusConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity1.id)
+
+        // then
+        assertEquals(conversationEntity1.protocolInfo, result)
+    }
+
+    @Test
+    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdatedWithTheDateOfTheNewestMessage() = runTest {
+
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastNotificationDate = Instant.DISTANT_FUTURE,
+                lastModifiedDate = Instant.fromEpochSeconds(0)
+            )
+        )
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                lastNotificationDate = null,
+                lastModifiedDate = Instant.DISTANT_FUTURE
+            )
+        )
+
+        val instant = Clock.System.now()
+
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+        // TODO: insert another message from self user to check if it is not ignored
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+
+        conversationDAO.updateAllConversationsNotificationDate()
+
+        conversationDAO.getAllConversations().first().forEach {
+            assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
+        }
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
@@ -865,7 +957,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembersWithQualifiedId(
             listOf(
                 Member(user.id, Member.Role.Member),
-                Member(DefaultDatabaseTestValues.userId, Member.Role.Member) // adding SelfUser as a member too
+                Member(selfUserId, Member.Role.Member) // adding SelfUser as a member too
             ),
             conversationId
         )
@@ -874,19 +966,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
-        val mlsLastKeyingMaterialUpdate: Long
+        val mlsLastKeyingMaterialUpdate: Instant
         val mlsGroupState: ConversationEntity.GroupState
 
         val protocolInfoTmp = protocolInfo
         if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
             protocol = ConversationEntity.Protocol.MLS
             mlsGroupId = protocolInfoTmp.groupId
-            mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate.epochSeconds
+            mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate
             mlsGroupState = protocolInfoTmp.groupState
         } else {
             protocol = ConversationEntity.Protocol.PROTEUS
             mlsGroupId = null
-            mlsLastKeyingMaterialUpdate = 0L
+            mlsLastKeyingMaterialUpdate = Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI)
             mlsGroupState = ConversationEntity.GroupState.ESTABLISHED
         }
         return ConversationViewEntity(
@@ -914,7 +1006,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
             mlsEpoch = 0L,
             mlsGroupId = mlsGroupId,
-            mlsLastKeyingMaterialUpdate = mlsLastKeyingMaterialUpdate,
+            mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdate,
             mlsGroupState = mlsGroupState,
             mlsProposalTimer = null,
             mutedTime = mutedTime,
@@ -941,8 +1033,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            lastReadDate = "2000-01-01T12:00:00.000Z",
+            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -962,8 +1054,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            lastReadDate = "2000-01-01T12:00:00.000Z",
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -984,9 +1076,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
-            lastNotificationDate = "2021-03-30T15:30:00.000Z",
-            lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            lastReadDate = "2000-01-01T12:00:00.000Z",
+            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -1008,9 +1100,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
-            lastNotificationDate = "2021-03-30T15:30:00.000Z",
-            lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            lastReadDate = "2000-01-01T12:00:00.000Z",
+            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),

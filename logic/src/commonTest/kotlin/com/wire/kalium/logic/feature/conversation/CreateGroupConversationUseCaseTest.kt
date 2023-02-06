@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
@@ -8,13 +26,20 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
@@ -64,6 +89,8 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(createdConversation)
+            .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         val result = createGroupConversation(name, members, conversationOptions)
@@ -84,6 +111,8 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -127,6 +156,8 @@ class CreateGroupConversationUseCaseTest {
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -135,6 +166,74 @@ class CreateGroupConversationUseCaseTest {
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
             .with(any(), matching { it.toInstant().wasInTheLastSecond })
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenPersistSystemMessageForReceiptMode() = runTest {
+        // given
+        val name = "Conv Name"
+        val creatorClientId = ClientId("ClientId")
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
+        val conversationOptions = ConversationOptions(
+            protocol = ConversationOptions.Protocol.PROTEUS,
+            creatorClientId = creatorClientId,
+            readReceiptsEnabled = true
+        )
+
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .arrange()
+
+        // when
+        createGroupConversation(name, members, conversationOptions)
+
+        // then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                val content = it.content as MessageContent.NewConversationReceiptMode
+                content.receiptMode
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUserWithoutATeam_whenCreatingGroupConversation_thenPersistSystemMessageForReceiptMode() = runTest {
+        // given
+        val name = "Conv Name"
+        val creatorClientId = ClientId("ClientId")
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
+        val conversationOptions = ConversationOptions(
+            protocol = ConversationOptions.Protocol.PROTEUS,
+            creatorClientId = creatorClientId,
+            readReceiptsEnabled = true
+        )
+
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withPersistingSystemMessage()
+            .withSelfUserTeamId(Either.Right(null))
+            .arrange()
+
+        // when
+        createGroupConversation(name, members, conversationOptions)
+
+        // then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                val content = it.content as MessageContent.NewConversationReceiptMode
+                content.receiptMode
+            })
+            .wasInvoked(exactly = Times(0))
     }
 
     private class Arrangement {
@@ -149,12 +248,26 @@ class CreateGroupConversationUseCaseTest {
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        @Mock
         val syncManager = configure(mock(SyncManager::class)) {
             stubsUnitByDefault = true
         }
 
+        @Mock
+        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+
+        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+
         private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, conversationGroupRepository, syncManager, currentClientIdProvider
+            conversationRepository,
+            conversationGroupRepository,
+            syncManager,
+            currentClientIdProvider,
+            TestUser.SELF.id,
+            persistMessage,
+            isSelfATeamMember
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -193,6 +306,20 @@ class CreateGroupConversationUseCaseTest {
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withPersistingSystemMessage() = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { either }
         }
 
         fun arrange() = this to createGroupConversation

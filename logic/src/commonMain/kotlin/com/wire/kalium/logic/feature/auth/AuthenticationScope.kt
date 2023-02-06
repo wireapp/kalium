@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
@@ -18,7 +36,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import io.ktor.util.collections.ConcurrentMap
 
-class AuthenticationScopeProvider(private val clientLabel: String) {
+class AuthenticationScopeProvider {
 
     private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>, AuthenticationScope> by lazy {
         ConcurrentMap()
@@ -27,7 +45,6 @@ class AuthenticationScopeProvider(private val clientLabel: String) {
     fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
-                clientLabel,
                 serverConfig,
                 proxyCredentials
             )
@@ -35,7 +52,6 @@ class AuthenticationScopeProvider(private val clientLabel: String) {
 }
 
 class AuthenticationScope(
-    private val clientLabel: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
@@ -47,7 +63,7 @@ class AuthenticationScope(
         )
     }
     private val loginRepository: LoginRepository
-        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
+        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
