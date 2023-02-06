@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface SubconversationRepository {
 
@@ -30,15 +32,19 @@ interface SubconversationRepository {
 
 class SubconversationRepositoryImpl : SubconversationRepository {
 
-    // TODO make access to this thread safe
+    private val mutex = Mutex()
     private val subconversations = mutableMapOf<Pair<ConversationId, SubconversationId>, GroupID>()
 
     override suspend fun insertSubconversation(conversationId: ConversationId, subconversationId: SubconversationId, groupId: GroupID) {
-        subconversations[Pair(conversationId, subconversationId)] = groupId
+        mutex.withLock {
+            subconversations[Pair(conversationId, subconversationId)] = groupId
+        }
     }
 
     override suspend fun getSubconversationInfo(conversationId: ConversationId, subconversationId: SubconversationId): GroupID? {
-        return subconversations[Pair(conversationId, subconversationId)]
+        mutex.withLock {
+            return subconversations[Pair(conversationId, subconversationId)]
+        }
     }
 
 }
