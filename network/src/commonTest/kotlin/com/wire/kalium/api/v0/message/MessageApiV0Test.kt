@@ -21,12 +21,16 @@ package com.wire.kalium.api.v0.message
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.api.tools.IgnoreIOS
+import com.wire.kalium.model.QualifiedSendMessageRequestJson
+import com.wire.kalium.model.QualifiedSendMessageResponseJson
 import com.wire.kalium.model.SendMessageRequestJson
 import com.wire.kalium.model.SendMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
+import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.v0.authenticated.MessageApiV0
+import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -175,10 +179,26 @@ class MessageApiV0Test : ApiTest {
             )
         }
 
-//     @Test
-//     fun givenFailedToSentUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
-//         FAILED_TO_SEND_RESPONSE
-//     )
+    @Test
+    fun givenFailedToSentUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            QualifiedSendMessageResponseJson.failedSentUsersResponse.rawJson,
+            statusCode = HttpStatusCode.PreconditionFailed
+        )
+
+        val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
+        val response = messageApi.qualifiedSendMessage(
+            QualifiedSendMessageRequestJson.validDefaultParameters.serializableData,
+            ConversationId(TEST_CONVERSATION_ID, "domain.com")
+        )
+
+        assertFalse(response.isSuccessful())
+        assertTrue(response.kException is ProteusClientsChangedError)
+        assertEquals(
+            (response.kException as ProteusClientsChangedError).errorBody,
+            QualifiedSendMessageResponseJson.failedSentUsersResponse.serializableData
+        )
+    }
 
     private companion object {
         val TEST_USER_LIST = listOf("user_1", "user_2", "user_3")

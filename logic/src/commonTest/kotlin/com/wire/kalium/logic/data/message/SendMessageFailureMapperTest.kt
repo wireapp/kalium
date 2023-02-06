@@ -44,6 +44,10 @@ class SendMessageFailureMapperTest {
                 deleted = mapOf(
                     "deleted_domain_0" to mapOf(userId(2) to listOf(clientId(2, 0), clientId(2, 1))),
                     "deleted_domain_1" to mapOf(userId(3) to listOf(clientId(3, 0), clientId(3, 1)))
+                ),
+                failedToSend = mapOf(
+                    "failed_domain_0" to mapOf(userId(2) to listOf(clientId(2, 0), clientId(2, 1))),
+                    "failed_domain_1" to mapOf(userId(3) to listOf(clientId(3, 0), clientId(3, 1)))
                 )
             )
         )
@@ -67,6 +71,17 @@ class SendMessageFailureMapperTest {
                     ClientId(clientId(2, 1))
                 ),
                 UserId(value = userId(3), "deleted_domain_1") to listOf(
+                    ClientId(clientId(3, 0)),
+                    ClientId(clientId(3, 1))
+                ),
+
+                ),
+            failedClientsOfUsers = mapOf(
+                UserId(value = userId(2), "failed_domain_0") to listOf(
+                    ClientId(clientId(2, 0)),
+                    ClientId(clientId(2, 1))
+                ),
+                UserId(value = userId(3), "failed_domain_1") to listOf(
                     ClientId(clientId(3, 0)),
                     ClientId(clientId(3, 1))
                 ),
