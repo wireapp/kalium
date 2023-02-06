@@ -346,7 +346,7 @@ class CallManagerImpl internal constructor(
 
     override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
         withCalling {
-            com.wire.kalium.logic.callingLogger.d(
+            callingLogger.d(
                 "$TAG - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
                         "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} for epoch = ${epochInfo.epoch}"
             )
