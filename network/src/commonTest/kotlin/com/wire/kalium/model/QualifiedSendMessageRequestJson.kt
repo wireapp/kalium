@@ -59,7 +59,7 @@ object QualifiedSendMessageRequestJson {
     private val defaultParametersJson = { serializable: MessageApi.Parameters.QualifiedDefaultParameters ->
         """
         |  "sender": ${serializable.sender},
-        |  "blob": "${serializable.externalBlob}",
+        |  "data": "${serializable.externalBlob?.decodeToString()}",
         |  "native_push": ${serializable.nativePush},
         |  "recipients": {
         |               "$USER_1": {
@@ -72,7 +72,7 @@ object QualifiedSendMessageRequestJson {
         |               }
         |       },
         |  "transient": ${serializable.transient},
-        |  "native_priority": ${serializable.priority},
+        |  "native_priority": ${serializable.priority}
         """.trimMargin()
     }
 
@@ -95,6 +95,7 @@ object QualifiedSendMessageRequestJson {
     val validDefaultParameters = ValidJsonProvider(
         MessageApi.Parameters.QualifiedDefaultParameters(
             sender = "sender-client-it",
+            externalBlob = "blob-id".toByteArray(),
             nativePush = true,
             recipients = recipients,
             transient = false,
