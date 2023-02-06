@@ -105,7 +105,7 @@ class MLSMessageUnpackerTest {
             given(mlsClient)
                 .function(mlsClient::decryptMessage)
                 .whenInvokedWith(anything<String>(), anything<ByteArray>())
-                .thenReturn(DecryptedMessageBundle(null, commitDelay, null))
+                .thenReturn(DecryptedMessageBundle(null, commitDelay, null, false))
         }
 
         fun withScheduleCommitSucceeding() = apply {

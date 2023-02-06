@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -68,6 +69,27 @@ class JoinSubconversationUseCaseTest {
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
                 .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), anything())
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenJoiningSubconversation_whenInvokingUseCase_ThenSubconversationIsPersisted() =
+        runTest {
+            val (arrangement, joinSubconversationUseCase) = Arrangement()
+                .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
+                .withFetchingSubconversationGroupInfoSuccessful()
+                .withJoinByExternalCommitSuccessful()
+                .arrange()
+
+            joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
+
+            verify(arrangement.subconversationRepository)
+                .suspendFunction(arrangement.subconversationRepository::insertSubconversation)
+                .with(
+                    eq(Arrangement.CONVERSATION_ID),
+                    eq(Arrangement.SUBCONVERSATION_ID,),
+                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId))
+                )
                 .wasInvoked(exactly = once)
         }
 
@@ -138,9 +160,13 @@ class JoinSubconversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val subconversationRepository = mock(classOf<SubconversationRepository>())
+
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
-            mlsConversationRepository
+            mlsConversationRepository,
+            subconversationRepository
         )
 
         fun withEstablishMLSGroupSuccessful() = apply {

@@ -101,11 +101,19 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
+        TODO("Not yet implemented")
+    }
+
     override fun addMember(groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): CommitBundle? {
         TODO("Not yet implemented")
     }
 
     override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
+        TODO("Not yet implemented")
+    }
+
+    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         TODO("Not yet implemented")
     }
 }

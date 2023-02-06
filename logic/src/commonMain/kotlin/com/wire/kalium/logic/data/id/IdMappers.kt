@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -38,3 +39,5 @@ internal fun UserAssetDTO.toDao(domain: String): QualifiedIDEntity = Persistence
 internal fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key, domain)
 
 internal fun SubconversationId.toApi(): String = value
+
+internal fun GroupID.toCrypto(): MLSGroupId = value

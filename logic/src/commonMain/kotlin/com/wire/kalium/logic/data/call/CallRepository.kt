@@ -25,32 +25,55 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapper
+import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
@@ -66,7 +89,13 @@ interface CallRepository {
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
-    suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
+    suspend fun createCall(
+        conversationId: ConversationId,
+        status: CallStatus,
+        callerId: String,
+        isMuted: Boolean,
+        isCameraOn: Boolean
+    )
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
@@ -75,6 +104,13 @@ interface CallRepository {
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
+    suspend fun joinMlsConference(
+        conversationId: ConversationId,
+        scope: CoroutineScope,
+        onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
+    ): Either<CoreFailure, Unit>
+    suspend fun leaveMlsConference(conversationId: ConversationId)
+    suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -84,13 +120,20 @@ internal class CallDataSource(
     private val persistMessage: PersistMessageUseCase,
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val subconversationRepository: SubconversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
+    private val mlsClientProvider: MLSClientProvider,
+    private val joinSubconversationUseCase: JoinSubconversationUseCase,
     private val callMapper: CallMapper,
+    private val federatedIdMapper: FederatedIdMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
 
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
+
+    private val callJobs = mutableMapOf<ConversationId, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -123,7 +166,8 @@ internal class CallDataSource(
         isMuted: Boolean,
         isCameraOn: Boolean
     ) {
-        val conversation: ConversationDetails = conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
+        val conversation: ConversationDetails =
+            conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
@@ -147,7 +191,8 @@ internal class CallDataSource(
             callerTeamName = team?.name,
             isMuted = isMuted,
             isCameraOn = isCameraOn,
-            establishedTime = null
+            establishedTime = null,
+            protocol = conversation.conversation.protocol
         )
 
         val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId.toString())
@@ -157,7 +202,9 @@ internal class CallDataSource(
         val isGroupCall = callEntity.conversationType == ConversationEntity.Type.GROUP
 
         val activeCallStatus = listOf(
-            CallEntity.Status.ESTABLISHED, CallEntity.Status.ANSWERED, CallEntity.Status.STILL_ONGOING
+            CallEntity.Status.ESTABLISHED,
+            CallEntity.Status.ANSWERED,
+            CallEntity.Status.STILL_ONGOING
         )
 
         callingLogger.i(
@@ -167,7 +214,8 @@ internal class CallDataSource(
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             updateCallMetadata(
-                conversationId = conversationId, metadata = metadata
+                conversationId = conversationId,
+                metadata = metadata
             )
             val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
             if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
@@ -191,7 +239,9 @@ internal class CallDataSource(
                 }
             }
         } else {
-            callingLogger.i("[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]")
+            callingLogger.i(
+                "[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]"
+            )
             if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
                 // Save into database
@@ -201,7 +251,8 @@ internal class CallDataSource(
 
                 // Save into metadata
                 updateCallMetadata(
-                    conversationId = conversationId, metadata = metadata
+                    conversationId = conversationId,
+                    metadata = metadata
                 )
             }
         }
@@ -226,7 +277,9 @@ internal class CallDataSource(
         wrapStorageRequest {
             callDAO.updateLastCallStatusByConversationId(
                 status = callMapper.toCallEntityStatus(callStatus = status),
-                conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
+                conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
+                    conversationId = modifiedConversationId
+                )
             )
             callingLogger.i(
                 "[CallRepository][UpdateCallStatusById] ->" +
@@ -316,7 +369,8 @@ internal class CallDataSource(
 
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
-                        participants = participants, maxParticipants = max(call.maxParticipants, participants.size + 1)
+                        participants = participants,
+                        maxParticipants = max(call.maxParticipants, participants.size + 1)
                     )
                 }
 
@@ -340,7 +394,8 @@ internal class CallDataSource(
             )
 
             val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
-                participants = call.participants, activeSpeakers = activeSpeakers
+                participants = call.participants,
+                activeSpeakers = activeSpeakers
             )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
@@ -379,12 +434,85 @@ internal class CallDataSource(
         this.combine(_callMetadataProfile) { calls, metadata ->
             calls.map { call ->
                 val conversationId = ConversationId(
-                    value = call.conversationId.value, domain = call.conversationId.domain
+                    value = call.conversationId.value,
+                    domain = call.conversationId.domain
                 )
 
                 callMapper.toCall(
-                    callEntity = call, metadata = metadata.data[conversationId.toString()]
+                    callEntity = call,
+                    metadata = metadata.data[conversationId.toString()]
                 )
+            }
+        }
+
+    override suspend fun joinMlsConference(
+        conversationId: ConversationId,
+        scope: CoroutineScope,
+        onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
+    ) = joinSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
+        callJobs[conversationId] = scope.launch {
+            observeEpochInfo(conversationId).onSuccess {
+                it.collectLatest { epochInfo ->
+                    onEpochChange(conversationId, epochInfo)
+                }
+            }
+        }
+    }
+
+    override suspend fun leaveMlsConference(conversationId: ConversationId) {
+        callingLogger.i(
+            "Leaving MLS conference for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+        )
+
+        // Cancels flow observing epoch changes
+        callJobs.remove(conversationId)?.cancel()
+
+        // TODO leaveSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID)
+    }
+
+    private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapCryptoRequest {
+                val epoch = mlsClient.conversationEpoch(subconversationGroupID.toCrypto())
+                val secret = mlsClient.deriveSecret(subconversationGroupID.toCrypto(), 32u)
+                val conversationMembers = mlsClient.members(parentGroupID.toCrypto())
+                val subconversationMembers = mlsClient.members(subconversationGroupID.toCrypto())
+                val callClients = conversationMembers.map {
+                    CallClient(
+                        federatedIdMapper.parseToFederatedId(UserId(it.userId.value, it.userId.domain)),
+                        it.value,
+                        subconversationMembers.contains(it)
+                    )
+                }
+
+                val epochInfo = EpochInfo(
+                    epoch,
+                    CallClientList(callClients),
+                    secret
+                )
+                epochInfo
+            }
+        }
+
+    @OptIn(FlowPreview::class)
+    override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            when (protocolInfo) {
+                is Conversation.ProtocolInfo.MLS -> subconversationRepository.getSubconversationInfo(
+                    conversationId,
+                    CALL_SUBCONVERSATION_ID
+                )?.let { subconversationGroupId ->
+                    createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
+                        flowOf(
+                            flowOf(initialEpochInfo),
+                            mlsConversationRepository.observeEpochChanges()
+                                .filter { it == protocolInfo.groupId || it == subconversationGroupId }
+                                .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
+                        ).flattenConcat()
+                    }
+                } ?: Either.Left(CoreFailure.NotSupportedByProteus)
+                is Conversation.ProtocolInfo.Proteus -> Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 }

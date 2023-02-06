@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.PublicGroupStateBundle
 import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
@@ -39,6 +40,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -73,10 +75,15 @@ import io.mockative.thenDoNothing
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
@@ -743,6 +750,62 @@ class MLSConversationRepositoryTest {
 
     }
 
+    @Test
+    fun givenEpochChange_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetConversationProtocolInfoSuccessful(Arrangement.MLS_PROTOCOL_INFO)
+            .withGetMLSClientSuccessful()
+            .withDecryptMLSMessageSuccessful(DecryptedMessageBundle(null, null, null, true))
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            mlsConversationRepository.observeEpochChanges().first()
+        }
+        yield()
+
+        mlsConversationRepository.messageFromMLSMessage(Arrangement.MESSAGE_EVENT).shouldSucceed()
+
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
+    @Test
+    fun givenSuccessResponse_whenSendingCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            mlsConversationRepository.observeEpochChanges().first()
+        }
+        yield()
+
+        mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
+    @Test
+    fun givenSuccessResponse_whenSendingExternalCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            mlsConversationRepository.observeEpochChanges().first()
+        }
+        yield()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, ByteArray(0))
+
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
     class Arrangement {
         val idMapper: IdMapper = IdMapperImpl()
 
@@ -781,6 +844,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(TestConversation.VIEW_ENTITY) }
+        }
+
+        fun withGetConversationProtocolInfoSuccessful(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationProtocolInfo)
+                .whenInvokedWith(anything())
+                .thenReturn(protocolInfo)
         }
 
         fun withGetConversationByGroupIdFailing() = apply {
@@ -906,6 +976,13 @@ class MLSConversationRepositoryTest {
                 .then { NetworkResponse.Success(SendMLSMessageResponse(TIME, events), emptyMap(), 201) }
         }
 
+        fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
+            given(mlsClient)
+                .function(mlsClient::decryptMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(decryptedMessage)
+        }
+
         fun withRemoveMemberSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::removeMember)
@@ -989,6 +1066,21 @@ class MLSConversationRepositoryTest {
                 TestUser.USER_ID,
                 WELCOME.encodeBase64(),
                 timestampIso = "2022-03-30T15:36:00.000Z"
+            )
+            val MESSAGE_EVENT = Event.Conversation.NewMLSMessage(
+                "eventId",
+                TestConversation.ID,
+                false,
+                TestUser.USER_ID,
+                "2022-03-30T15:36:00.000Z",
+                "encryptedContent"
+            )
+            val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
+                RAW_GROUP_ID,
+                ConversationEntity.GroupState.ESTABLISHED,
+                1UL,
+                Clock.System.now(),
+                ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             private val SIMPLE_CLIENT_RESPONSE = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)
 
