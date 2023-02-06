@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -135,7 +134,6 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
         assertFalse(clientRegistrationStorage.hasRegisteredMLSClient())
     }
 
-    @Ignore
     @Test
     fun givenHasRegisteredMLSClientWasSet_whenGettingHasRegisteredMLSClient_thenResultShouldBeTrue() = runTest(dispatcher) {
         clientRegistrationStorage.setHasRegisteredMLSClient()

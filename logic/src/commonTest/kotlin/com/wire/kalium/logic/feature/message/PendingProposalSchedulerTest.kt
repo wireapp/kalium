@@ -45,7 +45,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -65,7 +64,6 @@ class PendingProposalSchedulerTest {
             .with(eq(Arrangement.PROPOSAL_TIMER))
     }
 
-    @Ignore
     @Test
     fun givenExpiredProposalTimer_whenSyncFinishes_thenPendingProposalsIsCommitted() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, _) = Arrangement()
@@ -114,7 +112,7 @@ class PendingProposalSchedulerTest {
             .with(eq(TestConversation.GROUP_ID))
             .wasNotInvoked()
     }
-    @Ignore
+
     @Test
     fun givenNonExpiredProposalTimer_whenSyncFinishesAndWeWait_thenPendingProposalIsCommitted() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, _) = Arrangement()
@@ -132,7 +130,6 @@ class PendingProposalSchedulerTest {
             .wasInvoked(once)
     }
 
-    @Ignore
     @Test
     fun givenExpiredProposalTimer_whenSyncIsLive_thenPendingProposalIsCommitted() = runTest(TestKaliumDispatcher.default) {
         val proposalChannel = Channel<List<ProposalTimer>>(Channel.UNLIMITED)

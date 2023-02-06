@@ -61,23 +61,22 @@ internal class NewMessageEventHandlerImpl(
     }
 
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) {
-        // todo: re-enable MLS
-//         mlsMessageUnpacker.unpackMlsMessage(event)
-//             .onFailure {
-//                 applicationMessageHandler.handleDecryptionError(
-//                     eventId = event.id,
-//                     conversationId = event.conversationId,
-//                     timestampIso = event.timestampIso,
-//                     senderUserId = event.senderUserId,
-//                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-//                     content = MessageContent.FailedDecryption(
-//                         isDecryptionResolved = false,
-//                         senderUserId = event.senderUserId
-//                     )
-//                 )
-//             }.onSuccess {
-//                 handleSuccessfulResult(it)
-//             }
+        mlsMessageUnpacker.unpackMlsMessage(event)
+            .onFailure {
+                applicationMessageHandler.handleDecryptionError(
+                    eventId = event.id,
+                    conversationId = event.conversationId,
+                    timestampIso = event.timestampIso,
+                    senderUserId = event.senderUserId,
+                    senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                    content = MessageContent.FailedDecryption(
+                        isDecryptionResolved = false,
+                        senderUserId = event.senderUserId
+                    )
+                )
+            }.onSuccess {
+                handleSuccessfulResult(it)
+            }
     }
 
     private suspend fun handleSuccessfulResult(result: MessageUnpackResult) {
