@@ -159,6 +159,16 @@ interface Calling : Library {
         activeSpeakersHandler: ActiveSpeakersHandler
     )
 
+    @Suppress("FunctionNaming", "LongParameterList")
+    fun wcall_set_epoch_info(
+        inst: Handle,
+        conversationId: String,
+        epoch: Uint32_t,
+        clientsJson: String,
+        keyData: ByteArray,
+        keyLength: Uint32_t
+    ): Int
+
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }

@@ -69,7 +69,8 @@ object TestCall {
         conversationType = Conversation.Type.ONE_ON_ONE,
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
-        establishedTime = null
+        establishedTime = null,
+        protocol = Conversation.ProtocolInfo.Proteus
     )
 
     fun oneOnOneEstablishedCall() = Call(

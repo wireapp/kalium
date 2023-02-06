@@ -35,5 +35,6 @@ data class CallMetadata(
     val callerTeamName: String?,
     val establishedTime: String? = null,
     val participants: List<Participant> = emptyList(),
-    val maxParticipants: Int = 0 // Was used for tracking
+    val maxParticipants: Int = 0, // Was used for tracking
+    val protocol: Conversation.ProtocolInfo
 )
