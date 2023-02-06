@@ -62,7 +62,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         )
         when (result) {
             is CreateGroupConversationUseCase.Result.Success -> echo("group created successfully")
-            else -> throw PrintMessage("group creation failed: $result")
+            is CreateGroupConversationUseCase.Result.UnknownFailure -> throw PrintMessage("group creation failed: $result cause = ${result.cause}")
+            is CreateGroupConversationUseCase.Result.SyncFailure -> throw PrintMessage("group creation failed: due to sync failure")
         }
     }
 

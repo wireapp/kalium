@@ -471,9 +471,12 @@ class MLSConversationDataSource(
         kaliumLogger.w("Discarding the failed commit.")
 
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
+            try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+            } catch (e: Exception) {
+                kaliumLogger.w("No pending commit to discard, ignoring")
             }
+            Either.Right(Unit)
         }
     }
 }
