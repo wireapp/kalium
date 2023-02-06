@@ -43,11 +43,12 @@ class UserDAOTest : BaseDatabaseTest() {
     private val user3 = newUserEntity(id = "3")
 
     lateinit var db: UserDatabaseBuilder
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        db = createDatabase()
+        deleteDatabase(selfUserId)
+        db = createDatabase(selfUserId, encryptedDBSecret, true)
     }
 
     @Test

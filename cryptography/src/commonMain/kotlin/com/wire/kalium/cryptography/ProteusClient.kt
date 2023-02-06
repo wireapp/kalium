@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
@@ -47,6 +48,7 @@ data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
+
 @Suppress("TooManyFunctions")
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
@@ -64,17 +66,17 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun openOrError()
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     fun getIdentity(): ByteArray
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
-    @Throws(ProteusException::class)
-    fun newLastPreKey(): PreKeyCrypto
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
@@ -95,7 +97,7 @@ interface ProteusClient {
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
-    fun deleteSession(sessionId: CryptoSessionId)
+    suspend fun deleteSession(sessionId: CryptoSessionId)
 }
 
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {
@@ -112,4 +114,9 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
     }
 }
 
-expect class ProteusClientImpl(rootDir: String, databaseKey: ProteusDBSecret? = null) : ProteusClient
+expect class ProteusClientImpl(
+    rootDir: String,
+    databaseKey: ProteusDBSecret? = null,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+) : ProteusClient
