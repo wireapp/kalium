@@ -40,7 +40,7 @@ sealed class CurrentSessionResult {
  * @see [CurrentSessionResult.Success.accountInfo]
  */
 class CurrentSessionUseCase(private val sessionRepository: SessionRepository) {
-    operator fun invoke(): CurrentSessionResult =
+    suspend operator fun invoke(): CurrentSessionResult =
         sessionRepository.currentSession().fold({
             when (it) {
                 StorageFailure.DataNotFound -> CurrentSessionResult.Failure.SessionNotFound

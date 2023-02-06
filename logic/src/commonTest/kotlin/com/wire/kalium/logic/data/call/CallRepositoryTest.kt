@@ -1066,20 +1066,39 @@ class CallRepositoryTest {
             .givenGetCallerIdByConversationIdReturns(Arrangement.callerIdString)
             .givenPersistMessageSuccessful()
             .arrange()
-
-        val qualifiedIdEntity = Arrangement.conversationId.toDao()
-
+        
         callRepository.persistMissedCall(Arrangement.conversationId)
 
         verify(arrangement.callDAO)
             .suspendFunction(arrangement.callDAO::getCallerIdByConversationId)
-            .with(eq(qualifiedIdEntity))
+            .with(eq(Arrangement.conversationId.toDao()))
             .wasInvoked(exactly = once)
 
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAMissedCallAndNoCallerId_whenPersistMissedCallInvoked_thenDontStoreMissedCallInDatabase() = runTest {
+
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetCallerIdByConversationIdReturns(null)
+            .givenPersistMessageSuccessful()
+            .arrange()
+
+        callRepository.persistMissedCall(Arrangement.conversationId)
+
+        verify(arrangement.callDAO)
+            .suspendFunction(arrangement.callDAO::getCallerIdByConversationId)
+            .with(eq(Arrangement.conversationId.toDao()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -1355,7 +1374,7 @@ class CallRepositoryTest {
                 .whenInvokedWith(any())
         }
 
-        fun givenGetCallerIdByConversationIdReturns(callerId: String) = apply {
+        fun givenGetCallerIdByConversationIdReturns(callerId: String?) = apply {
             given(callDAO)
                 .suspendFunction(callDAO::getCallerIdByConversationId)
                 .whenInvokedWith(any())

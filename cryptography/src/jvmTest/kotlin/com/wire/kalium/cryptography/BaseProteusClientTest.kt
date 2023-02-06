@@ -25,7 +25,7 @@ import java.nio.file.Files
 @OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest {
 
-    private val standardScope = TestCoroutineScheduler()
+    private val testCoroutineScheduler = TestCoroutineScheduler()
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         val root = Files.createTempDirectory("proteus").toFile()
@@ -34,6 +34,6 @@ actual open class BaseProteusClientTest {
     }
 
     actual fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
-        return ProteusClientImpl(proteusStore.value, databaseKey, standardScope, standardScope)
+        return ProteusClientImpl(proteusStore.value, databaseKey, testCoroutineScheduler, testCoroutineScheduler)
     }
 }

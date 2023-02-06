@@ -18,8 +18,13 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,6 +40,12 @@ class ProteusClientTest : BaseProteusClientTest() {
     private val bob = SampleUser(CryptoUserID("bobId", "bobDomain"), "Bob")
     private val aliceSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
     private val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
+
+    @BeforeTest
+    fun before() {
+        val dispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(dispatcher)
+    }
 
     @IgnoreJS
     @IgnoreIOS

@@ -68,7 +68,7 @@ class ClientResources(private val instanceService: InstanceService) {
             )
         ]
     )
-    fun fingerprint(@PathParam("id") id: String): Response {
+    suspend fun fingerprint(@PathParam("id") id: String): Response {
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
         return instanceService.getFingerprint(id)
     }

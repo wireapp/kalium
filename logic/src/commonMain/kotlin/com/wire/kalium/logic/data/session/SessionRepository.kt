@@ -64,7 +64,7 @@ interface SessionRepository {
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
-    fun currentSession(): Either<StorageFailure, AccountInfo>
+    suspend fun currentSession(): Either<StorageFailure, AccountInfo>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
@@ -154,7 +154,7 @@ internal class SessionDataSource(
             )
         }
 
-    override fun currentSession(): Either<StorageFailure, AccountInfo> =
+    override suspend fun currentSession(): Either<StorageFailure, AccountInfo> =
         wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }
 
     override fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>> =

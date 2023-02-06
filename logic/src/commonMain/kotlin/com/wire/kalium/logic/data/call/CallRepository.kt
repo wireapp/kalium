@@ -310,20 +310,20 @@ internal class CallDataSource(
                     "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
         )
         val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
-        val callerId = callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)
+        callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)?.let { callerId ->
+            val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
 
-        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
-
-        val message = Message.System(
-            uuid4().toString(),
-            MessageContent.MissedCall,
-            conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
-            qualifiedUserId,
-            Message.Status.SENT,
-            Message.Visibility.VISIBLE
-        )
-        persistMessage(message)
+            val message = Message.System(
+                uuid4().toString(),
+                MessageContent.MissedCall,
+                conversationId,
+                DateTimeUtil.currentIsoDateTimeString(),
+                qualifiedUserId,
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
+            )
+            persistMessage(message)
+        } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")
     }
 
     override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {

@@ -90,5 +90,4 @@ actual class ProteusClientImpl actual constructor(
     override suspend fun deleteSession(sessionId: CryptoSessionId) {
         client.deleteSession(sessionId)
     }
-
 }
