@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -55,7 +56,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -79,8 +79,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
@@ -142,7 +140,7 @@ internal class CallDataSource(
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
 
     private val callJobs = mutableMapOf<ConversationId, Job>()
-    private val staleParticipantJobs = mutableMapOf<Pair<ClientId, UserId>, Job>()
+    private val staleParticipantJobs = mutableMapOf<QualifiedClientID, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -402,7 +400,7 @@ internal class CallDataSource(
 
     private fun clearStaleParticipantTimeout(participant: Participant) {
         callingLogger.i("Clear stale participant timer")
-        val qualifiedClient = Pair(ClientId(participant.clientId), participant.id)
+        val qualifiedClient = QualifiedClientID(ClientId(participant.clientId), participant.id)
         staleParticipantJobs.remove(qualifiedClient)?.cancel()
     }
 
@@ -411,7 +409,7 @@ internal class CallDataSource(
         conversationId: ConversationId,
         scope: CoroutineScope
     ) {
-        val qualifiedClient = Pair(ClientId(participant.clientId), participant.id)
+        val qualifiedClient = QualifiedClientID(ClientId(participant.clientId), participant.id)
         if (staleParticipantJobs.containsKey(qualifiedClient)) {
             return
         }
@@ -420,7 +418,7 @@ internal class CallDataSource(
             callingLogger.i("Start stale participant timer")
             delay(STALE_PARTICIPANT_TIMEOUT)
             callingLogger.i("Removing stale participant")
-            subconversationRepository.getSubconversationInfo(conversationId,  CALL_SUBCONVERSATION_ID)?.let { groupId ->
+            subconversationRepository.getSubconversationInfo(conversationId, CALL_SUBCONVERSATION_ID)?.let { groupId ->
                 mlsConversationRepository.removeClientsFromMLSGroup(
                     groupId,
                     listOf(qualifiedClient)
