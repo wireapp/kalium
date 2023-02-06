@@ -36,13 +36,14 @@ class MetadataDAOTest : BaseDatabaseTest() {
 
     private val key1 = "key1"
     private val key2 = "key2"
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     private lateinit var metadataDAO: MetadataDAO
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         metadataDAO = db.metadataDAO
     }
 

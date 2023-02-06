@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -33,10 +34,12 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
 
     private lateinit var clientRegistrationStorage: ClientRegistrationStorageImpl
 
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
+
     @BeforeTest
     fun setup() {
-        deleteDatabase()
-        val database = createDatabase()
+        deleteDatabase(selfUserId)
+        val database = createDatabase(selfUserId, encryptedDBSecret, true)
         clientRegistrationStorage = ClientRegistrationStorageImpl(database.metadataDAO)
     }
 

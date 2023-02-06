@@ -239,7 +239,11 @@ class MessageScope internal constructor(
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase
-        get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, protoContentMapper)
+        get() = PersistMigratedMessagesUseCaseImpl(
+            selfUserId,
+            userStorage.database.migrationDAO,
+            protoContentMapper = protoContentMapper
+        )
 
     internal val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(

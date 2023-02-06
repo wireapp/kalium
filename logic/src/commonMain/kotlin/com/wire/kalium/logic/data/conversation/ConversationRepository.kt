@@ -141,8 +141,8 @@ interface ConversationRepository {
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
 
-    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
+    suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
@@ -458,15 +458,14 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun updateConversationNotificationDate(
-        qualifiedID: QualifiedID,
-        date: String
+        qualifiedID: QualifiedID
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateConversationNotificationDate(qualifiedID.toDao(), date)
+            conversationDAO.updateConversationNotificationDate(qualifiedID.toDao())
         }
 
-    override suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate(date) }
+    override suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate() }
 
     override suspend fun updateConversationModifiedDate(
         qualifiedID: QualifiedID,

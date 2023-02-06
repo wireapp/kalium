@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -38,6 +37,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -56,11 +56,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true)
         conversationDAO = db.conversationDAO
         messageDAO = db.messageDAO
         userDAO = db.userDAO
@@ -265,10 +266,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"))
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
@@ -291,10 +289,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
-            .updateConversationNotificationDate(
-                conversationEntity2.id,
-                "2022-03-30T15:37:10.000Z"
-            )
+            .updateConversationNotificationDate(conversationEntity2.id)
 
         val result = conversationDAO.getConversationsForNotifications().first()
         // THEN
@@ -874,7 +869,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
-        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = DefaultDatabaseTestValues.userId.value))
+        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
         teamDAO.insertTeam(team)
         userDAO.insertUser(user2)
         insertTeamUserAndMember(team, user2, conversationEntity3.id)
@@ -910,6 +905,51 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversationEntity1.protocolInfo, result)
     }
 
+    @Test
+    fun givenConversations_whenUpdatingAllNotificationDates_thenAllConversationsAreUpdatedWithTheDateOfTheNewestMessage() = runTest {
+
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastNotificationDate = Instant.DISTANT_FUTURE,
+                lastModifiedDate = Instant.fromEpochSeconds(0)
+            )
+        )
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                lastNotificationDate = null,
+                lastModifiedDate = Instant.DISTANT_FUTURE
+            )
+        )
+
+        val instant = Clock.System.now()
+
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+        // TODO: insert another message from self user to check if it is not ignored
+        userDAO.insertUser(user1)
+
+        newRegularMessageEntity(
+            id = Random.nextBytes(10).decodeToString(),
+            conversationId = conversationEntity1.id,
+            senderUserId = user1.id,
+            date = instant
+        ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+
+        conversationDAO.updateAllConversationsNotificationDate()
+
+        conversationDAO.getAllConversations().first().forEach {
+            assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
+        }
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
@@ -917,7 +957,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembersWithQualifiedId(
             listOf(
                 Member(user.id, Member.Role.Member),
-                Member(DefaultDatabaseTestValues.userId, Member.Role.Member) // adding SelfUser as a member too
+                Member(selfUserId, Member.Role.Member) // adding SelfUser as a member too
             ),
             conversationId
         )

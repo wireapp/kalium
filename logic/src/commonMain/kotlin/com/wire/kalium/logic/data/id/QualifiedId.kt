@@ -30,6 +30,7 @@ data class QualifiedID(
     val domain: String
 ) {
     companion object {
+        // TODO: this may be problematic for premiss backends
         const val WIRE_PRODUCTION_DOMAIN = "wire.com"
     }
 
