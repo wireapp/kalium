@@ -108,8 +108,8 @@ internal class CallDAOImpl(
             )
         }
 
-    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String = withContext(queriesContext) {
-        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOne()
+    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(queriesContext) {
+        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOneOrNull()
     }
 
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =

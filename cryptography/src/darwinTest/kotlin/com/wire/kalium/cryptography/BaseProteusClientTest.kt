@@ -26,7 +26,7 @@ import platform.Foundation.NSURL
 @OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
 
-    private val standardScope = TestCoroutineScheduler()
+    private val testCoroutineScheduler = TestCoroutineScheduler()
 
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
@@ -40,8 +40,8 @@ actual open class BaseProteusClientTest actual constructor() {
         return ProteusClientImpl(
             rootDir = proteusStore.value,
             databaseKey = ProteusDBSecret("secret"),
-            defaultContext = standardScope,
-            ioContext = standardScope
+            defaultContext = testCoroutineScheduler,
+            ioContext = testCoroutineScheduler
         )
     }
 

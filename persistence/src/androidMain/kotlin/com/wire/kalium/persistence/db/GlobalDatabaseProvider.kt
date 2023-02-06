@@ -63,7 +63,7 @@ actual class GlobalDatabaseProvider(
                 schema = schema,
                 context = context,
                 name = dbName,
-                callback = SqliteCallback(schema)
+                callback = SqliteCallback(schema, true)
             )
         }
 
