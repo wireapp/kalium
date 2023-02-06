@@ -14,7 +14,9 @@ import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -35,7 +37,7 @@ class GetAssetSizeLimitUseCaseTest {
     }
 
     @Test
-    fun givenAnImageAsset_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runBlocking {
+    fun givenAnImageAsset_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runTest(dispatcher.default) {
         val isImage = true
         val hasUserTeam = true
         val (arrangement, getAssetSizeLimit) = Arrangement()
@@ -43,6 +45,7 @@ class GetAssetSizeLimitUseCaseTest {
             .arrange()
 
         val assetLimit = getAssetSizeLimit(isImage)
+        advanceUntilIdle()
 
         assertEquals(assetLimit, IMAGE_SIZE_LIMIT_BYTES)
         verify(arrangement.isSelfATeamMember)
@@ -51,7 +54,7 @@ class GetAssetSizeLimitUseCaseTest {
     }
 
     @Test
-    fun givenAGenericAssetFromANonTeamUser_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runBlocking {
+    fun givenAGenericAssetFromANonTeamUser_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runTest(dispatcher.default) {
         val isImage = false
         val hasUserTeam = false
         val (arrangement, getAssetSizeLimit) = Arrangement()
@@ -59,6 +62,7 @@ class GetAssetSizeLimitUseCaseTest {
             .arrange()
 
         val assetLimit = getAssetSizeLimit(isImage)
+        advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_DEFAULT_LIMIT_BYTES)
         verify(arrangement.isSelfATeamMember)
@@ -67,7 +71,7 @@ class GetAssetSizeLimitUseCaseTest {
     }
 
     @Test
-    fun givenAGenericAssetFromATeamUser_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runBlocking {
+    fun givenAGenericAssetFromATeamUser_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runTest(dispatcher.default) {
         val isImage = false
         val hasUserTeam = true
         val (arrangement, getAssetSizeLimit) = Arrangement()
@@ -75,6 +79,7 @@ class GetAssetSizeLimitUseCaseTest {
             .arrange()
 
         val assetLimit = getAssetSizeLimit(isImage)
+        advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_TEAM_USER_LIMIT_BYTES)
         verify(arrangement.isSelfATeamMember)
