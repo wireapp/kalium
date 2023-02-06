@@ -68,7 +68,7 @@ class IsSelfATeamMemberUseCaseTest {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
         suspend fun withSelfTeamId(result: Either<CoreFailure, TeamId?>) = apply {
             given(selfTeamIdProvider).coroutine { invoke() }.then { result }
         }
