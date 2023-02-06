@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -34,6 +35,7 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toDao
@@ -76,6 +78,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -84,6 +87,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -708,7 +713,11 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        callRepository.updateCallParticipants(Arrangement.randomConversationIdString, emptyList(), CoroutineScope(TestKaliumDispatcher.main))
+        callRepository.updateCallParticipants(
+            Arrangement.randomConversationIdString,
+            emptyList(),
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
 
         assertFalse {
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
@@ -744,7 +753,11 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList, CoroutineScope(TestKaliumDispatcher.main))
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId.toString(),
+            participantsList,
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
 
         // then
         val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]
@@ -757,7 +770,10 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        callRepository.updateParticipantsActiveSpeaker(Arrangement.randomConversationIdString, CallActiveSpeakers(emptyList()))
+        callRepository.updateParticipantsActiveSpeaker(
+            Arrangement.randomConversationIdString,
+            CallActiveSpeakers(emptyList())
+        )
 
         assertFalse {
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
@@ -802,7 +818,11 @@ class CallRepositoryTest {
             )
         )
 
-        callRepository.updateCallParticipants(Arrangement.conversationId.toString(), participantsList, CoroutineScope(TestKaliumDispatcher.main))
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId.toString(),
+            participantsList,
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
 
         // when
         callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId.toString(), activeSpeakers)
@@ -1125,7 +1145,9 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenJoinSubconversationSuccessful_whenJoinMlsConference_thenStartObservingEpoch() = runTest(TestKaliumDispatcher.default) {
+    fun givenJoinSubconversationSuccessful_whenJoinMlsConference_thenStartObservingEpoch() = runTest(
+        TestKaliumDispatcher.default
+    ) {
         val (arrangement, callRepository) = Arrangement()
             .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
             .givenJoinSubconversationSuccessful()
@@ -1233,6 +1255,96 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMlsConferenceCall_whenParticipantStaysUnconnected_thenParticipantGetRemovedFromSubconversation() = runTest(
+        TestKaliumDispatcher.main
+    ) {
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
+            .givenRemoveClientsFromMLSGroupSucceeds()
+            .arrange()
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                        protocol = Arrangement.mlsProtocolInfo,
+                        maxParticipants = 0
+                    )
+                )
+            )
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId.toString(),
+            listOf(
+                Arrangement.participant.copy(
+                hasEstablishedAudio = false
+            )
+            ),
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
+        advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
+        yield()
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::removeClientsFromMLSGroup)
+            .with(eq(Arrangement.subconversationGroupId), eq(listOf(Arrangement.qualifiedClientID)))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMlsConferenceCall_whenParticipantReconnects_thenParticipantIsNotRemovedFromSubconversation() = runTest(
+        TestKaliumDispatcher.main
+    ) {
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
+            .givenRemoveClientsFromMLSGroupSucceeds()
+            .arrange()
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                        protocol = Arrangement.mlsProtocolInfo,
+                        maxParticipants = 0
+                    )
+                )
+            )
+        )
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId.toString(),
+            listOf(
+                Arrangement.participant.copy(
+                hasEstablishedAudio = false
+            )
+            ),
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
+        advanceTimeBy(
+            CallDataSource.STALE_PARTICIPANT_TIMEOUT.minus(1.toDuration(DurationUnit.SECONDS)).toLong(
+                DurationUnit.MILLISECONDS
+            )
+        )
+        yield()
+
+        callRepository.updateCallParticipants(
+            Arrangement.conversationId.toString(),
+            listOf(
+                Arrangement.participant.copy(
+                hasEstablishedAudio = true
+            )
+            ),
+            CoroutineScope(TestKaliumDispatcher.main)
+        )
+        advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
+        yield()
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::removeClientsFromMLSGroup)
+            .with(eq(Arrangement.subconversationGroupId), eq(listOf(Arrangement.qualifiedClientID)))
+            .wasNotInvoked()
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1268,7 +1380,7 @@ class CallRepositoryTest {
         protocol = Conversation.ProtocolInfo.Proteus
     )
 
-    private class Arrangement() {
+    private class Arrangement {
 
         @Mock
         val callApi = mock(classOf<CallApi>())
@@ -1457,6 +1569,13 @@ class CallRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun givenRemoveClientsFromMLSGroupSucceeds() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::removeClientsFromMLSGroup)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun givenGetSubconversationInfoReturns(groupId: GroupID?) = apply {
             given(subconversationRepository)
                 .suspendFunction(subconversationRepository::getSubconversationInfo)
@@ -1520,6 +1639,22 @@ class CallRepositoryTest {
                 1UL,
                 Clock.System.now(),
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+
+            val qualifiedClientID = QualifiedClientID(
+                ClientId("abcd"),
+                QualifiedID("participantId", "participantDomain")
+            )
+            val participant = Participant(
+                id = qualifiedClientID.userId,
+                clientId = qualifiedClientID.clientId.value,
+                name = "name",
+                isMuted = true,
+                isSpeaking = false,
+                isCameraOn = false,
+                isSharingScreen = false,
+                avatarAssetId = null,
+                hasEstablishedAudio = true
             )
         }
     }
