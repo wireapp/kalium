@@ -4,17 +4,35 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companio
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.ASSET_SIZE_TEAM_USER_LIMIT_BYTES
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.IMAGE_SIZE_LIMIT_BYTES
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GetAssetSizeLimitUseCaseTest {
+
+    @BeforeTest
+    fun before() {
+        Dispatchers.setMain(dispatcher.default)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun givenAnImageAsset_whenGettingTheSizeLimit_thenTheSizeLimitIsCorrect() = runBlocking {
@@ -76,6 +94,10 @@ class GetAssetSizeLimitUseCaseTest {
                 .thenReturn(hasUserTeam)
         }
 
-        fun arrange() = this to GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
+        fun arrange() = this to GetAssetSizeLimitUseCaseImpl(isSelfATeamMember, dispatcher)
+    }
+
+    companion object {
+        private val dispatcher = TestKaliumDispatcher
     }
 }

@@ -19,6 +19,9 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 fun interface GetAssetSizeLimitUseCase {
     /**
@@ -29,11 +32,12 @@ fun interface GetAssetSizeLimitUseCase {
 }
 
 internal class GetAssetSizeLimitUseCaseImpl internal constructor(
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetAssetSizeLimitUseCase {
-    override suspend operator fun invoke(isImage: Boolean): Long {
+    override suspend operator fun invoke(isImage: Boolean): Long = withContext(dispatchers.default) {
         val hasUserTeam = isSelfATeamMember()
-        return when {
+        return@withContext when {
             isImage -> IMAGE_SIZE_LIMIT_BYTES
             hasUserTeam -> ASSET_SIZE_TEAM_USER_LIMIT_BYTES
             else -> ASSET_SIZE_DEFAULT_LIMIT_BYTES
