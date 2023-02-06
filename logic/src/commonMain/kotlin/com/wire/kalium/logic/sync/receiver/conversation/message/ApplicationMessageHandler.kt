@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -140,7 +139,6 @@ internal class ApplicationMessageHandlerImpl(
             }
         }
     }
-
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false

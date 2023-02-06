@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
 
 internal interface AssetMessageHandler {
     suspend fun handle(
@@ -79,7 +78,8 @@ internal class AssetMessageHandlerImpl(
         var verified = false
 
         messageRepository.getMessageById(
-            messageUuid = messageId, conversationId = conversationId
+            messageUuid = messageId,
+            conversationId = conversationId
         ).onSuccess {
             verified = senderUserId == it.senderUserId
         }
