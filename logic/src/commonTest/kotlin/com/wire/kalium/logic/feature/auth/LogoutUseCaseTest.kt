@@ -84,7 +84,7 @@ class LogoutUseCaseTest {
                 .with(any())
                 .wasInvoked(exactly = once)
 
-            if(reason == LogoutReason.SELF_HARD_LOGOUT) {
+            if (reason == LogoutReason.SELF_HARD_LOGOUT) {
                 verify(arrangement.pushTokenRepository)
                     .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
                     .with(eq(true))

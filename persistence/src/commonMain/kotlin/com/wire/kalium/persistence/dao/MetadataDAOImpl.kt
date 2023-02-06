@@ -41,7 +41,7 @@ class MetadataDAOImpl internal constructor(
         metadataQueries.insertValue(key, value)
     }
 
-    override suspend fun deleteValue(key: String) {
+    override suspend fun deleteValue(key: String) = withContext(queriesContext) {
         metadataQueries.deleteValue(key)
     }
 
