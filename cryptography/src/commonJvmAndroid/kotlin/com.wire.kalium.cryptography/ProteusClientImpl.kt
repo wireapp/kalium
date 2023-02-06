@@ -43,9 +43,7 @@ actual class ProteusClientImpl actual constructor(
         return client.needsMigration()
     }
 
-    override suspend
-
-    fun openOrCreate() {
+    override suspend fun openOrCreate() {
         client.openOrCreate()
     }
 

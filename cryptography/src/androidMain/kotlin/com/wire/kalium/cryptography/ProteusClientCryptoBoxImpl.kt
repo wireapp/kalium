@@ -72,8 +72,8 @@ class ProteusClientCryptoBoxImpl constructor(
      * open the crypto box if and only if the local files are already created
      * this must be called only one time
      */
-    override suspend fun openOrError() {
-        if (!this::box.isInitialized) {
+    override suspend fun openOrError() = withContext(ioContext) {
+        if (!this@ProteusClientCryptoBoxImpl::box.isInitialized) {
             val directory = File(path)
             if (directory.exists()) {
                 box = wrapException {
@@ -125,28 +125,32 @@ class ProteusClientCryptoBoxImpl constructor(
 
     override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = lock.withLock {
         withContext(defaultContext) {
-            val session = box.tryGetSession(sessionId.value)
-            wrapException {
-                if (session != null) {
-                    val decryptedMessage = session.decrypt(message)
-                    session.save()
-                    decryptedMessage
-                } else {
-                    val result = box.initSessionFromMessage(sessionId.value, message)
-                    result.session.save()
-                    result.message
+            withContext(defaultContext) {
+                val session = box.tryGetSession(sessionId.value)
+                wrapException {
+                    if (session != null) {
+                        val decryptedMessage = session.decrypt(message)
+                        session.save()
+                        decryptedMessage
+                    } else {
+                        val result = box.initSessionFromMessage(sessionId.value, message)
+                        result.session.save()
+                        result.message
+                    }
                 }
             }
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = lock.withLock {
-        withContext(defaultContext) {
-            wrapException {
-                val session = box.getSession(sessionId.value)
-                val encryptedMessage = session.encrypt(message)
-                session.save()
-                encryptedMessage
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
+        lock.withLock {
+            withContext(defaultContext) {
+                wrapException {
+                    val session = box.getSession(sessionId.value)
+                    val encryptedMessage = session.encrypt(message)
+                    session.save()
+                    encryptedMessage
+                }
             }
         }
     }
