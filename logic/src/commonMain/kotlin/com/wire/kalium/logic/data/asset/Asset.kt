@@ -49,3 +49,7 @@ enum class RetentionType {
 fun isDisplayableImageMimeType(mimeType: String): Boolean = mimeType in setOf(
     "image/jpg", "image/jpeg", "image/png", "image/heic", "image/gif", "image/webp"
 )
+
+fun isAudioMimeType(mimeType: String) = mimeType in setOf(
+    "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"
+)
