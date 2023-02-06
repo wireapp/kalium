@@ -32,6 +32,7 @@ import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import io.ktor.utils.io.core.String
 import kotlinx.cinterop.ObjCObjectVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -178,6 +179,12 @@ actual class MLSClientImpl actual constructor(
         return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
     }
 
+    override fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
+        return coreCrypto.getClientIds(toUByteList(groupId.decodeBase64Bytes())).mapNotNull {
+            CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it)))
+        }
+    }
+
     override fun commitAccepted(groupId: MLSGroupId) {
         coreCrypto.commitAccepted(toUByteList(groupId.decodeBase64Bytes()))
     }
@@ -214,6 +221,10 @@ actual class MLSClientImpl actual constructor(
         }
 
         return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
+    }
+
+    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
+        return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
     companion object {
@@ -259,7 +270,8 @@ actual class MLSClientImpl actual constructor(
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
-            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) }
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
+            value.hasEpochChanged
         )
     }
 

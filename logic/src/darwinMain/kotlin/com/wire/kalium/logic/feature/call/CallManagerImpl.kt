@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -62,6 +63,10 @@ class CallManagerImpl : CallManager {
     }
 
     override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
         TODO("Not yet implemented")
     }
 }
