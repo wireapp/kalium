@@ -34,7 +34,7 @@ class SendMessageFailureMapperImpl : SendMessageFailureMapper {
         ProteusSendMessageFailure(
             missing.fromNestedMapToSimpleMap(),
             redundant.fromNestedMapToSimpleMap(),
-            deleted.fromNestedMapToSimpleMap()
+            deleted.fromNestedMapToSimpleMap(),
         )
     }
 

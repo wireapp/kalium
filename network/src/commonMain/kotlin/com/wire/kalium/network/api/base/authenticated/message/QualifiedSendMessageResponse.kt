@@ -18,21 +18,33 @@
 
 package com.wire.kalium.network.api.base.authenticated.message
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class QualifiedSendMessageResponse {
+    @SerialName("time")
     abstract val time: String
+
+    @SerialName("missing")
     abstract val missing: QualifiedUserIdToClientMap
+
+    @SerialName("redundant")
     abstract val redundant: QualifiedUserIdToClientMap
+
+    @SerialName("deleted")
     abstract val deleted: QualifiedUserIdToClientMap
+
+    @SerialName("failed_to_send")
+    abstract val failedToSend: QualifiedUserIdToClientMap?
 
     @Serializable
     data class MissingDevicesResponse(
         override val time: String,
         override val missing: QualifiedUserIdToClientMap,
         override val redundant: QualifiedUserIdToClientMap,
-        override val deleted: QualifiedUserIdToClientMap
+        override val deleted: QualifiedUserIdToClientMap,
+        override val failedToSend: QualifiedUserIdToClientMap? = null
     ) : QualifiedSendMessageResponse()
 
     @Serializable
@@ -40,7 +52,8 @@ sealed class QualifiedSendMessageResponse {
         override val time: String,
         override val missing: QualifiedUserIdToClientMap,
         override val redundant: QualifiedUserIdToClientMap,
-        override val deleted: QualifiedUserIdToClientMap
+        override val deleted: QualifiedUserIdToClientMap,
+        override val failedToSend: QualifiedUserIdToClientMap? = null
     ) : QualifiedSendMessageResponse()
 }
 

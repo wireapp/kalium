@@ -149,7 +149,9 @@ class MessageApiV0Test : ApiTest {
     fun givenDeletedUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(DELETED_ERROR_RESPONSE)
 
     @Test
-    fun givenRedundantUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(REDUNDANT_ERROR_RESPONSE)
+    fun givenRedundantUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
+        REDUNDANT_ERROR_RESPONSE
+    )
 
     private fun errorCaseTest(errorResponse: ValidJsonProvider<SendMessageResponse.MissingDevicesResponse>) =
         runTest {
@@ -167,8 +169,16 @@ class MessageApiV0Test : ApiTest {
 
             assertFalse(response.isSuccessful())
             assertTrue(response.kException is SendMessageError.MissingDeviceError)
-            assertEquals((response.kException as SendMessageError.MissingDeviceError).errorBody, errorResponse.serializableData)
+            assertEquals(
+                (response.kException as SendMessageError.MissingDeviceError).errorBody,
+                errorResponse.serializableData
+            )
         }
+
+//     @Test
+//     fun givenFailedToSentUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
+//         FAILED_TO_SEND_RESPONSE
+//     )
 
     private companion object {
         val TEST_USER_LIST = listOf("user_1", "user_2", "user_3")
