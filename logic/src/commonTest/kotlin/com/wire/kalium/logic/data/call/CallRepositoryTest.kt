@@ -1216,6 +1216,21 @@ class CallRepositoryTest {
         assertEquals(1, onEpochChangeCallCount)
     }
 
+    @Test
+    fun givenMlsConferenceCall_whenAdvanceEpoch_thenKeyMaterialIsUpdatedInSubconversation() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
+            .givenUpdateKeyMaterialSucceeds()
+            .arrange()
+
+        callRepository.advanceEpoch(Arrangement.conversationId)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
+            .with(eq(Arrangement.subconversationGroupId))
+            .wasInvoked(exactly = once)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1431,6 +1446,13 @@ class CallRepositoryTest {
                 .suspendFunction(mlsConversationRepository::observeEpochChanges)
                 .whenInvoked()
                 .thenReturn(flow)
+        }
+
+        fun givenUpdateKeyMaterialSucceeds() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun givenGetSubconversationInfoReturns(groupId: GroupID?) = apply {
