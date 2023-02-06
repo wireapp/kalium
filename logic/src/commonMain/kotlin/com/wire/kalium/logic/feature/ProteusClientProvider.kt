@@ -33,6 +33,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 interface ProteusClientProvider {
     suspend fun clearLocalFiles()
@@ -61,8 +62,10 @@ class ProteusClientProviderImpl(
 
     override suspend fun clearLocalFiles() {
         mutex.withLock {
-            _proteusClient?.clearLocalFiles()
-            _proteusClient = null
+            withContext(dispatcher.io) {
+                _proteusClient?.clearLocalFiles()
+                _proteusClient = null
+            }
         }
     }
 

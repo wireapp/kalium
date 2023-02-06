@@ -52,27 +52,27 @@ class CurrentSessionUseCaseTest {
     fun givenAUserID_whenCurrentSessionSuccess_thenTheSuccessIsPropagated() = runTest {
         val expected: AccountInfo = TEST_Account_INFO
 
-        given(sessionRepository).invocation { currentSession() }.then { Either.Right(expected) }
+        given(sessionRepository).coroutine { currentSession() }.then { Either.Right(expected) }
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Success>(actual)
         assertEquals(expected, actual.accountInfo)
 
-        verify(sessionRepository).invocation { currentSession() }.wasInvoked(exactly = once)
+        verify(sessionRepository).coroutine { currentSession() }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAUserID_whenCurrentSessionFailWithNoSessionFound_thenTheErrorIsPropagated() = runTest {
         val expected: StorageFailure = StorageFailure.DataNotFound
 
-        given(sessionRepository).invocation { currentSession() }.then { Either.Left(expected) }
+        given(sessionRepository).coroutine { currentSession() }.then { Either.Left(expected) }
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Failure.SessionNotFound>(actual)
 
-        verify(sessionRepository).invocation { currentSession() }.wasInvoked(exactly = once)
+        verify(sessionRepository).coroutine { currentSession() }.wasInvoked(exactly = once)
     }
 
     private companion object {
