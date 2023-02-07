@@ -715,8 +715,7 @@ class CallRepositoryTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateCallParticipants(
             Arrangement.randomConversationIdString,
-            emptyList(),
-            CoroutineScope(TestKaliumDispatcher.main)
+            emptyList()
         )
 
         assertFalse {
@@ -755,8 +754,7 @@ class CallRepositoryTest {
         // when
         callRepository.updateCallParticipants(
             Arrangement.conversationId.toString(),
-            participantsList,
-            CoroutineScope(TestKaliumDispatcher.main)
+            participantsList
         )
 
         // then
@@ -820,8 +818,7 @@ class CallRepositoryTest {
 
         callRepository.updateCallParticipants(
             Arrangement.conversationId.toString(),
-            participantsList,
-            CoroutineScope(TestKaliumDispatcher.main)
+            participantsList
         )
 
         // when
@@ -1136,7 +1133,7 @@ class CallRepositoryTest {
             .givenDeriveSecretSuccessful()
             .arrange()
 
-        callRepository.joinMlsConference(Arrangement.conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ -> }
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
 
         verify(arrangement.joinSubconversationUseCase)
             .suspendFunction(arrangement.joinSubconversationUseCase::invoke)
@@ -1160,7 +1157,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId, CoroutineScope(TestKaliumDispatcher.default)) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1190,7 +1187,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1223,7 +1220,7 @@ class CallRepositoryTest {
             .arrange()
 
         var onEpochChangeCallCount = 0
-        callRepository.joinMlsConference(Arrangement.conversationId, CoroutineScope(TestKaliumDispatcher.main)) { _, _ ->
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ ->
             onEpochChangeCallCount += 1
         }
         yield()
@@ -1280,8 +1277,7 @@ class CallRepositoryTest {
                 Arrangement.participant.copy(
                 hasEstablishedAudio = false
             )
-            ),
-            CoroutineScope(TestKaliumDispatcher.main)
+            )
         )
         advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
         yield()
@@ -1315,10 +1311,9 @@ class CallRepositoryTest {
             Arrangement.conversationId.toString(),
             listOf(
                 Arrangement.participant.copy(
-                hasEstablishedAudio = false
+                    hasEstablishedAudio = false
+                )
             )
-            ),
-            CoroutineScope(TestKaliumDispatcher.main)
         )
         advanceTimeBy(
             CallDataSource.STALE_PARTICIPANT_TIMEOUT.minus(1.toDuration(DurationUnit.SECONDS)).toLong(
@@ -1331,10 +1326,9 @@ class CallRepositoryTest {
             Arrangement.conversationId.toString(),
             listOf(
                 Arrangement.participant.copy(
-                hasEstablishedAudio = true
+                    hasEstablishedAudio = true
+                )
             )
-            ),
-            CoroutineScope(TestKaliumDispatcher.main)
         )
         advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
         yield()
@@ -1439,7 +1433,8 @@ class CallRepositoryTest {
             mlsClientProvider = mlsClientProvider,
             joinSubconversationUseCase = joinSubconversationUseCase,
             callMapper = callMapper,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            kaliumDispatchers = TestKaliumDispatcher
         )
 
         init {

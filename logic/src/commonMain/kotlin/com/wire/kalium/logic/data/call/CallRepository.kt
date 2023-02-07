@@ -64,9 +64,12 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,14 +107,13 @@ interface CallRepository {
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
-    fun updateCallParticipants(conversationId: String, participants: List<Participant>, scope: CoroutineScope)
+    fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
-        scope: CoroutineScope,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit>
     suspend fun leaveMlsConference(conversationId: ConversationId)
@@ -134,11 +136,14 @@ internal class CallDataSource(
     private val joinSubconversationUseCase: JoinSubconversationUseCase,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
-    private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
+    private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper(),
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallRepository {
 
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
 
+    private val job = SupervisorJob() // TODO(calling): clear job method
+    private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val callJobs = mutableMapOf<ConversationId, Job>()
     private val staleParticipantJobs = mutableMapOf<QualifiedClientID, Job>()
 
@@ -363,7 +368,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateCallParticipants(conversationId: String, participants: List<Participant>, scope: CoroutineScope) {
+    override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
         val callMetadataProfile = _callMetadataProfile.value
         val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -392,7 +397,7 @@ internal class CallDataSource(
                 if (participant.hasEstablishedAudio) {
                     clearStaleParticipantTimeout(participant)
                 } else {
-                    removeStaleParticipantAfterTimeout(participant, conversationIdToLog, scope)
+                    removeStaleParticipantAfterTimeout(participant, conversationIdToLog)
                 }
             }
         }
@@ -406,8 +411,7 @@ internal class CallDataSource(
 
     private fun removeStaleParticipantAfterTimeout(
         participant: Participant,
-        conversationId: ConversationId,
-        scope: CoroutineScope
+        conversationId: ConversationId
     ) {
         val qualifiedClient = QualifiedClientID(ClientId(participant.clientId), participant.id)
         if (staleParticipantJobs.containsKey(qualifiedClient)) {
@@ -493,7 +497,6 @@ internal class CallDataSource(
 
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
-        scope: CoroutineScope,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ) = joinSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
         callJobs[conversationId] = scope.launch {

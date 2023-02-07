@@ -243,7 +243,7 @@ class CallManagerImpl internal constructor(
         }
 
         if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
         }
@@ -270,7 +270,7 @@ class CallManagerImpl internal constructor(
         }
 
         if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
         }
