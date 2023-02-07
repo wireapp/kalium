@@ -30,6 +30,7 @@ CREATE INDEX message_content_type_index ON Message(content_type);
 CREATE INDEX message_visibility_index ON Message(visibility);
 CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 CREATE INDEX message_conversation_index ON Message(conversation_id);
+CREATE INDEX message_status_index ON Message(status);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -499,11 +500,13 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
+-- TODO: DELETE
 updateMessageDate:
 UPDATE Message
 SET creation_date = ?
 WHERE id = ? AND conversation_id = ?;
 
+-- TODO: DELETE
 updateMessagesAddMillisToDate:
 UPDATE Message
 SET creation_date = creation_date +  ?
@@ -577,3 +580,13 @@ markMessagesAsDecryptionResolved:
 UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
 WHERE message_id IN ?;
+
+updateMessagesTableAfterOneIsSent {
+UPDATE Message
+SET creation_date = :server_creation_date, status = 'SENT'
+WHERE id = :message_id AND conversation_id = :conversation_id;
+
+UPDATE Message
+SET creation_date = creation_date + :millis
+WHERE conversation_id = :conversation_id AND status = 'PENDING';
+}

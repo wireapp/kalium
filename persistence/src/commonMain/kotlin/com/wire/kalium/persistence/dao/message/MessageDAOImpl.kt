@@ -340,6 +340,20 @@ class MessageDAOImpl(
                 .executeAsOneOrNull()
         }
 
+    override suspend fun updateMessageTableAfterOneIsSent(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ) = withContext(coroutineContext) {
+            queries.updateMessagesTableAfterOneIsSent(
+                server_creation_date = serverDate,
+                conversation_id = conversationId,
+                message_id = messageUuid,
+                millis = Instant.fromEpochMilliseconds(millis)
+            )
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }

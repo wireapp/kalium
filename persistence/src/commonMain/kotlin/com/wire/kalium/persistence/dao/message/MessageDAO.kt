@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
@@ -113,6 +114,13 @@ interface MessageDAO {
     ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
+
+    suspend fun updateMessageTableAfterOneIsSent(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    )
 
     val platformExtensions: MessageExtensions
 }

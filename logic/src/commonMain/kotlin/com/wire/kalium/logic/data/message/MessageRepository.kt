@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -94,7 +95,10 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
+    @Deprecated("")
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
+
+    @Deprecated("")
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
     suspend fun getMessagesByConversationIdAndVisibility(
@@ -150,6 +154,17 @@ interface MessageRepository {
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
+
+    /**
+     * updates the message status to [MessageEntity.Status.SENT] and the server date to [serverDate]
+     * also mark other pending messages and add millis to their date
+     */
+    suspend fun updateMessagesAfterOneIsSent(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -401,5 +416,19 @@ class MessageDataSource(
             .let {
                 receiptModeMapper.fromEntityToModel(it)
             }
+    }
+
+    override suspend fun updateMessagesAfterOneIsSent(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateMessageTableAfterOneIsSent(
+            conversationId.toDao(),
+            messageUuid,
+            serverDate,
+            millis
+        )
     }
 }
