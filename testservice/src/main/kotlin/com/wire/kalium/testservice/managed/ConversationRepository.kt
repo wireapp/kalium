@@ -58,13 +58,11 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Delete message everywhere")
-                        runBlocking {
-                            messages.deleteMessage(conversationId, messageId, deleteForEveryone).fold({
-                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
-                            }, {
-                                Response.status(Response.Status.OK).build()
-                            })
-                        }
+                        messages.deleteMessage(conversationId, messageId, deleteForEveryone).fold({
+                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                        }, {
+                            Response.status(Response.Status.OK).build()
+                        })
                     }
                 }
 
@@ -80,14 +78,12 @@ sealed class ConversationRepository {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
                             log.info("Instance ${instance.instanceId}: Send $type confirmation")
-                            runBlocking {
-                                debug.sendConfirmation(conversationId, type, messageId, listOf()).fold({
-                                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                        .entity("Instance ${instance.instanceId}: $it").build()
-                                }, {
-                                    Response.status(Response.Status.OK).build()
-                                })
-                            }
+                            debug.sendConfirmation(conversationId, type, messageId, listOf()).fold({
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                    .entity("Instance ${instance.instanceId}: $it").build()
+                            }, {
+                                Response.status(Response.Status.OK).build()
+                            })
                         }
                     }
 
@@ -107,14 +103,12 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send reaction $type")
-                        runBlocking {
-                            messages.toggleReaction(conversationId, originalMessageId, type).fold({
-                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
-                            }, {
-                                Response.status(Response.Status.OK)
-                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
-                            })
-                        }
+                        messages.toggleReaction(conversationId, originalMessageId, type).fold({
+                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                        }, {
+                            Response.status(Response.Status.OK)
+                                .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                        })
                     }
                 }
 
@@ -136,16 +130,14 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
-                            runBlocking {
-                                messages.sendTextMessage(
-                                    conversationId, text, mentions, quotedMessageId
-                                ).fold({
-                                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
-                                }, {
-                                    Response.status(Response.Status.OK)
-                                        .entity(SendTextResponse(instance.instanceId, "", "")).build()
-                                })
-                            }
+                            messages.sendTextMessage(
+                                conversationId, text, mentions, quotedMessageId
+                            ).fold({
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                            }, {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            })
                         } else {
                             Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
@@ -163,13 +155,11 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send ping")
-                        runBlocking {
-                            messages.sendKnock(conversationId, false).fold({
-                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
-                            }, {
-                                Response.status(Response.Status.OK).build()
-                            })
-                        }
+                        messages.sendKnock(conversationId, false).fold({
+                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                        }, {
+                            Response.status(Response.Status.OK).build()
+                        })
                     }
                 }
 
@@ -184,11 +174,8 @@ sealed class ConversationRepository {
                 when (val session = session.currentSession()) {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                            val recentMessages = runBlocking {
-                                log.info("Instance ${instance.instanceId}: Get recent messages...")
-                                messages.getRecentMessages(conversationId).first()
-                            }
-                            return recentMessages
+                            log.info("Instance ${instance.instanceId}: Get recent messages...")
+                            return messages.getRecentMessages(conversationId).first()
                         }
                     }
 
@@ -219,69 +206,68 @@ sealed class ConversationRepository {
                 return when (val session = session.currentSession()) {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                            runBlocking {
-                                log.info("Instance ${instance.instanceId}: Wait until alive")
-                                if (syncManager.isSlowSyncOngoing()) {
-                                    log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
-                                }
-                                syncManager.waitUntilLiveOrFailure().onFailure {
-                                    log.info("Instance ${instance.instanceId}: Sync failed with $it")
-                                }
-                                log.info("Instance ${instance.instanceId}: List conversations:")
-                                val convos = conversations.getConversations()
-                                if (convos is GetConversationsUseCase.Result.Success) {
-                                    for (convo in convos.convFlow.first()) {
-                                        log.info("${convo.name} (${convo.id})")
-                                    }
-                                }
-                                val sendResult = if (invalidHash || otherAlgorithm || otherHash) {
-                                    val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
-                                    @Suppress("IMPLICIT_CAST_TO_ANY")
-                                    debug.sendBrokenAssetMessage(
-                                        conversationId,
-                                        temp.toOkioPath(),
-                                        byteArray.size.toLong(),
-                                        fileName,
-                                        type,
-                                        brokenState
-                                    )
-                                } else {
-                                    @Suppress("IMPLICIT_CAST_TO_ANY")
-                                    messages.sendAssetMessage(
-                                        conversationId,
-                                        temp.toOkioPath(),
-                                        byteArray.size.toLong(),
-                                        fileName,
-                                        type,
-                                        null,
-                                        null
-                                    )
-                                }
-                                when (sendResult) {
-                                    is ScheduleNewAssetMessageResult.Failure -> {
-                                        if (sendResult.coreFailure is StorageFailure.Generic) {
-                                            val rootCause = (sendResult.coreFailure as StorageFailure.Generic)
-                                                .rootCause.message
-                                            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                                .entity("Instance ${instance.instanceId}: Sending failed with $rootCause")
-                                                .build()
-                                        } else {
-                                            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                                .entity("Instance ${instance.instanceId}: Sending file $fileName failed")
-                                                .build()
-                                        }
-                                    }
 
-                                    is SendBrokenAssetMessageResult.Failure -> {
+                            log.info("Instance ${instance.instanceId}: Wait until alive")
+                            if (syncManager.isSlowSyncOngoing()) {
+                                log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                            }
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.info("Instance ${instance.instanceId}: Sync failed with $it")
+                            }
+                            log.info("Instance ${instance.instanceId}: List conversations:")
+                            val convos = conversations.getConversations()
+                            if (convos is GetConversationsUseCase.Result.Success) {
+                                for (convo in convos.convFlow.first()) {
+                                    log.info("${convo.name} (${convo.id})")
+                                }
+                            }
+                            val sendResult = if (invalidHash || otherAlgorithm || otherHash) {
+                                val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
+                                @Suppress("IMPLICIT_CAST_TO_ANY")
+                                debug.sendBrokenAssetMessage(
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    fileName,
+                                    type,
+                                    brokenState
+                                )
+                            } else {
+                                @Suppress("IMPLICIT_CAST_TO_ANY")
+                                messages.sendAssetMessage(
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    fileName,
+                                    type,
+                                    null,
+                                    null
+                                )
+                            }
+                            when (sendResult) {
+                                is ScheduleNewAssetMessageResult.Failure -> {
+                                    if (sendResult.coreFailure is StorageFailure.Generic) {
+                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic)
+                                            .rootCause.message
                                         Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                            .entity("Instance ${instance.instanceId}: Sending broken file $fileName failed")
+                                            .entity("Instance ${instance.instanceId}: Sending failed with $rootCause")
+                                            .build()
+                                    } else {
+                                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                            .entity("Instance ${instance.instanceId}: Sending file $fileName failed")
                                             .build()
                                     }
+                                }
 
-                                    else -> {
-                                        log.info("Instance ${instance.instanceId}: Sending file $fileName was successful")
-                                        Response.status(Response.Status.OK).build()
-                                    }
+                                is SendBrokenAssetMessageResult.Failure -> {
+                                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                        .entity("Instance ${instance.instanceId}: Sending broken file $fileName failed")
+                                        .build()
+                                }
+
+                                else -> {
+                                    log.info("Instance ${instance.instanceId}: Sending file $fileName was successful")
+                                    Response.status(Response.Status.OK).build()
                                 }
                             }
                         }
@@ -313,41 +299,39 @@ sealed class ConversationRepository {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
                             log.info("Instance ${instance.instanceId}: Send file")
-                            runBlocking {
-                                log.info("Instance ${instance.instanceId}: Wait until alive")
-                                if (syncManager.isSlowSyncOngoing()) {
-                                    log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                            log.info("Instance ${instance.instanceId}: Wait until alive")
+                            if (syncManager.isSlowSyncOngoing()) {
+                                log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                            }
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.info("Instance ${instance.instanceId}: Sync failed with $it")
+                            }
+                            log.info("Instance ${instance.instanceId}: List conversations:")
+                            val convos = conversations.getConversations()
+                            if (convos is GetConversationsUseCase.Result.Success) {
+                                for (convo in convos.convFlow.first()) {
+                                    log.info("${convo.name} (${convo.id})")
                                 }
-                                syncManager.waitUntilLiveOrFailure().onFailure {
-                                    log.info("Instance ${instance.instanceId}: Sync failed with $it")
-                                }
-                                log.info("Instance ${instance.instanceId}: List conversations:")
-                                val convos = conversations.getConversations()
-                                if (convos is GetConversationsUseCase.Result.Success) {
-                                    for (convo in convos.convFlow.first()) {
-                                        log.info("${convo.name} (${convo.id})")
-                                    }
-                                }
-                                val sendResult = messages.sendAssetMessage(
-                                    conversationId,
-                                    temp.toOkioPath(),
-                                    byteArray.size.toLong(),
-                                    "image", type,
-                                    width,
-                                    height
-                                )
-                                if (sendResult is ScheduleNewAssetMessageResult.Failure) {
-                                    if (sendResult.coreFailure is StorageFailure.Generic) {
-                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
-                                        throw WebApplicationException(
-                                            "Instance ${instance.instanceId}: Sending failed with $rootCause"
-                                        )
-                                    } else {
-                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
-                                    }
+                            }
+                            val sendResult = messages.sendAssetMessage(
+                                conversationId,
+                                temp.toOkioPath(),
+                                byteArray.size.toLong(),
+                                "image", type,
+                                width,
+                                height
+                            )
+                            if (sendResult is ScheduleNewAssetMessageResult.Failure) {
+                                if (sendResult.coreFailure is StorageFailure.Generic) {
+                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                    throw WebApplicationException(
+                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                    )
                                 } else {
-                                    Response.status(Response.Status.OK).build()
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
                                 }
+                            } else {
+                                Response.status(Response.Status.OK).build()
                             }
                         }
                     }
