@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -28,6 +29,7 @@ internal typealias PersistenceQualifiedId = QualifiedIDEntity
 // QualifiedID
 internal fun QualifiedID.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)
 internal fun QualifiedID.toDao(): PersistenceQualifiedId = PersistenceQualifiedId(value, domain)
+internal fun QualifiedID.toCrypto(): CryptoQualifiedID = CryptoQualifiedID(value, domain)
 
 internal fun QualifiedIDEntity.toModel(): QualifiedID = QualifiedID(value, domain)
 internal fun QualifiedIDEntity.toApi(): NetworkQualifiedId = NetworkQualifiedId(value, domain)

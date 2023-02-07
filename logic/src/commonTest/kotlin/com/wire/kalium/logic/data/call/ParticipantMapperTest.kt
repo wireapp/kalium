@@ -65,7 +65,8 @@ class ParticipantMapperTest {
             clientId = "dummyClientId",
             isMuted = false,
             isCameraOn = false,
-            isSharingScreen = false
+            isSharingScreen = false,
+            hasEstablishedAudio = false
         )
 
         assertEquals(expectedParticipant, participantMap)
