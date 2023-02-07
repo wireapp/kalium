@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -39,6 +40,9 @@ import kotlinx.datetime.Instant
  * This use case will update last read date for a conversation.
  * After that, will sync against other user's registered clients, using the self conversation.
  */
+
+// TODO: look into excluding self clients from sendConfirmation or run sendLastReadMessageToOtherClients if
+//  the conversation does not need to be notified
 class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
@@ -53,14 +57,13 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        // TODO: Disabled for now as we are still figuring out performance and STORAGE_ERROR issues.
-        // sendConfirmation(conversationId)
+        sendConfirmation(conversationId)
         conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
-        // selfConversationIdProvider().flatMap { selfConversationIds ->
-        //    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-        //        sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-        //    }
-        // }
+        selfConversationIdProvider().flatMap { selfConversationIds ->
+           selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+               sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+           }
+        }
     }
 
     private suspend fun sendLastReadMessageToOtherClients(

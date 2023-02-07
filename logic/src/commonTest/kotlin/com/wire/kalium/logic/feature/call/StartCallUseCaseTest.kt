@@ -112,7 +112,7 @@ class StartCallUseCaseTest {
         val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager, joinSubconversationUseCase
+            lazy { callManager }, syncManager
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))

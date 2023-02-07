@@ -53,19 +53,23 @@ class OnCloseCall(
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        val federatedId = conversationIdWithDomain.toString()
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationIdString = conversationIdWithDomain.toString(),
+                conversationIdString = federatedId,
                 status = callStatus
             )
 
-            if (shouldPersistMissedCall(conversationIdWithDomain.toString(), callStatus)) {
+            if (shouldPersistMissedCall(federatedId, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
+            }
+
+            if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.leaveMlsConference(conversationIdWithDomain)
             }
 
             callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
-
     }
 
     private fun shouldPersistMissedCall(conversationId: String, callStatus: CallStatus): Boolean {

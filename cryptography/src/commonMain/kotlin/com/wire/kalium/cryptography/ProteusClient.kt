@@ -66,10 +66,10 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun openOrError()
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     fun getIdentity(): ByteArray
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)

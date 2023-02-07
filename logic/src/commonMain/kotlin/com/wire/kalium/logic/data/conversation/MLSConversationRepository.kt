@@ -60,6 +60,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.Duration
@@ -93,6 +94,7 @@ interface MLSConversationRepository {
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer)
     suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
+    suspend fun observeEpochChanges(): Flow<GroupID>
 }
 
 private enum class CommitStrategy {
@@ -134,6 +136,8 @@ class MLSConversationDataSource(
     private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper()
 ) : MLSConversationRepository {
 
+    private val epochsFlow = MutableSharedFlow<GroupID>()
+
     override suspend fun messageFromMLSMessage(
         messageEvent: NewMLSMessage
     ): Either<CoreFailure, DecryptedMessageBundle?> =
@@ -148,6 +152,9 @@ class MLSConversationDataSource(
                             idMapper.toCryptoModel(groupID),
                             messageEvent.content.decodeBase64Bytes()
                         ).let {
+                            if (it.hasEpochChanged) {
+                                epochsFlow.emit(groupID)
+                            }
                             DecryptedMessageBundle(
                                 groupID,
                                 it.message?.let { message ->
@@ -181,7 +188,10 @@ class MLSConversationDataSource(
                     wrapStorageRequest {
                         if (conversationDAO.getConversationByGroupID(groupID).first() != null) {
                             // Welcome arrived after the conversation create event, updating existing conversation.
-                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
+                            conversationDAO.updateConversationGroupState(
+                                ConversationEntity.GroupState.ESTABLISHED,
+                                groupID
+                            )
                             kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
                         }
                     }
@@ -262,7 +272,10 @@ class MLSConversationDataSource(
                     sendCommitBundle(groupID, commitBundle)
                 }.flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), DateTimeUtil.currentInstant())
+                        conversationDAO.updateKeyingMaterial(
+                            idMapper.toCryptoModel(groupID),
+                            DateTimeUtil.currentInstant()
+                        )
                     }
                 }
             }
@@ -277,6 +290,8 @@ class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 }
+            }.onSuccess {
+                epochsFlow.emit(groupID)
             }
         }
     }
@@ -293,7 +308,9 @@ class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
                 }
-            })
+            }).onSuccess {
+                epochsFlow.emit(groupID)
+            }
         }
     }
 
@@ -331,6 +348,10 @@ class MLSConversationDataSource(
 
     override suspend fun observeProposalTimers(): Flow<List<ProposalTimer>> {
         return conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }
+    }
+
+    override suspend fun observeEpochChanges(): Flow<GroupID> {
+        return epochsFlow
     }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =

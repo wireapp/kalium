@@ -35,6 +35,7 @@ import com.wire.kalium.calling.callbacks.MissedCallHandler
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
+import com.wire.kalium.calling.callbacks.RequestNewEpochHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
@@ -157,6 +158,22 @@ interface Calling : Library {
     fun wcall_set_active_speaker_handler(
         inst: Handle,
         activeSpeakersHandler: ActiveSpeakersHandler
+    )
+
+    @Suppress("FunctionNaming", "LongParameterList")
+    fun wcall_set_epoch_info(
+        inst: Handle,
+        conversationId: String,
+        epoch: Uint32_t,
+        clientsJson: String,
+        keyData: ByteArray,
+        keyLength: Uint32_t
+    ): Int
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_req_new_epoch_handler(
+        inst: Handle,
+        requestNewEpochHandler: RequestNewEpochHandler
     )
 
     companion object {

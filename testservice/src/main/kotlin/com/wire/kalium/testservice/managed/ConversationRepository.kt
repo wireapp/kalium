@@ -34,13 +34,13 @@ import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import okio.Path.Companion.toOkioPath
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.util.Base64
 import javax.ws.rs.WebApplicationException
-import okio.Path.Companion.toOkioPath
 import javax.ws.rs.core.Response
 
 sealed class ConversationRepository {
@@ -48,7 +48,7 @@ sealed class ConversationRepository {
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
 
-        fun deleteConversation(
+        suspend fun deleteConversation(
             instance: Instance,
             conversationId: ConversationId,
             messageId: String,
@@ -74,7 +74,7 @@ sealed class ConversationRepository {
             }
         }
 
-        fun sendConfirmation(instance: Instance, conversationId: ConversationId, type: ReceiptType, messageId: String): Response =
+        suspend fun sendConfirmation(instance: Instance, conversationId: ConversationId, type: ReceiptType, messageId: String): Response =
             instance.coreLogic.globalScope {
                 when (val session = session.currentSession()) {
                     is CurrentSessionResult.Success -> {
@@ -97,7 +97,7 @@ sealed class ConversationRepository {
                 }
             }
 
-        fun sendReaction(
+        suspend fun sendReaction(
             instance: Instance,
             conversationId: ConversationId,
             originalMessageId: String,
@@ -124,7 +124,7 @@ sealed class ConversationRepository {
             }
         }
 
-        fun sendTextMessage(
+        suspend fun sendTextMessage(
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
@@ -158,7 +158,7 @@ sealed class ConversationRepository {
             }
         }
 
-        fun sendPing(instance: Instance, conversationId: ConversationId): Response = instance.coreLogic.globalScope {
+        suspend fun sendPing(instance: Instance, conversationId: ConversationId): Response = instance.coreLogic.globalScope {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
@@ -179,7 +179,7 @@ sealed class ConversationRepository {
             }
         }
 
-        fun getMessages(instance: Instance, conversationId: ConversationId): List<Message> {
+        suspend fun getMessages(instance: Instance, conversationId: ConversationId): List<Message> {
             instance.coreLogic.globalScope {
                 when (val session = session.currentSession()) {
                     is CurrentSessionResult.Success -> {
@@ -201,7 +201,7 @@ sealed class ConversationRepository {
         }
 
         @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
-        fun sendFile(
+        suspend fun sendFile(
             instance: Instance,
             conversationId: ConversationId,
             data: String,
@@ -291,11 +291,12 @@ sealed class ConversationRepository {
                         Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
                     }
                 }
+
             }
         }
 
         @Suppress("LongParameterList")
-        fun sendImage(
+        suspend fun sendImage(
             instance: Instance,
             conversationId: ConversationId,
             data: String,
