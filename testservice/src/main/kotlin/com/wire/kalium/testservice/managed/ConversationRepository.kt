@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import okio.Path.Companion.toOkioPath
 import org.slf4j.LoggerFactory
 import java.io.File

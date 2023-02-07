@@ -283,7 +283,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         throw WebApplicationException("Instance $id: No client assigned to instance yet")
     }
 
-    suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus): Unit {
+    suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus) {
         log.info("Instance $id: Get fingerprint of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
