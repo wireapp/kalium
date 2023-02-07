@@ -21,52 +21,48 @@ package com.wire.kalium.model
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToClientToEncMsgMap
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
 import io.ktor.utils.io.core.toByteArray
 
 object QualifiedSendMessageRequestJson {
 
-    private val USER_1 = UserId("user10d0-000b-9c1a-000d-a4130002c221", "example.com")
+    private val USER_1 = QualifiedID("user10d0-000b-9c1a-000d-a4130002c221", "example.com")
     private const val USER_1_CLIENT_1 = "60f85e4b15ad3786"
     private val USER_1_CLIENT_1_MSG = "hello, world but encrypted for USER_1_client_1".toByteArray()
 
     private const val USER_1_CLIENT_2 = "6e323ab31554353b"
     private val USER_1_CLIENT_2_MSG = "hello, world but encrypted for USER_1_client_2".toByteArray()
 
-    private val USER_2 = UserId("user200d0-000b-9c1a-000d-a4130002c221", "example.com")
+    private val USER_2 = QualifiedID("user20d0-000b-9c1a-000d-a4130002c221", "example.com")
     private const val USER_2_CLIENT_1 = "32233lj33j3dfh7u"
     private val USER_2_CLIENT_1_MSG = "hello, world but encrypted for USER_2_client_1".toByteArray()
 
     private const val USER_2_CLIENT_2 = "duf3eif09324wq5j"
     private val USER_2_CLIENT_2_MSG = "hello, world but encrypted for USER_2_client_2".toByteArray()
 
-    private val recipients: QualifiedUserToClientToEncMsgMap = mapOf(
-        Pair(
-            USER_1, mapOf(
-                Pair(USER_1_CLIENT_1, USER_1_CLIENT_1_MSG),
-                Pair(USER_1_CLIENT_2, USER_1_CLIENT_2_MSG),
-            )
+    private val recipients: Map<QualifiedID, Map<String, ByteArray>> = mapOf(
+        USER_1 to mapOf(
+            USER_1_CLIENT_1 to USER_1_CLIENT_1_MSG,
+            USER_1_CLIENT_2 to USER_1_CLIENT_2_MSG,
         ),
-        Pair(
-            USER_2, mapOf(
-                Pair(USER_2_CLIENT_1, USER_2_CLIENT_1_MSG),
-                Pair(USER_2_CLIENT_2, USER_1_CLIENT_2_MSG),
-            )
+        USER_2 to mapOf(
+            USER_2_CLIENT_1 to USER_2_CLIENT_1_MSG,
+            USER_2_CLIENT_2 to USER_2_CLIENT_2_MSG,
         )
     )
 
     private val defaultParametersJson = { serializable: MessageApi.Parameters.QualifiedDefaultParameters ->
         """
         |  "sender": ${serializable.sender},
-        |  "data": "${serializable.externalBlob?.decodeToString()}",
+        |  "data": "${serializable.externalBlob}",
         |  "native_push": ${serializable.nativePush},
         |  "recipients": {
         |               "$USER_1": {
         |                   "$USER_1_CLIENT_1" : "$USER_1_CLIENT_1_MSG",
         |                   "$USER_1_CLIENT_2" : "$USER_1_CLIENT_2_MSG"
         |               },
-        |               "$USER_2: {
+        |               "$USER_2": {
         |                   "$USER_2_CLIENT_1" : "$USER_2_CLIENT_1_MSG",
         |                   "$USER_2_CLIENT_2" : "$USER_2_CLIENT_2_MSG"
         |               }
@@ -97,10 +93,10 @@ object QualifiedSendMessageRequestJson {
             sender = "sender-client-it",
             externalBlob = "blob-id".toByteArray(),
             nativePush = true,
-            recipients = recipients,
+            recipients = mapOf(),
             transient = false,
-            priority = MessagePriority.LOW,
-            messageOption = MessageApi.QualifiedMessageOption.ReportAll
+            priority = MessagePriority.HIGH,
+            messageOption = MessageApi.QualifiedMessageOption.IgnoreAll
         ), defaultParametersProvider
     )
 
