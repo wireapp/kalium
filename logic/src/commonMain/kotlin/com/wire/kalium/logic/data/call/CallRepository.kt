@@ -51,6 +51,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.wrapApiRequest
@@ -111,6 +112,7 @@ interface CallRepository {
     ): Either<CoreFailure, Unit>
     suspend fun leaveMlsConference(conversationId: ConversationId)
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
+    suspend fun advanceEpoch(conversationId: ConversationId)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -515,4 +517,13 @@ internal class CallDataSource(
                 is Conversation.ProtocolInfo.Proteus -> Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+
+    override suspend fun advanceEpoch(conversationId: ConversationId) {
+        subconversationRepository.getSubconversationInfo(conversationId, CALL_SUBCONVERSATION_ID)?.let { groupId ->
+            // Advance the epoch in the subconversation by updating the key material
+            mlsConversationRepository.updateKeyingMaterial(groupId)
+                .onSuccess { callingLogger.e("[CallRepository] -> Generated new epoch") }
+                .onFailure { callingLogger.e("[CallRepository] -> Failure generating new epoch: $it") }
+        } ?: callingLogger.w("[CallRepository] -> Requested new epoch but there's no conference subconversation")
+    }
 }

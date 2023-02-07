@@ -35,6 +35,7 @@ import com.wire.kalium.calling.callbacks.MissedCallHandler
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
+import com.wire.kalium.calling.callbacks.RequestNewEpochHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
@@ -168,6 +169,12 @@ interface Calling : Library {
         keyData: ByteArray,
         keyLength: Uint32_t
     ): Int
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_req_new_epoch_handler(
+        inst: Handle,
+        requestNewEpochHandler: RequestNewEpochHandler
+    )
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

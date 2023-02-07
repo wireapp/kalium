@@ -61,6 +61,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChanged
+import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -371,6 +372,7 @@ class CallManagerImpl internal constructor(
         initNetworkHandler()
         initClientsHandler()
         initActiveSpeakersHandler()
+        initRequestNewEpochHandler()
     }
 
     private fun initParticipantsHandler() {
@@ -446,6 +448,25 @@ class CallManagerImpl internal constructor(
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
+    }
+
+    private fun initRequestNewEpochHandler() {
+        scope.launch {
+            withCalling {
+                val requestNewEpochHandler = OnRequestNewEpoch(
+                    scope = scope,
+                    callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference()
+
+                wcall_set_req_new_epoch_handler(
+                    inst = deferredHandle.await(),
+                    requestNewEpochHandler = requestNewEpochHandler
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_new_epoch_handler() called")
             }
         }
     }
