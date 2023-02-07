@@ -224,9 +224,6 @@ SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND protocol = ?;
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
-selectConversationsWithUnnotifiedMessages:
-SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR last_modified_date > lastNotifiedMessageDate);
-
 updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?

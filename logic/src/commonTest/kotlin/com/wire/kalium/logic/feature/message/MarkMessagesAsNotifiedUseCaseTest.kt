@@ -130,9 +130,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun arrange() = this to MarkMessagesAsNotifiedUseCase(
-            conversationRepository, messageRepository
-        )
+        fun arrange() = this to MarkMessagesAsNotifiedUseCase(conversationRepository)
 
     }
 
