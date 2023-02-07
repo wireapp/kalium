@@ -67,6 +67,11 @@ WantedBy=default.target
                 sh "echo 'macOS'"
             }
         }
+        stage('Test') {
+            steps {
+                build job: 'kalium-testservice-smoke-test', wait: false
+            }
+        }
     }
 
     post {

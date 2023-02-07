@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import javax.ws.rs.GET
 import javax.ws.rs.POST
@@ -68,9 +69,11 @@ class ClientResources(private val instanceService: InstanceService) {
             )
         ]
     )
-    suspend fun fingerprint(@PathParam("id") id: String): Response {
+    fun fingerprint(@PathParam("id") id: String): Response {
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
-        return instanceService.getFingerprint(id)
+        return runBlocking {
+            instanceService.getFingerprint(id)
+        }
     }
 
     // POST /api/v1/instance/{instanceId}/breakSession

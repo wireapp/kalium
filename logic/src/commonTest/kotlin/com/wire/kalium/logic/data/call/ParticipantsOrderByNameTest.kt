@@ -39,21 +39,24 @@ class ParticipantsOrderByNameTest {
             clientId = "clientId",
             name = "Alok",
             isCameraOn = true,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participant2 = Participant(
             id = UserId("participant2", "domain"),
             clientId = "clientId",
             name = "Max",
             isCameraOn = true,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participant3 = Participant(
             id = UserId("participant3", "domain"),
             clientId = "clientId",
             name = "Hisoka",
             isCameraOn = true,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participants = listOf(participant2, participant1, participant3)
 

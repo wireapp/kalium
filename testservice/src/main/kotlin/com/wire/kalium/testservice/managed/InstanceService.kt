@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -253,36 +254,49 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         log.info("Instance $id: Get fingerprint of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
-            scope.async {
-                val result = session.currentSession()
-                if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                        return@async runBlocking {
-                            when (val fingerprint = client.getProteusFingerprint()) {
-                                is GetProteusFingerprintResult.Success -> {
-                                    return@runBlocking Response.status(Response.Status.OK).entity(
-                                        FingerprintResponse(fingerprint.fingerprint, id)
-                                    ).build()
-                                }
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                    return runBlocking {
+                        when (val fingerprint = client.getProteusFingerprint()) {
+                            is GetProteusFingerprintResult.Success -> {
+                                return@runBlocking Response.status(Response.Status.OK).entity(
+                                    FingerprintResponse(fingerprint.fingerprint, id)
+                                ).build()
+                            }
 
-                                is GetProteusFingerprintResult.Failure -> {
-                                    return@runBlocking Response.status(Response.Status.NO_CONTENT)
-                                        .entity(
-                                            "Instance $id: Cannot get fingerprint: "
-                                                    + fingerprint.genericFailure
-                                        ).build()
-                                }
+                            is GetProteusFingerprintResult.Failure -> {
+                                return@runBlocking Response.status(Response.Status.NO_CONTENT)
+                                    .entity(
+                                        "Instance $id: Cannot get fingerprint: "
+                                                + fingerprint.genericFailure
+                                    ).build()
                             }
                         }
                     }
-                } else {
-                    return@async Response.status(Response.Status.NOT_FOUND)
-                        .entity("Instance $id: No current session found").build()
                 }
-            }.await()
-
+            } else {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Instance $id: No current session found").build()
+            }
         }
         throw WebApplicationException("Instance $id: No client assigned to instance yet")
     }
 
+    suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus) {
+        log.info("Instance $id: Get fingerprint of client")
+        val instance = getInstanceOrThrow(id)
+        instance.coreLogic?.globalScope {
+            scope.async {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        runBlocking {
+                            users.updateSelfAvailabilityStatus(status)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

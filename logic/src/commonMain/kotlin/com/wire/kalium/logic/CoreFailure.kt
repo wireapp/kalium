@@ -55,6 +55,11 @@ sealed class CoreFailure {
      * It's only allowed to insert system messages as bulk for all conversations.
      */
     object OnlySystemMessageAllowed : FeatureFailure()
+
+    /**
+     * This operation is not supported by proteus conversations
+     */
+    object NotSupportedByProteus : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure() {
