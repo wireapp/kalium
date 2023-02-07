@@ -217,8 +217,8 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
+                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -238,29 +238,8 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    // Message was sent, better to keep it as pending, than wrongfully marking it as failed
-    @Test
-    fun givenUpdatePendingMessagesAddMillisToDateFails_WhenSendingOutgoingMessage_ThenMarkMessageAsSentAndReturnSuccess() {
-        // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(updatePendingMessagesAddMillisToDateFailing = true)
-            .arrange()
-
-        arrangement.testScope.runTest {
-            // when
-            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
-
-            // then
-            result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
+                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -586,17 +565,10 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withUpdateMessageDate(failing: Boolean = false) = apply {
+        fun withUpdateMessagesAfterOneIsSent(failing: Boolean = false) = apply {
             given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
-        }
-
-        fun withUpdatePendingMessagesAddMillisToDate(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updatePendingMessagesAddMillisToDate)
-                .whenInvokedWith(anything(), anything())
+                .suspendFunction(messageRepository::updateMessagesAfterOneIsSent)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
 
@@ -623,7 +595,6 @@ class MessageSenderTest {
             sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
             updateMessageStatusFailing: Boolean = false,
             updateMessageDateFailing: Boolean = false,
-            updatePendingMessagesAddMillisToDateFailing: Boolean = false
         ) =
             apply {
                 withGetMessageById()
@@ -633,9 +604,7 @@ class MessageSenderTest {
                 withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
                 if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
                 withUpdateMessageStatus(updateMessageStatusFailing)
-                withUpdateMessageDate(updateMessageDateFailing)
-                withUpdatePendingMessagesAddMillisToDate(updatePendingMessagesAddMillisToDateFailing)
-
+                withUpdateMessagesAfterOneIsSent(updateMessageDateFailing)
             }
 
         fun withSendMlsMessage(
@@ -646,8 +615,7 @@ class MessageSenderTest {
             withCreateOutgoingMlsMessage()
             if (sendMlsMessageWithResult != null) withSendOutgoingMlsMessage(sendMlsMessageWithResult) else withSendOutgoingMlsMessage()
             withUpdateMessageStatus()
-            withUpdateMessageDate()
-            withUpdatePendingMessagesAddMillisToDate()
+            withUpdateMessagesAfterOneIsSent()
         }
 
         companion object {

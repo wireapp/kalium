@@ -1130,6 +1130,39 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(expected.sorted(), result.sorted())
     }
 
+    @Test
+    fun whenUpdatingMessagesTableAfterSendingAMessage_thenMessageIsMarkedAsSentDateIsUpdatedAndPendingMessagesTimeIsAdjusted() = runTest {
+        val messageToSend = newRegularMessageEntity(
+            id = "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            date = Instant.fromEpochMilliseconds(123),
+            expectsReadConfirmation = true,
+            status = MessageEntity.Status.PENDING
+        )
+
+        val pendingMessage = newRegularMessageEntity(
+            id = "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            date = Instant.fromEpochMilliseconds(125),
+            expectsReadConfirmation = true,
+            status = MessageEntity.Status.PENDING
+        )
+
+        messageDAO.updateMessageTableAfterOneIsSent(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
+
+        messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).first().also {
+            assertEquals(MessageEntity.Status.SENT, it?.status)
+            assertEquals(Instant.fromEpochMilliseconds(124), it?.date)
+        }
+
+        messageDAO.getMessageById(pendingMessage.id, conversationEntity1.id).first().also {
+            assertEquals(MessageEntity.Status.PENDING, it?.status)
+            assertEquals(Instant.fromEpochMilliseconds(125 + 1), it?.date)
+        }
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)

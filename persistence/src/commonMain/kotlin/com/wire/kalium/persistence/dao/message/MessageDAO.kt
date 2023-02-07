@@ -59,8 +59,6 @@ interface MessageDAO {
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,

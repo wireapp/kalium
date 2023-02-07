@@ -131,11 +131,12 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
-            attemptToSend(processedMessage, messageTarget).flatMap { messageRemoteTime ->
+            attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
                 val serverDate = messageRemoteTime.toInstant()
                 val localDate = message.date.toInstant()
                 val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
                 messageRepository.updateMessagesAfterOneIsSent(processedMessage.conversationId, processedMessage.id, serverDate, millis)
+                Unit
             }
         }
 

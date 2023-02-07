@@ -94,12 +94,6 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-
-    @Deprecated("")
-    suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
-
-    @Deprecated("")
-    suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -295,16 +289,6 @@ class MessageDataSource(
                 messageUuid,
                 conversationId.toDao()
             )
-        }
-
-    override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
-        wrapStorageRequest {
-            messageDAO.updateMessageDate(date, messageUuid, conversationId.toDao())
-        }
-
-    override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
-        wrapStorageRequest {
-            messageDAO.updateMessagesAddMillisToDate(millis, conversationId.toDao(), MessageEntity.Status.PENDING)
         }
 
     override suspend fun sendEnvelope(
