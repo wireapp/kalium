@@ -18,16 +18,73 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.hours
 
 class MessageNotificationsTest : BaseMessageTest() {
+
+    @Test
+    fun givenConversationLastNotifiedDateIsNull_whenNewMessageInserted_thenNotificationPropagated() = runTest {
+        val message = OTHER_MESSAGE
+        insertInitialData()
+
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.getNotificationMessage().test {
+            assertEquals(1, awaitItem().size)
+        }
+    }
+
+    @Test
+    fun givenConversationWithMessages_whenConversationLastNotifiedDateUpdated_thenNotificationListEmpty() = runTest {
+        val message = OTHER_MESSAGE
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessage(message)
+
+        conversationDAO.updateConversationNotificationDate(TEST_CONVERSATION_1.id)
+
+        messageDAO.getNotificationMessage().test {
+            assertEquals(0, awaitItem().size)
+        }
+    }
+
+    @Test
+    fun givenConversationWithMessages_whenConversationModifiedDateUpdated_thenNotificationNotAffected() = runTest {
+        val message = OTHER_MESSAGE
+        val date = message.date.plus(2.0.hours).toIsoDateTimeString()
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.getNotificationMessage().test {
+            assertEquals(1, awaitItem().size)
+            conversationDAO.updateConversationModifiedDate(TEST_CONVERSATION_1.id, date)
+
+            ensureAllEventsConsumed()
+        }
+    }
+
+    @Test
+    fun givenMutedConversation_whenNewMessageInserted_thenNotificationEmpty() = runTest {
+        val message = OTHER_MESSAGE
+        insertInitialData()
+        conversationDAO.updateConversationMutedStatus(TEST_CONVERSATION_1.id, ConversationEntity.MutedStatus.ALL_MUTED, 0L)
+
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.getNotificationMessage().test {
+            assertEquals(0, awaitItem().size)
+        }
+    }
 
     @Test
     fun givenNewMessageInserted_whenConvInAllMutedState_thenNeedsToBeNotifyIsFalse() = runTest {
@@ -233,7 +290,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     private suspend fun setConversationMutedStatus(conversationId: QualifiedIDEntity, mutedStatus: ConversationEntity.MutedStatus) {
-        conversationDAO.updateConversationMutedStatus(TEST_CONVERSATION_1.id, mutedStatus, Clock.System.now().toEpochMilliseconds())
+        conversationDAO.updateConversationMutedStatus(conversationId, mutedStatus, Clock.System.now().toEpochMilliseconds())
     }
 
     override suspend fun insertInitialData() {

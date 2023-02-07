@@ -29,8 +29,7 @@ import com.wire.kalium.logic.functional.fold
  * @see GetNotificationsUseCase
  */
 class MarkMessagesAsNotifiedUseCase internal constructor(
-    private val conversationRepository: ConversationRepository,
-    private val messageRepository: MessageRepository
+    private val conversationRepository: ConversationRepository
 ) {
 
     /**
