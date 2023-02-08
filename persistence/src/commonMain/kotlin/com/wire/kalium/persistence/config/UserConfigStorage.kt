@@ -123,10 +123,10 @@ internal class UserConfigStorageImpl internal constructor(
         kaliumPreferences.putSerializable(
             FILE_SHARING,
             IsFileSharingEnabledEntity(status, isStatusChanged),
-            IsFileSharingEnabledEntity.serializer().also {
-                isFileSharingEnabledFlow.tryEmit(Unit)
-            }
-        )
+            IsFileSharingEnabledEntity.serializer()
+        ).also {
+            isFileSharingEnabledFlow.tryEmit(Unit)
+        }
     }
 
     override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
@@ -145,7 +145,9 @@ internal class UserConfigStorageImpl internal constructor(
             FILE_SHARING,
             newValue,
             IsFileSharingEnabledEntity.serializer()
-        )
+        ).also {
+            isFileSharingEnabledFlow.tryEmit(Unit)
+        }
     }
 
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
