@@ -146,6 +146,7 @@ internal class AssetDataSource(
         val sha256 = calcFileSHA256(encryptedDataSource)
         assetDataSink.close()
         encryptedDataSource.close()
+        assetDataSource.close()
 
         val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
@@ -165,12 +166,10 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                val dataSource = {
-                    kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
-                }
+                val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
 
                 // we should also consider for avatar images, the compression for preview vs complete picture
-                assetApi.uploadAsset(metaData, dataSource, uploadAssetData.dataSize)
+                assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize).also { dataSource.close() }
             }
         }.flatMap { assetResponse ->
             // After successful upload, we persist the asset to a persistent path
@@ -191,7 +190,7 @@ internal class AssetDataSource(
         }
 
     override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId.toString(), assetToken = null)
+        fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null)
 
     override suspend fun fetchPrivateDecodedAsset(
         assetId: String,
