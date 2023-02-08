@@ -996,7 +996,7 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val markFileStratusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
+    val markFileSharingStatusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
