@@ -39,6 +39,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.util.Base64
+import java.util.Collections
 import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.Response
 
@@ -174,7 +175,10 @@ sealed class ConversationRepository {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
                             log.info("Instance ${instance.instanceId}: Get recent messages...")
-                            return messages.getRecentMessages(conversationId).first()
+                            val messages = messages.getRecentMessages(conversationId).first()
+                            // We need to reverse order of messages because ETS did the same
+                            Collections.reverse(messages)
+                            return messages
                         }
                     }
 
