@@ -88,7 +88,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
-        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf(),null)
+        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf(), null)
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
