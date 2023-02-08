@@ -113,7 +113,7 @@ interface MessageDAO {
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 
-    suspend fun updateMessageTableAfterOneIsSent(
+    suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
         serverDate: Instant,

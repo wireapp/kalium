@@ -1153,7 +1153,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO.upsertUsers(listOf(userEntity1))
         messageDAO.insertOrIgnoreMessages(listOf(messageToSend, pendingMessage))
 
-        messageDAO.updateMessageTableAfterOneIsSent(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
+        messageDAO.promoteMessageToSentUpdatingServerTime(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
 
         messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).also {
             assertNotNull(it)

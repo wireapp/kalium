@@ -217,7 +217,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
                 .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -238,7 +238,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
                 .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -565,10 +565,17 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withUpdateMessagesAfterOneIsSent(failing: Boolean = false) = apply {
+        fun withUpdateMessageDate(failing: Boolean = false) = apply {
             given(messageRepository)
-                .suspendFunction(messageRepository::updateMessagesAfterOneIsSent)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .suspendFunction(messageRepository::updateMessageDate)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+        }
+
+        fun withUpdatePendingMessagesAddMillisToDate(failing: Boolean = false) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::updatePendingMessagesAddMillisToDate)
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
 

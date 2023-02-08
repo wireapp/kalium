@@ -325,17 +325,17 @@ class MessageDAOImpl(
                 .executeAsOneOrNull()
         }
 
-    override suspend fun updateMessageTableAfterOneIsSent(
+    override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
         serverDate: Instant,
         millis: Long
     ) = withContext(coroutineContext) {
-        queries.updateMessagesTableAfterOneIsSent(
+        queries.promoteMessageToSentUpdatingServerTime(
             server_creation_date = serverDate,
             conversation_id = conversationId,
             message_id = messageUuid,
-            millis = Instant.fromEpochMilliseconds(millis)
+            delivery_duration = Instant.fromEpochMilliseconds(millis)
         )
     }
 
