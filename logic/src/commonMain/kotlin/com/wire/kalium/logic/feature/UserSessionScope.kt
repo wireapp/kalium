@@ -754,6 +754,7 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,

@@ -22,6 +22,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -72,6 +73,7 @@ actual class GlobalCallManager(
         callRepository: CallRepository,
         userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
+        selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,
@@ -84,6 +86,7 @@ actual class GlobalCallManager(
             callRepository = callRepository,
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
+            selfConversationIdProvider = selfConversationIdProvider,
             callMapper = callMapper,
             messageSender = messageSender,
             conversationRepository = conversationRepository,
