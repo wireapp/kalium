@@ -46,6 +46,8 @@ interface UserConfigStorage {
      */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
+    fun setFileSharingAsNotified()
+
     /**
      * returns a Flow containing the status and list of classified domains
      */
@@ -134,6 +136,17 @@ internal class UserConfigStorageImpl internal constructor(
         .map { isFileSharingEnabled() }
         .onStart { emit(isFileSharingEnabled()) }
         .distinctUntilChanged()
+
+    override fun setFileSharingAsNotified() {
+        val newValue =
+            kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())?.copy(isStatusChanged = false)
+                ?: return
+        kaliumPreferences.putSerializable(
+            FILE_SHARING,
+            newValue,
+            IsFileSharingEnabledEntity.serializer()
+        )
+    }
 
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
         return isClassifiedDomainsEnabledFlow
