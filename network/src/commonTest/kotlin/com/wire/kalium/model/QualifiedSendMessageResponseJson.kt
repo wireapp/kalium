@@ -36,8 +36,8 @@ object QualifiedSendMessageResponseJson {
     private const val DOMAIN_2 = "domain2.com"
 
     private val USER_MAP = mapOf(
-        USER_1 to mapOf(DOMAIN_1 to listOf(USER_1_client_1, USER_1_client_2)),
-        USER_2 to mapOf(DOMAIN_2 to listOf(USER_2_client_1, USER_2_client_2)),
+        DOMAIN_1 to mapOf(USER_1 to arrayListOf(USER_1_client_1, USER_1_client_2)),
+        DOMAIN_2 to mapOf(USER_2 to arrayListOf(USER_2_client_1, USER_2_client_2)),
     )
 
     private val emptyResponse = { _: QualifiedSendMessageResponse ->
@@ -55,17 +55,21 @@ object QualifiedSendMessageResponseJson {
         """
             |{
             |   "time": "$TIME"
-            |   "missing" : {
-            |       "$USER_1": [
-            |           "$USER_1_client_1",
-            |           "$USER_1_client_2"
-            |        ],
-            |       "$USER_2": [
-            |           "$USER_2_client_1",
-            |           "$USER_2_client_2"
-            |       ]
-            |   },
             |   "redundant" : {},
+            |   "missing": {
+            |       "$DOMAIN_1": {
+            |           "$USER_1": [
+            |               "$USER_1_client_1",
+            |               "$USER_1_client_2"
+            |          ]
+            |       },
+            |       "$DOMAIN_2": {
+            |           "$USER_2": [
+            |               "$USER_2_client_1",
+            |               "$USER_2_client_2"
+            |          ]
+            |       }
+            |   },
             |   "deleted" : {}
             |}
         """.trimMargin()
@@ -75,18 +79,22 @@ object QualifiedSendMessageResponseJson {
         """
             |{
             |   "time": "$TIME"
-            |   "failed_to_send" : {
-            |       "$USER_1": [
-            |           "$USER_1_client_1",
-            |           "$USER_1_client_2"
-            |        ],
-            |       "$USER_2": [
-            |           "$USER_2_client_1",
-            |           "$USER_2_client_2"
-            |       ]
-            |   },
             |   "missing" : {},
-            |   "redundant" : {},
+            |   "failed_to_send": {
+            |       "$DOMAIN_1": {
+            |           "$USER_1": [
+            |               "$USER_1_client_1",
+            |               "$USER_1_client_2"
+            |          ]
+            |       },
+            |       "$DOMAIN_2": {
+            |           "$USER_2": [
+            |               "$USER_2_client_1",
+            |               "$USER_2_client_2"
+            |          ]
+            |       }
+            |   },
+            |   "redundant" : {}
             |   "deleted" : {}
             |}
         """.trimMargin()
@@ -97,15 +105,19 @@ object QualifiedSendMessageResponseJson {
             |{
             |   "time": "$TIME"
             |   "missing" : {},
-            |   "redundant" : {
-            |       "$USER_1": [
-            |           "$USER_1_client_1",
-            |           "$USER_1_client_2"
-            |        ],
-            |       "$USER_2": [
-            |           "$USER_2_client_1",
-            |           "$USER_2_client_2"
-            |       ]
+            |   "redundant": {
+            |       "$DOMAIN_1": {
+            |           "$USER_1": [
+            |               "$USER_1_client_1",
+            |               "$USER_1_client_2"
+            |          ]
+            |       },
+            |       "$DOMAIN_2": {
+            |           "$USER_2": [
+            |               "$USER_2_client_1",
+            |               "$USER_2_client_2"
+            |          ]
+            |       }
             |   },
             |   "deleted" : {}
             |}
@@ -116,18 +128,22 @@ object QualifiedSendMessageResponseJson {
         """
             |{
             |   "time": "$TIME"
-            |   "missing" : {},
             |   "redundant" : {},
-            |   "deleted" : {
-            |       "$USER_1": [
-            |           "$USER_1_client_1",
-            |           "$USER_1_client_2"
-            |        ],
-            |       "$USER_2": [
-            |           "$USER_2_client_1",
-            |           "$USER_2_client_2"
-            |       ]
-            |   }
+            |   "deleted": {
+            |       "$DOMAIN_1": {
+            |           "$USER_1": [
+            |               "$USER_1_client_1",
+            |               "$USER_1_client_2"
+            |          ]
+            |       },
+            |       "$DOMAIN_2": {
+            |           "$USER_2": [
+            |               "$USER_2_client_1",
+            |               "$USER_2_client_2"
+            |          ]
+            |       }
+            |   },
+            |   "missing" : {}
             |}
         """.trimMargin()
     }
@@ -153,7 +169,7 @@ object QualifiedSendMessageResponseJson {
     )
 
     val failedSentUsersResponse = ValidJsonProvider(
-        QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), failedToSend = USER_MAP),
+        QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), failed = USER_MAP),
         failedToSend
     )
 }
