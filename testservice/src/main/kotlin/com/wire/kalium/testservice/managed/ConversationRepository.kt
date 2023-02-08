@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
@@ -47,6 +48,30 @@ sealed class ConversationRepository {
 
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
+
+        suspend fun clearConversation(
+            instance: Instance,
+            conversationId: ConversationId,
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Clear conversation content")
+                        when (val result = conversations.clearConversationContent(conversationId)) {
+                            is ClearConversationContentUseCase.Result.Failure ->
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            is ClearConversationContentUseCase.Result.Success ->
+                                Response.status(Response.Status.OK).build()
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
 
         suspend fun deleteConversation(
             instance: Instance,
