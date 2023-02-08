@@ -238,7 +238,7 @@ class MessageRepositoryTest {
             .withUpdateMessageAfterSend()
             .arrange()
 
-        messageRepository.updateMessagesAfterOneIsSent(conversationID, messageID, newServerData, millis).shouldSucceed()
+        messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
 
         verify(arrangement.messageDAO)
             .suspendFunction(arrangement.messageDAO::updateMessageTableAfterOneIsSent)

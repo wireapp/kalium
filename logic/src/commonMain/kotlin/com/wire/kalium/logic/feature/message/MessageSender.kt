@@ -135,7 +135,7 @@ internal class MessageSenderImpl internal constructor(
                 val serverDate = messageRemoteTime.toInstant()
                 val localDate = message.date.toInstant()
                 val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                messageRepository.updateMessagesAfterOneIsSent(processedMessage.conversationId, processedMessage.id, serverDate, millis)
+                messageRepository.promoteMessageToSentUpdatingServerTime(processedMessage.conversationId, processedMessage.id, serverDate, millis)
                 Unit
             }
         }

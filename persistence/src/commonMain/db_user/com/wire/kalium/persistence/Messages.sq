@@ -581,12 +581,12 @@ UPDATE MessageFailedToDecryptContent
 SET is_decryption_resolved = 1
 WHERE message_id IN ?;
 
-updateMessagesTableAfterOneIsSent {
+promoteMessageToSentUpdatingServerTime {
 UPDATE Message
 SET creation_date = :server_creation_date, status = 'SENT'
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
-UPDATE Message
-SET creation_date = creation_date + :millis
+UPDATE OR IGNORE Message
+SET creation_date = creation_date + :delivery_duration
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }

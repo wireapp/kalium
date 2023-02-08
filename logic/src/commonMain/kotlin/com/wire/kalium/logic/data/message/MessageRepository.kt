@@ -153,7 +153,7 @@ interface MessageRepository {
      * updates the message status to [MessageEntity.Status.SENT] and the server date to [serverDate]
      * also mark other pending messages and add millis to their date
      */
-    suspend fun updateMessagesAfterOneIsSent(
+    suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant,
@@ -402,13 +402,13 @@ class MessageDataSource(
             }
     }
 
-    override suspend fun updateMessagesAfterOneIsSent(
+    override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant,
         millis: Long
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.updateMessageTableAfterOneIsSent(
+        messageDAO.promoteMessageToSentUpdatingServerTime(
             conversationId.toDao(),
             messageUuid,
             serverDate,

@@ -217,7 +217,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
                 .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -238,7 +238,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessagesAfterOneIsSent)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
                 .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -567,7 +567,7 @@ class MessageSenderTest {
 
         fun withUpdateMessagesAfterOneIsSent(failing: Boolean = false) = apply {
             given(messageRepository)
-                .suspendFunction(messageRepository::updateMessagesAfterOneIsSent)
+                .suspendFunction(messageRepository::promoteMessageToSentUpdatingServerTime)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
