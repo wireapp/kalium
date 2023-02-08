@@ -87,6 +87,34 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
+    fun givenConversation_whenMessageWithReplyOnMyMessageInserted_thenNotificationMarkedAsReply() = runTest {
+        val message = SELF_MESSAGE
+        val replyMessage = OTHER_QUOTING_SELF
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOf(message, replyMessage))
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertEquals(1, notifications.size)
+            assertEquals(true, notifications[0].isQuotingSelf)
+        }
+    }
+
+    @Test
+    fun givenConversation_whenMessageWithReplyOnOtherMessageInserted_thenNotificationIsNotMarkedAsReply() = runTest {
+        val message = OTHER_MESSAGE
+        val replyMessage = OTHER_QUOTING_OTHERS
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOf(message, replyMessage))
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertEquals(2, notifications.size)
+            assertEquals(false, notifications.any { it.isQuotingSelf })
+        }
+    }
+
+    @Test
     fun givenNewMessageInserted_whenConvInAllMutedState_thenNeedsToBeNotifyIsFalse() = runTest {
         val conversationMutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
         val userStatus = UserAvailabilityStatusEntity.BUSY // Doesn't matter in this case
