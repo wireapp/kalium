@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -117,6 +119,22 @@ class FeatureConfigEventReceiverTest {
     }
 
     @Test
+    fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() = runTest {
+        val (arrangment, featureConfigEventReceiver) = Arrangement()
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withSettingFileSharingEnabledSuccessful()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangment.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED))
+        )
+
+        verify(arrangment.userConfigRepository)
+            .function(arrangment.userConfigRepository::setFileSharingStatus)
+            .with(eq(false), eq(false))
+    }
+
+    @Test
     fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingConferenceCallingEnabledSuccessfull()
@@ -186,6 +204,13 @@ class FeatureConfigEventReceiverTest {
                 .function(userConfigRepository::setConferenceCallingEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isFileSharingEnabled)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         fun newMLSUpdatedEvent(

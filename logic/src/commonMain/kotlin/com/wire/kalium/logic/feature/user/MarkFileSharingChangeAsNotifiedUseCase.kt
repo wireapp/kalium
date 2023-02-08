@@ -6,6 +6,6 @@ class MarkFileSharingChangeAsNotifiedUseCase(
     private val userConfigRepository: UserConfigRepository
 ) {
     operator suspend fun invoke() {
-        userConfigRepository.setIsChangedAsFalse()
+        userConfigRepository.setFileSharingAsNotified()
     }
 }
