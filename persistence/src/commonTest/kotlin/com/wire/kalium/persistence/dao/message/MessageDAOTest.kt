@@ -1132,7 +1132,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Test
     fun whenUpdatingMessagesTableAfterSendingAMessage_thenMessageIsMarkedAsSentDateIsUpdatedAndPendingMessagesTimeIsAdjusted() = runTest {
         val messageToSend = newRegularMessageEntity(
-            id = "1",
+            id = "messageToSend",
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             date = Instant.fromEpochMilliseconds(123),
@@ -1141,7 +1141,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         val pendingMessage = newRegularMessageEntity(
-            id = "1",
+            id = "pendingMessage",
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             date = Instant.fromEpochMilliseconds(125),
@@ -1149,16 +1149,22 @@ class MessageDAOTest : BaseDatabaseTest() {
             status = MessageEntity.Status.PENDING
         )
 
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.upsertUsers(listOf(userEntity1))
+        messageDAO.insertOrIgnoreMessages(listOf(messageToSend, pendingMessage))
+
         messageDAO.updateMessageTableAfterOneIsSent(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
 
         messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).also {
-            assertEquals(MessageEntity.Status.SENT, it?.status)
-            assertEquals(Instant.fromEpochMilliseconds(124), it?.date)
+            assertNotNull(it)
+            assertEquals(MessageEntity.Status.SENT, it.status)
+            assertEquals(Instant.fromEpochMilliseconds(124), it.date)
         }
 
         messageDAO.getMessageById(pendingMessage.id, conversationEntity1.id).also {
-            assertEquals(MessageEntity.Status.PENDING, it?.status)
-            assertEquals(Instant.fromEpochMilliseconds(125 + 1), it?.date)
+            assertNotNull(it)
+            assertEquals(MessageEntity.Status.PENDING, it.status)
+            assertEquals(Instant.fromEpochMilliseconds(125 + 1), it.date)
         }
     }
 
