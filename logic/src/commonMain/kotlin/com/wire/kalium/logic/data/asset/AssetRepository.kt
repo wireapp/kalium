@@ -39,7 +39,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
-import okio.FileNotFoundException
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
