@@ -15,22 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.logic.data.call
-
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.data.user.type.UserType
-
-data class Participant(
-    val id: QualifiedID,
-    val clientId: String,
-    val name: String = "",
-    val isMuted: Boolean,
-    val isCameraOn: Boolean,
-    val isSpeaking: Boolean = false,
-    val isSharingScreen: Boolean = false,
-    val hasEstablishedAudio: Boolean,
-    val avatarAssetId: UserAssetId? = null,
-    val userType: UserType = UserType.NONE,
+data class AvailabilityRequest(
+    val teamId: String = "",
+    val type: Int = 0,
 )
