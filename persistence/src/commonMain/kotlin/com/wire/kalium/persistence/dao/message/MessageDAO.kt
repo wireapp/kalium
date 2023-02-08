@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
@@ -58,8 +59,6 @@ interface MessageDAO {
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
@@ -113,6 +112,13 @@ interface MessageDAO {
     ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
+
+    suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    )
 
     val platformExtensions: MessageExtensions
 }

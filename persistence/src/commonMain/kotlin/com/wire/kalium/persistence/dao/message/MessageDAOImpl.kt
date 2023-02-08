@@ -188,16 +188,6 @@ class MessageDAOImpl(
             queries.updateMessageStatus(status, id, conversationId)
         }
 
-    override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
-        withContext(coroutineContext) {
-            queries.updateMessageDate(date.toInstant(), id, conversationId)
-        }
-
-    override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
-        withContext(coroutineContext) {
-            queries.updateMessagesAddMillisToDate(Instant.fromEpochMilliseconds(millis), conversationId, status)
-        }
-
     // TODO: mark internal since it is used for tests only
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
@@ -339,6 +329,20 @@ class MessageDAOImpl(
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
                 .executeAsOneOrNull()
         }
+
+    override suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ) = withContext(coroutineContext) {
+        queries.promoteMessageToSentUpdatingServerTime(
+            server_creation_date = serverDate,
+            conversation_id = conversationId,
+            message_id = messageUuid,
+            delivery_duration = Instant.fromEpochMilliseconds(millis)
+        )
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
