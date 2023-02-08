@@ -284,7 +284,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
     }
 
     suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus) {
-        log.info("Instance $id: Set availability status to ${status} of client")
+        log.info("Instance $id: Set availability status to $status of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
             scope.async {

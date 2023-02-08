@@ -46,6 +46,7 @@ class ClientResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/availability")
     @Operation(summary = "Set a user's availability")
+    @Suppress("MagicNumber")
     fun availability(@PathParam("id") id: String, @Valid request: AvailabilityRequest): Response {
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
         val status = when (request.type) {
