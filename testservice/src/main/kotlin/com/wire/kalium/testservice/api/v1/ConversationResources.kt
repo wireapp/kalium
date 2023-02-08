@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
+import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
@@ -51,23 +52,25 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     private val log = LoggerFactory.getLogger(ConversationResources::class.java.name)
 
-    // archive a conversation
-    /*
     @POST
     @Path("/instance/{id}/archive")
-    fun archive(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Not yet implemented")
+    @Operation(summary = "Archive a conversation")
+    fun archive(@PathParam("id") id: String): Response {
+        return Response.status(Response.Status.NOT_IMPLEMENTED).build()
     }
-    */
 
-    // clear a conversation
-    /*
     @POST
     @Path("/instance/{id}/clear")
-    fun clear(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Not yet implemented")
+    @Operation(summary = "Clear a conversation")
+    fun clear(@PathParam("id") id: String, @Valid request: ClearConversationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            runBlocking {
+                ConversationRepository.clearConversation(instance, ConversationId(conversationId, conversationDomain))
+            }
+        }
+        return Response.status(Response.Status.OK).build()
     }
-    */
 
     @POST
     @Path("/instance/{id}/delete")
