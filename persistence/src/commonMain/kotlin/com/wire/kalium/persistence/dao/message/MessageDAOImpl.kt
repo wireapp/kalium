@@ -40,7 +40,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
-import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -187,13 +186,9 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
-
-    // TODO: mark internal since it is used for tests only
-    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToOneOrNull()
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
+    }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
