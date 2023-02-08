@@ -24,15 +24,16 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -59,22 +61,29 @@ internal class SlowSyncManager(
     private val slowSyncRepository: SlowSyncRepository,
     private val slowSyncWorker: SlowSyncWorker,
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler,
+    private val networkStateObserver: NetworkStateObserver,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
+    private val exponentialDurationHelper = ExponentialDurationHelper(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
         onCancellation = {
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
         },
         onFailure = { failure ->
+            logger.i("SlowSync ExceptionHandler error $failure")
             scope.launch {
                 slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
                 slowSyncRecoveryHandler.recover(failure) {
-                    delay(RETRY_DELAY)
+                    val delay = exponentialDurationHelper.next()
+                    logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
+                    networkStateObserver.delayUntilConnectedAgain(delay)
+                    logger.i("SlowSync Delay and waiting for connection finished - retrying")
+                    kaliumLogger.i("SlowSync Connected - retrying")
                     startMonitoring()
                 }
             }
@@ -121,6 +130,7 @@ internal class SlowSyncManager(
             } else {
                 logger.i("No need to perform SlowSync. Marking as Complete")
             }
+            exponentialDurationHelper.reset()
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         } else {
             // STOP SYNC
@@ -137,7 +147,8 @@ internal class SlowSyncManager(
     }
 
     private companion object {
-        val RETRY_DELAY = 10.seconds
+        val MIN_RETRY_DELAY = 10.seconds
+        val MAX_RETRY_DELAY = 4.hours
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
     }
 }

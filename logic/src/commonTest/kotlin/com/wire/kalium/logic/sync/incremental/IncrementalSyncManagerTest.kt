@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.network.NetworkState
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.persistence.TestUserDatabase
@@ -46,6 +48,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
@@ -273,15 +276,22 @@ class IncrementalSyncManagerTest {
         @Mock
         val incrementalSyncRecoveryHandler = mock(classOf<IncrementalSyncRecoveryHandler>())
 
+        @Mock
+        val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
+
         private val incrementalSyncManager by lazy {
             IncrementalSyncManager(
                 slowSyncRepository = slowSyncRepository,
                 incrementalSyncWorker = incrementalSyncWorker,
                 incrementalSyncRepository = incrementalSyncRepository,
                 incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
-                kaliumDispatcher = TestKaliumDispatcher
+                networkStateObserver = networkStateObserver,
+                kaliumDispatcher = TestKaliumDispatcher,
             )
+        }
 
+        init {
+            withNetworkState(flowOf(NetworkState.Connected))
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
@@ -317,6 +327,13 @@ class IncrementalSyncManagerTest {
                 .suspendFunction(incrementalSyncRecoveryHandler::recover)
                 .whenInvokedWith(any(), any())
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
+        }
+
+        fun withNetworkState(networkStateFlow: Flow<NetworkState>) = apply {
+            given(networkStateObserver)
+                .function(networkStateObserver::observeNetworkState)
+                .whenInvoked()
+                .thenReturn(networkStateFlow)
         }
 
         fun arrange() = this to incrementalSyncManager
