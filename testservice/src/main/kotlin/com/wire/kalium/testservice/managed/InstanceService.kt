@@ -284,16 +284,14 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
     }
 
     suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus) {
-        log.info("Instance $id: Get fingerprint of client")
+        log.info("Instance $id: Set availability status to ${status} of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
             scope.async {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                        runBlocking {
-                            users.updateSelfAvailabilityStatus(status)
-                        }
+                        users.updateSelfAvailabilityStatus(status)
                     }
                 }
             }
