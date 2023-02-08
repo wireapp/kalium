@@ -23,7 +23,6 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
-import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClientList
@@ -34,7 +33,6 @@ import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageTarget
-import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.decodeFromString
@@ -53,7 +51,7 @@ internal class OnSendOTR(
     private val callingScope: CoroutineScope,
     private val callMapper: CallMapper
 ) : SendHandler {
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     override fun onSend(
         context: Pointer?,
         remoteConversationId: String,
