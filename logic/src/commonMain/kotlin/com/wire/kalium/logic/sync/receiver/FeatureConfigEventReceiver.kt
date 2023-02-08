@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
@@ -47,19 +47,19 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     userConfigRepository.setFileSharingStatus(false, null)
                 } else {
 
-                    val currentFileSharingStatus = userConfigRepository
+                    val currentFileSharingStatus: Boolean = userConfigRepository
                         .isFileSharingEnabled()
-                        .getOrElse(false)
+                        .fold({ false }, { it.isFileSharingEnabled ?: false })
 
                     when (event.model.status) {
                         Status.ENABLED -> userConfigRepository.setFileSharingStatus(
                             status = true,
-                            isStatusChanged = currentFileSharingStatus != true
+                            isStatusChanged = !currentFileSharingStatus
                         )
 
                         Status.DISABLED -> userConfigRepository.setFileSharingStatus(
                             status = false,
-                            isStatusChanged = currentFileSharingStatus != false
+                            isStatusChanged = currentFileSharingStatus
                         )
                     }
                 }
