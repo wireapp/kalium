@@ -1,6 +1,7 @@
 CREATE INDEX IF NOT EXISTS message_status_index ON Message(status);
 
 DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS MessageQuoteDetails;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
