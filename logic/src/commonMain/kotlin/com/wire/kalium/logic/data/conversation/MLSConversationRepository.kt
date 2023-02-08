@@ -75,7 +75,7 @@ data class DecryptedMessageBundle(
     val commitDelay: Long?
 )
 
-@Suppress("TooManyFunctions", "LongParameterList", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
@@ -118,7 +118,7 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
     }
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "TooGenericExceptionCaught")
 class MLSConversationDataSource(
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
