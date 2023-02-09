@@ -52,7 +52,16 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return difference between two provided date-times in milliseconds
      */
     fun calculateMillisDifference(isoDateTime1: String, isoDateTime2: String): Long =
-        isoDateTime1.toInstant().until(isoDateTime2.toInstant(), DateTimeUnit.MILLISECOND)
+        calculateMillisDifference(isoDateTime1.toInstant(), isoDateTime2.toInstant())
+
+    /**
+     * Calculate the difference between two date-times provided to it
+     * @param instant1 date-time as Instant
+     * @param instant2 date-time as Instant
+     * @return difference between two provided date-times in milliseconds
+     */
+    fun calculateMillisDifference(instant1: Instant, instant2: Instant): Long =
+        instant1.until(instant2, DateTimeUnit.MILLISECOND)
 
     /**
      * Subtract milliseconds from the given date-time
