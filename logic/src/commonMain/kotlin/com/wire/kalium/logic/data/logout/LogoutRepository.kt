@@ -32,7 +32,7 @@ interface LogoutRepository {
      * Listen to a logout event.
      * The event caries a [LogoutReason].
      */
-    suspend fun observeLogout(): Flow<LogoutReason>
+    suspend fun observeLogout(): Flow<LogoutReason?>
 
     /**
      * Propagates the logout event and [reason],
@@ -51,11 +51,15 @@ internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
 ) : LogoutRepository {
 
-    private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
+    private val logoutEventsChannel = Channel<LogoutReason?>(capacity = Channel.CONFLATED)
 
-    override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.receiveAsFlow()
+    override suspend fun observeLogout(): Flow<LogoutReason?> = logoutEventsChannel.receiveAsFlow()
 
-    override suspend fun onLogout(reason: LogoutReason) = logoutEventsChannel.send(reason)
+    override suspend fun onLogout(reason: LogoutReason) {
+        logoutEventsChannel.send(reason)
+        // We need to clear channel state in case when user wants to login on the same session
+        logoutEventsChannel.send(null)
+    }
 
     override suspend fun logout(): Either<CoreFailure, Unit> =
         wrapApiRequest { logoutApi.logout() }
