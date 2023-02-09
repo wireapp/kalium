@@ -9,6 +9,7 @@ SELECT
     User.preview_asset_id AS senderPreviewAssetId,
     Conversation.name AS conversationName,
     TextContent.text_body AS text,
+    TextContent.is_quoting_self AS isQuotingSelf,
     AssetContent.asset_mime_type AS assetMimeType,
     Conversation.muted_status AS mutedStatus,
     Conversation.type AS conversationType
