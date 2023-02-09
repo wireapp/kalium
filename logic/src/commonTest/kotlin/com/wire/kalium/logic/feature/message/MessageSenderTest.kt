@@ -69,6 +69,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -208,6 +209,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage(updateMessageStatusFailing = true)
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -229,6 +231,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage(updateMessageDateFailing = true)
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -287,6 +290,7 @@ class MessageSenderTest {
             .withSendMlsMessage()
             .withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             .withWaitUntilLiveOrFailure()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -309,6 +313,7 @@ class MessageSenderTest {
             .withCommitPendingProposals()
             .withSendMlsMessage()
             .withSendOutgoingMlsMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -351,6 +356,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         val message = Message.Signaling(
@@ -401,6 +407,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         val message = Message.Signaling(
@@ -565,13 +572,6 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withUpdateMessagesAfterOneIsSent(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::promoteMessageToSentUpdatingServerTime)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
-        }
-
         fun withUpdateMessageStatus(failing: Boolean = false) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -584,6 +584,13 @@ class MessageSenderTest {
                 .suspendFunction(syncManager::waitUntilLiveOrFailure)
                 .whenInvoked()
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+        }
+
+        fun withPromoteMessageToSentUpdatingServerTime() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::promoteMessageToSentUpdatingServerTime)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         @Suppress("LongParameterList")
@@ -604,7 +611,6 @@ class MessageSenderTest {
                 withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
                 if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
                 withUpdateMessageStatus(updateMessageStatusFailing)
-                withUpdateMessagesAfterOneIsSent(updateMessageDateFailing)
             }
 
         fun withSendMlsMessage(
@@ -615,7 +621,6 @@ class MessageSenderTest {
             withCreateOutgoingMlsMessage()
             if (sendMlsMessageWithResult != null) withSendOutgoingMlsMessage(sendMlsMessageWithResult) else withSendOutgoingMlsMessage()
             withUpdateMessageStatus()
-            withUpdateMessagesAfterOneIsSent()
         }
 
         companion object {

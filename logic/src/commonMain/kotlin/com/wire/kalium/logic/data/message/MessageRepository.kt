@@ -39,8 +39,7 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -54,7 +53,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
@@ -94,7 +92,9 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
@@ -241,14 +241,7 @@ class MessageDataSource(
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-                .firstOrNull()?.run {
-                    messageMapper.fromEntityToMessage(this)
-                }
-        }.onSuccess {
-            Either.Right(it)
-        }.onFailure {
-            Either.Left(it)
-        }
+        }.map { messageMapper.fromEntityToMessage(it) }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,

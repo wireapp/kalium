@@ -241,7 +241,7 @@ class MessageRepositoryTest {
         messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
 
         verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::updateMessageTableAfterOneIsSent)
+            .suspendFunction(arrangement.messageDAO::promoteMessageToSentUpdatingServerTime)
             .with(eq(conversationID.toDao()), eq(messageID), eq(newServerData), eq(millis))
             .wasInvoked(exactly = once)
     }
@@ -312,7 +312,7 @@ class MessageRepositoryTest {
 
         fun withUpdateMessageAfterSend() = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::updateMessageTableAfterOneIsSent)
+                .suspendFunction(messageDAO::promoteMessageToSentUpdatingServerTime)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
                 .then { _, _, _, _ -> Unit }
         }
