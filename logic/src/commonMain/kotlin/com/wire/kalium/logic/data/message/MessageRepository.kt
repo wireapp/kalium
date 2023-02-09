@@ -38,8 +38,7 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -53,9 +52,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
@@ -97,9 +96,8 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
-    suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
@@ -153,6 +151,17 @@ interface MessageRepository {
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
+
+    /**
+     * updates the message status to [MessageEntity.Status.SENT] and the server date to [serverDate]
+     * also mark other pending messages and add millis to their date
+     */
+    suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -248,14 +257,7 @@ class MessageDataSource(
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-                .firstOrNull()?.run {
-                    messageMapper.fromEntityToMessage(this)
-                }
-        }.onSuccess {
-            Either.Right(it)
-        }.onFailure {
-            Either.Left(it)
-        }
+        }.map { messageMapper.fromEntityToMessage(it) }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -296,16 +298,6 @@ class MessageDataSource(
                 messageUuid,
                 conversationId.toDao()
             )
-        }
-
-    override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
-        wrapStorageRequest {
-            messageDAO.updateMessageDate(date, messageUuid, conversationId.toDao())
-        }
-
-    override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
-        wrapStorageRequest {
-            messageDAO.updateMessagesAddMillisToDate(millis, conversationId.toDao(), MessageEntity.Status.PENDING)
         }
 
     override suspend fun sendEnvelope(
@@ -415,5 +407,19 @@ class MessageDataSource(
     ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
             ?.let { receiptModeMapper.fromEntityToModel(it) }
+    }
+
+    override suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.promoteMessageToSentUpdatingServerTime(
+            conversationId.toDao(),
+            messageUuid,
+            serverDate,
+            millis
+        )
     }
 }

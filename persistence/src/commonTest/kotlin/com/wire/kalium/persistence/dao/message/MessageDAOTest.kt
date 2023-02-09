@@ -31,7 +31,6 @@ import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -152,7 +151,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertOrIgnoreMessage(replacementMessage)
 
-        val result = messageDAO.getMessageById(originalMessage.id, originalMessage.conversationId).first()
+        val result = messageDAO.getMessageById(originalMessage.id, originalMessage.conversationId)
 
         assertNotNull(result)
         assertIs<MessageEntity.Regular>(result)
@@ -229,10 +228,10 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val resultDeletedMessage = messageDAO.getMessageById(deleteMessageUuid, deleteMessageConversationId)
 
-        assertTrue { resultDeletedMessage.first()?.visibility == MessageEntity.Visibility.DELETED }
+        assertTrue { resultDeletedMessage?.visibility == MessageEntity.Visibility.DELETED }
 
         val notDeletedMessage = messageDAO.getMessageById(visibleMessageUuid, visibleMessageConversationId)
-        assertTrue { notDeletedMessage.first()?.visibility == MessageEntity.Visibility.VISIBLE }
+        assertTrue { notDeletedMessage?.visibility == MessageEntity.Visibility.VISIBLE }
     }
 
     @Test
@@ -267,10 +266,10 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val resultDeletedMessage = messageDAO.getMessageById(messageUuid, deleteMessageConversationId)
 
-        assertTrue { resultDeletedMessage.first()?.visibility == MessageEntity.Visibility.DELETED }
+        assertTrue { resultDeletedMessage?.visibility == MessageEntity.Visibility.DELETED }
 
         val notDeletedMessage = messageDAO.getMessageById(messageUuid, visibleMessageConversationId)
-        assertTrue { notDeletedMessage.first()?.visibility == MessageEntity.Visibility.VISIBLE }
+        assertTrue { notDeletedMessage?.visibility == MessageEntity.Visibility.VISIBLE }
     }
 
     @Test
@@ -734,7 +733,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.markMessagesAsDecryptionResolved(conversationId, userEntity1.id, "someClient")
 
         // then
-        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
         val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2).firstOrNull()
         assertTrue((updatedMessage2?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
@@ -795,7 +794,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
 
         // then
-        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
         assertTrue((updatedMessage?.content as MessageEntityContent.Asset).assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue((updatedMessage.content as MessageEntityContent.Asset).assetSha256Key.contentEquals(dummySha256Key))
         assertTrue((updatedMessage.visibility == MessageEntity.Visibility.VISIBLE))
@@ -856,7 +855,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
 
         // then
-        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
         assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
     }
 
@@ -916,7 +915,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             messageDAO.insertOrIgnoreMessages(listOf(finalAssetMessage))
 
             // then
-            val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+            val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
             assertTrue((updatedMessage?.visibility == MessageEntity.Visibility.HIDDEN))
         }
 
@@ -1006,7 +1005,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessage(updatedAssetMessage)
 
         // then
-        val updatedMessage = messageDAO.getMessageById(messageId, conversationId).firstOrNull()
+        val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
         val updatedMessageContent = updatedMessage?.content
 
         // asset values that should not be updated
@@ -1056,7 +1055,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        messageDAO.getMessageById(messageId, conversationId).first().also {
+        messageDAO.getMessageById(messageId, conversationId).also {
             assertEquals(message1, it)
         }
     }
@@ -1095,7 +1094,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        messageDAO.getMessageById(messageId, conversationId).first().also {
+        messageDAO.getMessageById(messageId, conversationId).also {
             assertEquals(messageFromUser1, it)
         }
     }
@@ -1143,6 +1142,45 @@ class MessageDAOTest : BaseDatabaseTest() {
         val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationEntity1.id)
 
         assertEquals(expected.sorted(), result.sorted())
+    }
+
+    @Test
+    fun whenUpdatingMessagesTableAfterSendingAMessage_thenMessageIsMarkedAsSentDateIsUpdatedAndPendingMessagesTimeIsAdjusted() = runTest {
+        val messageToSend = newRegularMessageEntity(
+            id = "messageToSend",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            date = Instant.fromEpochMilliseconds(123),
+            expectsReadConfirmation = true,
+            status = MessageEntity.Status.PENDING
+        )
+
+        val pendingMessage = newRegularMessageEntity(
+            id = "pendingMessage",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            date = Instant.fromEpochMilliseconds(125),
+            expectsReadConfirmation = true,
+            status = MessageEntity.Status.PENDING
+        )
+
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.upsertUsers(listOf(userEntity1))
+        messageDAO.insertOrIgnoreMessages(listOf(messageToSend, pendingMessage))
+
+        messageDAO.promoteMessageToSentUpdatingServerTime(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
+
+        messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).also {
+            assertNotNull(it)
+            assertEquals(MessageEntity.Status.SENT, it.status)
+            assertEquals(Instant.fromEpochMilliseconds(124), it.date)
+        }
+
+        messageDAO.getMessageById(pendingMessage.id, conversationEntity1.id).also {
+            assertNotNull(it)
+            assertEquals(MessageEntity.Status.PENDING, it.status)
+            assertEquals(Instant.fromEpochMilliseconds(125 + 1), it.date)
+        }
     }
 
     @Test

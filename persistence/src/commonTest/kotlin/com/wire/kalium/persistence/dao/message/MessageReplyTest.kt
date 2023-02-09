@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +36,7 @@ class MessageReplyTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessage(MESSAGE_QUOTING_TEXT)
 
-        val message = messageDAO.getMessageById(MESSAGE_QUOTING_TEXT.id, MESSAGE_QUOTING_TEXT.conversationId).first()
+        val message = messageDAO.getMessageById(MESSAGE_QUOTING_TEXT.id, MESSAGE_QUOTING_TEXT.conversationId)
 
         assertNotNull(message)
         val content = message.content
@@ -59,7 +58,7 @@ class MessageReplyTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessage(MESSAGE_QUOTING_IMAGE)
 
-        val message = messageDAO.getMessageById(MESSAGE_QUOTING_IMAGE.id, MESSAGE_QUOTING_IMAGE.conversationId).first()
+        val message = messageDAO.getMessageById(MESSAGE_QUOTING_IMAGE.id, MESSAGE_QUOTING_IMAGE.conversationId)
 
         assertNotNull(message)
         val content = message.content
