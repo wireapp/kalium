@@ -35,8 +35,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":protobuf"))
-                implementation(project(":util"))
                 api(project(":logger"))
+                implementation(project(":util"))
 
                 // coroutines
                 implementation(libs.coroutines.core)
