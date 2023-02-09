@@ -56,7 +56,7 @@ sealed class LocalNotificationMessage(
 
     data class Knock(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String
+        override val time: Instant
     ) : LocalNotificationMessage(author, time)
 
     data class ConnectionRequest(
