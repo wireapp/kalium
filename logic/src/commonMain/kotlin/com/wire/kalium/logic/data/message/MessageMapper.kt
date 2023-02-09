@@ -48,7 +48,7 @@ interface MessageMapper {
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
-    fun toMessageEntityContent(regulerMessage: MessageContent.Regular): MessageEntityContent.Regular
+    fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
 class MessageMapperImpl(
