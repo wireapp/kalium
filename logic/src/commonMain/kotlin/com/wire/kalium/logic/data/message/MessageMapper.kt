@@ -203,7 +203,6 @@ class MessageMapperImpl(
                 )
             }
 
-            MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.MISSED_CALL -> {
                 LocalNotificationMessage.Comment(
                     sender,
@@ -211,13 +210,16 @@ class MessageMapperImpl(
                     LocalNotificationCommentType.MISSED_CALL
                 )
             }
-
+            MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
             MessageEntity.ContentType.UNKNOWN -> null
             MessageEntity.ContentType.FAILED_DECRYPTION -> null
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
+            MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
+            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
+            MessageEntity.ContentType.HISTORY_LOST -> null
         }
     }
 
