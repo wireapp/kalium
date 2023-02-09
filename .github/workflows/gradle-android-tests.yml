@@ -13,7 +13,7 @@ jobs:
         uses: ./.github/workflows/codestyle.yml
     gradle-run-tests:
         needs: [detekt]
-        runs-on: buildjet-4vcpu-ubuntu-2204
+        runs-on: ubuntu-22.04
         strategy:
             matrix:
                 api-level: [30]
