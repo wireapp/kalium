@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CRYPTO_SESSION_RESET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.HISTORY_LOST
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
@@ -112,7 +113,7 @@ class MessageDAOImpl(
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
         queries.insertOrIgnoreBulkSystemMessage(
             id = message.id,
-            date = message.date,
+            creation_date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = null,
             visibility = message.visibility,
@@ -537,6 +538,10 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.CryptoSessionReset -> {
                 // NOTHING TO DO
             }
+
+            is MessageEntityContent.HistoryLost -> {
+                // NOTHING TO DO
+            }
         }
     }
 
@@ -552,6 +557,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
         is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
         is MessageEntityContent.CryptoSessionReset -> CRYPTO_SESSION_RESET
+        is MessageEntityContent.HistoryLost -> HISTORY_LOST
     }
 }
 

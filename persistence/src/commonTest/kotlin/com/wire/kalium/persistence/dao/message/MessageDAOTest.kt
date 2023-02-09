@@ -1146,7 +1146,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.persistSystemMessageToAllConversations(
             newSystemMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z",
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationId1,
                 senderUserId = userEntity1.id,
                 content = MessageEntityContent.HistoryLost
@@ -1209,7 +1209,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.persistSystemMessageToAllConversations(
             newSystemMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z",
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = selfConversation,
                 senderUserId = userEntity1.id,
                 content = MessageEntityContent.HistoryLost
