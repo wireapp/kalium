@@ -261,7 +261,7 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 
--- joins for quted messages
+-- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
