@@ -40,7 +40,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
-import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -187,23 +186,9 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
-
-    override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
-        withContext(coroutineContext) {
-            queries.updateMessageDate(date.toInstant(), id, conversationId)
-        }
-
-    override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
-        withContext(coroutineContext) {
-            queries.updateMessagesAddMillisToDate(Instant.fromEpochMilliseconds(millis), conversationId, status)
-        }
-
-    // TODO: mark internal since it is used for tests only
-    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToOneOrNull()
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
+    }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
@@ -339,6 +324,20 @@ class MessageDAOImpl(
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
                 .executeAsOneOrNull()
         }
+
+    override suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ) = withContext(coroutineContext) {
+        queries.promoteMessageToSentUpdatingServerTime(
+            server_creation_date = serverDate,
+            conversation_id = conversationId,
+            message_id = messageUuid,
+            delivery_duration = Instant.fromEpochMilliseconds(millis)
+        )
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 

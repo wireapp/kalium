@@ -30,7 +30,7 @@ class MessageReactionsTest : BaseMessageTest() {
     @Test
     fun givenReactionsAreInserted_whenGettingMessageById_thenCorrectReactionCountAreReturned() = runTest {
         testTotalReactionCount(TEST_MESSAGE) {
-            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
+            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId)
         }
     }
 
@@ -46,7 +46,7 @@ class MessageReactionsTest : BaseMessageTest() {
     @Test
     fun givenReactionsAreInserted_whenGettingMessageById_thenCorrectSelfUserReactionsAreReturned() = runTest {
         testSelfUserReactions(TEST_MESSAGE) {
-            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
+            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId)
         }
     }
 

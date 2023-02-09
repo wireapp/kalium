@@ -25,8 +25,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageTarget
+import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -225,6 +227,25 @@ class MessageRepositoryTest {
             )
     }
 
+    @Test
+    fun whenUpdatingMessageAfterSending_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val millis = 500L
+        val newServerData = Instant.DISTANT_FUTURE
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withUpdateMessageAfterSend()
+            .arrange()
+
+        messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::promoteMessageToSentUpdatingServerTime)
+            .with(eq(conversationID.toDao()), eq(messageID), eq(newServerData), eq(millis))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -287,6 +308,13 @@ class MessageRepositoryTest {
                     )
                 }
             return this
+        }
+
+        fun withUpdateMessageAfterSend() = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::promoteMessageToSentUpdatingServerTime)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .then { _, _, _, _ -> Unit }
         }
 
         fun arrange() = this to MessageDataSource(
