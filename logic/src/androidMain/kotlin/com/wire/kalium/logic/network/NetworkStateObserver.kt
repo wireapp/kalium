@@ -22,7 +22,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -42,37 +41,49 @@ actual class NetworkStateObserverImpl(
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.io)
     private val networkStateSharedFlow: Flow<NetworkState> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                trySend(NetworkState.Connected)
+
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                super.onCapabilitiesChanged(network, networkCapabilities)
+                trySend(networkCapabilities.toState())
+            }
+
+            override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+                super.onBlockedStatusChanged(network, blocked)
+                trySend(if (blocked) NetworkState.NotConnected else NetworkState.Connected)
             }
 
             override fun onLost(network: Network) {
                 trySend(NetworkState.NotConnected)
                 super.onLost(network)
             }
+
+            override fun onUnavailable() {
+                trySend(NetworkState.NotConnected)
+                super.onUnavailable()
+            }
         }
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-            .build()
 
-        val isCurrentlyConnected = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-            ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        val currentState = if (isCurrentlyConnected) NetworkState.Connected else NetworkState.NotConnected
-        trySend(currentState)
+        trySend(connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState())
 
-        connectivityManager.registerNetworkCallback(request, callback)
+        connectivityManager.registerDefaultNetworkCallback(callback)
 
         awaitClose {
             connectivityManager.unregisterNetworkCallback(callback)
         }
-    }.distinctUntilChanged()
-        .shareIn(
-            scope = scope,
-            started = SharingStarted.WhileSubscribed(),
-            replay = 1
-        )
+    }.shareIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(),
+        replay = 1
+    )
 
-    override fun observeNetworkState(): Flow<NetworkState> = networkStateSharedFlow
+    private fun NetworkCapabilities?.isConnected(): Boolean {
+        val hasInternet = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        val isValidated = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+        return hasInternet && isValidated
+    }
+
+    private fun NetworkCapabilities?.toState(): NetworkState =
+        if (this.isConnected()) NetworkState.Connected else NetworkState.NotConnected
+
+    override fun observeNetworkState(): Flow<NetworkState> = networkStateSharedFlow.distinctUntilChanged()
 }

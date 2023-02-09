@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.network
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
@@ -32,7 +33,11 @@ interface NetworkStateObserver {
         // Delay for given amount but break it if reconnected again.
         withTimeoutOrNull(delay) {
             // Drop the current value, so it will complete only if the connection changed again to connected during that time.
-            observeNetworkState().drop(1).filter { it is NetworkState.Connected }.firstOrNull()
+            observeNetworkState()
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { it is NetworkState.Connected }
+                .firstOrNull()
         }
         // At this point, if the block above timed out, it means that it haven't reconnected so wait until reconnected.
         // If the block above completed before the timeout, just make sure it's still connected.
