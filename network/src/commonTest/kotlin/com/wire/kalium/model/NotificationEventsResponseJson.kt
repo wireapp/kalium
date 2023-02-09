@@ -215,6 +215,17 @@ object NotificationEventsResponseJson {
         newFeatureConfigSerializer
     )
 
+    val notificationWithLastEvent =  """
+        {
+            "payload": [
+                {
+                    "type": "aVeryWeirdEventType"
+                }
+            ],
+            "id": "fcfb33e4-8037-11ec-8001-22000ac39a27"
+    }
+    """.trimIndent()
+
     val notificationsWithUnknownEventAtFirstPosition = """
         {
           "time": "2022-02-15T12:54:30Z",
