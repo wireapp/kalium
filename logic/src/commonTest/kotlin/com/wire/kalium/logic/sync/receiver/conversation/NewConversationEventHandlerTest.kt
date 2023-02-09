@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
@@ -185,7 +185,7 @@ class NewConversationEventHandlerTest {
         @Mock
         private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,

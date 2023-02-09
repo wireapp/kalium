@@ -79,5 +79,4 @@ internal class NewConversationEventHandlerImpl(
             }
         }
         .onFailure { logger.e("failure on new conversation event: $it") }
-
 }

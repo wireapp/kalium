@@ -22,12 +22,17 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.fold
 
 /**
- * Return if self user is part of a team or noz
+ * Checks if the self user is a team member or not.
+ * @return true if the self user is a team member, false otherwise.
  */
-class IsSelfATeamMemberUseCase internal constructor(
+fun interface IsSelfATeamMemberUseCase {
+    suspend operator fun invoke(): Boolean
+}
+
+internal class IsSelfATeamMemberUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider
-) {
-    suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
+) : IsSelfATeamMemberUseCase {
+    override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
         it != null
     })
 }

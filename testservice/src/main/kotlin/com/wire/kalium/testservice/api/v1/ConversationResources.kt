@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
+import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
@@ -34,6 +35,7 @@ import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
 import io.swagger.v3.oas.annotations.Operation
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
 import javax.ws.rs.POST
@@ -50,36 +52,40 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     private val log = LoggerFactory.getLogger(ConversationResources::class.java.name)
 
-    // archive a conversation
-    /*
     @POST
     @Path("/instance/{id}/archive")
-    fun archive(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Not yet implemented")
+    @Operation(summary = "Archive a conversation")
+    fun archive(@PathParam("id") id: String): Response {
+        return Response.status(Response.Status.NOT_IMPLEMENTED).build()
     }
-    */
 
-    // clear a conversation
-    /*
     @POST
     @Path("/instance/{id}/clear")
-    fun clear(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Not yet implemented")
+    @Operation(summary = "Clear a conversation")
+    fun clear(@PathParam("id") id: String, @Valid request: ClearConversationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            runBlocking {
+                ConversationRepository.clearConversation(instance, ConversationId(conversationId, conversationDomain))
+            }
+        }
+        return Response.status(Response.Status.OK).build()
     }
-    */
 
     @POST
     @Path("/instance/{id}/delete")
     @Operation(summary = "Delete a message locally")
-    suspend fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
+    fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(deleteMessageRequest) {
-            ConversationRepository.deleteConversation(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                messageId,
-                false
-            )
+            runBlocking {
+                ConversationRepository.deleteConversation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    false
+                )
+            }
         }
         return Response.status(Response.Status.OK).build()
     }
@@ -87,28 +93,32 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/deleteEverywhere")
     @Operation(summary = "Delete a message for everyone")
-    suspend fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
+    fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(deleteMessageRequest) {
-            ConversationRepository.deleteConversation(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                messageId,
-                true
-            )
+            runBlocking {
+                ConversationRepository.deleteConversation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    true
+                )
+            }
         }
     }
 
     @POST
     @Path("/instance/{id}/getMessages")
     @Operation(summary = "Get all messages")
-    suspend fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
+    fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
         val instance = instanceService.getInstanceOrThrow(id)
         with(getMessagesRequest) {
-            return ConversationRepository.getMessages(
-                instance,
-                ConversationId(conversationId, conversationDomain)
-            )
+            return runBlocking {
+                ConversationRepository.getMessages(
+                    instance,
+                    ConversationId(conversationId, conversationDomain)
+                )
+            }
         }
     }
 
@@ -118,36 +128,40 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendConfirmationDelivered")
     @Operation(summary = "Send a delivery confirmation for a message")
-    suspend fun sendConfirmationDelivered(
+    fun sendConfirmationDelivered(
         @PathParam("id") id: String,
         @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendConfirmationReadRequest) {
-            ConversationRepository.sendConfirmation(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                ReceiptType.DELIVERED,
-                firstMessageId
-            )
+            runBlocking {
+                ConversationRepository.sendConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    ReceiptType.DELIVERED,
+                    firstMessageId
+                )
+            }
         }
     }
 
     @POST
     @Path("/instance/{id}/sendConfirmationRead")
     @Operation(summary = "Send a read confirmation for a message")
-    suspend fun sendConfirmationRead(
+    fun sendConfirmationRead(
         @PathParam("id") id: String,
         @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendConfirmationReadRequest) {
-            ConversationRepository.sendConfirmation(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                ReceiptType.READ,
-                firstMessageId
-            )
+            runBlocking {
+                ConversationRepository.sendConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    ReceiptType.READ,
+                    firstMessageId
+                )
+            }
         }
     }
 
@@ -160,37 +174,41 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendFile")
     @Operation(summary = "Send a file to a conversation")
-    suspend fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
+    fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
         log.info("Instance $id: Send file with name ${sendFileRequest.fileName}")
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendFileRequest) {
-            ConversationRepository.sendFile(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                data,
-                fileName,
-                type,
-                invalidHash,
-                otherAlgorithm,
-                otherHash
-            )
+            runBlocking {
+                ConversationRepository.sendFile(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    data,
+                    fileName,
+                    type,
+                    invalidHash,
+                    otherAlgorithm,
+                    otherHash
+                )
+            }
         }
     }
 
     @POST
     @Path("/instance/{id}/sendImage")
     @Operation(summary = "Send an image to a conversation")
-    suspend fun sendImage(@PathParam("id") id: String, @Valid sendImageRequest: SendImageRequest): Response {
+    fun sendImage(@PathParam("id") id: String, @Valid sendImageRequest: SendImageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendImageRequest) {
-            ConversationRepository.sendImage(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                data,
-                type,
-                height,
-                width
-            )
+            runBlocking {
+                ConversationRepository.sendImage(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    data,
+                    type,
+                    height,
+                    width
+                )
+            }
         }
     }
 
@@ -200,13 +218,15 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendPing")
     @Operation(summary = "Send a ping to a conversation")
-    suspend fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest): Response {
+    fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendPingRequest) {
-            ConversationRepository.sendPing(
-                instance,
-                ConversationId(conversationId, conversationDomain)
-            )
+            runBlocking {
+                ConversationRepository.sendPing(
+                    instance,
+                    ConversationId(conversationId, conversationDomain)
+                )
+            }
         }
     }
 
@@ -219,15 +239,17 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendReaction")
     @Operation(summary = "Send a reaction to a message")
-    suspend fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
+    fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendReactionRequest) {
-            ConversationRepository.sendReaction(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                originalMessageId,
-                type
-            )
+            runBlocking {
+                ConversationRepository.sendReaction(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    originalMessageId,
+                    type
+                )
+            }
         }
     }
 
@@ -237,7 +259,7 @@ class ConversationResources(private val instanceService: InstanceService) {
         summary = "Send a text message to a conversation",
         description = "This can include mentions and reply (buttons and link previews not yet implemented)"
     )
-    suspend fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
+    fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         // TODO Implement buttons, link previews and ephemeral messages here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
@@ -254,13 +276,15 @@ class ConversationResources(private val instanceService: InstanceService) {
             }
         }
         return with(sendTextRequest) {
-            ConversationRepository.sendTextMessage(
-                instance,
-                ConversationId(conversationId, conversationDomain),
-                text,
-                mentions,
-                quotedMessageId
-            )
+            runBlocking {
+                ConversationRepository.sendTextMessage(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    text,
+                    mentions,
+                    quotedMessageId
+                )
+            }
         }
     }
 
