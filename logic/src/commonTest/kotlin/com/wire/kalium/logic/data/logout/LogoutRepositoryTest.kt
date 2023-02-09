@@ -74,12 +74,13 @@ class LogoutRepositoryTest {
             // Ignored, really
         }
 
-        logoutRepository.onLogout(LogoutReason.SELF_HARD_LOGOUT)
         logoutRepository.observeLogout().test {
+            logoutRepository.onLogout(LogoutReason.SELF_HARD_LOGOUT)
             assertEquals(LogoutReason.SELF_HARD_LOGOUT, awaitItem())
-
+            assertEquals(null, awaitItem())
             logoutRepository.onLogout(LogoutReason.SESSION_EXPIRED)
             assertEquals(LogoutReason.SESSION_EXPIRED, awaitItem())
+            assertEquals(null, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
