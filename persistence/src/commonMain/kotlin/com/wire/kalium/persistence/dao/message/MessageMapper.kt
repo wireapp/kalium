@@ -192,7 +192,6 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        senderUserId: QualifiedIDEntity,
         senderUserId: UserIDEntity,
         senderName: String?,
         senderPreviewAssetId: QualifiedIDEntity?,
