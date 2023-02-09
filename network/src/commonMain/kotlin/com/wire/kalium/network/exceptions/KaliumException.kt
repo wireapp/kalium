@@ -79,6 +79,11 @@ sealed class KaliumException() : Exception() {
      */
     class GenericError(override val cause: Throwable) : KaliumException()
 
+    /**
+     * Federation errors
+     */
+    class FederationError(val errorResponse: ErrorResponse) : KaliumException()
+
     sealed class FeatureError() : KaliumException()
 }
 
