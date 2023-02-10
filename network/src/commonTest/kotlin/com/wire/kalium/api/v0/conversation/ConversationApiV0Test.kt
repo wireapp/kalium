@@ -20,6 +20,8 @@ package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
+import com.wire.kalium.model.EventContentDTOJson.validNullAccessRole
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
@@ -32,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
@@ -325,7 +328,7 @@ class ConversationApiV0Test : ApiTest {
     }
 
     @Test
-    fun givenReceiptMode_whenUpdatingConversationReceiptMode_thenRequestIsConfiguredCorrectly() = runTest {
+    fun givenRightAccess_whenGeneratingGuestRoomLink_thenRequestIsConfiguredCorrectly() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val receiptMode = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED)
@@ -348,6 +351,29 @@ class ConversationApiV0Test : ApiTest {
         assertTrue(response.isSuccessful())
     }
 
+    @Test
+    fun givenReceiptMode_whenUpdatingConversationReceiptMode_thenRequestIsConfiguredCorrectly() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            validGenerateGuestRoomLink,
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertPost()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.value}/${PATH_CODE}")
+            }
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+
+        // when
+        val response = conversationApi.generateGuestRoomLink(conversationId)
+
+        // then
+        assertIs<NetworkResponse.Success<GenerateGuestRoomLinkResponse>>(response)
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
@@ -357,6 +383,7 @@ class ConversationApiV0Test : ApiTest {
         const val PATH_V2 = "v2"
         const val PATH_JOIN = "join"
         const val PATH_RECEIPT_MODE = "receipt-mode"
+        const val PATH_CODE = "code"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
