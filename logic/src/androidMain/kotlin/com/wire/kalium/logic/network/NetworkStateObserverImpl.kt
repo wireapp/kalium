@@ -22,6 +22,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +66,9 @@ actual class NetworkStateObserverImpl(
 
         trySend(connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState())
 
-        connectivityManager.registerDefaultNetworkCallback(callback)
+        connectivityManager.registerDefaultNetworkCallback(callback).also {
+            kaliumLogger.d("cyka Registering network callback")
+        }
 
         awaitClose {
             connectivityManager.unregisterNetworkCallback(callback)
