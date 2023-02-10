@@ -139,9 +139,9 @@ class UserDatabaseBuilder internal constructor(
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries, queriesContext)
 
-    private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
+//     private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
     val metadataDAO: MetadataDAO
-        get() = MetadataDAOImpl(database.metadataQueries, metadataCache, databaseScope, queriesContext)
+        get() = MetadataDAOImpl(database.metadataQueries, databaseScope, queriesContext)
 
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
