@@ -78,7 +78,8 @@ internal class SlowSyncManager(
             logger.i("SlowSync ExceptionHandler error $failure")
             scope.launch {
                 slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure))
-                slowSyncRecoveryHandler.recover(failure) {                    val delay = exponentialDurationHelper.next()
+                slowSyncRecoveryHandler.recover(failure) {
+                    val delay = exponentialDurationHelper.next()
                     logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
                     networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     logger.i("SlowSync Delay and waiting for connection finished - retrying")
