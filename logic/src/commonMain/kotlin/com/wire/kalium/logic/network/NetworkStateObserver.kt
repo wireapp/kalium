@@ -29,6 +29,7 @@ interface NetworkStateObserver {
 
     fun observeNetworkState(): Flow<NetworkState>
 
+    // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
         // Delay for given amount but break it if reconnected again.
         withTimeoutOrNull(delay) {
@@ -39,9 +40,6 @@ interface NetworkStateObserver {
                 .filter { it is NetworkState.ConnectedWithInternet }
                 .firstOrNull()
         }
-        // At this point, if the block above timed out, it means that it haven't reconnected so wait until reconnected.
-        // If the block above completed before the timeout, just make sure it's still connected.
-        observeNetworkState().firstOrNull { it is NetworkState.ConnectedWithInternet }
     }
 }
 
