@@ -21,6 +21,8 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.network.NetworkState
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.util.DateTimeUtil
@@ -317,8 +319,12 @@ class SlowSyncManagerTest {
         @Mock
         val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(classOf<SlowSyncRecoveryHandler>())
 
+        @Mock
+        val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
+
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
+            withNetworkState(flowOf(NetworkState.Connected))
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
@@ -351,11 +357,19 @@ class SlowSyncManagerTest {
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
         }
 
+        fun withNetworkState(networkStateFlow: Flow<NetworkState>) = apply {
+            given(networkStateObserver)
+                .function(networkStateObserver::observeNetworkState)
+                .whenInvoked()
+                .thenReturn(networkStateFlow)
+        }
+
         private val slowSyncManager = SlowSyncManager(
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
             slowSyncRecoveryHandler,
+            networkStateObserver,
             TestKaliumDispatcher
         )
 
