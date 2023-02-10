@@ -4,6 +4,9 @@ on:
     push:
         branches:
             - develop # later on we should stick to main, since there will be the releases
+    # remove this after testing on ci
+    pull_request: # remove this after testing on ci
+        types: [ opened, edited, synchronize ]
 
 jobs:
     publish:
