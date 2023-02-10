@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock

@@ -50,7 +50,6 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.CommitBundleEventReceiverImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -284,8 +283,6 @@ class UserSessionScope internal constructor(
     private val userStorage = userStorageProvider.getOrCreate(
         userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
     )
-
-    private var _clientId: ClientId? = null
 
     val callMapper: CallMapper get() = MapperProvider.callMapper(userId)
 
@@ -971,7 +968,8 @@ class UserSessionScope internal constructor(
             client.clearClientData,
             clearUserData,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            clientIdProvider
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

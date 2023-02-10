@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either

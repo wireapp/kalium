@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.fold
 
