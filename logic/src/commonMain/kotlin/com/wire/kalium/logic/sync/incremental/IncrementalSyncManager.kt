@@ -99,7 +99,7 @@ internal class IncrementalSyncManager(
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
                     val delay = exponentialDurationHelper.next()
                     kaliumLogger.i("$TAG Triggering delay($delay) and waiting for reconnection")
-                    networkStateObserver.delayUntilConnectedAgain(delay)
+                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     kaliumLogger.i("$TAG Delay and waiting for connection finished - retrying")
                     startMonitoringForSync()
                 }

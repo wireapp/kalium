@@ -81,7 +81,7 @@ internal class SlowSyncManager(
                 slowSyncRecoveryHandler.recover(failure) {
                     val delay = exponentialDurationHelper.next()
                     logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
-                    networkStateObserver.delayUntilConnectedAgain(delay)
+                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     logger.i("SlowSync Delay and waiting for connection finished - retrying")
                     kaliumLogger.i("SlowSync Connected - retrying")
                     startMonitoring()

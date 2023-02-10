@@ -49,7 +49,7 @@ actual class NetworkStateObserverImpl(
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 super.onBlockedStatusChanged(network, blocked)
-                trySend(if (blocked) NetworkState.NotConnected else NetworkState.Connected)
+                trySend(if (blocked) NetworkState.ConnectedWithoutInternet else NetworkState.ConnectedWithInternet)
             }
 
             override fun onLost(network: Network) {
@@ -76,14 +76,15 @@ actual class NetworkStateObserverImpl(
         replay = 1
     )
 
-    private fun NetworkCapabilities?.isConnected(): Boolean {
+    private fun NetworkCapabilities?.toState(): NetworkState {
         val hasInternet = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         val isValidated = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        return hasInternet && isValidated
+        return when {
+            !hasInternet -> NetworkState.NotConnected
+            isValidated -> NetworkState.ConnectedWithInternet
+            else -> NetworkState.ConnectedWithoutInternet
+        }
     }
-
-    private fun NetworkCapabilities?.toState(): NetworkState =
-        if (this.isConnected()) NetworkState.Connected else NetworkState.NotConnected
 
     override fun observeNetworkState(): Flow<NetworkState> = networkStateSharedFlow.distinctUntilChanged()
 }
