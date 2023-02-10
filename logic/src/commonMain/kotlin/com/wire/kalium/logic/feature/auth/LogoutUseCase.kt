@@ -73,6 +73,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
                 delay(CLEAR_DATA_DELAY)
                 clearClientDataUseCase()
+                logoutRepository.clearClientRelatedLocalMetadata()
                 clientRepository.clearCurrentClientId()
                 clientRepository.clearHasRegisteredMLSClient()
                 // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
