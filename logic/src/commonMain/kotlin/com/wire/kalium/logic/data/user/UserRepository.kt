@@ -365,6 +365,6 @@ internal class UserDataSource internal constructor(
         }
 
     companion object {
-        const val SELF_USER_ID_KEY = "selfUserID"
+        internal const val SELF_USER_ID_KEY = "selfUserID"
     }
 }

@@ -49,15 +49,16 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun getRetainedClientId(): String? = metadataDAO.valueByKey(RETAINED_CLIENT_ID_KEY)
     override suspend fun clearRegisteredClientId() = metadataDAO.deleteValue(REGISTERED_CLIENT_ID_KEY)
     override suspend fun clearRetainedClientId() = metadataDAO.deleteValue(RETAINED_CLIENT_ID_KEY)
+
     // todo: re-enable mls!
     // metadataDAO.valueByKey(HAS_REGISTERED_MLS_CLIENT_KEY).toBoolean()
     override suspend fun hasRegisteredMLSClient(): Boolean = false
     override suspend fun setHasRegisteredMLSClient() = metadataDAO.insertValue(true.toString(), HAS_REGISTERED_MLS_CLIENT_KEY)
     override suspend fun clearHasRegisteredMLSClient() = metadataDAO.deleteValue(HAS_REGISTERED_MLS_CLIENT_KEY)
 
-    private companion object {
-        const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
+    companion object {
+        private const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
         const val RETAINED_CLIENT_ID_KEY = "retained_client_id"
-        const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
+        private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
     }
 }

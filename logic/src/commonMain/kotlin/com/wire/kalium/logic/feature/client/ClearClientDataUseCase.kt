@@ -28,6 +28,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.persistence.dao.MetadataDAO
 
 /**
  * This use case is responsible for clearing the client data.
@@ -39,7 +40,8 @@ interface ClearClientDataUseCase {
 
 internal class ClearClientDataUseCaseImpl internal constructor(
     private val mlsClientProvider: MLSClientProvider,
-    private val proteusClientProvider: ProteusClientProvider
+    private val proteusClientProvider: ProteusClientProvider,
+    private val metadataDAO: MetadataDAO
 ) : ClearClientDataUseCase {
 
     override suspend operator fun invoke() {

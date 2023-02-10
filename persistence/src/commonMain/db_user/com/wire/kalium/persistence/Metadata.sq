@@ -13,3 +13,9 @@ SELECT stringValue FROM Metadata WHERE key = ?;
 
 deleteValue:
 DELETE FROM Metadata WHERE key = ?;
+
+deleteAllExpect:
+DELETE FROM Metadata WHERE key NOT IN ?;
+
+deleteAll:
+DELETE FROM Metadata;
