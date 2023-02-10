@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -50,7 +51,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val pushTokenRepository: PushTokenRepository
+    private val pushTokenRepository: PushTokenRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -85,7 +87,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 pushTokenRepository.setUpdateFirebaseTokenFlag(true)
             }
         }
-
+        currentClientIdProvider.clear()
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
     }

@@ -42,6 +42,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.CurrentClientIdProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
@@ -186,7 +188,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
@@ -259,10 +260,6 @@ import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 
-fun interface CurrentClientIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, ClientId>
-}
-
 fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
@@ -290,13 +287,6 @@ class UserSessionScope internal constructor(
 
     private var _clientId: ClientId? = null
 
-    @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
-    private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
-        clientRepository.currentClientId().onSuccess {
-            _clientId = it
-        }
-    }
-
     val callMapper: CallMapper get() = MapperProvider.callMapper(userId)
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
@@ -306,7 +296,8 @@ class UserSessionScope internal constructor(
             userId, qualifiedIdMapper, globalScope.sessionRepository
         )
 
-    private val clientIdProvider = CurrentClientIdProvider { clientId() }
+    private val clientIdProvider: CurrentClientIdProvider = CurrentClientIdProviderImpl(clientRepository)
+
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
             conversationRepository
