@@ -324,7 +324,7 @@ class SlowSyncManagerTest {
 
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
-            withNetworkState(flowOf(NetworkState.ConnectedWithInternet)
+            withNetworkState(flowOf(NetworkState.ConnectedWithInternet))
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
