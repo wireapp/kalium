@@ -43,7 +43,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -151,7 +150,7 @@ class CreateGroupConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(any(), matching { it.toInstant().wasInTheLastSecond })
+            .with(any(), matching { it.wasInTheLastSecond })
             .wasInvoked(exactly = once)
     }
 

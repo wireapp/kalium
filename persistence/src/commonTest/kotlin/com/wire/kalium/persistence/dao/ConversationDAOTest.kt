@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-    import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.utils.IgnoreIOS
@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -344,12 +343,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
         // given
-        val expectedLastReadDate = "2022-03-30T15:36:00.000Z".toInstant()
+        val expectedLastReadDate = Instant.fromEpochMilliseconds(1648654560000)
 
         conversationDAO.insertConversation(conversationEntity1)
 
         // when
-        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate.toString())
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
 
         // then
         val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
@@ -362,7 +361,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
         runTest {
             // given
-            val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z".toInstant()
+            val expectedConversationSeenDate = Instant.fromEpochMilliseconds(1648654560000)
+
             teamDAO.insertTeam(team)
             launch {
                 // when
@@ -378,7 +378,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
                     assertTrue(conversationAfterInsert != null)
 
-                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate.toIsoDateTimeString())
+                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
 
                     val conversationAfterUpdate = awaitItem()
 

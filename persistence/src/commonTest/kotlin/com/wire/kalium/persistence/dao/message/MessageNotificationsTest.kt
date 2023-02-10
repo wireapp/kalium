@@ -23,14 +23,14 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.hours
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageNotificationsTest : BaseMessageTest() {
 
     @Test
@@ -61,7 +61,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     @Test
     fun givenConversationWithMessages_whenConversationModifiedDateUpdated_thenNotificationNotAffected() = runTest {
         val message = OTHER_MESSAGE
-        val date = message.date.plus(2.0.hours).toIsoDateTimeString()
+        val date = message.date.plus(2.0.hours)
         insertInitialData()
         messageDAO.insertOrIgnoreMessage(message)
 

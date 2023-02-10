@@ -24,7 +24,6 @@ data class ConversationOptions(
     val accessRole: Set<Conversation.AccessRole>? = null,
     val readReceiptsEnabled: Boolean? = false,
     val protocol: Protocol = Protocol.PROTEUS,
-    // TODO(qol): use ClientId class
     val creatorClientId: ClientId? = null
 ) {
     enum class Protocol {
