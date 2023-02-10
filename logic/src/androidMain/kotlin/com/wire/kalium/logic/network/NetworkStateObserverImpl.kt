@@ -78,6 +78,8 @@ actual class NetworkStateObserverImpl(
 
     private fun NetworkCapabilities?.toState(): NetworkState {
         val hasInternet = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        // There may be some edge cases where on-premise environments could be considered "not validated"
+        // and should still be able to make requests.
         val isValidated = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
         return when {
             !hasInternet -> NetworkState.NotConnected

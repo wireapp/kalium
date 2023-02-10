@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.network
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-    override fun observeNetworkState(): Flow<NetworkState> {
-        TODO("Not yet implemented")
-    }
+    override fun observeNetworkState(): Flow<NetworkState> =
+        flowOf(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
 }
