@@ -253,6 +253,10 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+
+                MessageContent.HistoryLost -> mutableMapOf(
+                    typeKey to "conversationMightLostHistory"
+                )
             }
 
             val standardProperties = mapOf(

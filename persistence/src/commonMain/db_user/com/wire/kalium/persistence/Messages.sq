@@ -421,6 +421,10 @@ insertMessage:
 INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertOrIgnoreBulkSystemMessage:
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
+SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP') ;
+
 insertMessageMention:
 INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)
 VALUES (?, ?, ?, ?, ?);

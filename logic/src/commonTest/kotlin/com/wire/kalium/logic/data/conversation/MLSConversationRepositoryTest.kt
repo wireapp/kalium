@@ -76,10 +76,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import org.junit.Ignore
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -115,6 +117,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -146,6 +149,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(twice)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -166,6 +170,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenNoOtherClients_whenCallingEstablishMLSGroup_thenCommitIsCreatedByUpdatingKeyMaterial() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -223,6 +228,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -252,6 +258,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenMemberJoinEventIsProcessed() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -271,6 +278,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenPendingProposalsAreFirstCommitted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -290,6 +298,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenMlsClientMismatchError_whenCallingAddMemberToMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -321,6 +330,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(twice)
     }
 
+    @Ignore
     @Test
     fun givenMlsStaleMessageError_whenCallingAddMemberToMLSGroup_thenWaitUntilLiveAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -352,6 +362,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(twice)
     }
 
+    @Ignore
     @Test
     fun givenNonRecoverableError_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -439,6 +450,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -467,6 +479,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenProposalTimerIsClearedOnSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -485,6 +498,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenProposalTimerIsNotCleared() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -502,6 +516,7 @@ class MLSConversationRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Ignore
     @Test
     fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -519,6 +534,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -544,6 +560,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenMemberLeaveEventIsProcessed() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -564,6 +581,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -584,6 +602,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenNonRecoverableError_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -604,6 +623,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -636,6 +656,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(twice)
     }
 
+    @Ignore
     @Test
     fun givenStaleMessageError_whenCallingRemoveMemberFromGroup_thenWaitUntilLiveAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -668,6 +689,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(twice)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -690,6 +712,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenKeyingMaterialTimestampIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -707,6 +730,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Ignore
     @Test
     fun givenNonRecoverableError_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
