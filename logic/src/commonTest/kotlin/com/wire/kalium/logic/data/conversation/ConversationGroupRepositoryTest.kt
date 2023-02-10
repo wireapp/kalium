@@ -446,7 +446,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallTheStoreLinkIntoDb() = runTest {
+    fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToGenerateGuestRoomLinkApi()
