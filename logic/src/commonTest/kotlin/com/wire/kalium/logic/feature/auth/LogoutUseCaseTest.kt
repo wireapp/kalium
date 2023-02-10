@@ -22,6 +22,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -209,6 +210,9 @@ class LogoutUseCaseTest {
         @Mock
         val pushTokenRepository = mock(classOf<PushTokenRepository>())
 
+        @Mock
+        val clientIdProvider = mock(CurrentClientIdProvider::class)
+
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
@@ -218,7 +222,8 @@ class LogoutUseCaseTest {
             clearClientDataUseCase,
             clearUserDataUseCase,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            clientIdProvider
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

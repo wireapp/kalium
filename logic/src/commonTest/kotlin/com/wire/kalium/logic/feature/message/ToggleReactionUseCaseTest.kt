@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.CurrentClientIdProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.UserReactions
@@ -27,7 +29,6 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.client.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -175,7 +176,8 @@ class ToggleReactionUseCaseTest {
 
     private class Arrangement {
 
-        val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
+        @Mock
+        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
@@ -202,7 +204,14 @@ class ToggleReactionUseCaseTest {
                 .thenReturn(either)
         }
 
-        fun arrange(reactionRepository: ReactionRepository) = this to ToggleReactionUseCase(
+        fun withCurrentClientId(clientId: ClientId) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(clientId))
+        }
+
+        fun arrange(reactionRepository: ReactionRepository) = (this.withCurrentClientId(TEST_CURRENT_CLIENT)) to ToggleReactionUseCase(
             currentClientIdProvider,
             TEST_SELF_USER,
             slowSyncRepository,
