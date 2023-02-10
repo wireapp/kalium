@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use this use case to generate a new guest room link for a team conversation
+ */
 interface GenerateGuestRoomLinkUseCase {
     suspend operator fun invoke(conversationId: ConversationId): GenerateGuestRoomLinkResult
 }

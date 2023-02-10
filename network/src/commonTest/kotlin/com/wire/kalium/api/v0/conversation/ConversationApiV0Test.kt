@@ -21,7 +21,6 @@ package com.wire.kalium.api.v0.conversation
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
-import com.wire.kalium.model.EventContentDTOJson.validNullAccessRole
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
@@ -328,7 +327,7 @@ class ConversationApiV0Test : ApiTest {
     }
 
     @Test
-    fun givenRightAccess_whenGeneratingGuestRoomLink_thenRequestIsConfiguredCorrectly() = runTest {
+    fun givenReceiptMode_whenUpdatingConversationReceiptMode_thenRequestIsConfiguredCorrectly() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val receiptMode = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED)
@@ -352,7 +351,7 @@ class ConversationApiV0Test : ApiTest {
     }
 
     @Test
-    fun givenReceiptMode_whenUpdatingConversationReceiptMode_thenRequestIsConfiguredCorrectly() = runTest {
+    fun givenRightAccess_whenGeneratingGuestRoomLink_thenRequestIsConfiguredCorrectly() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "conversationDomain")
 
