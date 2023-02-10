@@ -101,6 +101,7 @@ internal class IncrementalSyncManager(
                     kaliumLogger.i("$TAG Triggering delay($delay) and waiting for reconnection")
                     networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     kaliumLogger.i("$TAG Delay and waiting for connection finished - retrying")
+                    startMonitoringForSync()
                 }
             }
         }
