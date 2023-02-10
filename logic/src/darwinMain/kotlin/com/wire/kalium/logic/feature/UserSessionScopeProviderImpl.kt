@@ -37,6 +37,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
+@Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
     private val rootPathsProvider: RootPathsProvider,
     private val globalScope: GlobalKaliumScope,
