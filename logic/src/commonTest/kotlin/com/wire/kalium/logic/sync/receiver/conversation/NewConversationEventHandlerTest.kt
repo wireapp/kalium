@@ -47,7 +47,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -122,7 +121,7 @@ class NewConversationEventHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(eq(event.conversationId), matching { it.toInstant().wasInTheLastSecond })
+            .with(eq(event.conversationId), matching { it.wasInTheLastSecond })
             .wasInvoked(exactly = once)
     }
 
