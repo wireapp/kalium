@@ -131,4 +131,5 @@ interface ConversationApi {
     ): NetworkResponse<UpdateConversationReceiptModeResponse>
 
     suspend fun generateGuestRoomLink(conversationId: ConversationId): NetworkResponse<GenerateGuestRoomLinkResponse>
+    suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 }

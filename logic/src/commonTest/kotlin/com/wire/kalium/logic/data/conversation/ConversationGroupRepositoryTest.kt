@@ -490,6 +490,51 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenASuccessApiCall_whenTryingToRevokeGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulCallToRevokeGuestRoomLinkApi()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB()
+            .arrange()
+
+        val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::revokeGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAFailedApiCall_whenTryingToRevokingGuestRoomLink_ThenReturnFailure() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withFailedCallToRevokeGuestRoomLinkApi()
+            .arrange()
+
+        val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
+
+        result.shouldFail()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::revokeGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -742,6 +787,30 @@ class ConversationGroupRepositoryTest {
         fun withFailedCallToGenerateGuestRoomLinkApi() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::generateGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
+        }
+
+        fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::revokeGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        Unit,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withFailedCallToRevokeGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::revokeGuestRoomLink)
                 .whenInvokedWith(any())
                 .thenReturn(
                     NetworkResponse.Error(
