@@ -291,7 +291,7 @@ class IncrementalSyncManagerTest {
         }
 
         init {
-            withNetworkState(flowOf(NetworkState.Connected))
+            withNetworkState(flowOf(NetworkState.ConnectedWithInternet))
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
