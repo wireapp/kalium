@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
@@ -56,6 +57,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val selfUserId: UserId,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider,
+    private val userStorage: UserStorage,
     private val slowSyncRepository: SlowSyncRepository
 ) {
     @OptIn(DelicateKaliumApi::class)
@@ -101,7 +103,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
 
     val clearClientData: ClearClientDataUseCase
-        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
+        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider, userStorage.database.metadataDAO)
 
     val getProteusFingerprint: GetProteusFingerprintUseCase
         get() = GetProteusFingerprintUseCaseImpl(preKeyRepository)

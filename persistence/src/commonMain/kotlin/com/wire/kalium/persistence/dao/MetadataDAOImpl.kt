@@ -56,4 +56,12 @@ class MetadataDAOImpl internal constructor(
     override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
         metadataQueries.selectValueByKey(key).executeAsOneOrNull()
     }
+
+    override suspend fun clear(keysToKeep: List<String>?) = withContext(queriesContext) {
+        if (keysToKeep == null) {
+            metadataQueries.deleteAll()
+        } else {
+            metadataQueries.deleteAllExcept(keysToKeep)
+        }
+    }
 }
