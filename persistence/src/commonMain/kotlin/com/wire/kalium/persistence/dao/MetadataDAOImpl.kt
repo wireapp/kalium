@@ -61,7 +61,7 @@ class MetadataDAOImpl internal constructor(
         if (keysToKeep == null) {
             metadataQueries.deleteAll()
         } else {
-            metadataQueries.deleteAllExpect(keysToKeep)
+            metadataQueries.deleteAllExcept(keysToKeep)
         }
     }
 }
