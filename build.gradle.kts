@@ -32,7 +32,6 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
         classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
         classpath("com.wire:carthage-gradle-plugin:${libs.versions.carthage.get()}")
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
@@ -117,8 +116,4 @@ kover {
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
-}
-
-tasks.dokkaHtmlMultiModule.configure {
-    dependsOn("protobuf-codegen:generateProto")
 }

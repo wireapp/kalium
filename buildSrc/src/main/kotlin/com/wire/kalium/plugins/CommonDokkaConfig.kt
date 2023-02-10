@@ -50,7 +50,7 @@ fun Project.commonDokkaConfig() {
                 includes.from(it)
             }
             includes.from(rootProject.file("dokka/moduledoc.md").path)
-            samples.from(rootProject.file("samples"))
+            // samples.from(rootProject.file("samples")) // Disabling samples for dokka to avoid OOM
             includeNonPublic.set(true)
             documentedVisibilities.set(listOf(Visibility.PUBLIC, Visibility.INTERNAL))
         }
