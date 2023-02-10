@@ -862,7 +862,10 @@ class UserSessionScope internal constructor(
             clientIdProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi, userStorage.database.metadataDAO)
+    private val logoutRepository: LogoutRepository = LogoutDataSource(
+        authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi,
+        userStorage.database.metadataDAO
+    )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
