@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -156,7 +156,7 @@ internal class IncrementalSyncManager(
 
     private companion object {
         val MIN_RETRY_DELAY = 10.seconds
-        val MAX_RETRY_DELAY = 4.hours
+        val MAX_RETRY_DELAY = 10.minutes
         private const val TAG = "IncrementalSyncManager"
     }
 }

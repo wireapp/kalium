@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -148,7 +148,7 @@ internal class SlowSyncManager(
 
     private companion object {
         val MIN_RETRY_DELAY = 10.seconds
-        val MAX_RETRY_DELAY = 4.hours
+        val MAX_RETRY_DELAY = 10.minutes
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
     }
 }
