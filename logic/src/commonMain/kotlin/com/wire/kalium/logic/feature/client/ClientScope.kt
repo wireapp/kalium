@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
@@ -52,7 +53,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) constructor(
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val selfUserId: UserId,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
-    private val clientIdProvider: CurrentClientIdProvider
+    private val clientIdProvider: CurrentClientIdProvider,
+    private val userStorage: UserStorage
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -93,7 +95,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) constructor(
         get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
 
     val clearClientData: ClearClientDataUseCase
-        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
+        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider, userStorage.database.metadataDAO)
 
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase
         get() = VerifyExistingClientUseCaseImpl(clientRepository)
