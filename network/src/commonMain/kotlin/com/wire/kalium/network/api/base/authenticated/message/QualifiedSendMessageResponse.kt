@@ -26,6 +26,7 @@ sealed class QualifiedSendMessageResponse {
     @SerialName("time")
     abstract val time: String
 
+    @SerialName("missing")
     abstract val missing: QualifiedUserIdToClientMap
 
     @SerialName("redundant")
@@ -53,10 +54,15 @@ sealed class QualifiedSendMessageResponse {
 
     @Serializable
     data class MessageSent(
+        @SerialName("time")
         override val time: String,
+        @SerialName("missing")
         override val missing: QualifiedUserIdToClientMap,
+        @SerialName("redundant")
         override val redundant: QualifiedUserIdToClientMap,
+        @SerialName("deleted")
         override val deleted: QualifiedUserIdToClientMap,
+        @SerialName("failed_to_send")
         override val failed: QualifiedUserIdToClientMap? = null
     ) : QualifiedSendMessageResponse()
 }
