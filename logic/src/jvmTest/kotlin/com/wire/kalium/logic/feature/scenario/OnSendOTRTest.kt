@@ -106,7 +106,7 @@ class OnSendOTRTest {
             data = memory.share(0),
             length = Size_t(memory.size()),
             isTransient = true,
-            myClientsOnly = true,
+            myClientsOnly = false,
             arg = null
         )
         yield()
