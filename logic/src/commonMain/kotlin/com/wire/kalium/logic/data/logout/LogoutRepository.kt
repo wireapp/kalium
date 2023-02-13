@@ -65,11 +65,7 @@ internal class LogoutDataSource(
 
     override suspend fun observeLogout(): Flow<LogoutReason?> = logoutEventsChannel.receiveAsFlow()
 
-    override suspend fun onLogout(reason: LogoutReason) {
-        logoutEventsChannel.send(reason)
-        // We need to clear channel state in case when user wants to login on the same session
-        logoutEventsChannel.send(null)
-    }
+    override suspend fun onLogout(reason: LogoutReason) = logoutEventsChannel.send(reason)
 
     override suspend fun logout(): Either<CoreFailure, Unit> =
         wrapApiRequest { logoutApi.logout() }
