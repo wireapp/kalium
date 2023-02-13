@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
@@ -31,10 +33,12 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Ignore
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NewMessageEventHandlerTest {
 
     @Test
@@ -50,6 +54,48 @@ class NewMessageEventHandlerTest {
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
             .with(eq(newMessageEvent))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusDUPLICATED_MESSAGE_whenHandling_thenErrorShouldBeIgnored() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(Either.Left(ProteusFailure(ProteusException(message = null, code = ProteusException.Code.DUPLICATE_MESSAGE))))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+
+        verify(arrangement.proteusMessageUnpacker)
+            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
+            .with(eq(newMessageEvent))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.applicationMessageHandler)
+            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
+            .with(any(), any(), any(), any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenProteus_whenHandling_thenErrorShouldBeHandled() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(Either.Left(ProteusFailure(ProteusException(message = null, code = ProteusException.Code.INVALID_SIGNATURE))))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+
+        verify(arrangement.proteusMessageUnpacker)
+            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
+            .with(eq(newMessageEvent))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.applicationMessageHandler)
+            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
+            .with(any(), any(), any(), any(), any(), any())
             .wasInvoked(exactly = once)
     }
 
