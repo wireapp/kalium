@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * A use case used to revoke a guest room link
+ */
 interface RevokeGuestRoomLinkUseCase {
     suspend operator fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult
 }
