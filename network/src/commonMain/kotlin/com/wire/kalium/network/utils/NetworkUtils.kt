@@ -129,10 +129,10 @@ internal inline fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
         this
     }
 
-internal fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) -> Unit): NetworkResponse<T> =
+internal inline fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Error) fn(this) }
 
-internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
+internal inline fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
 /**

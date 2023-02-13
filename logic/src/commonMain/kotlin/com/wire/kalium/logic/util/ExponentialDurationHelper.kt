@@ -15,29 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.util
 
-package com.wire.kalium.logic.feature.user.loggingStatus
+import kotlin.time.Duration
 
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
-import com.wire.kalium.logic.functional.fold
+class ExponentialDurationHelper(
+    private val initialDuration: Duration,
+    private val maxDuration: Duration,
+    private val factor: Double = 2.0,
+) {
+    private var currentDuration = initialDuration
 
-/**
- * Checks if logging is enabled for the current user.
- */
-interface IsLoggingEnabledUseCase {
-    /**
-     * @return true if logging is enabled, false otherwise.
-     */
-    operator fun invoke(): Boolean
-}
+    fun reset() {
+        currentDuration = initialDuration
+    }
 
-internal class IsLoggingEnabledUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
-) : IsLoggingEnabledUseCase {
-    override operator fun invoke(): Boolean =
-        globalConfigRepository.isLoggingEnabled().fold({
-            false
-        }, {
-            it
-        })
+    fun next(): Duration = currentDuration.also {
+        currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
+    }
 }

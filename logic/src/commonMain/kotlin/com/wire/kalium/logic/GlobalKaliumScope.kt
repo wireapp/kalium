@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.GlobalConfigDataSource
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -53,14 +51,8 @@ import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
-import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
-import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
-import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
@@ -111,9 +103,6 @@ class GlobalKaliumScope internal constructor(
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
             NotificationTokenDataSource(globalPreferences.value.tokenStorage)
-    private val globalConfigRepository: GlobalConfigRepository
-        get() =
-            GlobalConfigDataSource(globalPreferences.value.globalAppConfigStorage)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -139,9 +128,6 @@ class GlobalKaliumScope internal constructor(
             observeValidAccounts,
             userSessionScopeProvider.value
         )
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
-    val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
 
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)

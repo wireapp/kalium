@@ -189,6 +189,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -281,7 +282,8 @@ class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    platformUserStorageProperties: PlatformUserStorageProperties
+    platformUserStorageProperties: PlatformUserStorageProperties,
+    networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -621,7 +623,8 @@ class UserSessionScope internal constructor(
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
-            slowSyncRecoveryHandler
+            slowSyncRecoveryHandler,
+            networkStateObserver
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -651,7 +654,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             incrementalSyncWorker,
             incrementalSyncRepository,
-            incrementalSyncRecoveryHandler
+            incrementalSyncRecoveryHandler,
+            networkStateObserver
         )
     }
 
@@ -862,7 +866,10 @@ class UserSessionScope internal constructor(
             clientIdProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    private val logoutRepository: LogoutRepository = LogoutDataSource(
+        authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi,
+        userStorage.database.metadataDAO
+    )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -885,7 +892,8 @@ class UserSessionScope internal constructor(
             upgradeCurrentSessionUseCase,
             userId,
             isAllowedToRegisterMLSClient,
-            clientIdProvider
+            clientIdProvider,
+            userStorage
         )
     val conversations: ConversationScope
         get() = ConversationScope(
