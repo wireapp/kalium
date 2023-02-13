@@ -19,14 +19,15 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ApplicationMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -43,6 +44,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.wrapMLSRequest
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
@@ -54,7 +56,9 @@ internal interface MLSMessageUnpacker {
 internal class MLSMessageUnpackerImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
+    private val subconversationRepository: SubconversationRepository,
     private val pendingProposalScheduler: PendingProposalScheduler,
+    private val epochsFlow: MutableSharedFlow<GroupID>,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -100,36 +104,53 @@ internal class MLSMessageUnpackerImpl(
     private suspend fun messageFromMLSMessage(
         messageEvent: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, DecryptedMessageBundle?> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            conversationRepository.getConversationById(messageEvent.conversationId)?.let { conversation ->
-                if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-                    val groupID = conversation.protocol.groupId
-                    wrapMLSRequest {
-                        mlsClient.decryptMessage(
-                            idMapper.toCryptoModel(groupID),
-                            messageEvent.content.decodeBase64Bytes()
-                        ).let {
-                            DecryptedMessageBundle(
-                                groupID,
-                                it.message?.let { message ->
-                                    // We will always have senderClientId together with an application message
-                                    // but CoreCrypto API doesn't express this
-                                    val senderClientId = it.senderClientId?.let { senderClientId ->
-                                        idMapper.fromCryptoQualifiedClientId(senderClientId)
-                                    } ?: ClientId("")
+        messageEvent.subconversationId?.let { subconversationId ->
+            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subconversationId)?.let { groupID ->
+                logger.d("Decrypting MLS for " +
+                        "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
+                        "subconversationId = ${subconversationId} " +
+                        "groupID = ${groupID.value.obfuscateId()}")
+                decryptMessageContent(messageEvent.content.decodeBase64Bytes(), groupID)
+            }
+        } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
+            if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+                logger.d("Decrypting MLS for " +
+                        "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
+                        "groupID = ${protocolInfo.groupId.value.obfuscateId()}")
+                decryptMessageContent(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+            } else {
+                Either.Right(null)
+            }
+        }
 
-                                    ApplicationMessage(
-                                        message,
-                                        senderClientId
-                                    )
-                                },
-                                it.commitDelay
-                            )
-                        }
+    private suspend fun decryptMessageContent(encryptedContent: ByteArray, groupID: GroupID): Either<CoreFailure, DecryptedMessageBundle?> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.decryptMessage(
+                    idMapper.toCryptoModel(groupID),
+                    encryptedContent
+                ).let {
+                    if (it.hasEpochChanged) {
+                        logger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
+                        epochsFlow.emit(groupID)
                     }
-                } else {
-                    Either.Right(null)
+                    DecryptedMessageBundle(
+                        groupID,
+                        it.message?.let { message ->
+                            // We will always have senderClientId together with an application message
+                            // but CoreCrypto API doesn't express this
+                            val senderClientId = it.senderClientId?.let { senderClientId ->
+                                idMapper.fromCryptoQualifiedClientId(senderClientId)
+                            } ?: ClientId("")
+
+                            ApplicationMessage(
+                                message,
+                                senderClientId
+                            )
+                        },
+                        it.commitDelay
+                    )
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+            }
         }
 }
