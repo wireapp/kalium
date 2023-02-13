@@ -1,6 +1,7 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.RecipientFailureType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Boolean;
 import kotlin.Int;
@@ -175,7 +176,7 @@ CREATE TABLE MessageRecipientFailureContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       recipient_failure_list TEXT AS List<QualifiedIDEntity> NOT NULL, -- list of user ids that have failed to receive the message
-      recipient_failure_type TEXT AS MemberChangeType NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
+      recipient_failure_type TEXT AS RecipientFailureType NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
