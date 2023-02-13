@@ -57,7 +57,7 @@ internal class SlowSyncWorkerImpl(
     private val syncConnections: SyncConnectionsUseCase,
     private val syncSelfTeam: SyncSelfTeamUseCase,
     private val syncContacts: SyncContactsUseCase,
-    private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val joinMLSConversations: JoinExistingMLSConversationsUseCase
 ) : SlowSyncWorker {
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
