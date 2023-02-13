@@ -78,7 +78,7 @@ class RevokeGuestRoomLinkUseCaseTest {
 
         val result = revokeGuestRoomLink(conversationId)
 
-        assertIs<GenerateGuestRoomLinkResult.Failure>(result)
+        assertIs<RevokeGuestRoomLinkResult.Failure>(result)
         verify(conversationGroupRepository)
             .suspendFunction(conversationGroupRepository::revokeGuestRoomLink)
             .with(any())
