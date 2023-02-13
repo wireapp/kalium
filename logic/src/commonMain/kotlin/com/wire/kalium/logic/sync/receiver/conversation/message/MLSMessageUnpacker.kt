@@ -53,6 +53,7 @@ internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, MessageUnpackResult>
 }
 
+@Suppress("LongParameterList")
 internal class MLSMessageUnpackerImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
@@ -108,7 +109,7 @@ internal class MLSMessageUnpackerImpl(
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subconversationId)?.let { groupID ->
                 logger.d("Decrypting MLS for " +
                         "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
-                        "subconversationId = ${subconversationId} " +
+                        "subconversationId = $subconversationId " +
                         "groupID = ${groupID.value.obfuscateId()}")
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), groupID)
             }
