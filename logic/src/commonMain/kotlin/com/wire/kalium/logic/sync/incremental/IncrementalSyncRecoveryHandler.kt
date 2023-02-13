@@ -40,7 +40,6 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         kaliumLogger.i("$TAG Checking if we can recover from the failure: $failure")
         if (shouldRestartSlowSyncProcess(failure)) {
             restartSlowSyncProcessForRecoveryUseCase()
-            addSystemMessageToAllConversationsUseCase()
         } else {
             kaliumLogger.i("$TAG Retrying to recover form the failure $failure, perform the incremental sync again")
             onIncrementalSyncRetryCallback.retry()
