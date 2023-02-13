@@ -25,5 +25,6 @@ import com.wire.kalium.logic.data.user.UserId
 data class ProteusSendMessageFailure(
     val missingClientsOfUsers: Map<UserId, List<ClientId>>,
     val redundantClientsOfUsers: Map<UserId, List<ClientId>>,
-    val deletedClientsOfUsers: Map<UserId, List<ClientId>>
+    val deletedClientsOfUsers: Map<UserId, List<ClientId>>,
+    val failedClientsOfUsers: Map<UserId, List<ClientId>>?
 ) : CoreFailure.FeatureFailure()
