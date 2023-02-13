@@ -170,6 +170,17 @@ CREATE TABLE MessageConversationReceiptModeChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageRecipientFailureContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      recipient_failure_list TEXT AS List<QualifiedIDEntity> NOT NULL, -- list of user ids that have failed to receive the message
+      recipient_failure_type TEXT AS MemberChangeType NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 CREATE VIEW IF NOT EXISTS MessageQuoteDetails
 AS SELECT
     MessageTextContent.message_id AS messageId,

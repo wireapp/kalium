@@ -151,6 +151,10 @@ sealed class MessageEntity(
         ADDED, REMOVED
     }
 
+    enum class RecipientFailureType {
+        OWN_BACKEND_FAILURE, OTHER_BACKEND_FAILURE, SOME_RECIPIENTS_FAILED, ALL_RECIPIENTS_FAILED
+    }
+
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
 
