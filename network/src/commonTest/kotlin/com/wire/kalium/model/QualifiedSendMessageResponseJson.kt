@@ -75,7 +75,7 @@ object QualifiedSendMessageResponseJson {
         """.trimMargin()
     }
 
-    private val v4_failedToSend = { _: QualifiedSendMessageResponse ->
+    private val v3_failedToSend = { _: QualifiedSendMessageResponse ->
         """
             |{
             |   "time": "$TIME"
@@ -170,6 +170,6 @@ object QualifiedSendMessageResponseJson {
 
     val failedSentUsersResponse = ValidJsonProvider(
         QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), failed = USER_MAP),
-        v4_failedToSend
+        v3_failedToSend
     )
 }
