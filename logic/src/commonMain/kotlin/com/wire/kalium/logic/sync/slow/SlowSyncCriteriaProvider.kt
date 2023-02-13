@@ -26,6 +26,7 @@ import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.MissingRequirement
 import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.Ready
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
 /**
@@ -70,6 +71,7 @@ internal class SlowSlowSyncCriteriaProviderImpl(
      */
     private suspend fun logoutReasonFlow() = logoutRepository
         .observeLogout()
+        .map<LogoutReason, LogoutReason?> { it }
         .onStart { emit(null) }
 
     override suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution> =

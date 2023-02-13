@@ -36,7 +36,7 @@ interface LogoutRepository {
      * Listen to a logout event.
      * The event caries a [LogoutReason].
      */
-    suspend fun observeLogout(): Flow<LogoutReason?>
+    suspend fun observeLogout(): Flow<LogoutReason>
 
     /**
      * Propagates the logout event and [reason],
@@ -61,9 +61,9 @@ internal class LogoutDataSource(
     private val metadataDAO: MetadataDAO
 ) : LogoutRepository {
 
-    private val logoutEventsChannel = Channel<LogoutReason?>(capacity = Channel.CONFLATED)
+    private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
 
-    override suspend fun observeLogout(): Flow<LogoutReason?> = logoutEventsChannel.receiveAsFlow()
+    override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.receiveAsFlow()
 
     override suspend fun onLogout(reason: LogoutReason) = logoutEventsChannel.send(reason)
 

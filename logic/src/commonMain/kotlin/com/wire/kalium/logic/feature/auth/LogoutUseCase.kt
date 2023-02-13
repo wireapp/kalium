@@ -55,6 +55,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
+
+    // TODO: logout should not be cancelable
     override suspend operator fun invoke(reason: LogoutReason) {
         deregisterTokenUseCase()
         logoutRepository.logout()
@@ -71,7 +73,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
             LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
                 // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
-                delay(CLEAR_DATA_DELAY)
                 clearClientDataUseCase()
                 logoutRepository.clearClientRelatedLocalMetadata()
                 clientRepository.clearCurrentClientId()
