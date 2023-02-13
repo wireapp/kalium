@@ -150,7 +150,7 @@ sealed class MessageContent {
         val conversationId: ConversationId,
     ) : Signaling()
 
-    data class Calling(val value: String) : Signaling()
+    data class Calling(val value: String, val conversationId: ConversationId? = null) : Signaling()
 
     data class DeleteMessage(val messageId: String) : Signaling()
 

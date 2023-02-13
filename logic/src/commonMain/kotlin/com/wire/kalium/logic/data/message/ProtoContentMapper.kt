@@ -76,7 +76,7 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
-            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
+            is MessageContent.Calling -> packCalling(readableContent)
             is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
@@ -155,7 +155,7 @@ class ProtoContentMapperImpl(
 
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
-            is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
+            is GenericMessage.Content.Calling -> unpackCalling(protoContent)
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
@@ -300,6 +300,18 @@ class ProtoContentMapperImpl(
             }
         }
     }
+
+    private fun packCalling(readableContent: MessageContent.Calling) = GenericMessage.Content.Calling(
+        Calling(
+            content = readableContent.value,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) }
+        )
+    )
+
+    private fun unpackCalling(protoContent: GenericMessage.Content.Calling) = MessageContent.Calling(
+        value = protoContent.value.content,
+        conversationId = protoContent.value.qualifiedConversationId?.let { idMapper.fromProtoModel(it) }
+    )
 
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
         Cleared(
