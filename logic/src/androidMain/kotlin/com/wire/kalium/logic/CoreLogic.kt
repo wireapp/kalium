@@ -25,6 +25,8 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
@@ -72,6 +74,9 @@ actual class CoreLogic(
         appContext = appContext,
         coreLogic = this
     )
+    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
+        appContext = appContext
+    )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
@@ -82,6 +87,7 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
+            networkStateObserver
         )
     }
 }

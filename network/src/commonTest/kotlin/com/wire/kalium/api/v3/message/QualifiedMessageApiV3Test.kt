@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v0.message
+package com.wire.kalium.api.v3.message
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.ValidJsonProvider
@@ -40,45 +40,10 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @IgnoreIOS
-class QualifiedMessageApiV0Test : ApiTest {
-
+class QualifiedMessageApiV3Test : ApiTest {
     @Test
-    fun givenAValid_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                SUCCESS_RESPONSE.rawJson,
-                statusCode = HttpStatusCode.OK,
-                assertion =
-                {
-                    assertPost()
-                    assertXProtobuf()
-                    assertPathEqual(SEND_MESSAGE_PATH)
-                }
-            )
-
-            val messageApi: MessageApi = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
-            val response = messageApi.qualifiedSendMessage(
-                DEFAULT_PARAMETERS_RESPONSE.serializableData,
-                TEST_CONVERSATION_ID
-            )
-
-            assertTrue(response.isSuccessful())
-            assertEquals(response.value, SUCCESS_RESPONSE.serializableData)
-        }
-
-    @Test
-    fun givenDeletedUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
-        DELETED_ERROR_RESPONSE
-    )
-
-    @Test
-    fun givenRedundantUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
-        REDUNDANT_ERROR_RESPONSE
-    )
-
-    @Test
-    fun givenMissingUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
-        MISSING_ERROR_RESPONSE
+    fun givenFailedToSentUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
+        FAILED_ERROR_RESPONSE
     )
 
     private fun errorCaseTest(errorResponse: ValidJsonProvider<QualifiedSendMessageResponse.MissingDevicesResponse>) =
@@ -112,9 +77,6 @@ class QualifiedMessageApiV0Test : ApiTest {
         val TEST_CONVERSATION_ID = ConversationId("33d8dee6-7a55-4551-97d2-bd7a5160cd4e", "domain.com")
         val SEND_MESSAGE_PATH = "/conversations/${TEST_CONVERSATION_ID.domain}/${TEST_CONVERSATION_ID.value}/proteus/messages"
         val DEFAULT_PARAMETERS_RESPONSE = QualifiedSendMessageRequestJson.validDefaultParameters
-        val MISSING_ERROR_RESPONSE = QualifiedSendMessageResponseJson.missingUsersResponse
-        val DELETED_ERROR_RESPONSE = QualifiedSendMessageResponseJson.deletedUsersResponse
-        val REDUNDANT_ERROR_RESPONSE = QualifiedSendMessageResponseJson.redundantUsersResponse
-        val SUCCESS_RESPONSE = QualifiedSendMessageResponseJson.validMessageSentJson
+        val FAILED_ERROR_RESPONSE = QualifiedSendMessageResponseJson.failedSentUsersResponse
     }
 }

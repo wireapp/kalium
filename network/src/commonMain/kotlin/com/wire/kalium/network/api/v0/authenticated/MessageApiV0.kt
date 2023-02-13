@@ -46,7 +46,7 @@ internal open class MessageApiV0 internal constructor(
     private val envelopeProtoMapper: EnvelopeProtoMapper
 ) : MessageApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     @Serializable
     internal data class RequestBody(
@@ -131,7 +131,7 @@ internal open class MessageApiV0 internal constructor(
         }
     }
 
-    private companion object {
+    protected companion object {
         val STATUS_CLIENTS_HAVE_CHANGED = HttpStatusCode(
             412,
             "Proteus clients have changed"

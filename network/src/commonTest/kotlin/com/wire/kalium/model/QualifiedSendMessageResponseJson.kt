@@ -51,7 +51,7 @@ object QualifiedSendMessageResponseJson {
         """.trimMargin()
     }
 
-    private val missingProvider = { _: QualifiedSendMessageResponse ->
+    private val v0_missingProvider = { _: QualifiedSendMessageResponse ->
         """
             |{
             |   "time": "$TIME"
@@ -75,7 +75,7 @@ object QualifiedSendMessageResponseJson {
         """.trimMargin()
     }
 
-    private val failedToSend = { _: QualifiedSendMessageResponse ->
+    private val v4_failedToSend = { _: QualifiedSendMessageResponse ->
         """
             |{
             |   "time": "$TIME"
@@ -100,7 +100,7 @@ object QualifiedSendMessageResponseJson {
         """.trimMargin()
     }
 
-    private val redundantProvider = { _: QualifiedSendMessageResponse ->
+    private val v0_redundantProvider = { _: QualifiedSendMessageResponse ->
         """
             |{
             |   "time": "$TIME"
@@ -124,7 +124,7 @@ object QualifiedSendMessageResponseJson {
         """.trimMargin()
     }
 
-    private val deletedProvider = { _: QualifiedSendMessageResponse ->
+    private val v0_deletedProvider = { _: QualifiedSendMessageResponse ->
         """
             |{
             |   "time": "$TIME"
@@ -155,21 +155,21 @@ object QualifiedSendMessageResponseJson {
 
     val missingUsersResponse = ValidJsonProvider(
         QualifiedSendMessageResponse.MissingDevicesResponse(TIME, missing = USER_MAP, mapOf(), mapOf()),
-        missingProvider
+        v0_missingProvider
     )
 
     val deletedUsersResponse = ValidJsonProvider(
         QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), deleted = USER_MAP),
-        deletedProvider
+        v0_deletedProvider
     )
 
     val redundantUsersResponse = ValidJsonProvider(
         QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), redundant = USER_MAP, mapOf()),
-        redundantProvider
+        v0_redundantProvider
     )
 
     val failedSentUsersResponse = ValidJsonProvider(
         QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), failed = USER_MAP),
-        failedToSend
+        v4_failedToSend
     )
 }

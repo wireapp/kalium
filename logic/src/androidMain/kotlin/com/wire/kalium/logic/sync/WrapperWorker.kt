@@ -50,9 +50,9 @@ class WrapperWorker(
     CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): AndroidResult = when (innerWorker.doWork()) {
-        is KaliumResult.Failure -> AndroidResult.success()
-        is KaliumResult.Retry -> AndroidResult.failure()
-        is KaliumResult.Success -> AndroidResult.retry()
+        is KaliumResult.Failure -> AndroidResult.failure()
+        is KaliumResult.Retry -> AndroidResult.retry()
+        is KaliumResult.Success -> AndroidResult.success()
     }
 
     // TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
