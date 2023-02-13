@@ -35,6 +35,7 @@ fun interface SendHandler : Callback {
         data: Pointer?,
         length: Size_t,
         isTransient: Boolean,
+        myClientsOnly: Boolean,
         arg: Pointer?
     ): Int
 }
