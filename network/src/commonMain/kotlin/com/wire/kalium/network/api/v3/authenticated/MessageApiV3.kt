@@ -23,6 +23,6 @@ import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMappe
 import com.wire.kalium.network.api.v2.authenticated.MessageApiV2
 
 internal open class MessageApiV3 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val envelopeProtoMapper: EnvelopeProtoMapper
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    envelopeProtoMapper: EnvelopeProtoMapper
 ) : MessageApiV2(authenticatedNetworkClient, envelopeProtoMapper)
