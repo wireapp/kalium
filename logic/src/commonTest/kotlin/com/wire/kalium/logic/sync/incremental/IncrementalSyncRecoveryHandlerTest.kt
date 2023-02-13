@@ -21,18 +21,10 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
-import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.Times
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.mock
-import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -53,14 +45,6 @@ class IncrementalSyncRecoveryHandlerTest {
                 .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
                 .with()
                 .wasInvoked()
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::clearLastSlowSyncCompletionInstant)
-                .wasInvoked(once)
-
-            verify(slowSyncRepository)
-                .suspendFunction(slowSyncRepository::setNeedsToRecoverMLSGroups)
-                .with(eq(true))
-                .wasInvoked(once)
 
             verify(addSystemMessageToAllConversationsUseCase)
                 .function(addSystemMessageToAllConversationsUseCase::invoke)
