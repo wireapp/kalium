@@ -122,6 +122,8 @@ internal class MessageSenderImpl internal constructor(
                     logger.i("Scheduling message for retrying in the future.")
                     messageSendingScheduler.scheduleSendingOfPendingMessages()
                 } else {
+                    // todo-ym: here the message will popup exception with root cause of federation-error.
+                    // todo-ym: map error as sub error of FederationError so we can have it as a root cause persisted.
                     messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
                 }
             }
