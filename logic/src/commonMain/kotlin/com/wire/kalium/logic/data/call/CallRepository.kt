@@ -81,7 +81,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.time.toDuration
@@ -501,7 +500,7 @@ internal class CallDataSource(
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
-    ) : Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> {
         callingLogger.i(
             "Joining MLS conference for conversation = " +
                     "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"

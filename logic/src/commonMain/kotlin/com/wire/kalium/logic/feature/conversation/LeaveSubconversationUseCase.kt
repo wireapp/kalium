@@ -30,6 +30,9 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 
+/**
+ * Leave a sub-conversation you've previously joined
+ */
 interface LeaveSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
