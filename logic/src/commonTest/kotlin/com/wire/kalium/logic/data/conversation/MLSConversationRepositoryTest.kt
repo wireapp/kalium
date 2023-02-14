@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
-import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.PublicGroupStateBundle
 import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
@@ -77,11 +76,11 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -872,23 +871,7 @@ class MLSConversationRepositoryTest {
 
     }
 
-    @Test
-    fun givenEpochChange_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(Arrangement.MLS_PROTOCOL_INFO)
-            .withGetMLSClientSuccessful()
-            .withDecryptMLSMessageSuccessful(DecryptedMessageBundle(null, null, null, true))
-            .arrange()
 
-        val epochChange = async(TestKaliumDispatcher.default) {
-            mlsConversationRepository.observeEpochChanges().first()
-        }
-        yield()
-
-        mlsConversationRepository.messageFromMLSMessage(Arrangement.MESSAGE_EVENT).shouldSucceed()
-
-        assertEquals(Arrangement.GROUP_ID, epochChange.await())
-    }
 
     @Test
     fun givenSuccessResponse_whenSendingCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
@@ -961,18 +944,13 @@ class MLSConversationRepositoryTest {
         @Mock
         val syncManager = mock(SyncManager::class)
 
+        val epochsFlow = MutableSharedFlow<GroupID>()
+
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(TestConversation.VIEW_ENTITY) }
-        }
-
-        fun withGetConversationProtocolInfoSuccessful(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(protocolInfo)
         }
 
         fun withGetConversationByGroupIdFailing() = apply {
@@ -1134,7 +1112,8 @@ class MLSConversationRepositoryTest {
             clientApi,
             syncManager,
             mlsPublicKeysRepository,
-            commitBundleEventReceiver
+            commitBundleEventReceiver,
+            epochsFlow
         )
 
         internal companion object {
@@ -1188,21 +1167,6 @@ class MLSConversationRepositoryTest {
                 TestUser.USER_ID,
                 WELCOME.encodeBase64(),
                 timestampIso = "2022-03-30T15:36:00.000Z"
-            )
-            val MESSAGE_EVENT = Event.Conversation.NewMLSMessage(
-                "eventId",
-                TestConversation.ID,
-                false,
-                TestUser.USER_ID,
-                "2022-03-30T15:36:00.000Z",
-                "encryptedContent"
-            )
-            val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
-                RAW_GROUP_ID,
-                ConversationEntity.GroupState.ESTABLISHED,
-                1UL,
-                Clock.System.now(),
-                ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             private val SIMPLE_CLIENT_RESPONSE = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)
 

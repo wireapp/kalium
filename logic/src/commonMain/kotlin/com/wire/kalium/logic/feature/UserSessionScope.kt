@@ -64,6 +64,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
@@ -195,6 +196,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -263,6 +265,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -289,7 +292,8 @@ class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    platformUserStorageProperties: PlatformUserStorageProperties
+    platformUserStorageProperties: PlatformUserStorageProperties,
+    networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -333,6 +337,8 @@ class UserSessionScope internal constructor(
             proteusSelfConversationIdProvider
         )
     }
+
+    private val epochsFlow = MutableSharedFlow<GroupID>()
 
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
@@ -382,7 +388,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
             mlsPublicKeysRepository,
-            commitBundleEventReceiver
+            commitBundleEventReceiver,
+            epochsFlow
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -652,7 +659,8 @@ class UserSessionScope internal constructor(
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
-            slowSyncRecoveryHandler
+            slowSyncRecoveryHandler,
+            networkStateObserver
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -687,7 +695,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             incrementalSyncWorker,
             incrementalSyncRepository,
-            incrementalSyncRecoveryHandler
+            incrementalSyncRecoveryHandler,
+            networkStateObserver
         )
     }
 
@@ -754,6 +763,7 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
@@ -781,7 +791,9 @@ class UserSessionScope internal constructor(
         get() = MLSMessageUnpackerImpl(
             mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
+            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 
