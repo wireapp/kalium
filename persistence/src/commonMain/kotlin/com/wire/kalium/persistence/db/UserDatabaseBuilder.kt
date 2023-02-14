@@ -152,7 +152,7 @@ class UserDatabaseBuilder internal constructor(
         get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted)
 
     val databaseExporter: DatabaseExporter
-        get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, sqlDriver, isEncrypted)
+        get() = DatabaseExporterImpl(userId, platformDatabaseData, database.dumpContentQueries, this, isEncrypted)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, queriesContext)

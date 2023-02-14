@@ -18,8 +18,6 @@
 
 package com.wire.kalium.persistence.backup
 
-import app.cash.sqldelight.db.SqlDriver
-import com.wire.kalium.persistence.DumpContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -48,8 +46,7 @@ interface DatabaseExporter {
 internal class DatabaseExporterImpl internal constructor(
     user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val dumpContentQueries: DumpContentQueries,
-    private val sqlDriver: SqlDriver,
+    private val localDatabase: UserDatabaseBuilder,
     private val isDataEncrypted: Boolean,
 ) : DatabaseExporter {
 
@@ -65,20 +62,27 @@ internal class DatabaseExporterImpl internal constructor(
         // create a new backup DB file
         val plainDatabase: UserDatabaseBuilder =
             userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
-        plainDatabase.sqlDriver.close()
 
-        val plainDBPath = plainDatabase.dbFileLocation() ?: run {
-            kaliumLogger.e("Failed to get the plain DB path")
-            return null
+        // check the plain DB path and return null if it was not created successfully
+        plainDatabase.dbFileLocation().also {
+            if(it == null) {
+                kaliumLogger.e("Failed to get the plain DB path")
+                return null
+            }
         }
 
         // copy the data from the user DB to the backup DB
 
         try {
-            sqlDriver.execute(null, "BEGIN", 0)
-            attachDatabase(isDataEncrypted, plainDBPath)
-            dumpContent()
-            sqlDriver.execute(null, "COMMIT", 0)
+            // attach the plain DB to the user DB
+            // dump the content of the user DB into the plain DB
+            attachLocalToPlain(localDatabase, plainDatabase)
+            plainDatabase.database.transaction {
+                plainDatabase.sqlDriver.execute(null, "INSERT INTO User SELECT * FROM local_db.User", 0)
+            }
+            plainDatabase.sqlDriver.execute(null, "DETACH DATABASE local_db", 0)
+
+            // detach the plain DB from the user DB
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
             // if the dump failed, delete the backup DB file
@@ -88,15 +92,9 @@ internal class DatabaseExporterImpl internal constructor(
         return plainDatabase.dbFileLocation()
     }
 
-    private fun attachDatabase(dataEncrypted: Boolean, plainDatabasePath: String) {
-        if (dataEncrypted) {
-            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS KEY ''", 1) {
-                bindString(0, plainDatabasePath)
-            }
-        } else {
-            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
-                bindString(0, plainDatabasePath)
-            }
+    private fun attachLocalToPlain(localDatabase: UserDatabaseBuilder, plainDB: UserDatabaseBuilder) {
+        plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS local_db", 1) {
+            bindString(0, localDatabase.dbFileLocation() ?: error("Failed to get the plain DB path"))
         }
     }
 
