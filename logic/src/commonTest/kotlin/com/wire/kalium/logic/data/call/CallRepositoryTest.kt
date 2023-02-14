@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -1217,6 +1218,7 @@ class CallRepositoryTest {
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
+            .givenLeaveSubconversationSuccessful()
             .arrange()
 
         var onEpochChangeCallCount = 0
@@ -1407,6 +1409,9 @@ class CallRepositoryTest {
         val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
 
         @Mock
+        val leaveSubconversationUseCase = mock(classOf<LeaveSubconversationUseCase>())
+
+        @Mock
         val subconversationRepository = mock(classOf<SubconversationRepository>())
 
         @Mock
@@ -1432,6 +1437,7 @@ class CallRepositoryTest {
             persistMessage = persistMessage,
             mlsClientProvider = mlsClientProvider,
             joinSubconversationUseCase = joinSubconversationUseCase,
+            leaveSubconversationUseCase = leaveSubconversationUseCase,
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
             kaliumDispatchers = TestKaliumDispatcher
@@ -1550,7 +1556,15 @@ class CallRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenLeaveSubconversationSuccessful() = apply {
+            given(leaveSubconversationUseCase)
+                .suspendFunction(leaveSubconversationUseCase::invoke)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+
+            fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::observeEpochChanges)
                 .whenInvoked()

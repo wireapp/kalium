@@ -139,6 +139,8 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -515,6 +517,7 @@ class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
             subconversationRepository = subconversationRepository,
             joinSubconversationUseCase = joinSubconversationUseCase,
+            leaveSubconversationUseCase = leaveSubconversationUseCase,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             teamRepository = teamRepository,
@@ -636,6 +639,13 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
+            subconversationRepository
+        )
+
+    private val leaveSubconversationUseCase: LeaveSubconversationUseCase
+        get() = LeaveSubconversationUseCaseImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            mlsClientProvider,
             subconversationRepository
         )
 
