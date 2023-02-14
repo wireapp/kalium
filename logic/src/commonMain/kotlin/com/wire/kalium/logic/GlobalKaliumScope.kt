@@ -78,7 +78,7 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider
-): CoroutineScope {
+) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
