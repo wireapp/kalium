@@ -271,6 +271,14 @@ internal open class ConversationApiV0 internal constructor(
             APINotSupported("MLS: deleteSubconversation api is only available on API V3")
         )
 
+    override suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: leaveSubconversation api is only available on API V3")
+        )
+
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ConversationMemberAddedResponse> =

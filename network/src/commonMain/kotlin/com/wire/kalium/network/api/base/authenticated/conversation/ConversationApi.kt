@@ -124,6 +124,11 @@ interface ConversationApi {
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit>
 
+    suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit>
+
     suspend fun updateReceiptMode(
         conversationId: ConversationId,
         receiptMode: ConversationReceiptModeDTO
