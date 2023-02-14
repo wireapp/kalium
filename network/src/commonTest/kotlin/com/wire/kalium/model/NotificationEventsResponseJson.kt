@@ -110,7 +110,8 @@ object NotificationEventsResponseJson {
         |    "id": "${eventData.qualifiedFrom.value}"
         |  },
         |  "time": "${eventData.time}",
-        |  "type": "conversation.mls-message-add"
+        |  "type": "conversation.mls-message-add",
+        |  "subconv": "${eventData.subconversation}"
         |}    
         """.trimMargin()
     }
