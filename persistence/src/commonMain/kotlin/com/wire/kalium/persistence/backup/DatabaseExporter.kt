@@ -72,57 +72,47 @@ internal class DatabaseExporterImpl internal constructor(
         }
 
         // copy the data from the user DB to the backup DB
+        if(!attachLocalToPlain(localDatabase, plainDatabase)){
+            plainDatabase.sqlDriver.close()
+            deleteBackupDBFile()
+            return null
+        }
 
         try {
             // attach the plain DB to the user DB
             // dump the content of the user DB into the plain DB
-            attachLocalToPlain(localDatabase, plainDatabase)
-            plainDatabase.database.transaction {
-                plainDatabase.sqlDriver.execute(null, "INSERT INTO User SELECT * FROM local_db.User", 0)
-            }
-            plainDatabase.sqlDriver.execute(null, "DETACH DATABASE local_db", 0)
-
-            // detach the plain DB from the user DB
+            plainDatabase.database.dumpContentQueries.dumpAllTables()
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
             // if the dump failed, delete the backup DB file
             deleteBackupDBFile()
             return null
+        } finally {
+            // detach the plain DB from the user DB
+            plainDatabase.sqlDriver.execute(null, "DETACH DATABASE $MAIN_DB_ALIAS", 0)
+            plainDatabase.sqlDriver.close()
         }
         return plainDatabase.dbFileLocation()
     }
 
-    private fun attachLocalToPlain(localDatabase: UserDatabaseBuilder, plainDB: UserDatabaseBuilder) {
-        plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS local_db", 1) {
-            bindString(0, localDatabase.dbFileLocation() ?: error("Failed to get the plain DB path"))
+    private fun attachLocalToPlain(localDatabase: UserDatabaseBuilder, plainDB: UserDatabaseBuilder): Boolean {
+        try {
+            val mainDBPath = localDatabase.dbFileLocation() ?: return false
+            // TODO: get the db passphrase for encrypted one
+            plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS", 1) {
+                bindString(0, mainDBPath)
+            }
+        } catch (e: Exception) {
+            kaliumLogger.e("Failed to attach the local DB to the plain DB ${e.message}")
+            return false
         }
+        return true
     }
 
     override fun deleteBackupDBFile(): Boolean = nuke(backupUserId, platformDatabaseData)
 
-    private fun dumpContent() {
-        with(dumpContentQueries) {
-            // dump the content of the user DB into the plain DB must be done in this order
-            dumpUserTable()
-            dumpConversationTable()
-            dumpMessageTable()
-            dumpCallTable()
-            dumpMessageAssetContentTable()
-            dumpMessageRestrictedAssetContentTable()
-            dumpMessageFailedToDecryptContentTable()
-            dumpMessageConversationChangedContentTable()
-            dumpMessageMemberChangeContentTable()
-            dumpMessageMentionTable()
-            dumpMessageMissedCallContentTable()
-            dumpMessageTextContentTable()
-            dumpMessageUnknownContentTable()
-            dumpReactionTable()
-            dumpReceiptTable()
-        }
-    }
-
     private companion object {
         // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
-        const val PLAIN_DB_ALIAS = "plain_db"
+        const val MAIN_DB_ALIAS = "local_db"
     }
 }
