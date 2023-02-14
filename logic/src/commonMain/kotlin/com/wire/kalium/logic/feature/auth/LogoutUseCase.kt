@@ -27,11 +27,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
-import kotlinx.coroutines.AbstractCoroutine
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -97,7 +93,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
-        }
+        }.join()
     }
 
     companion object {
