@@ -58,6 +58,9 @@ import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Scope that exposes all operations that are user and backend agnostic, like
@@ -75,7 +78,9 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider
-) {
+) : CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
