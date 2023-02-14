@@ -93,7 +93,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
-        }.join()
+        }
     }
 
     companion object {
