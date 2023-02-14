@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -462,6 +463,48 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenARemoteProteusConversationFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailedRemotely() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(sendEnvelopeWithResult = Either.Left(FEDERATION_MESSAGE_FAILURE))
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldFail()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED_REMOTELY), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenARemoteMLSConversationFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailedRemotely() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
+            .withWaitUntilLiveOrFailure()
+            .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(FEDERATION_MESSAGE_FAILURE))
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldFail()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED_REMOTELY), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -635,7 +678,6 @@ class MessageSenderTest {
                 withUpdateMessageStatus(updateMessageStatusFailing)
                 withUpdateMessageDate(updateMessageDateFailing)
                 withUpdatePendingMessagesAddMillisToDate(updatePendingMessagesAddMillisToDateFailing)
-
             }
 
         fun withSendMlsMessage(
@@ -680,6 +722,7 @@ class MessageSenderTest {
                     )
                 )
             )
+            val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
             val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")
