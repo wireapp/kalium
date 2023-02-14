@@ -281,7 +281,7 @@ sealed interface Message {
     }
 
     enum class Status {
-        PENDING, SENT, READ, FAILED
+        PENDING, SENT, READ, FAILED, FAILED_REMOTELY
     }
 
     sealed class EditStatus {

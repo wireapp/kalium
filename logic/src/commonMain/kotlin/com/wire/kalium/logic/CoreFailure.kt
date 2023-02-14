@@ -93,6 +93,11 @@ sealed class NetworkFailure : CoreFailure() {
             return "ServerMiscommunication(cause = $rootCause)"
         }
     }
+
+    /**
+     * Failure due to a federated backend context
+     */
+    object FederatedBackendFailure : NetworkFailure()
 }
 
 class MLSFailure(internal val exception: Exception) : CoreFailure() {
@@ -124,8 +129,10 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
-            // todo SocketException is platform specific so need to wrap it in our own exceptions
-            if (exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true) {
+            if (exception is KaliumException.FederationError) {
+                Either.Left(NetworkFailure.FederatedBackendFailure)
+            } else if (exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true) {
+                // todo SocketException is platform specific so need to wrap it in our own exceptions
                 Either.Left(NetworkFailure.ProxyError(exception.cause))
             } else {
                 if (exception is KaliumException.GenericError && exception.cause is IOException) {

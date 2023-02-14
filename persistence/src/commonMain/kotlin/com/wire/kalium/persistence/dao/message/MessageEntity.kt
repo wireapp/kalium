@@ -67,7 +67,31 @@ sealed class MessageEntity(
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     enum class Status {
-        PENDING, SENT, READ, FAILED
+        /**
+         * The message was stored locally and is ready to be sent.
+         */
+        PENDING,
+
+        /**
+         * The message was sent to the backend.
+         */
+        SENT,
+
+        /**
+         * The message was marked as read locally.
+         */
+        READ,
+
+        /**
+         * The message failed to be sent, general errors, e.g. self backend not available, etc.
+         */
+        FAILED,
+
+        /**
+         * The message failed to be sent because the conversation owner is not available.
+         * Note that this is currently relevant for federation conversations
+         */
+        FAILED_REMOTELY
     }
 
     sealed class EditStatus {
@@ -152,7 +176,7 @@ sealed class MessageEntity(
     }
 
     enum class RecipientFailureType {
-        OWN_BACKEND_FAILURE, OTHER_BACKEND_FAILURE, SOME_RECIPIENTS_FAILED, ALL_RECIPIENTS_FAILED
+        SOME_RECIPIENTS_FAILED, ALL_RECIPIENTS_FAILED
     }
 
     enum class Visibility {

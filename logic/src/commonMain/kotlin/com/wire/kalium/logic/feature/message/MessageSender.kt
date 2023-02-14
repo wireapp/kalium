@@ -118,13 +118,20 @@ internal class MessageSenderImpl internal constructor(
                 else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
             }.onFailure {
                 logger.i("Failed to send message. Failure = $it")
-                if (it is NetworkFailure.NoNetworkConnection) {
-                    logger.i("Scheduling message for retrying in the future.")
-                    messageSendingScheduler.scheduleSendingOfPendingMessages()
-                } else {
-                    // todo-ym: here the message will popup exception with root cause of federation-error.
-                    // todo-ym: map error as sub error of FederationError so we can have it as a root cause persisted.
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                when (it) {
+                    is NetworkFailure.FederatedBackendFailure -> {
+                        logger.i("Failed due to federation context availability.")
+                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageUuid)
+                    }
+
+                    is NetworkFailure.NoNetworkConnection -> {
+                        logger.i("Scheduling message for retrying in the future.")
+                        messageSendingScheduler.scheduleSendingOfPendingMessages()
+                    }
+
+                    else -> {
+                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                    }
                 }
             }
         }
