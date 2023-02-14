@@ -276,3 +276,6 @@ updateGuestRoomLink:
 UPDATE Conversation
 SET guest_room_link = ?
 WHERE qualified_id = ?;
+
+getGuestRoomLinkByConversationId:
+SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;

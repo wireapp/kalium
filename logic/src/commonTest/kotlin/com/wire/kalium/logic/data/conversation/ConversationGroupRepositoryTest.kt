@@ -70,6 +70,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
@@ -535,6 +536,23 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenDaoRunsWithSuccess_whenGettingGuestRoomLink_thenReturnGuestRoomLink() = runTest {
+        val conversationId = ConversationId("value", "domain")
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulFetchOfGuestRoomLink()
+            .arrange()
+
+        val result = conversationGroupRepository.getGuestRoomLink(conversationId)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getGuestRoomLinkByConversationId)
+            .with(any())
+            .wasInvoked(exactly = once)
+        assertEquals(GUEST_ROOM_LINK, result)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -826,11 +844,19 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Unit)
         }
 
+        fun withSuccessfulFetchOfGuestRoomLink() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getGuestRoomLinkByConversationId)
+                .whenInvokedWith(any())
+                .thenReturn(GUEST_ROOM_LINK)
+        }
+
         fun arrange() = this to conversationGroupRepository
     }
 
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
+        private const val GUEST_ROOM_LINK = "www.wire.com"
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo

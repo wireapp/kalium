@@ -60,6 +60,7 @@ interface ConversationGroupRepository {
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun getGuestRoomLink(conversationId: ConversationId): String?
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -222,4 +223,8 @@ internal class ConversationGroupRepositoryImpl(
         }.onSuccess {
             conversationDAO.updateGuestRoomLink(conversationId.toDao(), "")
         }.map { }
+
+    override suspend fun getGuestRoomLink(conversationId: ConversationId): String? =
+        conversationDAO.getGuestRoomLinkByConversationId(conversationId.toDao())
+
 }
