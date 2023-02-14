@@ -1240,6 +1240,36 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenMlsConferenceCall_whenLeaveMlsConference_thenLeaveSubconversation() = runTest(TestKaliumDispatcher.default) {
+        val epochFlow = MutableSharedFlow<GroupID>()
+
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
+            .givenJoinSubconversationSuccessful()
+            .givenObserveEpochChangesReturns(epochFlow)
+            .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
+            .givenGetMLSClientSucceeds()
+            .givenGetMlsEpochReturns(1UL)
+            .givenMlsMembersReturns(emptyList())
+            .givenDeriveSecretSuccessful()
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        yield()
+        advanceUntilIdle()
+
+        callRepository.leaveMlsConference(Arrangement.conversationId)
+        yield()
+        advanceUntilIdle()
+
+        verify(arrangement.leaveSubconversationUseCase)
+            .suspendFunction(arrangement.leaveSubconversationUseCase::invoke)
+            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenMlsConferenceCall_whenAdvanceEpoch_thenKeyMaterialIsUpdatedInSubconversation() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, callRepository) = Arrangement()
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
