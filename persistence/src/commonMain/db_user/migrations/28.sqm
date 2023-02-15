@@ -159,7 +159,7 @@ AS SELECT
     ConversationNameChangedContent.conversation_name AS updateConversationName,
     Conversation.name AS conversationName,
     (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
     TextContent.text_body AS text,
     AssetContent.asset_mime_type AS assetMimeType,
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
@@ -169,7 +169,6 @@ AS SELECT
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
