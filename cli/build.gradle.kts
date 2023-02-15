@@ -73,6 +73,7 @@ kotlin {
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
+                implementation(libs.mordant)
             }
         }
         val jvmMain by getting {

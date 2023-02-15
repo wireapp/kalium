@@ -15,20 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.cli.commands
 
-package com.wire.kalium.network
+sealed class InputAction {
+    data class UpdateDraft(
+        var draft: String,
+        var cursorPosition: Int,
+        var description: String? = null
+    ): InputAction()
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.engine.darwin.Darwin
-import io.ktor.util.logging.KtorSimpleLogger
+    data class SendText(
+        var draft: String
+    ): InputAction()
 
-actual fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?
-): HttpClientEngine {
-    return Darwin.create {
-        pipelining = true
-    }
+    data class RunCommand(
+        val command: Command
+    ) : InputAction()
+
+    object Quit: InputAction()
 }
