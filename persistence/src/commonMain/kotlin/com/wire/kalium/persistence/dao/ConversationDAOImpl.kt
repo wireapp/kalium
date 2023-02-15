@@ -540,4 +540,7 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
+    override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(link, conversationId)
+    }
 }
