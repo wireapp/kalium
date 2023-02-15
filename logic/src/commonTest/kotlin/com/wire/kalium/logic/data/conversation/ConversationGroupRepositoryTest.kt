@@ -535,6 +535,7 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+
     private class Arrangement {
 
         @Mock
@@ -795,6 +796,13 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
+        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateGuestRoomLink)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
+
         fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::revokeGuestRoomLink)
@@ -817,13 +825,6 @@ class ConversationGroupRepositoryTest {
                         KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                     )
                 )
-        }
-
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
         }
 
         fun arrange() = this to conversationGroupRepository
