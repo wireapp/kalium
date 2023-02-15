@@ -26,7 +26,6 @@ CREATE TABLE MessageConversationReceiptModeChangedContent (
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
-
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -54,6 +53,7 @@ User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
+TextContent.is_quoting_self AS isQuotingSelfUser,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
 AssetContent.asset_mime_type AS assetMimeType,
@@ -112,22 +112,21 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
-QuotedMessage.quotedMessageId AS quotedMessageId,
-QuotedMessage.quotedSenderId AS quotedSenderId,
-QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-QuotedMessage.isQuoteVerified AS isQuoteVerified,
-QuotedMessage.quotedSenderName AS quotedSenderName,
-QuotedMessage.quotedMessageCreationInstant AS quotedMessageDateTime,
-QuotedMessage.quotedMessageEditInstant AS quotedMessageEditTimestamp,
-QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
-QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
-QuotedMessage.quotedTextBody AS quotedTextBody,
-QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
-QuotedMessage.quotedAssetName AS quotedAssetName,
+QuotedMessage.id AS quotedMessageId,
+QuotedMessage.sender_user_id AS quotedSenderId,
+TextContent.is_quote_verified AS isQuoteVerified,
+QuotedSender.name AS quotedSenderName,
+QuotedMessage.creation_date AS quotedMessageDateTime,
+QuotedMessage.last_edit_date AS quotedMessageEditTimestamp,
+QuotedMessage.visibility AS quotedMessageVisibility,
+QuotedMessage.content_type AS quotedMessageContentType,
+QuotedTextContent.text_body AS quotedTextBody,
+QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
 FROM Message
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
@@ -136,7 +135,13 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+
+-- joins for quoted messages
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+-- end joins for quoted messages
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
