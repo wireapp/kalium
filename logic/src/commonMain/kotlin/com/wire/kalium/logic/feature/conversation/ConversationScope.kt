@@ -199,7 +199,6 @@ class ConversationScope internal constructor(
             conversationGroupRepository
         )
 
-
     val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
         get() = RevokeGuestRoomLinkUseCaseImpl(
             conversationGroupRepository
