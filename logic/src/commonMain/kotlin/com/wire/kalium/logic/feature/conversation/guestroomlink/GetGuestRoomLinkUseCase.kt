@@ -22,6 +22,9 @@ package com.wire.kalium.logic.feature.conversation.guestroomlink
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
+/**
+ * Return guest room link if available, otherwise return failure
+ */
 interface GetGuestRoomLinkUseCase {
     suspend operator fun invoke(conversationId: ConversationId): GetGuestRoomLinkResult
 }
