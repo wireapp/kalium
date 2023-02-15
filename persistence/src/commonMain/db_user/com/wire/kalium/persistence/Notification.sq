@@ -1,0 +1,27 @@
+getNotificationsMessages:
+SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.sender_user_id AS senderUserId,
+    User.name AS senderName,
+    User.preview_asset_id AS senderPreviewAssetId,
+    Conversation.name AS conversationName,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL')
+JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+WHERE
+Message.visibility = 'VISIBLE' AND
+(Message.sender_user_id != SelfUser.id) AND
+(Message.creation_date > Conversation.last_read_date) AND
+Conversation.muted_status != 'ALL_MUTED'
+ORDER BY Message.creation_date DESC;
+

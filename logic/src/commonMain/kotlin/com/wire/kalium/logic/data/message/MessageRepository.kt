@@ -39,7 +39,6 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
@@ -192,15 +191,7 @@ class MessageDataSource(
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
     ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
-        messageDAO.getNotificationMessage(
-            listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.RESTRICTED_ASSET,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.KNOCK,
-                MessageEntity.ContentType.MISSED_CALL
-            )
-        ).mapLatest {
+        messageDAO.getNotificationMessage().mapLatest {
             it.groupBy { item ->
                 item.conversationId
             }.map { (conversationId, messages) ->
@@ -209,7 +200,7 @@ class MessageDataSource(
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
                     messages = messages.take(messageSizePerConversation)
-                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
                     isOneToOneConversation = messages.first().conversationType?.let { type ->
                         type == ConversationEntity.Type.ONE_ON_ONE
                     } ?: false)
