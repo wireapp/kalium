@@ -38,6 +38,8 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.guestroomlink.GetGuestRoomLinkUseCase
+import com.wire.kalium.logic.feature.conversation.guestroomlink.GetGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
@@ -201,6 +203,11 @@ class ConversationScope internal constructor(
 
     val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
         get() = RevokeGuestRoomLinkUseCaseImpl(
+            conversationGroupRepository
+        )
+
+    val getGuestRoomLink: GetGuestRoomLinkUseCase
+        get() = GetGuestRoomLinkUseCaseImpl(
             conversationGroupRepository
         )
 }
