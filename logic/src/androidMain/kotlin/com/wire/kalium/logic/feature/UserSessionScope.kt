@@ -30,7 +30,6 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserver
-import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
