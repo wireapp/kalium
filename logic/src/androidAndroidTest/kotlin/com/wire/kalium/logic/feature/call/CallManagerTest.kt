@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
@@ -65,6 +66,9 @@ class CallManagerTest {
     private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
     @Mock
+    private val selfConversationIdProvider = mock(classOf<SelfConversationIdProvider>())
+
+    @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
 
     @Mock
@@ -89,6 +93,7 @@ class CallManagerTest {
             callRepository = callRepository,
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
+            selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,

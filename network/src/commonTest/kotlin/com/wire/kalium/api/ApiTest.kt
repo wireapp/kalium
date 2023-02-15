@@ -25,6 +25,7 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
+import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -301,6 +302,7 @@ internal interface ApiTest {
     fun HttpRequestData.assertPatch() = this.assertMethodType(HttpMethod.Patch)
     fun HttpRequestData.assertHead() = this.assertMethodType(HttpMethod.Head)
     fun HttpRequestData.assertOptions() = this.assertMethodType(HttpMethod.Options)
+    fun HttpRequestData.assertXProtobuf() = this.assertContentType(ContentType.Application.XProtoBuf)
 
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json.withParameter("charset", "UTF-8"))
