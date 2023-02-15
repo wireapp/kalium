@@ -178,6 +178,7 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -1053,6 +1054,10 @@ class UserSessionScope internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+
+    val markFileSharingStatusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
+        get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
+
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)
