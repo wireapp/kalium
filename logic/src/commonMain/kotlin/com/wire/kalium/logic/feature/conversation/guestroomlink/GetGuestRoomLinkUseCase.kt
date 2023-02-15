@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
