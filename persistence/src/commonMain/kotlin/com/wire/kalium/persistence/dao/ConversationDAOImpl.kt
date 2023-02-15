@@ -460,14 +460,6 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 
-    override suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectConversationsWithUnnotifiedMessages()
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToList()
-            .map { it.map(conversationMapper::toModel) }
-    }
-
     override suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
