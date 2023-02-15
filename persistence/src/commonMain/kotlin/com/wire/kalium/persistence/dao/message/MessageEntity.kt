@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAssetIdEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
@@ -285,11 +286,19 @@ data class MessagePreviewEntity(
 
 data class NotificationMessageEntity(
     val id: String,
-    val content: MessagePreviewEntityContent,
+    val contentType: MessageEntity.ContentType,
+    val senderUserId: QualifiedIDEntity,
+    val senderImage: UserAssetIdEntity?,
+
+    val date: Instant,
+    val senderName: String?,
+    val text: String?,
+    val assetMimeType: String?,
+
     val conversationId: QualifiedIDEntity,
     val conversationName: String?,
-    val conversationType: ConversationEntity.Type?,
-    val date: String
+    val mutedStatus: ConversationEntity.MutedStatus,
+    val conversationType: ConversationEntity.Type,
 )
 
 sealed class MessagePreviewEntityContent {
