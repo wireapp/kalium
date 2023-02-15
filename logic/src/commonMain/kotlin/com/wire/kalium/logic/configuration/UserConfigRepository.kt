@@ -37,6 +37,8 @@ interface UserConfigRepository {
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun setSecondFactorPasswordChallengeStatus(required: Boolean): Either<StorageFailure, Unit>
+    fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
 }
@@ -94,6 +96,15 @@ class UserConfigDataSource(
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
         }
+
+    override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistSecondFactorPasswordChallengeStatus(isRequired)
+        }
+
+    override fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        userConfigStorage.isSecondFactorPasswordChallengeRequired()
+    }
 
     override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isReadReceiptsEnabled().wrapStorageRequest()

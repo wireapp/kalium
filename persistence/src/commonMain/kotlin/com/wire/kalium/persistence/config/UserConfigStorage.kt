@@ -59,6 +59,22 @@ interface UserConfigStorage {
     fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 
     /**
+     * Saves the flag that indicates whether a 2FA challenge is
+     * required for some operations such as:
+     * Login, Create Account, Register Client, etc.
+     * @see isSecondFactorPasswordChallengeRequired
+     */
+    fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean)
+
+    /**
+     * Checks if the 2FA challenge is
+     * required for some operations such as:
+     * Login, Create Account, Register Client, etc.
+     * @see persistSecondFactorPasswordChallengeStatus
+     */
+    fun isSecondFactorPasswordChallengeRequired(): Boolean
+
+    /**
      * save flag from the user settings to enable and disable MLS
      */
     fun enableMLS(enabled: Boolean)
@@ -174,6 +190,13 @@ internal class UserConfigStorageImpl internal constructor(
         }
     }
 
+    override fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean) {
+        kaliumPreferences.putBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, isRequired)
+    }
+
+    override fun isSecondFactorPasswordChallengeRequired(): Boolean =
+        kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
+
     override fun enableMLS(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
     }
@@ -205,5 +228,6 @@ internal class UserConfigStorageImpl internal constructor(
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
+        const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
     }
 }
