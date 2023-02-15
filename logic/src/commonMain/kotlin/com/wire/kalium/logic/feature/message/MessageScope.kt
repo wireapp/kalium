@@ -218,7 +218,7 @@ class MessageScope internal constructor(
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
-        get() = MarkMessagesAsNotifiedUseCase(conversationRepository, messageRepository)
+        get() = MarkMessagesAsNotifiedUseCase(conversationRepository)
 
     val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
         get() = UpdateAssetMessageUploadStatusUseCaseImpl(
