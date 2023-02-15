@@ -1,5 +1,7 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
+ALTER TABLE Conversation ADD COLUMN guest_room_link TEXT;
+
 -- Delete MessageDetails View
 DROP VIEW IF EXISTS MessageDetailsView;
 DROP VIEW IF EXISTS MessagePreview;
