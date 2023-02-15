@@ -19,12 +19,14 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageMentionsTest : BaseMessageTest() {
 
     @Test
@@ -39,7 +41,7 @@ class MessageMentionsTest : BaseMessageTest() {
     @Test
     fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned() = runTest {
         testTotalMentions {
-            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
+            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId)
         }
     }
 

@@ -22,7 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -34,6 +34,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageTextEditTest : BaseMessageTest() {
 
     @Test
@@ -48,8 +49,8 @@ class MessageTextEditTest : BaseMessageTest() {
             newMessageId = NEW_MESSAGE_ID
         )
 
-        assertNull(messageDAO.getMessageById(ORIGINAL_MESSAGE_ID, CONVERSATION_ID).first())
-        assertNotNull(messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID).first())
+        assertNull(messageDAO.getMessageById(ORIGINAL_MESSAGE_ID, CONVERSATION_ID))
+        assertNotNull(messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID))
     }
 
     @Test
@@ -68,7 +69,7 @@ class MessageTextEditTest : BaseMessageTest() {
             newMessageId = NEW_MESSAGE_ID
         )
 
-        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID).first()!!
+        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID)!!
 
         val content = result.content
         assertIs<MessageEntityContent.Text>(content)
@@ -91,7 +92,7 @@ class MessageTextEditTest : BaseMessageTest() {
             newMessageId = NEW_MESSAGE_ID
         )
 
-        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID).first()!!
+        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID)!!
 
         val content = result.content
         assertIs<MessageEntityContent.Text>(content)
@@ -115,7 +116,7 @@ class MessageTextEditTest : BaseMessageTest() {
             newMessageId = NEW_MESSAGE_ID
         )
 
-        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID).first()!!
+        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID)!!
 
         val content = result.content
         assertIs<MessageEntityContent.Text>(content)
@@ -177,7 +178,7 @@ class MessageTextEditTest : BaseMessageTest() {
             newMessageId = NEW_MESSAGE_ID
         )
 
-        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID).first()!!
+        val result = messageDAO.getMessageById(NEW_MESSAGE_ID, CONVERSATION_ID)!!
 
         assertIs<MessageEntity.Regular>(result)
         val editStatus = result.editStatus
