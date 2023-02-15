@@ -69,6 +69,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -208,6 +209,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage(updateMessageStatusFailing = true)
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -217,8 +219,8 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -229,6 +231,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage(updateMessageDateFailing = true)
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -238,29 +241,8 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    // Message was sent, better to keep it as pending, than wrongfully marking it as failed
-    @Test
-    fun givenUpdatePendingMessagesAddMillisToDateFails_WhenSendingOutgoingMessage_ThenMarkMessageAsSentAndReturnSuccess() {
-        // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(updatePendingMessagesAddMillisToDateFailing = true)
-            .arrange()
-
-        arrangement.testScope.runTest {
-            // when
-            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
-
-            // then
-            result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), anything(), anything())
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -308,6 +290,7 @@ class MessageSenderTest {
             .withSendMlsMessage()
             .withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             .withWaitUntilLiveOrFailure()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -330,6 +313,7 @@ class MessageSenderTest {
             .withCommitPendingProposals()
             .withSendMlsMessage()
             .withSendOutgoingMlsMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         arrangement.testScope.runTest {
@@ -372,6 +356,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         val message = Message.Signaling(
@@ -422,6 +407,7 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
             .arrange()
 
         val message = Message.Signaling(
@@ -586,20 +572,6 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withUpdateMessageDate(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
-        }
-
-        fun withUpdatePendingMessagesAddMillisToDate(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updatePendingMessagesAddMillisToDate)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
-        }
-
         fun withUpdateMessageStatus(failing: Boolean = false) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -614,6 +586,13 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
 
+        fun withPromoteMessageToSentUpdatingServerTime() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::promoteMessageToSentUpdatingServerTime)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         @Suppress("LongParameterList")
         fun withSendProteusMessage(
             getConversationProtocolFailing: Boolean = false,
@@ -623,7 +602,6 @@ class MessageSenderTest {
             sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
             updateMessageStatusFailing: Boolean = false,
             updateMessageDateFailing: Boolean = false,
-            updatePendingMessagesAddMillisToDateFailing: Boolean = false
         ) =
             apply {
                 withGetMessageById()
@@ -633,9 +611,6 @@ class MessageSenderTest {
                 withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
                 if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
                 withUpdateMessageStatus(updateMessageStatusFailing)
-                withUpdateMessageDate(updateMessageDateFailing)
-                withUpdatePendingMessagesAddMillisToDate(updatePendingMessagesAddMillisToDateFailing)
-
             }
 
         fun withSendMlsMessage(
@@ -646,8 +621,6 @@ class MessageSenderTest {
             withCreateOutgoingMlsMessage()
             if (sendMlsMessageWithResult != null) withSendOutgoingMlsMessage(sendMlsMessageWithResult) else withSendOutgoingMlsMessage()
             withUpdateMessageStatus()
-            withUpdateMessageDate()
-            withUpdatePendingMessagesAddMillisToDate()
         }
 
         companion object {
