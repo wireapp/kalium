@@ -31,6 +31,7 @@ import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -45,13 +46,15 @@ actual class CoreLogic(
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(rootPath, kaliumConfigs) {
 
-    override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
+    override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
+        GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
+    }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
         lazy {
             GlobalDatabaseProvider(
                 appContext,
-                SecurityHelper(globalPreferences.passphraseStorage).globalDBSecret(),
+                SecurityHelperImpl(globalPreferences.value.passphraseStorage).globalDBSecret(),
                 kaliumConfigs.shouldEncryptData
             )
         }
@@ -82,7 +85,7 @@ actual class CoreLogic(
             appContext,
             getGlobalScope(),
             kaliumConfigs,
-            globalPreferences,
+            globalPreferences.value,
             globalCallManager,
             userStorageProvider,
             networkStateObserver
