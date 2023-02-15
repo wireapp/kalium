@@ -187,6 +187,7 @@ class MessageMapperImpl(
                 author = sender,
                 text = message.text.orEmpty(),
                 time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
             )
 
             MessageEntity.ContentType.ASSET -> {

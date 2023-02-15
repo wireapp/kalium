@@ -318,6 +318,7 @@ data class NotificationMessageEntity(
     val senderName: String?,
     val text: String?,
     val assetMimeType: String?,
+    val isQuotingSelf: Boolean,
 
     val conversationId: QualifiedIDEntity,
     val conversationName: String?,
