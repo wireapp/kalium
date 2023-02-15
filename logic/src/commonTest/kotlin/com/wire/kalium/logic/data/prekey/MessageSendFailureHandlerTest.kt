@@ -66,7 +66,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {
-        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf(), null)
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
@@ -88,7 +88,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
-        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf(), null)
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
@@ -120,7 +120,7 @@ class MessageSendFailureHandlerTest {
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Left(failure))
-        val failureData = ProteusSendMessageFailure(mapOf(), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(mapOf(), mapOf(), mapOf(), null)
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()
@@ -138,7 +138,7 @@ class MessageSendFailureHandlerTest {
             .suspendFunction(clientRepository::storeUserClientIdList)
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Left(failure))
-        val failureData = ProteusSendMessageFailure(mapOf(userOne), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(mapOf(userOne), mapOf(), mapOf(), null)
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()
