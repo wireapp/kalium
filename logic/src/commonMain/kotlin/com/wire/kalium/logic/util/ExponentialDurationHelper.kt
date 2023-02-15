@@ -15,16 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.util
 
-package com.wire.kalium.logic.failure
+import kotlin.time.Duration
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
+class ExponentialDurationHelper(
+    private val initialDuration: Duration,
+    private val maxDuration: Duration,
+    private val factor: Double = 2.0,
+) {
+    private var currentDuration = initialDuration
 
-data class ProteusSendMessageFailure(
-    val missingClientsOfUsers: Map<UserId, List<ClientId>>,
-    val redundantClientsOfUsers: Map<UserId, List<ClientId>>,
-    val deletedClientsOfUsers: Map<UserId, List<ClientId>>,
-    val failedClientsOfUsers: Map<UserId, List<ClientId>>?
-) : CoreFailure.FeatureFailure()
+    fun reset() {
+        currentDuration = initialDuration
+    }
+
+    fun next(): Duration = currentDuration.also {
+        currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
+    }
+}

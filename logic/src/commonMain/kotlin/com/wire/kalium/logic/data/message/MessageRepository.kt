@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -305,7 +306,7 @@ class MessageDataSource(
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> {
-        val recipientMap = envelope.recipients.associate { recipientEntry ->
+        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }

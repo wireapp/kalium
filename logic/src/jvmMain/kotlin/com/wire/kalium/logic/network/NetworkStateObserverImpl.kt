@@ -15,16 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.network
 
-package com.wire.kalium.logic.failure
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
+actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-data class ProteusSendMessageFailure(
-    val missingClientsOfUsers: Map<UserId, List<ClientId>>,
-    val redundantClientsOfUsers: Map<UserId, List<ClientId>>,
-    val deletedClientsOfUsers: Map<UserId, List<ClientId>>,
-    val failedClientsOfUsers: Map<UserId, List<ClientId>>?
-) : CoreFailure.FeatureFailure()
+    override fun observeNetworkState(): Flow<NetworkState> =
+        flowOf(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
+}
