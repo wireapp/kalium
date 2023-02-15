@@ -59,9 +59,19 @@ internal class DatabaseExporterImpl internal constructor(
             return null
         }
 
-        // create a new backup DB file
+        // create a new backup DB file with empty passphrase
+        // this will force the app to use sql Cipher and enable the encrypted local DB
+        // to be attached to the plain DB
+        // also unencrypted DB (in debug mode) can be attached to the plain DB
+        // win win
         val plainDatabase: UserDatabaseBuilder =
-            userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
+            userDatabaseBuilder(
+                platformDatabaseData,
+                backupUserId,
+                UserDBSecret(ByteArray(0)),
+                KaliumDispatcherImpl.io,
+                false
+            )
 
         // check the plain DB path and return null if it was not created successfully
         plainDatabase.dbFileLocation().also {
@@ -109,9 +119,9 @@ internal class DatabaseExporterImpl internal constructor(
                     bindString(0, mainDBPath)
                 }
             } else {
-                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS key = ?", 2) {
+                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS KEY ?", 2) {
                     bindString(0, mainDBPath)
-                    bindString(1, localDBPassphrase.value.decodeToString())
+                    bindBytes(1, localDBPassphrase.value)
                 }
             }
         } catch (e: Exception) {
