@@ -16,17 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.conversation
+package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 
-// TODO(qol): rename to CreateConversationParam
-data class ConversationOptions(
-    val access: Set<Conversation.Access>? = null,
-    val accessRole: Set<Conversation.AccessRole>? = null,
-    val readReceiptsEnabled: Boolean = false,
-    val protocol: Protocol = Protocol.PROTEUS,
-    val creatorClientId: ClientId? = null
-) {
-    enum class Protocol {
-        PROTEUS, MLS
-    }
-}
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class GetGuestRoomResponse(
+    @SerialName("uri") val uri: String,
+    @SerialName("key") val key: String,
+    @SerialName("code") val code: String
+)

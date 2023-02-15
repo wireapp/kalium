@@ -281,8 +281,8 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationGroupState(groupState, groupId)
         }
 
-    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationModifiedDate(date.toInstant(), qualifiedID)
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }
 
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
@@ -476,8 +476,8 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationReadDate(date.toInstant(), conversationID)
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+        conversationQueries.updateConversationReadDate(date, conversationID)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
@@ -548,4 +548,7 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
+    override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(link, conversationId)
+    }
 }
