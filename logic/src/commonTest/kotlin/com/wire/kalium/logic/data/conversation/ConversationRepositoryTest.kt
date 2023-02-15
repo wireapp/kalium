@@ -642,7 +642,10 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        val result = conversationRepository.updateConversationReadDate(TestConversation.ID, "2022-03-30T15:36:00.000Z")
+        val result = conversationRepository.updateConversationReadDate(
+            TestConversation.ID,
+            Instant.fromEpochMilliseconds(1648654560000)
+        )
 
         // then
         verify(arrangement.conversationDAO)

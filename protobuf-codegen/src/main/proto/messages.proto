@@ -332,6 +332,7 @@ message Reaction {
 
 message Calling {
     required string content = 1;
+    optional QualifiedConversationId qualified_conversation_id = 2;
 }
 
 message DataTransfer {
