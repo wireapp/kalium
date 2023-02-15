@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
@@ -158,6 +159,7 @@ class EventMapper(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        eventContentDTO.subconversation?.let { SubconversationId(it) },
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.message
