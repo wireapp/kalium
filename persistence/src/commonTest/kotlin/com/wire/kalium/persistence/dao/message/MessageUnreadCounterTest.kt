@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.turbine.test
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -14,6 +14,7 @@ import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageUnreadCounterTest : BaseMessageTest() {
 
     @Test
@@ -21,7 +22,7 @@ class MessageUnreadCounterTest : BaseMessageTest() {
         insertInitialData()
         val readDate = Instant.fromEpochSeconds(10)
         val convId = TEST_CONVERSATION_1.id
-        conversationDAO.updateConversationReadDate(convId, readDate.toIsoDateTimeString())
+        conversationDAO.updateConversationReadDate(convId, readDate)
 
         val unreadMessages = listOf(
             newRegularMessageEntity(
@@ -51,7 +52,7 @@ class MessageUnreadCounterTest : BaseMessageTest() {
         insertInitialData()
         val readDate = Instant.fromEpochSeconds(10)
         val convId = TEST_CONVERSATION_1.id
-        conversationDAO.updateConversationReadDate(convId, readDate.toIsoDateTimeString())
+        conversationDAO.updateConversationReadDate(convId, readDate)
 
         val unreadMessages = listOf(
             newRegularMessageEntity(
@@ -80,7 +81,7 @@ class MessageUnreadCounterTest : BaseMessageTest() {
         insertInitialData()
         val readDate = Instant.fromEpochSeconds(10)
         val convId = TEST_CONVERSATION_1.id
-        conversationDAO.updateConversationReadDate(convId, readDate.toIsoDateTimeString())
+        conversationDAO.updateConversationReadDate(convId, readDate)
 
         val unreadMessages = listOf(
             newSystemMessageEntity(
@@ -109,7 +110,7 @@ class MessageUnreadCounterTest : BaseMessageTest() {
         insertInitialData()
         val readDate = Instant.fromEpochSeconds(10)
         val convId = TEST_CONVERSATION_1.id
-        conversationDAO.updateConversationReadDate(convId, readDate.toIsoDateTimeString())
+        conversationDAO.updateConversationReadDate(convId, readDate)
 
         val unreadMessages = listOf(
             newRegularMessageEntity(
