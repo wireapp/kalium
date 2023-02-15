@@ -42,8 +42,7 @@ sealed class LocalNotificationMessage(
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant,
         val text: String,
-        val isQuotingSelfUser: Boolean = false,
-        val isMentionedSelf: Boolean = false
+        val isQuotingSelfUser: Boolean = false
     ) :
         LocalNotificationMessage(author, time)
 
@@ -74,5 +73,5 @@ sealed class LocalNotificationMessage(
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)
 
 enum class LocalNotificationCommentType {
-    PICTURE, FILE, REACTION, MISSED_CALL, KNOCK, NOT_SUPPORTED_YET
+    PICTURE, FILE, REACTION, MISSED_CALL, NOT_SUPPORTED_YET
 }

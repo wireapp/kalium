@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -208,11 +209,11 @@ class MessageDAOImpl(
             .mapToList()
 
     override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
-        notificationQueries.getNotificationsMessages(
-            mapper::toNotificationEntity
-        ).asFlow()
+        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+            .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
+            .distinctUntilChanged()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
