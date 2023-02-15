@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -38,6 +39,7 @@ expect class GlobalCallManager {
         callRepository: CallRepository,
         userRepository: UserRepository,
         currentClientIdProvider: CurrentClientIdProvider,
+        selfConversationIdProvider: SelfConversationIdProvider,
         conversationRepository: ConversationRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,

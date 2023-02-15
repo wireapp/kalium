@@ -64,6 +64,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
@@ -177,6 +178,7 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -264,6 +266,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -336,6 +339,8 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val epochsFlow = MutableSharedFlow<GroupID>()
+
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
     private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
@@ -384,7 +389,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
             mlsPublicKeysRepository,
-            commitBundleEventReceiver
+            commitBundleEventReceiver,
+            epochsFlow
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -758,6 +764,7 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
@@ -785,7 +792,9 @@ class UserSessionScope internal constructor(
         get() = MLSMessageUnpackerImpl(
             mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
+            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 
@@ -1045,6 +1054,10 @@ class UserSessionScope internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+
+    val markFileSharingStatusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
+        get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
+
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)

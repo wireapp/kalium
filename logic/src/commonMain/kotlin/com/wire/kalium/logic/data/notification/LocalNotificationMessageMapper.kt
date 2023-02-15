@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
+import kotlinx.datetime.toInstant
 
 interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
@@ -41,7 +42,12 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
     override fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotificationConversation {
         val author = fromPublicUserToLocalNotificationMessageAuthor(connection.otherUser)
-        val message = LocalNotificationMessage.ConnectionRequest(author, connection.lastModifiedDate, connection.connection.qualifiedToId)
+        val message = LocalNotificationMessage.ConnectionRequest(
+            author,
+            // TODO: change time to Instant
+            connection.lastModifiedDate.toInstant(),
+            connection.connection.qualifiedToId
+        )
         return LocalNotificationConversation(
             connection.conversationId,
             connection.conversation.name ?: "",
@@ -59,7 +65,8 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             is Event.Conversation.DeletedConversation -> {
                 val notificationMessage = LocalNotificationMessage.ConversationDeleted(
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
-                    time = conversationEvent.timestampIso
+                    // TODO: change time to Instant
+                    time = conversationEvent.timestampIso.toInstant()
                 )
                 LocalNotificationConversation(
                     id = conversation.id,
