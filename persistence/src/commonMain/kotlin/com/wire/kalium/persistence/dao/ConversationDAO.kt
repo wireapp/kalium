@@ -145,9 +145,9 @@ interface ConversationDAO {
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
-    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
-    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
