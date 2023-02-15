@@ -40,7 +40,7 @@ internal interface SecurityHelper {
     fun proteusDBSecret(userId: UserId): ProteusDBSecret
 }
 
-internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage): SecurityHelper {
+internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage) : SecurityHelper {
 
     override fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
@@ -50,6 +50,7 @@ internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStora
 
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
         getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
+
     override fun mlsDBSecret(userId: UserId): MlsDBSecret =
         MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
 

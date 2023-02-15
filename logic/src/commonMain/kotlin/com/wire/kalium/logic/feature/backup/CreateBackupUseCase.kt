@@ -80,7 +80,8 @@ internal class CreateBackupUseCaseImpl(
         deletePreviousBackupFiles(backupFilePath)
 
         val plainDBPath =
-            databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath() ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
+            databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath()
+                ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
 
         try {
             createBackupFile(userId, plainDBPath, backupFilePath).fold(

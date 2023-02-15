@@ -95,6 +95,7 @@ internal class DatabaseExporterImpl internal constructor(
         return plainDatabase.dbFileLocation()
     }
 
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
     private fun attachLocalToPlain(
         localDatabase: UserDatabaseBuilder,
         plainDB: UserDatabaseBuilder,
