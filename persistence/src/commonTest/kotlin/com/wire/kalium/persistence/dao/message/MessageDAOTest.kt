@@ -735,7 +735,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId)
         assertTrue((updatedMessage?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
-        val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2).firstOrNull()
+        val updatedMessage2 = messageDAO.getMessageById(messageId2, conversationId2)
         assertTrue((updatedMessage2?.content as MessageEntityContent.FailedDecryption).isDecryptionResolved)
     }
 
@@ -1212,7 +1212,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationId
         )
         assertTrue {
-            result.first()?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
+            result?.content == MessageEntityContent.ConversationReceiptModeChanged(receiptMode = true)
         }
     }
 
@@ -1248,8 +1248,8 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationId2
         )
         assertTrue {
-            result1.first()?.content == MessageEntityContent.HistoryLost &&
-                    result2.first()?.content == MessageEntityContent.HistoryLost
+            result1?.content == MessageEntityContent.HistoryLost &&
+                    result2?.content == MessageEntityContent.HistoryLost
         }
     }
 
@@ -1324,11 +1324,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         assertTrue {
-            resultForSelfConversation.firstOrNull() == null &&
-                    resultForOneOnOneConversation.first()?.content == MessageEntityContent.HistoryLost &&
-                    resultForGroupConversation.first()?.content == MessageEntityContent.HistoryLost &&
-                    resultForConnectionPendingConversation.firstOrNull() == null &&
-                    resultForGlobalTeamConversation.firstOrNull() == null
+            resultForSelfConversation == null &&
+                    resultForOneOnOneConversation?.content == MessageEntityContent.HistoryLost &&
+                    resultForGroupConversation?.content == MessageEntityContent.HistoryLost &&
+                    resultForConnectionPendingConversation == null &&
+                    resultForGlobalTeamConversation == null
         }
     }
 
