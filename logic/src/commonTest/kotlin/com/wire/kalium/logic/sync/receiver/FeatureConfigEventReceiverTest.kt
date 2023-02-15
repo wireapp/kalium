@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -90,6 +92,7 @@ class FeatureConfigEventReceiverTest {
     fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingFileSharingEnabledSuccessful()
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
             .arrange()
 
         featureConfigEventReceiver.onEvent(
@@ -104,6 +107,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() = runTest {
         val (arrangment, featureConfigEventReceiver) = Arrangement()
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = true, isStatusChanged = false)))
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 
@@ -114,6 +118,22 @@ class FeatureConfigEventReceiverTest {
         verify(arrangment.userConfigRepository)
             .function(arrangment.userConfigRepository::setFileSharingStatus)
             .with(eq(false), eq(true))
+    }
+
+    @Test
+    fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() = runTest {
+        val (arrangment, featureConfigEventReceiver) = Arrangement()
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withSettingFileSharingEnabledSuccessful()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangment.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED))
+        )
+
+        verify(arrangment.userConfigRepository)
+            .function(arrangment.userConfigRepository::setFileSharingStatus)
+            .with(eq(false), eq(false))
     }
 
     @Test
@@ -186,6 +206,13 @@ class FeatureConfigEventReceiverTest {
                 .function(userConfigRepository::setConferenceCallingEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isFileSharingEnabled)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         fun newMLSUpdatedEvent(
