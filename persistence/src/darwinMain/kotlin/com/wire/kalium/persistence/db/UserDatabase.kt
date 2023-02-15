@@ -70,7 +70,7 @@ actual fun userDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(platformDatabaseData.storePath),
+        platformDatabaseData,
         passphrase != null
     )
 }
@@ -97,7 +97,7 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(),
+        PlatformDatabaseData(""),
         false
     )
 }
@@ -112,5 +112,5 @@ internal actual fun nuke(
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storePath)?.checkResourceIsReachableAndReturnError(null) ?: false)
+): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storePath).checkResourceIsReachableAndReturnError(null) ?: false)
     platformDatabaseData.storePath else null
