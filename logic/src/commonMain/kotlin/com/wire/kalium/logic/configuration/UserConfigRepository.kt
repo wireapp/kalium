@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.map
 
 interface UserConfigRepository {
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
     fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
@@ -46,6 +47,10 @@ class UserConfigDataSource(
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
+
+    override fun setFileSharingAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.setFileSharingAsNotified()
+    }
 
     override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
         wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
