@@ -137,7 +137,6 @@ interface ConversationRepository {
         mutedStatusTimestamp: Long
     ): Either<NetworkFailure, Unit>
 
-    suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
@@ -444,11 +443,6 @@ internal class ConversationDataSource internal constructor(
                 conversationID.toDao()
             )
         }
-
-    override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
-        conversationDAO.getConversationsForNotifications()
-            .filterNotNull()
-            .map { it.map(conversationMapper::fromDaoModel) }
 
     override suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
