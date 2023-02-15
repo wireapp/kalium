@@ -197,10 +197,9 @@ class MessageMapperImpl(
             }
 
             MessageEntity.ContentType.KNOCK -> {
-                LocalNotificationMessage.Comment(
+                LocalNotificationMessage.Knock(
                     sender,
-                    message.date,
-                    LocalNotificationCommentType.KNOCK
+                    message.date
                 )
             }
 
