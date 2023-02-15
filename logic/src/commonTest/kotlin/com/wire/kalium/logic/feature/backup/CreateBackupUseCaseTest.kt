@@ -28,11 +28,14 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
+import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
+import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -53,7 +56,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 
@@ -80,6 +82,7 @@ class CreateBackupUseCaseTest {
             .withObservedClientId(ClientId("client-id"))
             .withExportedDB(plainDB, currentDBData)
             .withDeleteBackupDB(true)
+            .withUserDBPassphrase(null)
             .arrange()
 
         // When
@@ -116,6 +119,7 @@ class CreateBackupUseCaseTest {
         // Given
         val password = ""
         val (arrangement, createBackupUseCase) = Arrangement()
+            .withUserDBPassphrase(null)
             .withExportedDBError()
             .arrange()
 
@@ -142,6 +146,7 @@ class CreateBackupUseCaseTest {
             .withObservedClientId(ClientId("client-id"))
             .withExportedDB(plainDBFileLocation, dummyDBData)
             .withDeleteBackupDB(true)
+            .withUserDBPassphrase(null)
             .arrange()
 
         // When
@@ -173,6 +178,16 @@ class CreateBackupUseCaseTest {
 
         @Mock
         val databaseExporter = mock(classOf<DatabaseExporter>())
+
+        @Mock
+        val securityHelper = mock(classOf<SecurityHelper>())
+
+        fun withUserDBPassphrase(passphrase: UserDBSecret?) = apply {
+            given(securityHelper)
+                .function(securityHelper::userDBOrSecretNull)
+                .whenInvokedWith(any())
+                .thenReturn(passphrase)
+        }
         fun withObservedClientId(clientId: ClientId?) = apply {
             given(clientIdProvider)
                 .suspendFunction(clientIdProvider::invoke)
@@ -188,7 +203,7 @@ class CreateBackupUseCaseTest {
                 sink(exportedDBPath).buffer().use { it.write(dbData) }
                 given(databaseExporter)
                     .function(databaseExporter::exportToPlainDB)
-                    .whenInvoked()
+                    .whenInvokedWith(anything())
                     .thenReturn(exportedDBPath.toString())
             }
         }
@@ -196,7 +211,7 @@ class CreateBackupUseCaseTest {
         fun withExportedDBError() = apply {
             given(databaseExporter)
                 .function(databaseExporter::exportToPlainDB)
-                .whenInvoked()
+                .whenInvokedWith(anything())
                 .thenReturn(null)
         }
 
@@ -217,6 +232,7 @@ class CreateBackupUseCaseTest {
                 clientIdProvider,
                 fakeFileSystem,
                 databaseExporter,
+                securityHelper,
                 dispatcher
             )
     }

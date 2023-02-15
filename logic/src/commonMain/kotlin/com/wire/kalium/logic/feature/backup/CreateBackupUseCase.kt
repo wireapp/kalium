@@ -38,6 +38,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.util.DateTimeUtil
@@ -69,6 +70,7 @@ internal class CreateBackupUseCaseImpl(
     private val clientIdProvider: CurrentClientIdProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val databaseExporter: DatabaseExporter,
+    private val securityHelper: SecurityHelper,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
@@ -78,7 +80,7 @@ internal class CreateBackupUseCaseImpl(
         deletePreviousBackupFiles(backupFilePath)
 
         val plainDBPath =
-            databaseExporter.exportToPlainDB()?.toPath() ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
+            databaseExporter.exportToPlainDB(securityHelper.userDBOrSecretNull(userId))?.toPath() ?: return@withContext CreateBackupResult.Failure(StorageFailure.DataNotFound)
 
         try {
             createBackupFile(userId, plainDBPath, backupFilePath).fold(

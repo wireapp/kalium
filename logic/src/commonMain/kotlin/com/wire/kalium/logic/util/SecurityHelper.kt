@@ -32,18 +32,28 @@ internal expect class SecureRandom constructor() {
     fun nextInt(bound: Int): Int
 }
 
-internal class SecurityHelper(private val passphraseStorage: PassphraseStorage) {
+internal interface SecurityHelper {
+    fun globalDBSecret(): GlobalDatabaseSecret
+    fun userDBSecret(userId: UserId): UserDBSecret
+    fun userDBOrSecretNull(userId: UserId): UserDBSecret?
+    fun mlsDBSecret(userId: UserId): MlsDBSecret
+    fun proteusDBSecret(userId: UserId): ProteusDBSecret
+}
 
-    fun globalDBSecret(): GlobalDatabaseSecret =
+internal class SecurityHelperImpl(private val passphraseStorage: PassphraseStorage): SecurityHelper {
+
+    override fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
 
-    fun userDBSecret(userId: UserId): UserDBSecret =
+    override fun userDBSecret(userId: UserId): UserDBSecret =
         UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
 
-    fun mlsDBSecret(userId: UserId): MlsDBSecret =
+    override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
+        getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
+    override fun mlsDBSecret(userId: UserId): MlsDBSecret =
         MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
 
-    fun proteusDBSecret(userId: UserId): ProteusDBSecret =
+    override fun proteusDBSecret(userId: UserId): ProteusDBSecret =
         ProteusDBSecret(getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId"))
 
     private fun getOrGeneratePassPhrase(alias: String): String =

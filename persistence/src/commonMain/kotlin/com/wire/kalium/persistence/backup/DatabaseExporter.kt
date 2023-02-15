@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
@@ -32,7 +33,7 @@ interface DatabaseExporter {
      * Export the user DB to a plain DB
      * @return the path to the plain DB file, null if the file was not created
      */
-    fun exportToPlainDB(): String?
+    fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String?
 
     /**
      * Delete the backup file and any temp data was created during the backup process
@@ -46,14 +47,13 @@ interface DatabaseExporter {
 internal class DatabaseExporterImpl internal constructor(
     user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val localDatabase: UserDatabaseBuilder,
-    private val isDataEncrypted: Boolean,
+    private val localDatabase: UserDatabaseBuilder
 ) : DatabaseExporter {
 
     private val backupUserId = user.copy(value = "backup-${user.value}")
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
-    override fun exportToPlainDB(): String? {
+    override fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String? {
         // delete the backup DB file if it exists
         if (deleteBackupDBFile()) {
             return null
@@ -65,14 +65,14 @@ internal class DatabaseExporterImpl internal constructor(
 
         // check the plain DB path and return null if it was not created successfully
         plainDatabase.dbFileLocation().also {
-            if(it == null) {
+            if (it == null) {
                 kaliumLogger.e("Failed to get the plain DB path")
                 return null
             }
         }
 
         // copy the data from the user DB to the backup DB
-        if(!attachLocalToPlain(localDatabase, plainDatabase)){
+        if (!attachLocalToPlain(localDatabase, plainDatabase, localDBPassphrase)) {
             plainDatabase.sqlDriver.close()
             deleteBackupDBFile()
             return null
@@ -95,12 +95,23 @@ internal class DatabaseExporterImpl internal constructor(
         return plainDatabase.dbFileLocation()
     }
 
-    private fun attachLocalToPlain(localDatabase: UserDatabaseBuilder, plainDB: UserDatabaseBuilder): Boolean {
+    private fun attachLocalToPlain(
+        localDatabase: UserDatabaseBuilder,
+        plainDB: UserDatabaseBuilder,
+        localDBPassphrase: UserDBSecret?
+    ): Boolean {
         try {
             val mainDBPath = localDatabase.dbFileLocation() ?: return false
-            // TODO: get the db passphrase for encrypted one
-            plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS", 1) {
-                bindString(0, mainDBPath)
+
+            if (localDBPassphrase == null) {
+                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS", 1) {
+                    bindString(0, mainDBPath)
+                }
+            } else {
+                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS key = ?", 2) {
+                    bindString(0, mainDBPath)
+                    bindString(1, localDBPassphrase.value.decodeToString())
+                }
             }
         } catch (e: Exception) {
             kaliumLogger.e("Failed to attach the local DB to the plain DB ${e.message}")

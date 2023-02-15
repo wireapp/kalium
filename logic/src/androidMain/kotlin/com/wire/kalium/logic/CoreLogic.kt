@@ -45,15 +45,13 @@ actual class CoreLogic(
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(rootPath, kaliumConfigs) {
 
-    override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
-        GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
-    }
+    override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
         lazy {
             GlobalDatabaseProvider(
                 appContext,
-                SecurityHelper(globalPreferences.value.passphraseStorage).globalDBSecret(),
+                SecurityHelper(globalPreferences.passphraseStorage).globalDBSecret(),
                 kaliumConfigs.shouldEncryptData
             )
         }
@@ -84,7 +82,7 @@ actual class CoreLogic(
             appContext,
             getGlobalScope(),
             kaliumConfigs,
-            globalPreferences.value,
+            globalPreferences,
             globalCallManager,
             userStorageProvider,
             networkStateObserver
