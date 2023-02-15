@@ -491,6 +491,7 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
+
     @Test
     fun givenASuccessApiCall_whenTryingToRevokeGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
@@ -552,6 +553,7 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
         assertEquals(GUEST_ROOM_LINK, result)
     }
+
 
     private class Arrangement {
 
@@ -812,6 +814,14 @@ class ConversationGroupRepositoryTest {
                     )
                 )
         }
+
+        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateGuestRoomLink)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
+
 
         fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
             given(conversationApi)

@@ -551,7 +551,6 @@ class ConversationDAOImpl(
     override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String) = withContext(coroutineContext) {
         conversationQueries.updateGuestRoomLink(link, conversationId)
     }
-
     override suspend fun getGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
         conversationQueries.getGuestRoomLinkByConversationId(conversationId).executeAsOneOrNull()?.guest_room_link
     }

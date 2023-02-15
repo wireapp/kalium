@@ -226,5 +226,4 @@ internal class ConversationGroupRepositoryImpl(
 
     override suspend fun getGuestRoomLink(conversationId: ConversationId): String? =
         conversationDAO.getGuestRoomLinkByConversationId(conversationId.toDao())
-
 }
