@@ -191,20 +191,18 @@ class MessageDataSource(
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
     ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
-        messageDAO.getNotificationMessage().mapLatest {
-            it.groupBy { item ->
-                item.conversationId
-            }.map { (conversationId, messages) ->
-                LocalNotificationConversation(
-                    // todo: needs some clean up!
-                    id = conversationId.toModel(),
-                    conversationName = messages.first().conversationName ?: "",
-                    messages = messages.take(messageSizePerConversation)
-                        .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
-                    isOneToOneConversation = messages.first().conversationType?.let { type ->
-                        type == ConversationEntity.Type.ONE_ON_ONE
-                    } ?: false)
-            }
+        messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
+            notificationEntities.groupBy { it.conversationId }
+                .map { (conversationId, messages) ->
+                    LocalNotificationConversation(
+                        // todo: needs some clean up!
+                        id = conversationId.toModel(),
+                        conversationName = messages.first().conversationName ?: "",
+                        messages = messages.take(messageSizePerConversation)
+                            .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
+                    )
+                }
         }
     }
 

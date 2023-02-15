@@ -197,6 +197,7 @@ object MessageMapper {
         senderPreviewAssetId: QualifiedIDEntity?,
         conversationName: String?,
         text: String?,
+        isQuotingSelf: Boolean?,
         assetMimeType: String?,
         mutedStatus: ConversationEntity.MutedStatus,
         conversationType: ConversationEntity.Type,
@@ -212,7 +213,8 @@ object MessageMapper {
         conversationId = conversationId,
         conversationName = conversationName,
         mutedStatus = mutedStatus,
-        conversationType = conversationType
+        conversationType = conversationType,
+        isQuotingSelf = isQuotingSelf == true
     )
 
     private fun createMessageEntity(

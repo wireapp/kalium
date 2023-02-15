@@ -181,7 +181,6 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
 
-    suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>>
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
