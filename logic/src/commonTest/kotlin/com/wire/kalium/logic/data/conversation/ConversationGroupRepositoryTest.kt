@@ -535,7 +535,6 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
-
     private class Arrangement {
 
         @Mock
