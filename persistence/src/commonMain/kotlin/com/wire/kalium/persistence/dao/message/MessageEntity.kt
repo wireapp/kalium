@@ -90,7 +90,7 @@ sealed class MessageEntity(
 
         /**
          * The message failed to be sent because the conversation owner is not available.
-         * Note that this is currently relevant for federation conversations
+         * Note that this is currently only relevant for federated conversations.
          */
         FAILED_REMOTELY
     }
