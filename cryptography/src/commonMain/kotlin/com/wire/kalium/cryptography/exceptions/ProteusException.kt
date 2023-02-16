@@ -149,6 +149,7 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
     }
 
     companion object {
+        @Suppress("MagicNumber")
         fun fromNativeCode(code: Int): Code {
             return when (code) {
                 1 -> Code.STORAGE_ERROR
@@ -167,10 +168,11 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
             }
         }
 
-        // mapping source:
+        // Napping source:
         // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
         // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
         fun fromProteusCode(code: Int): Code {
+            @Suppress("MagicNumber")
             return when (code) {
                 501 -> Code.STORAGE_ERROR
                 205 -> Code.SESSION_NOT_FOUND
