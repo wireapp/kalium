@@ -74,6 +74,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         )
 
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
+    val clientDetailsUseCase: GetClientDetailsUseCase get() = GetClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)
