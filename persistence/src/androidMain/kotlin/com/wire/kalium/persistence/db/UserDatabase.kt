@@ -72,7 +72,7 @@ actual fun userDatabaseBuilder(
             callback = SqliteCallback(UserDatabase.Schema, enableWAL = enableWAL)
         )
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData)
+    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, passphrase != null)
 }
 
 fun inMemoryDatabase(
@@ -92,7 +92,8 @@ fun inMemoryDatabase(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
-        platformDatabaseData = PlatformDatabaseData(context = context)
+        platformDatabaseData = PlatformDatabaseData(context = context),
+        true
     )
 }
 
