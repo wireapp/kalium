@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation.guestroomlink
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -28,61 +27,61 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
-class GetGuestRoomLinkUseCaseTest {
+class ObserveGuestRoomLinkUseCaseTest {
 
     @Mock
     val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
-    private lateinit var getGuestRoomLink: GetGuestRoomLinkUseCase
+    private lateinit var observeGuestRoomLink: ObserveGuestRoomLinkUseCase
 
     @BeforeTest
     fun setUp() {
-        getGuestRoomLink = GetGuestRoomLinkUseCaseImpl(conversationGroupRepository)
+        observeGuestRoomLink = ObserveGuestRoomLinkUseCaseImpl(conversationGroupRepository)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenRepositoryReturnsSuccess_whenGettingGuestRoomLink_thenReturnTheLink() = runTest {
+    fun givenRepositoryEmitsValues_whenObservingGuestRoomLink_thenPropagateTheLink() = runTest {
         val guestLink = "www.wire.com"
         given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::getGuestRoomLink)
+            .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
             .whenInvokedWith(eq(conversationId))
-            .thenReturn(guestLink)
+            .thenReturn(flowOf(guestLink))
 
-        val result = getGuestRoomLink(conversationId)
+        val result = observeGuestRoomLink(conversationId)
 
-        assertIs<GetGuestRoomLinkResult.Success>(result)
-        assertEquals(guestLink, result.link)
+        assertEquals(guestLink, result.first())
         verify(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::getGuestRoomLink)
+            .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
             .with(eq(conversationId))
             .wasInvoked(exactly = once)
 
 
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun givenRepositoryReturnsNull_whenGettingGuestRoomLink_thenPropagateFailure() = runTest {
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::getGuestRoomLink)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(null)
-
-        val result = getGuestRoomLink(conversationId)
-
-        assertIs<GetGuestRoomLinkResult.Failure>(result)
-        verify(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::getGuestRoomLink)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
+//     @OptIn(ExperimentalCoroutinesApi::class)
+//     @Test
+//     fun givenRepositoryReturnsNull_whenGettingGuestRoomLink_thenPropagateFailure() = runTest {
+//         given(conversationGroupRepository)
+//             .suspendFunction(conversationGroupRepository::getGuestRoomLink)
+//             .whenInvokedWith(eq(conversationId))
+//             .thenReturn(null)
+//
+//         val result = getGuestRoomLink(conversationId)
+//
+//         assertIs<GetGuestRoomLinkResult.Failure>(result)
+//         verify(conversationGroupRepository)
+//             .suspendFunction(conversationGroupRepository::getGuestRoomLink)
+//             .with(any())
+//             .wasInvoked(exactly = once)
+//     }
 
     companion object {
         private val conversationId = ConversationId("value", "domain")

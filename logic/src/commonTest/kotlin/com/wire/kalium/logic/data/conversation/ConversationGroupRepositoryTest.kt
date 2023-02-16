@@ -67,6 +67,8 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -538,20 +540,20 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenDaoRunsWithSuccess_whenGettingGuestRoomLink_thenReturnGuestRoomLink() = runTest {
+    fun givenDaoRunsEmitsValues_whenObservingGuestRoomLink_thenPropagateGuestRoomLink() = runTest {
         val conversationId = ConversationId("value", "domain")
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulFetchOfGuestRoomLink()
             .arrange()
 
-        val result = conversationGroupRepository.getGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.observeGuestRoomLink(conversationId)
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getGuestRoomLinkByConversationId)
+            .suspendFunction(arrangement.conversationDAO::observeGuestRoomLinkByConversationId)
             .with(any())
             .wasInvoked(exactly = once)
-        assertEquals(GUEST_ROOM_LINK, result)
+        assertEquals(LINK, result.first())
     }
 
 
@@ -847,18 +849,11 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
-        }
-
         fun withSuccessfulFetchOfGuestRoomLink() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getGuestRoomLinkByConversationId)
+                .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
-                .thenReturn(GUEST_ROOM_LINK)
+                .thenReturn(GUEST_ROOM_LINK_FLOW)
         }
 
         fun arrange() = this to conversationGroupRepository
@@ -866,7 +861,8 @@ class ConversationGroupRepositoryTest {
 
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
-        private const val GUEST_ROOM_LINK = "www.wire.com"
+        const val LINK = "www.wire.com"
+        private val GUEST_ROOM_LINK_FLOW = flowOf(LINK)
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
