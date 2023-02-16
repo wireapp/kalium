@@ -45,7 +45,7 @@ class SecurityHelperTest {
 
     @BeforeTest
     fun setup() {
-        securityHelper = SecurityHelper(passphraseStorage)
+        securityHelper = SecurityHelperImpl(passphraseStorage)
     }
 
     @Test
