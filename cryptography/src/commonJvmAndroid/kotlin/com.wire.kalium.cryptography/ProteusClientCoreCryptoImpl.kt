@@ -184,8 +184,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         try {
             return b()
         } catch (e: CryptoException) {
-            // TODO underlying proteus error is not exposed atm
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
