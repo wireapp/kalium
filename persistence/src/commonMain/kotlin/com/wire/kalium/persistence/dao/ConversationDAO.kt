@@ -39,7 +39,8 @@ data class ConversationEntity(
     val lastReadDate: Instant,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
-    val receiptMode: ReceiptMode
+    val receiptMode: ReceiptMode,
+    val guestRoomLink: String? = null
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -145,9 +146,9 @@ interface ConversationDAO {
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
-    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
-    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
@@ -181,7 +182,6 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
 
-    suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>>
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
@@ -201,5 +201,5 @@ interface ConversationDAO {
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
-
+    suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String)
 }

@@ -19,9 +19,13 @@
 package com.wire.kalium.logic.data.logout
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -45,10 +49,16 @@ interface LogoutRepository {
      * invalidating the current credentials.
      */
     suspend fun logout(): Either<CoreFailure, Unit>
+
+    /**
+     * Clears all client related local metadata.
+     */
+    suspend fun clearClientRelatedLocalMetadata()
 }
 
 internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
+    private val metadataDAO: MetadataDAO
 ) : LogoutRepository {
 
     private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
@@ -60,4 +70,14 @@ internal class LogoutDataSource(
     override suspend fun logout(): Either<CoreFailure, Unit> =
         wrapApiRequest { logoutApi.logout() }
 
+    override suspend fun clearClientRelatedLocalMetadata() {
+        wrapStorageRequest {
+            metadataDAO.clear(
+                keysToKeep = listOf(
+                    ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY,
+                    UserDataSource.SELF_USER_ID_KEY
+                )
+            )
+        }
+    }
 }

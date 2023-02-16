@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.MessageContent
@@ -42,6 +44,11 @@ internal class NewMessageEventHandlerImpl(
     override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage) {
         proteusMessageUnpacker.unpackProteusMessage(event)
             .onFailure {
+                if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
+                    logger.i("Ignoring duplicate message")
+                    return
+                }
+
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,

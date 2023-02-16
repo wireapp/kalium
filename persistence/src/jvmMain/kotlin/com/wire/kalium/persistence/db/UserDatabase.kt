@@ -56,7 +56,7 @@ actual fun userDatabaseBuilder(
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData)
+    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, !passphrase.isNullOrBlank())
 }
 
 private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
@@ -74,7 +74,7 @@ private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSq
 fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
     val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
     UserDatabase.Schema.create(driver)
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")), false)
 }
 
 internal actual fun nuke(

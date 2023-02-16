@@ -71,6 +71,8 @@ class DeleteMessageUseCase internal constructor(
 
         return messageRepository.getMessageById(conversationId, messageId).map { message ->
             when (message.status) {
+                // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
+                // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
                 Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
                 else -> {
                     return currentClientIdProvider().flatMap { currentClientId ->

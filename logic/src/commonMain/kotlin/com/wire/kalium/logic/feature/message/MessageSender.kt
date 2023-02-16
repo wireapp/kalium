@@ -45,6 +45,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.toInstant
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -131,28 +132,18 @@ internal class MessageSenderImpl internal constructor(
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
             attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
-                updateDatesOfMessagesWithServerTime(processedMessage, messageRemoteTime)
+                val serverDate = messageRemoteTime.toInstant()
+                val localDate = message.date.toInstant()
+                val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                messageRepository.promoteMessageToSentUpdatingServerTime(
+                    processedMessage.conversationId,
+                    processedMessage.id,
+                    serverDate,
+                    millis
+                )
+                Unit
             }
         }
-
-    private suspend fun updateDatesOfMessagesWithServerTime(
-        message: Message.Sendable,
-        messageRemoteTime: String
-    ) {
-        messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
-            .flatMap {
-                messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
-            }.flatMap {
-                // this should make sure that pending messages are ordered correctly after one of them is sent
-                messageRepository.updatePendingMessagesAddMillisToDate(
-                    message.conversationId,
-                    DateTimeUtil.calculateMillisDifference(message.date, messageRemoteTime)
-                )
-            }.onFailure {
-                val cause = (it as? CoreFailure.Unknown)?.rootCause ?: (it as? StorageFailure.Generic)?.rootCause
-                logger.w("Failure '$it' on updating dates after sending message '${message.id}'", cause)
-            }
-    }
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 

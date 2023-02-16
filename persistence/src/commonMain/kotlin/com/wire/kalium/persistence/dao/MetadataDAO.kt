@@ -25,4 +25,5 @@ interface MetadataDAO {
     suspend fun deleteValue(key: String)
     suspend fun valueByKeyFlow(key: String): Flow<String?>
     suspend fun valueByKey(key: String): String?
+    suspend fun clear(keysToKeep: List<String>?)
 }

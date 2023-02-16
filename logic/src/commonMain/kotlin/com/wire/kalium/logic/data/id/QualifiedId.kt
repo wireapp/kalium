@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
@@ -50,3 +52,8 @@ value class GroupID(val value: String)
 
 @JvmInline
 value class SubconversationId(val value: String)
+
+data class QualifiedClientID(
+    val clientId: ClientId,
+    val userId: UserId
+)

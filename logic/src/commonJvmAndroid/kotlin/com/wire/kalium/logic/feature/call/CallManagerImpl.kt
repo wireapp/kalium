@@ -28,6 +28,7 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
@@ -86,6 +87,7 @@ class CallManagerImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val callMapper: CallMapper,
@@ -154,6 +156,7 @@ class CallManagerImpl internal constructor(
                     selfUserId,
                     selfClientId,
                     messageSender,
+                    selfConversationIdProvider,
                     scope,
                     callMapper
                 ).keepingStrongReference(),
@@ -191,13 +194,19 @@ class CallManagerImpl internal constructor(
         val currTime = System.currentTimeMillis()
         val msgTime = message.date.toEpochMillis()
 
+        val targetConversationId = if (message.isSelfMessage) {
+            content.conversationId ?: message.conversationId
+        } else {
+            message.conversationId
+        }
+
         wcall_recv_msg(
             inst = deferredHandle.await(),
             msg = msg,
             len = msg.size,
             curr_time = Uint32_t(value = currTime / 1000),
             msg_time = Uint32_t(value = msgTime / 1000),
-            convId = federatedIdMapper.parseToFederatedId(message.conversationId),
+            convId = federatedIdMapper.parseToFederatedId(targetConversationId),
             userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
             clientId = message.senderClientId.value
         )
@@ -243,7 +252,7 @@ class CallManagerImpl internal constructor(
         }
 
         if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
         }
@@ -270,7 +279,7 @@ class CallManagerImpl internal constructor(
         }
 
         if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(conversationId, scope) { conversationId, epochInfo ->
+            callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
         }

@@ -102,28 +102,32 @@ class ParticipantsFilterTest {
             clientId = selfClientId,
             name = "Alok",
             isCameraOn = true,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participant11 = Participant(
             id = selfUserId,
             clientId = "clientId2",
             name = "Alok",
             isCameraOn = false,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participant2 = Participant(
             id = userId2,
             clientId = "clientId2",
             name = "Max",
             isCameraOn = true,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participant3 = Participant(
             id = userId3,
             clientId = "clientId3",
             name = "Hisoka",
             isCameraOn = false,
-            isMuted = false
+            isMuted = false,
+            hasEstablishedAudio = true
         )
         val participants = listOf(participant1, participant2, participant3, participant11)
     }
