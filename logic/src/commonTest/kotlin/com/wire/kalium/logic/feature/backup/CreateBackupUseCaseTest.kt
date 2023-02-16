@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
@@ -54,8 +55,10 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 
@@ -154,7 +157,7 @@ class CreateBackupUseCaseTest {
         advanceUntilIdle()
 
         // Then
-        assertTrue(result is CreateBackupResult.Success)
+        assertIs<CreateBackupResult.Success>(result)
         verify(arrangement.clientIdProvider)
             .suspendFunction(arrangement.clientIdProvider::invoke)
             .wasInvoked(once)
