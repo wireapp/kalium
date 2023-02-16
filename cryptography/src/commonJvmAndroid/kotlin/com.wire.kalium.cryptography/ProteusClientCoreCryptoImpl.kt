@@ -113,7 +113,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     }
 
     override suspend fun newLastPreKey(): PreKeyCrypto {
-        return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
+        return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId().toInt(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
