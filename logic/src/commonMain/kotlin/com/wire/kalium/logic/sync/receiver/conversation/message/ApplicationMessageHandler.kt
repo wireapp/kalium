@@ -109,6 +109,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
                     is MessageContent.Cleared -> Message.Visibility.HIDDEN
+                    is MessageContent.Ephemeral -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -226,13 +227,17 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.Knock -> handleKnock(message)
             is MessageContent.Asset -> handleAssetMessage(message, content)
-
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
                 persistMessage(message)
             }
 
             is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.Ephemeral -> when (val ephemeralMessageContent = content.ephemeralMessageContent) {
+                is MessageContent.Asset -> throw IllegalStateException("test")
+                is MessageContent.Knock -> throw IllegalStateException("test")
+                is MessageContent.Text -> handleTextMessage(message, ephemeralMessageContent)
+            }
         }
     }
 

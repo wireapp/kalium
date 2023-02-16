@@ -35,6 +35,7 @@ import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.MessageDelete
@@ -81,7 +82,6 @@ class ProtoContentMapperImpl(
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
-
             is MessageContent.Availability -> GenericMessage.Content.Availability(
                 availabilityMapper.fromModelAvailabilityToProto(
                     readableContent.status
@@ -89,21 +89,17 @@ class ProtoContentMapperImpl(
             )
 
             is MessageContent.LastRead -> packLastRead(readableContent)
-
             is MessageContent.Cleared -> packCleared(readableContent)
-
             is MessageContent.Reaction -> packReaction(readableContent)
-
             is MessageContent.Receipt -> packReceipt(readableContent)
-
             is MessageContent.ClientAction -> packClientAction()
-
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
-
+            is MessageContent.Ephemeral -> TODO("Message type not yet supported")
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: $readableContent"
                 )
+
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
@@ -144,9 +140,7 @@ class ProtoContentMapperImpl(
 
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent)
-
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
-
             is GenericMessage.Content.Availability -> MessageContent.Availability(
                 availabilityMapper.fromProtoAvailabilityToModel(
                     protoContent.value
@@ -163,14 +157,18 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
-            is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
+            is GenericMessage.Content.Ephemeral -> {
+
+                unpackEphemeral(protoContent)
+
+            }
+
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
-
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Ignored
@@ -367,6 +365,18 @@ class ProtoContentMapperImpl(
         return MessageContent.Asset(
             value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
         )
+    }
+
+    private fun unpackEphemeral(
+        protoContent: GenericMessage.Content.Ephemeral
+    ): MessageContent.FromProto {
+        // it is safe to cast here as the content of ephemeralContent is equal to that of protoContent
+        val messageContent =  when (val ephemeralContent = protoContent.value.content) {
+            is Ephemeral.Content.Text -> unpackText(ephemeralContent as GenericMessage.Content.Text)
+            else -> {MessageContent.Ignored }
+        }
+
+        return messageContent
     }
 
     private fun extractConversationId(

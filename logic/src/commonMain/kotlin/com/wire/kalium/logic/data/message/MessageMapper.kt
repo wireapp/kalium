@@ -210,6 +210,7 @@ class MessageMapperImpl(
                     LocalNotificationCommentType.MISSED_CALL
                 )
             }
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -287,6 +288,25 @@ class MessageMapperImpl(
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
+        is MessageContent.Ephemeral -> {
+            when (val ephemeralMessageContent = regularMessage.ephemeralMessageContent) {
+                is MessageContent.Asset -> {
+                    throw IllegalStateException("test")
+                }
+                is MessageContent.Knock -> {
+                    throw IllegalStateException("test")
+                }
+
+                is MessageContent.Text -> {
+                    MessageEntityContent.Text(
+                        messageBody = ephemeralMessageContent.value,
+                        mentions = ephemeralMessageContent.mentions.map { messageMentionMapper.fromModelToDao(it) },
+                        quotedMessageId = ephemeralMessageContent.quotedMessageReference?.quotedMessageId,
+                        isQuoteVerified = ephemeralMessageContent.quotedMessageReference?.isVerified,
+                    )
+                }
+            }
+        }
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {

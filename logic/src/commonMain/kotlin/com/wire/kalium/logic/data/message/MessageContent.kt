@@ -68,6 +68,11 @@ sealed class MessageContent {
      * [Calling], [ClientAction] etc.
      */
     sealed class Signaling : FromProto()
+    sealed interface EphemeralContent
+    data class Ephemeral(
+        val expireAfterMillis: Long,
+        val ephemeralMessageContent: EphemeralContent
+    ) : Regular()
 
     // client message content types
     data class Text(
@@ -75,7 +80,7 @@ sealed class MessageContent {
         val mentions: List<MessageMention> = listOf(),
         val quotedMessageReference: QuoteReference? = null,
         val quotedMessageDetails: QuotedMessageDetails? = null
-    ) : Regular()
+    ) : Regular(), EphemeralContent
 
     data class QuoteReference(
         val quotedMessageId: String,
@@ -137,7 +142,7 @@ sealed class MessageContent {
         object Invalid : Content
     }
 
-    data class Asset(val value: AssetContent) : Regular()
+    data class Asset(val value: AssetContent) : Regular(), EphemeralContent
 
     data class RestrictedAsset(
         val mimeType: String,
@@ -160,7 +165,7 @@ sealed class MessageContent {
         val newMentions: List<MessageMention> = listOf()
     ) : Signaling()
 
-    data class Knock(val hotKnock: Boolean) : Regular()
+    data class Knock(val hotKnock: Boolean) : Regular(), EphemeralContent
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,

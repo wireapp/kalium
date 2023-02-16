@@ -113,6 +113,11 @@ sealed interface Message {
                 is MessageContent.Unknown -> mutableMapOf(
                     typeKey to "unknown"
                 )
+
+                // TODO:("What to do here? Ephemeral")
+                is MessageContent.Ephemeral -> mutableMapOf(
+                    typeKey to "unknown"
+                )
             }
 
             val standardProperties = mapOf(

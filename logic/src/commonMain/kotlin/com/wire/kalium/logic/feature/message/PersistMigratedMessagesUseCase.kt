@@ -187,5 +187,6 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
         MessageContent.Ignored -> MessageEntity.Visibility.HIDDEN
         is MessageContent.Reaction -> MessageEntity.Visibility.HIDDEN
         is MessageContent.Receipt -> MessageEntity.Visibility.HIDDEN
+        is MessageContent.Ephemeral -> MessageEntity.Visibility.HIDDEN
     }
 }
