@@ -39,6 +39,7 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -51,7 +52,6 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
@@ -104,23 +104,24 @@ internal open class NotificationApiV0 internal constructor(
         }
     }
 
-    override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>> = flow {
-        // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
-        //       WebSocket requests are not intercept-able, and they throw
-        //       exceptions when the backend returns 401 instead of triggering a token refresh.
-        //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
-        //       before attempting to open the websocket
-        lastNotification(clientId)
-
-        authenticatedWebSocketClient
-            .createDisposableHttpClient()
-            .webSocket({
-                setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
-                parameter(CLIENT_QUERY_KEY, clientId)
-            }) {
-                emitWebSocketEvents(this)
+    override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
+        lastNotification(clientId).mapSuccess {
+            flow {
+                // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
+                //       WebSocket requests are not intercept-able, and they throw
+                //       exceptions when the backend returns 401 instead of triggering a token refresh.
+                //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
+                //       before attempting to open the websocket
+                authenticatedWebSocketClient
+                    .createDisposableHttpClient()
+                    .webSocket({
+                        setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
+                        parameter(CLIENT_QUERY_KEY, clientId)
+                    }) {
+                        emitWebSocketEvents(this)
+                    }
             }
-    }
+        }
 
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
         defaultClientWebSocketSession: DefaultClientWebSocketSession
