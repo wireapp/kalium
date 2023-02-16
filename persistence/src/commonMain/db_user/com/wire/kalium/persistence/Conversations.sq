@@ -16,7 +16,7 @@ CREATE TABLE Conversation (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
-    -- when even a conversation event is recived, last_modified_date is updated for spicific events
+    -- when even a conversation event is received, last_modified_date is updated for specific events
     -- e.g. updated when a new message text is received but not when a message is deleted
     -- this is used for sorting conversations
     last_modified_date INTEGER AS Instant NOT NULL,
