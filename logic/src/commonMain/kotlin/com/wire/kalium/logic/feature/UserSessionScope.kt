@@ -1044,7 +1044,8 @@ class UserSessionScope internal constructor(
             clearUserData,
             userSessionScopeProvider,
             pushTokenRepository,
-            globalScope
+            globalScope,
+            authenticatedDataSourceSet.userSessionWorkScheduler
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)
