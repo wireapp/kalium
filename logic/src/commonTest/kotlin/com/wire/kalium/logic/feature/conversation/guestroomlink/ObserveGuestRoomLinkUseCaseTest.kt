@@ -66,23 +66,6 @@ class ObserveGuestRoomLinkUseCaseTest {
 
     }
 
-//     @OptIn(ExperimentalCoroutinesApi::class)
-//     @Test
-//     fun givenRepositoryReturnsNull_whenGettingGuestRoomLink_thenPropagateFailure() = runTest {
-//         given(conversationGroupRepository)
-//             .suspendFunction(conversationGroupRepository::getGuestRoomLink)
-//             .whenInvokedWith(eq(conversationId))
-//             .thenReturn(null)
-//
-//         val result = getGuestRoomLink(conversationId)
-//
-//         assertIs<GetGuestRoomLinkResult.Failure>(result)
-//         verify(conversationGroupRepository)
-//             .suspendFunction(conversationGroupRepository::getGuestRoomLink)
-//             .with(any())
-//             .wasInvoked(exactly = once)
-//     }
-
     companion object {
         private val conversationId = ConversationId("value", "domain")
     }
