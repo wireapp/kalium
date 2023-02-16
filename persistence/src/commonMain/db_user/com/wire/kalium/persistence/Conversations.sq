@@ -16,8 +16,13 @@ CREATE TABLE Conversation (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
+    -- ?? not sure what this does
     last_modified_date INTEGER AS Instant NOT NULL,
+    -- whenever a user is notified about the message belonging to this conversation
+    -- last_notified_date is updated, this would be typically a notification on the client side
     last_notified_date INTEGER AS Instant,
+    -- whenever a user receives a new message, last_read_date is being updated,
+    -- so that it reflects that timestamp of most fresh received message
     last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
