@@ -16,14 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao
+package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 
-import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-interface MetadataDAO {
-    suspend fun insertValue(value: String, key: String)
-    suspend fun deleteValue(key: String)
-    suspend fun valueByKeyFlow(key: String): Flow<String?>
-    suspend fun valueByKey(key: String): String?
-    suspend fun clear(keysToKeep: List<String>?)
-}
+@Serializable
+data class GetGuestRoomResponse(
+    @SerialName("uri") val uri: String,
+    @SerialName("key") val key: String,
+    @SerialName("code") val code: String
+)

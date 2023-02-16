@@ -1,8 +1,33 @@
-CREATE INDEX IF NOT EXISTS message_status_index ON Message(status);
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
+ALTER TABLE Conversation ADD COLUMN guest_room_link TEXT;
+
+-- Delete MessageDetails View
 DROP VIEW IF EXISTS MessageDetailsView;
-DROP VIEW IF EXISTS MessageQuoteDetails;
+DROP VIEW IF EXISTS MessagePreview;
 
+-- Create new table for New Conversation Receipt Mode Content
+CREATE TABLE MessageNewConversationReceiptModeContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+-- Create new table for Conversation Receipt Mode Changed Content
+
+CREATE TABLE MessageConversationReceiptModeChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -99,7 +124,9 @@ QuotedMessage.visibility AS quotedMessageVisibility,
 QuotedMessage.content_type AS quotedMessageContentType,
 QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
-QuotedAssetContent.asset_name AS quotedAssetName
+QuotedAssetContent.asset_name AS quotedAssetName,
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -117,4 +144,41 @@ LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qu
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 -- end joins for quoted messages
-JOIN SelfUser;
+LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
+LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
+LEFT JOIN SelfUser;
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;

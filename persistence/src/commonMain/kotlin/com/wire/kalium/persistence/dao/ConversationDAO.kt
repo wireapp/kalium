@@ -39,7 +39,8 @@ data class ConversationEntity(
     val lastReadDate: Instant,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
-    val receiptMode: ReceiptMode
+    val receiptMode: ReceiptMode,
+    val guestRoomLink: String? = null
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -181,7 +182,6 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
 
-    suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>>
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
@@ -201,5 +201,5 @@ interface ConversationDAO {
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
-
+    suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String)
 }

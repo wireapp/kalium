@@ -49,7 +49,8 @@ internal class DatabaseExporterImpl internal constructor(
     user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
     private val dumpContentQueries: DumpContentQueries,
-    private val sqlDriver: SqlDriver
+    private val sqlDriver: SqlDriver,
+    private val isDataEncrypted: Boolean,
 ) : DatabaseExporter {
 
     private val backupUserId = user.copy(value = "backup-${user.value}")
@@ -66,13 +67,16 @@ internal class DatabaseExporterImpl internal constructor(
             userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
         plainDatabase.sqlDriver.close()
 
+        val plainDBPath = plainDatabase.dbFileLocation() ?: run {
+            kaliumLogger.e("Failed to get the plain DB path")
+            return null
+        }
+
         // copy the data from the user DB to the backup DB
 
         try {
             sqlDriver.execute(null, "BEGIN", 0)
-            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
-                bindString(0, plainDatabase.dbFileLocation())
-            }
+            attachDatabase(isDataEncrypted, plainDBPath)
             dumpContent()
             sqlDriver.execute(null, "COMMIT", 0)
         } catch (e: Exception) {
@@ -82,6 +86,18 @@ internal class DatabaseExporterImpl internal constructor(
             return null
         }
         return plainDatabase.dbFileLocation()
+    }
+
+    private fun attachDatabase(dataEncrypted: Boolean, plainDatabasePath: String) {
+        if (dataEncrypted) {
+            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS KEY ''", 1) {
+                bindString(0, plainDatabasePath)
+            }
+        } else {
+            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
+                bindString(0, plainDatabasePath)
+            }
+        }
     }
 
     override fun deleteBackupDBFile(): Boolean = nuke(backupUserId, platformDatabaseData)
