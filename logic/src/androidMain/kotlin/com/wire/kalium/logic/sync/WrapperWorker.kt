@@ -144,8 +144,7 @@ class WrapperWorkerFactory(
                 userId
             )
             WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
-        }
-        else null
+        } else null
     }
 
     private fun createDefaultWorker(
