@@ -258,6 +258,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -484,7 +485,8 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             kaliumFileSystem,
-            userStorage.database.databaseExporter
+            userStorage.database.databaseExporter,
+            securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
@@ -917,7 +919,10 @@ class UserSessionScope internal constructor(
             clientIdProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    private val logoutRepository: LogoutRepository = LogoutDataSource(
+        authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi,
+        userStorage.database.metadataDAO
+    )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -941,6 +946,7 @@ class UserSessionScope internal constructor(
             userId,
             isAllowedToRegisterMLSClient,
             clientIdProvider,
+            userStorage,
             slowSyncRepository
         )
     val conversations: ConversationScope
@@ -1039,7 +1045,8 @@ class UserSessionScope internal constructor(
             client.clearClientData,
             clearUserData,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            globalScope
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

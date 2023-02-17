@@ -56,6 +56,6 @@ interface NotificationApi {
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
-    suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>>
+    suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
 
 }

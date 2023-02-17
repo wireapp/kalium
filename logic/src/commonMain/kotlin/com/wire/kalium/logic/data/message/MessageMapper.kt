@@ -64,6 +64,7 @@ class MessageMapperImpl(
             Message.Status.SENT -> MessageEntity.Status.SENT
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
+            Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
         }
         val visibility = message.visibility.toEntityVisibility()
         return when (message) {
@@ -104,6 +105,7 @@ class MessageMapperImpl(
             MessageEntity.Status.SENT -> Message.Status.SENT
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
+            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
         }
         val visibility = message.visibility.toModel()
 
@@ -185,6 +187,7 @@ class MessageMapperImpl(
                 author = sender,
                 text = message.text.orEmpty(),
                 time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
             )
 
             MessageEntity.ContentType.ASSET -> {
@@ -196,10 +199,9 @@ class MessageMapperImpl(
             }
 
             MessageEntity.ContentType.KNOCK -> {
-                LocalNotificationMessage.Comment(
+                LocalNotificationMessage.Knock(
                     sender,
-                    message.date,
-                    LocalNotificationCommentType.KNOCK
+                    message.date
                 )
             }
 
