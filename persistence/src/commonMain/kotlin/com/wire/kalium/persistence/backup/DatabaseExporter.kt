@@ -18,10 +18,9 @@
 
 package com.wire.kalium.persistence.backup
 
-import app.cash.sqldelight.db.SqlDriver
-import com.wire.kalium.persistence.DumpContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
@@ -34,7 +33,7 @@ interface DatabaseExporter {
      * Export the user DB to a plain DB
      * @return the path to the plain DB file, null if the file was not created
      */
-    fun exportToPlainDB(): String?
+    fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String?
 
     /**
      * Delete the backup file and any temp data was created during the backup process
@@ -48,83 +47,94 @@ interface DatabaseExporter {
 internal class DatabaseExporterImpl internal constructor(
     user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val dumpContentQueries: DumpContentQueries,
-    private val sqlDriver: SqlDriver,
-    private val isDataEncrypted: Boolean,
+    private val localDatabase: UserDatabaseBuilder
 ) : DatabaseExporter {
 
     private val backupUserId = user.copy(value = "backup-${user.value}")
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
-    override fun exportToPlainDB(): String? {
+    override fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String? {
         // delete the backup DB file if it exists
         if (deleteBackupDBFile()) {
             return null
         }
 
-        // create a new backup DB file
+        // create a new backup DB file with empty passphrase
+        // this will force the app to use sql Cipher and enable the encrypted local DB
+        // to be attached to the plain DB
+        // also unencrypted DB (in debug mode) can be attached to the plain DB
+        // win win
         val plainDatabase: UserDatabaseBuilder =
-            userDatabaseBuilder(platformDatabaseData, backupUserId, null, KaliumDispatcherImpl.io, false)
-        plainDatabase.sqlDriver.close()
+            userDatabaseBuilder(
+                platformDatabaseData,
+                backupUserId,
+                UserDBSecret(ByteArray(0)),
+                KaliumDispatcherImpl.io,
+                false
+            )
 
-        val plainDBPath = plainDatabase.dbFileLocation() ?: run {
-            kaliumLogger.e("Failed to get the plain DB path")
-            return null
+        // check the plain DB path and return null if it was not created successfully
+        plainDatabase.dbFileLocation().also {
+            if (it == null) {
+                kaliumLogger.e("Failed to get the plain DB path")
+                return null
+            }
         }
 
         // copy the data from the user DB to the backup DB
+        if (!attachLocalToPlain(localDatabase, plainDatabase, localDBPassphrase)) {
+            plainDatabase.sqlDriver.close()
+            deleteBackupDBFile()
+            return null
+        }
 
         try {
-            sqlDriver.execute(null, "BEGIN", 0)
-            attachDatabase(isDataEncrypted, plainDBPath)
-            dumpContent()
-            sqlDriver.execute(null, "COMMIT", 0)
+            // attach the plain DB to the user DB
+            // dump the content of the user DB into the plain DB
+            plainDatabase.database.dumpContentQueries.dumpAllTables()
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
             // if the dump failed, delete the backup DB file
             deleteBackupDBFile()
             return null
+        } finally {
+            // detach the plain DB from the user DB
+            plainDatabase.sqlDriver.execute(null, "DETACH DATABASE $MAIN_DB_ALIAS", 0)
+            plainDatabase.sqlDriver.close()
         }
         return plainDatabase.dbFileLocation()
     }
 
-    private fun attachDatabase(dataEncrypted: Boolean, plainDatabasePath: String) {
-        if (dataEncrypted) {
-            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS KEY ''", 1) {
-                bindString(0, plainDatabasePath)
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    private fun attachLocalToPlain(
+        localDatabase: UserDatabaseBuilder,
+        plainDB: UserDatabaseBuilder,
+        localDBPassphrase: UserDBSecret?
+    ): Boolean {
+        try {
+            val mainDBPath = localDatabase.dbFileLocation() ?: return false
+
+            if (localDBPassphrase == null) {
+                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS", 1) {
+                    bindString(0, mainDBPath)
+                }
+            } else {
+                plainDB.sqlDriver.execute(null, "ATTACH DATABASE ? AS $MAIN_DB_ALIAS KEY ?", 2) {
+                    bindString(0, mainDBPath)
+                    bindBytes(1, localDBPassphrase.value)
+                }
             }
-        } else {
-            sqlDriver.execute(null, "ATTACH DATABASE ? AS $PLAIN_DB_ALIAS", 1) {
-                bindString(0, plainDatabasePath)
-            }
+        } catch (e: Exception) {
+            kaliumLogger.e("Failed to attach the local DB to the plain DB ${e.message}")
+            return false
         }
+        return true
     }
 
     override fun deleteBackupDBFile(): Boolean = nuke(backupUserId, platformDatabaseData)
 
-    private fun dumpContent() {
-        with(dumpContentQueries) {
-            // dump the content of the user DB into the plain DB must be done in this order
-            dumpUserTable()
-            dumpConversationTable()
-            dumpMessageTable()
-            dumpCallTable()
-            dumpMessageAssetContentTable()
-            dumpMessageRestrictedAssetContentTable()
-            dumpMessageFailedToDecryptContentTable()
-            dumpMessageConversationChangedContentTable()
-            dumpMessageMemberChangeContentTable()
-            dumpMessageMentionTable()
-            dumpMessageMissedCallContentTable()
-            dumpMessageTextContentTable()
-            dumpMessageUnknownContentTable()
-            dumpReactionTable()
-            dumpReceiptTable()
-        }
-    }
-
     private companion object {
         // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
-        const val PLAIN_DB_ALIAS = "plain_db"
+        const val MAIN_DB_ALIAS = "local_db"
     }
 }
