@@ -129,10 +129,12 @@ internal inline fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
         this
     }
 
-internal fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) -> Unit): NetworkResponse<T> =
+internal inline fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Error) fn(this) }
 
-internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
+internal inline fun <T : Any> NetworkResponse<T>.onSuccess(
+    fn: (NetworkResponse.Success<T>) -> Unit
+): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
 /**
@@ -196,11 +198,29 @@ internal suspend fun handleUnsuccessfulResponse(
         ErrorResponse(status.value, status.description, "")
     }
 
+    val federationException = errorResponse.isFederationError().let {
+        KaliumException.FederationError(errorResponse)
+    }
+
+    return if (errorResponse.isFederationError()) {
+        NetworkResponse.Error(federationException)
+    } else {
+        val kException = toStatusCodeBasedKaliumException(status, result, errorResponse)
+        NetworkResponse.Error(kException)
+    }
+}
+
+private fun toStatusCodeBasedKaliumException(
+    status: HttpStatusCode,
+    result: HttpResponse,
+    errorResponse: ErrorResponse
+): KaliumException {
     val kException = when (status.value) {
         HttpStatusCode.Unauthorized.value -> {
             kaliumLogger.e("Unauthorized request, $result")
             KaliumException.Unauthorized(status.value)
         }
+
         in (300..399) -> KaliumException.RedirectError(errorResponse)
         in (400..499) -> KaliumException.InvalidRequestError(errorResponse)
         in (500..599) -> KaliumException.ServerError(errorResponse)
@@ -209,5 +229,5 @@ internal suspend fun handleUnsuccessfulResponse(
             KaliumException.ServerError(errorResponse)
         }
     }
-    return NetworkResponse.Error(kException)
+    return kException
 }

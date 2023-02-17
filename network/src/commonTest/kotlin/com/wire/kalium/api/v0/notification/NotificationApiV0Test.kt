@@ -20,16 +20,20 @@ package com.wire.kalium.api.v0.notification
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
+import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.NotificationEventsResponseJson
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -148,6 +152,30 @@ class NotificationApiV0Test : ApiTest {
         val result = notificationsApi.getAllNotifications(1, "")
 
         assertIs<NetworkResponse.Success<NotificationResponse>>(result)
+    }
+
+    @Test
+    fun givenSuccessLastNotificationResponse_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            NotificationEventsResponseJson.notificationWithLastEvent,
+            statusCode = HttpStatusCode.OK
+        )
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val result = notificationsApi.listenToLiveEvents("")
+
+        assertIs<NetworkResponse.Success<Flow<WebSocketEvent<EventResponse>>>>(result)
+    }
+
+    @Test
+    fun givenFailureLastNotificationResponse_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.valid.rawJson,
+            statusCode = HttpStatusCode.BadRequest,
+        )
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val result = notificationsApi.listenToLiveEvents("")
+
+        assertIs<NetworkResponse.Error>(result)
     }
 
     private companion object {
