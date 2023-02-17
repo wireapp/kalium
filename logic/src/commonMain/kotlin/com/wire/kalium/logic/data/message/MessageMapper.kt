@@ -52,10 +52,9 @@ interface MessageMapper {
 }
 
 class MessageMapperImpl(
-    private val idMapper: IdMapper,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {

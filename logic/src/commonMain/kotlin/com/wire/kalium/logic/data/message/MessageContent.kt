@@ -69,10 +69,6 @@ sealed class MessageContent {
      */
     sealed class Signaling : FromProto()
     sealed interface EphemeralContent
-    data class Ephemeral(
-        val expireAfterMillis: Long,
-        val ephemeralMessageContent: EphemeralContent
-    ) : Regular()
 
     // client message content types
     data class Text(

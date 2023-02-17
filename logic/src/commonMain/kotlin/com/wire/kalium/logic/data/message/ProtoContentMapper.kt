@@ -87,7 +87,6 @@ class ProtoContentMapperImpl(
                     readableContent.status
                 )
             )
-
             is MessageContent.LastRead -> packLastRead(readableContent)
             is MessageContent.Cleared -> packCleared(readableContent)
             is MessageContent.Reaction -> packReaction(readableContent)
@@ -157,12 +156,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
-            is GenericMessage.Content.Ephemeral -> {
-
-                unpackEphemeral(protoContent)
-
-            }
-
+            is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)

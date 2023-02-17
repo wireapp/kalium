@@ -284,6 +284,7 @@ sealed interface Message {
             return Json.encodeToString(properties.toMap())
         }
     }
+    data class Ephemeral(val timeToEllapse : Long) : Regular()
 
     enum class Status {
         PENDING, SENT, READ, FAILED
