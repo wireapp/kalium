@@ -120,7 +120,8 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation
+                    expectsReadConfirmation = content.expectsReadConfirmation,
+                    expireAfterMillis = content.expiresAfterMillis
                 )
                 processMessage(message)
             }
@@ -219,19 +220,15 @@ internal class ApplicationMessageHandlerImpl(
         when (val content = message.content) {
             // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
-
             is MessageContent.FailedDecryption -> {
                 persistMessage(message)
             }
-
             is MessageContent.Knock -> handleKnock(message)
             is MessageContent.Asset -> handleAssetMessage(message, content)
-
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
                 persistMessage(message)
             }
-
             is MessageContent.RestrictedAsset -> TODO()
         }
     }

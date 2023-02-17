@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
@@ -81,29 +82,21 @@ class ProtoContentMapperImpl(
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
-
             is MessageContent.Availability -> GenericMessage.Content.Availability(
                 availabilityMapper.fromModelAvailabilityToProto(
                     readableContent.status
                 )
             )
-
             is MessageContent.LastRead -> packLastRead(readableContent)
-
             is MessageContent.Cleared -> packCleared(readableContent)
-
             is MessageContent.Reaction -> packReaction(readableContent)
-
             is MessageContent.Receipt -> packReceipt(readableContent)
-
             is MessageContent.ClientAction -> packClientAction()
-
-            is MessageContent.TextEdited -> TODO("Message type not yet supported")
-
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: $readableContent"
                 )
+            is MessageContent.TextEdited -> TODO("Message type not yet supported")
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
@@ -127,10 +120,15 @@ class ProtoContentMapperImpl(
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
                 else -> false
             }
+            val expiresAfterMillis : Long? = when(val content = genericMessage.content){
+                is GenericMessage.Content.Ephemeral -> content.value.expireAfterMillis
+                else -> null
+            }
             ProtoContent.Readable(
-                genericMessage.messageId,
-                getReadableContent(genericMessage, encodedContent),
-                expectsReadConfirmation
+                messageUid = genericMessage.messageId,
+                messageContent =  getReadableContent(genericMessage, encodedContent),
+                expectsReadConfirmation = expectsReadConfirmation,
+                expiresAfterMillis = expiresAfterMillis
             )
         }
     }
@@ -144,15 +142,12 @@ class ProtoContentMapperImpl(
 
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent)
-
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
-
             is GenericMessage.Content.Availability -> MessageContent.Availability(
                 availabilityMapper.fromProtoAvailabilityToModel(
                     protoContent.value
                 )
             )
-
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> unpackCalling(protoContent)
@@ -163,14 +158,13 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
-            is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
+            is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
-
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Ignored
@@ -359,6 +353,29 @@ class ProtoContentMapperImpl(
                 expectsReadConfirmation
             )
         )
+    }
+
+    private fun unpackEphemeral(
+        protoContent: GenericMessage.Content.Ephemeral
+    ): MessageContent.FromProto {
+        val messageContent = when (val ephemeralContent = protoContent.value.content) {
+            is Ephemeral.Content.Text -> {
+                val genericMessageTextContent = GenericMessage.Content.Text(
+                    Text(
+                        content = ephemeralContent.value.content,
+                        mentions = ephemeralContent.value.mentions,
+                        quote = ephemeralContent.value.quote,
+                        expectsReadConfirmation = ephemeralContent.value.expectsReadConfirmation
+                    )
+                )
+                unpackText(genericMessageTextContent)
+            }
+            else -> {
+                MessageContent.Ignored
+            }
+        }
+
+        return messageContent
     }
 
     private fun unpackAsset(protoContent: GenericMessage.Content.Asset): MessageContent.Asset {
