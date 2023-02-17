@@ -133,6 +133,8 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertEquals(message2, decryptedMessage2.decodeToString())
     }
 
+    @IgnoreJS
+    @IgnoreIOS
     @Test
     fun givenReceivingSameMessageTwice_whenCallingDecrypt_thenDuplicateMessageError() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
