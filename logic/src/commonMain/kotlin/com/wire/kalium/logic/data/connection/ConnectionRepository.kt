@@ -258,10 +258,10 @@ internal class ConnectionDataSource(
             }
 
             ACCEPTED -> {
-                kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
-                conversationDAO.updateConversationType(
-                    connection.qualifiedConversationId.toDao(),
-                    ConversationEntity.Type.ONE_ON_ONE
+                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+                    member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
+                    conversationID = connection.qualifiedConversationId.toDao(),
+                    status = connectionStatusMapper.toDaoModel(connection.status)
                 )
             }
 
