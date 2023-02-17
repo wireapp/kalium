@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("TooManyFunctions")
 interface UserConfigStorage {
 
     /**
@@ -119,7 +120,7 @@ data class ClassifiedDomainsEntity(
 )
 
 @Suppress("TooManyFunctions")
-internal class UserConfigStorageImpl internal constructor(
+class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
 

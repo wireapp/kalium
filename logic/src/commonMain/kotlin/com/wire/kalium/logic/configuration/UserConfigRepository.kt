@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 interface UserConfigRepository {
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
@@ -43,6 +44,7 @@ interface UserConfigRepository {
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
+@Suppress("TooManyFunctions")
 class UserConfigDataSource(
     private val userConfigStorage: UserConfigStorage
 ) : UserConfigRepository {
