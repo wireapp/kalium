@@ -25,5 +25,15 @@ import kotlinx.serialization.Serializable
 data class ErrorResponse(
     @SerialName("code") val code: Int,
     @SerialName("message") val message: String,
-    @SerialName("label") val label: String
+    @SerialName("label") val label: String,
+    @SerialName("data") val cause: Cause? = null,
+) {
+    fun isFederationError() = cause?.type == "federation"
+}
+
+@Serializable
+data class Cause(
+    @SerialName("type") val type: String,
+    @SerialName("domain") val domain: String,
+    @SerialName("path") val path: String,
 )

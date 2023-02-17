@@ -56,18 +56,22 @@ object MessageMapper {
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
+
             (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
+
             (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
                 senderName = senderName, messageBody = text.requireField("text")
             )
+
             else -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
                 messageBody = text.requireField("text")
             )
         }
+
         MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
             type = assetMimeType?.let {
@@ -116,6 +120,7 @@ object MessageMapper {
             senderName = senderName,
             type = AssetTypeEntity.ASSET
         )
+
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
             adminName = senderName
         )
@@ -187,50 +192,30 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        visibility: MessageEntity.Visibility,
         senderUserId: UserIDEntity,
         senderName: String?,
-        senderConnectionStatus: ConnectionEntity.State?,
-        senderIsDeleted: Boolean?,
-        selfUserId: QualifiedIDEntity?,
-        isSelfMessage: Boolean,
-        memberChangeList: List<QualifiedIDEntity>?,
-        memberChangeType: MessageEntity.MemberChangeType?,
-        updatedConversationName: String?,
+        senderPreviewAssetId: QualifiedIDEntity?,
         conversationName: String?,
-        isMentioningSelfUser: Boolean,
-        isQuotingSelfUser: Boolean?,
         text: String?,
+        isQuotingSelf: Boolean?,
         assetMimeType: String?,
-        isUnread: Boolean,
-        isNotified: Long,
-        mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?
-    ): NotificationMessageEntity {
-        val content = toMessagePreviewEntityContent(
-            contentType = contentType,
-            senderName = senderName,
-            isSelfMessage = isSelfMessage,
-            memberChangeList = memberChangeList,
-            memberChangeType = memberChangeType,
-            isMentioningSelfUser = isMentioningSelfUser,
-            isQuotingSelfUser = isQuotingSelfUser,
-            text = text,
-            assetMimeType = assetMimeType,
-            selfUserId = selfUserId,
-            senderUserId = senderUserId
-        )
-
-        return NotificationMessageEntity(
-            id = id,
-            content = content,
-            conversationId = conversationId,
-            conversationName = conversationName,
-            conversationType = conversationType,
-            date = date.toIsoDateTimeString()
-        )
-
-    }
+        mutedStatus: ConversationEntity.MutedStatus,
+        conversationType: ConversationEntity.Type,
+    ): NotificationMessageEntity = NotificationMessageEntity(
+        id = id,
+        contentType = contentType,
+        senderUserId = senderUserId,
+        senderImage = senderPreviewAssetId,
+        date = date,
+        senderName = senderName,
+        text = text,
+        assetMimeType = assetMimeType,
+        conversationId = conversationId,
+        conversationName = conversationName,
+        mutedStatus = mutedStatus,
+        conversationType = conversationType,
+        isQuotingSelf = isQuotingSelf == true
+    )
 
     private fun createMessageEntity(
         id: String,
@@ -293,24 +278,25 @@ object MessageMapper {
         senderUserId: QualifiedIDEntity,
         senderClientId: String?,
         status: MessageEntity.Status,
-        lastEditDate: Instant?,
+        lastEditTimestamp: Instant?,
         visibility: MessageEntity.Visibility,
-        expectsReadConfirmation: Boolean?,
+        expectsReadConfirmation: Boolean,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
         senderPhone: String?,
-        senderAccentId: Int?,
+        senderAccentId: Int,
         senderTeamId: String?,
-        senderConnectionStatus: ConnectionEntity.State?,
+        senderConnectionStatus: ConnectionEntity.State,
         senderPreviewAssetId: QualifiedIDEntity?,
         senderCompleteAssetId: QualifiedIDEntity?,
-        senderAvailabilityStatus: UserAvailabilityStatusEntity?,
-        senderUserType: UserTypeEntity?,
+        senderAvailabilityStatus: UserAvailabilityStatusEntity,
+        senderUserType: UserTypeEntity,
         senderBotService: BotEntity?,
-        senderIsDeleted: Boolean?,
+        senderIsDeleted: Boolean,
         isSelfMessage: Boolean,
         text: String?,
+        isQuotingSelfUser: Boolean?,
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
@@ -342,11 +328,10 @@ object MessageMapper {
         mentions: String,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
-        isQuotingSelfUser: Boolean?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
-        quotedMessageCreationInstant: Instant?,
-        quotedMessageEditInstant: Instant?,
+        quotedMessageDateTime: Instant?,
+        quotedMessageEditTimestamp: Instant?,
         quotedMessageVisibility: MessageEntity.Visibility?,
         quotedMessageContentType: MessageEntity.ContentType?,
         quotedTextBody: String?,
@@ -370,8 +355,8 @@ object MessageMapper {
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
                         senderName = quotedSenderName,
-                        dateTime = quotedMessageCreationInstant.requireField("quotedMessageDateTime").toIsoDateTimeString(),
-                        editTimestamp = quotedMessageEditInstant?.toIsoDateTimeString(),
+                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                        editTimestamp = quotedMessageEditTimestamp?.toIsoDateTimeString(),
                         visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
                         contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
                         textBody = quotedTextBody,
@@ -443,7 +428,7 @@ object MessageMapper {
             senderUserId,
             senderClientId,
             status,
-            lastEditDate,
+            lastEditTimestamp,
             visibility,
             content,
             allReactionsJson,

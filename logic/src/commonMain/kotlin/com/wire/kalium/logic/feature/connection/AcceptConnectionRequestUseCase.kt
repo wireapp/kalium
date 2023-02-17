@@ -50,7 +50,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
         return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .flatMap {
                 conversationRepository.fetchConversation(it.qualifiedConversationId)
-                conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentIsoDateTimeString())
+                conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentInstant())
             }
             .fold({
                 kaliumLogger.e("An error occurred when accepting the connection request from $userId")

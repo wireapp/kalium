@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
@@ -42,6 +43,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -443,6 +445,51 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulCallToGenerateGuestRoomLinkApi()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB()
+            .arrange()
+
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::generateGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAFailedApiCall_whenTryingToGenerateANewGuestRoomLink_ThenReturnFailure() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withFailedCallToGenerateGuestRoomLinkApi()
+            .arrange()
+
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+
+        result.shouldFail()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::generateGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -677,6 +724,37 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulCallToGenerateGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::generateGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        GenerateGuestRoomLinkResponse(uri = "mock-guest-room-link"),
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withFailedCallToGenerateGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::generateGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
+        }
+
+        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateGuestRoomLink)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
         }
 
         fun arrange() = this to conversationGroupRepository

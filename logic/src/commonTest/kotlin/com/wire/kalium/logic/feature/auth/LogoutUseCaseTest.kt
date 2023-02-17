@@ -42,6 +42,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -64,6 +66,7 @@ class LogoutUseCaseTest {
                 .arrange()
 
             logoutUseCase.invoke(reason)
+            arrangement.globalTestScope.advanceUntilIdle()
 
             verify(arrangement.deregisterTokenUseCase)
                 .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
@@ -113,6 +116,7 @@ class LogoutUseCaseTest {
             .arrange()
 
         logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
 
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -138,6 +142,7 @@ class LogoutUseCaseTest {
                 .arrange()
 
             logoutUseCase.invoke(reason)
+            arrangement.globalTestScope.advanceUntilIdle()
 
             verify(arrangement.clearClientDataUseCase)
                 .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -169,6 +174,7 @@ class LogoutUseCaseTest {
             .arrange()
 
         logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
 
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -209,6 +215,8 @@ class LogoutUseCaseTest {
         @Mock
         val pushTokenRepository = mock(classOf<PushTokenRepository>())
 
+        val globalTestScope = TestScope()
+
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
@@ -218,7 +226,8 @@ class LogoutUseCaseTest {
             clearClientDataUseCase,
             clearUserDataUseCase,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            globalTestScope
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

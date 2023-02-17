@@ -21,14 +21,15 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
-import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -40,6 +41,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
+    private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
@@ -185,23 +187,9 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
-
-    override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
-        withContext(coroutineContext) {
-            queries.updateMessageDate(date.toInstant(), id, conversationId)
-        }
-
-    override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
-        withContext(coroutineContext) {
-            queries.updateMessagesAddMillisToDate(Instant.fromEpochMilliseconds(millis), conversationId, status)
-        }
-
-    // TODO: mark internal since it is used for tests only
-    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToOneOrNull()
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
+    }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
@@ -220,15 +208,12 @@ class MessageDAOImpl(
             .flowOn(coroutineContext)
             .mapToList()
 
-    override suspend fun getNotificationMessage(
-        filteredContent: List<MessageEntity.ContentType>
-    ): Flow<List<NotificationMessageEntity>> =
-        queries.getNotificationsMessages(
-            filteredContent,
-            mapper::toNotificationEntity
-        ).asFlow()
+    override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
+        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+            .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
+            .distinctUntilChanged()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -335,6 +320,20 @@ class MessageDAOImpl(
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
                 .executeAsOneOrNull()
         }
+
+    override suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ) = withContext(coroutineContext) {
+        queries.promoteMessageToSentUpdatingServerTime(
+            server_creation_date = serverDate,
+            conversation_id = conversationId,
+            message_id = messageUuid,
+            delivery_duration = Instant.fromEpochMilliseconds(millis)
+        )
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 

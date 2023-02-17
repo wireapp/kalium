@@ -65,7 +65,8 @@ class CreateGroupConversationUseCase internal constructor(
         }.flatMap { clientId ->
             conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
         }.flatMap { conversation ->
-            conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentIsoDateTimeString())
+            // TODO(qol): this can be done in one query, e.g. pass current time when inserting
+            conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
                 .map { conversation }
         }.fold({
             if (it is NetworkFailure.NoNetworkConnection) {

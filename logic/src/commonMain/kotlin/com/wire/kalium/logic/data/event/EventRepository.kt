@@ -72,29 +72,31 @@ class EventDataSource(
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
-        currentClientId().map { clientId -> liveEventsFlow(clientId) }
+        currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
 
     @OptIn(FlowPreview::class)
-    private suspend fun liveEventsFlow(clientId: ClientId): Flow<WebSocketEvent<Event>> =
-        notificationApi.listenToLiveEvents(clientId.value).map { webSocketEvent ->
-            when (webSocketEvent) {
-                is WebSocketEvent.Open -> {
-                    flowOf(WebSocketEvent.Open())
-                }
+    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Event>>> =
+        wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map {
+            it.map { webSocketEvent ->
+                when (webSocketEvent) {
+                    is WebSocketEvent.Open -> {
+                        flowOf(WebSocketEvent.Open())
+                    }
 
-                is WebSocketEvent.NonBinaryPayloadReceived -> {
-                    flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
-                }
+                    is WebSocketEvent.NonBinaryPayloadReceived -> {
+                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
+                    }
 
-                is WebSocketEvent.Close -> {
-                    flowOf(WebSocketEvent.Close(webSocketEvent.cause))
-                }
+                    is WebSocketEvent.Close -> {
+                        flowOf(WebSocketEvent.Close(webSocketEvent.cause))
+                    }
 
-                is WebSocketEvent.BinaryPayloadReceived -> {
-                    eventMapper.fromDTO(webSocketEvent.payload).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                    is WebSocketEvent.BinaryPayloadReceived -> {
+                        eventMapper.fromDTO(webSocketEvent.payload).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                    }
                 }
-            }
-        }.flattenConcat()
+            }.flattenConcat()
+        }
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
