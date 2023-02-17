@@ -134,8 +134,8 @@ internal class CallDataSource(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val mlsClientProvider: MLSClientProvider,
-    private val joinSubconversationUseCase: JoinSubconversationUseCase,
-    private val leaveSubconversationUseCase: LeaveSubconversationUseCase,
+    private val joinSubconversation: JoinSubconversationUseCase,
+    private val leaveSubconversation: LeaveSubconversationUseCase,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper(),
@@ -506,7 +506,7 @@ internal class CallDataSource(
                     "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
         )
 
-        return joinSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
+        return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
@@ -530,7 +530,7 @@ internal class CallDataSource(
         staleParticipantJobs.values.forEach { it.cancel() }
         staleParticipantJobs.clear()
 
-        leaveSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID)
+        leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
     }
 
     private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =

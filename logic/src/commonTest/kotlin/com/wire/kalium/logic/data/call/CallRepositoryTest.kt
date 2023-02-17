@@ -73,7 +73,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -1466,8 +1465,8 @@ class CallRepositoryTest {
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             mlsClientProvider = mlsClientProvider,
-            joinSubconversationUseCase = joinSubconversationUseCase,
-            leaveSubconversationUseCase = leaveSubconversationUseCase,
+            joinSubconversation = joinSubconversationUseCase,
+            leaveSubconversation = leaveSubconversationUseCase,
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
             kaliumDispatchers = TestKaliumDispatcher
