@@ -63,6 +63,10 @@ tasks.withType<Test> {
     useJUnitPlatform {
         reports.junitXml.required.set(true)
     }
+    testLogging {
+        showStackTraces = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 allprojects {
