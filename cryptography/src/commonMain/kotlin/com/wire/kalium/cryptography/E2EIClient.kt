@@ -48,10 +48,14 @@ data class AcmeFinalize(
     var certificateUrl: String
 )
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(directory: AcmeDirectory, previousNonce: String): JsonRawData
+    fun newAccountRequest(
+        directory: AcmeDirectory,
+        previousNonce: String
+    ): JsonRawData
+
     fun newOrderRequest(
         displayName: String,
         domain: String,
@@ -64,7 +68,12 @@ interface E2EIClient {
     ): JsonRawData
 
     fun newOrderResponse(order: JsonRawData): NewAcmeOrder
-    fun newAuthzRequest(url: String, account: AcmeAccount, previousNonce: String): JsonRawData
+    fun newAuthzRequest(
+        url: String,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
     fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
     fun createDpopToken(
         accessTokenUrl: String,
@@ -76,13 +85,40 @@ interface E2EIClient {
         expiryDays: UInt
     ): String
 
-    fun newDpopChallengeRequest(accessToken: String, dpopChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: String): JsonRawData
-    fun newOidcChallengeRequest(idToken: String, oidcChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: String): JsonRawData
+    fun newDpopChallengeRequest(
+        accessToken: String,
+        dpopChallenge: AcmeChallenge,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
+    fun newOidcChallengeRequest(
+        idToken: String,
+        oidcChallenge: AcmeChallenge,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
     fun newChallengeResponse(challenge: JsonRawData)
-    fun checkOrderRequest(orderUrl: String, account: AcmeAccount, previousNonce: String): JsonRawData
+    fun checkOrderRequest(
+        orderUrl: String,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
     fun checkOrderResponse(order: JsonRawData): AcmeOrder
-    fun finalizeRequest(order: AcmeOrder, account: AcmeAccount, previousNonce: String): JsonRawData
+    fun finalizeRequest(
+        order: AcmeOrder,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
     fun finalizeResponse(finalize: JsonRawData): AcmeFinalize
-    fun certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: String): JsonRawData
+    fun certificateRequest(
+        finalize: AcmeFinalize,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData
+
     fun certificateResponse(certificateChain: String): List<String>
 }
