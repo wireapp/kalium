@@ -138,11 +138,17 @@ class E2EIClientImpl constructor(
         account: AcmeAccount,
         previousNonce: String
     ): JsonRawData {
-        return wireE2eIdentity.checkOrderRequest(orderUrl, toUByteList(account), previousNonce).toUByteArray().asByteArray()
+        return wireE2eIdentity.checkOrderRequest(
+            orderUrl,
+            toUByteList(account),
+            previousNonce
+        ).toUByteArray().asByteArray()
     }
 
     override fun checkOrderResponse(order: JsonRawData): AcmeOrder {
-        return wireE2eIdentity.checkOrderResponse(toUByteList(order)).toUByteArray().asByteArray()
+        return wireE2eIdentity.checkOrderResponse(
+            toUByteList(order)
+        ).toUByteArray().asByteArray()
     }
 
     override fun finalizeRequest(

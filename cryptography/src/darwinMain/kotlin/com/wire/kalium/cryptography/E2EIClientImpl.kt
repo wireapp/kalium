@@ -16,13 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 package com.wire.kalium.cryptography
+
 @Suppress("TooManyFunctions")
 class E2EIClientImpl : E2EIClient {
     override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(directory: AcmeDirectory, previousNonce: String): JsonRawData {
+    override fun newAccountRequest(
+        directory: AcmeDirectory,
+        previousNonce: String
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -43,7 +47,10 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(url: String, account: AcmeAccount, previousNonce: String): JsonRawData {
+    override fun newAuthzRequest(
+        url: String, account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -85,7 +92,11 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(orderUrl: String, account: AcmeAccount, previousNonce: String): JsonRawData {
+    override fun checkOrderRequest(
+        orderUrl: String,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -93,7 +104,10 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(order: AcmeOrder, account: AcmeAccount, previousNonce: String): JsonRawData {
+    override fun finalizeRequest(
+        order: AcmeOrder, account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -101,7 +115,11 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: String): JsonRawData {
+    override fun certificateRequest(
+        finalize: AcmeFinalize,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
