@@ -21,7 +21,7 @@ import com.wire.crypto.WireE2eIdentity
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 import sun.jvm.hotspot.oops.CellTypeState.value
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl constructor(
     private val wireE2eIdentity: WireE2eIdentity
@@ -41,6 +41,7 @@ class E2EIClientImpl constructor(
         ).toUByteArray().asByteArray()
     }
 
+    @Suppress("LongParameterList")
     override fun newOrderRequest(
         displayName: String,
         domain: String,
@@ -67,6 +68,7 @@ class E2EIClientImpl constructor(
         return toNewAcmeOrder(wireE2eIdentity.newOrderResponse(toUByteList(order)))
     }
 
+    @Suppress("LongParameterList")
     override fun newAuthzRequest(
         url: String,
         account: AcmeAccount,
