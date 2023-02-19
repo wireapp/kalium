@@ -13,7 +13,7 @@ CREATE TABLE Conversation (
     mls_epoch INTEGER DEFAULT 0 NOT NULL,
     mls_proposal_timer TEXT,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
-    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT 'ALL_ALLOWED' NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
     last_modified_date INTEGER AS Instant NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE Conversation (
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
     mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
-    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT 'DISABLED' NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
     guest_room_link TEXT
 );
 
