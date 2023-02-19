@@ -30,8 +30,14 @@ class E2EIClientImpl constructor(
         return toAcmeDirectory(wireE2eIdentity.directoryResponse(toUByteList(directory)))
     }
 
-    override fun newAccountRequest(directory: AcmeDirectory, previousNonce: String): JsonRawData {
-        return wireE2eIdentity.newAccountRequest(toAcmeDirectory(directory), previousNonce).toUByteArray().asByteArray()
+    override fun newAccountRequest(
+        directory: AcmeDirectory,
+        previousNonce: String
+    ): JsonRawData {
+        return wireE2eIdentity.newAccountRequest(
+            toAcmeDirectory(directory),
+            previousNonce
+        ).toUByteArray().asByteArray()
     }
 
     override fun newOrderRequest(
@@ -45,7 +51,14 @@ class E2EIClientImpl constructor(
         previousNonce: String
     ): JsonRawData {
         return wireE2eIdentity.newOrderRequest(
-            displayName, domain, clientId, handle, expiryDays, toAcmeDirectory(directory), toUByteList(account), previousNonce
+            displayName,
+            domain,
+            clientId,
+            handle,
+            expiryDays,
+            toAcmeDirectory(directory),
+            toUByteList(account),
+            previousNonce
         ).toUByteArray().asByteArray()
     }
 
@@ -53,8 +66,16 @@ class E2EIClientImpl constructor(
         return toNewAcmeOrder(wireE2eIdentity.newOrderResponse(toUByteList(order)))
     }
 
-    override fun newAuthzRequest(url: String, account: AcmeAccount, previousNonce: String): JsonRawData {
-        return wireE2eIdentity.newAuthzRequest(url, toUByteList(account), previousNonce).toUByteArray().asByteArray()
+    override fun newAuthzRequest(
+        url: String,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
+        return wireE2eIdentity.newAuthzRequest(
+            url,
+            toUByteList(account),
+            previousNonce
+        ).toUByteArray().asByteArray()
     }
 
     override fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
@@ -71,23 +92,39 @@ class E2EIClientImpl constructor(
         expiryDays: UInt
     ): String {
         return wireE2eIdentity.createDpopToken(
-            accessTokenUrl, userId, clientId, domain, toAcmeChallenge(clientIdChallenge), backendNonce, expiryDays
+            accessTokenUrl,
+            userId,
+            clientId,
+            domain,
+            toAcmeChallenge(clientIdChallenge),
+            backendNonce,
+            expiryDays
         )
     }
 
     override fun newDpopChallengeRequest(
-        accessToken: String, dpopChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: String
+        accessToken: String,
+        dpopChallenge: AcmeChallenge,
+        account: AcmeAccount,
+        previousNonce: String
     ): JsonRawData {
         return wireE2eIdentity.newDpopChallengeRequest(
-            accessToken, toAcmeChallenge(dpopChallenge), toUByteList(account), previousNonce
+            accessToken,
+            toAcmeChallenge(dpopChallenge),
+            toUByteList(account), previousNonce
         ).toUByteArray().asByteArray()
     }
 
     override fun newOidcChallengeRequest(
-        idToken: String, oidcChallenge: AcmeChallenge, account: AcmeAccount, previousNonce: String
+        idToken: String,
+        oidcChallenge: AcmeChallenge,
+        account: AcmeAccount,
+        previousNonce: String
     ): JsonRawData {
         return wireE2eIdentity.newOidcChallengeRequest(
-            idToken, toAcmeChallenge(oidcChallenge), toUByteList(account), previousNonce
+            idToken, toAcmeChallenge(oidcChallenge),
+            toUByteList(account),
+            previousNonce
         ).toUByteArray().asByteArray()
     }
 
@@ -95,7 +132,11 @@ class E2EIClientImpl constructor(
         wireE2eIdentity.newChallengeResponse(toUByteList(challenge))
     }
 
-    override fun checkOrderRequest(orderUrl: String, account: AcmeAccount, previousNonce: String): JsonRawData {
+    override fun checkOrderRequest(
+        orderUrl: String,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
         return wireE2eIdentity.checkOrderRequest(orderUrl, toUByteList(account), previousNonce).toUByteArray().asByteArray()
     }
 
@@ -103,17 +144,32 @@ class E2EIClientImpl constructor(
         return wireE2eIdentity.checkOrderResponse(toUByteList(order)).toUByteArray().asByteArray()
     }
 
-    override fun finalizeRequest(order: AcmeOrder, account: AcmeAccount, previousNonce: String): JsonRawData {
-        return wireE2eIdentity.finalizeRequest(toUByteList(order), toUByteList(account), previousNonce).toUByteArray().asByteArray()
+    override fun finalizeRequest(
+        order: AcmeOrder,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
+        return wireE2eIdentity.finalizeRequest(
+            toUByteList(order),
+            toUByteList(account),
+            previousNonce
+        ).toUByteArray().asByteArray()
     }
 
     override fun finalizeResponse(finalize: JsonRawData): AcmeFinalize {
         return toAcmeFinalize(wireE2eIdentity.finalizeResponse(toUByteList(finalize)))
     }
 
-    override fun certificateRequest(finalize: AcmeFinalize, account: AcmeAccount, previousNonce: String): JsonRawData {
-        return wireE2eIdentity.certificateRequest(toAcmeFinalize(finalize), toUByteList(account), previousNonce).toUByteArray()
-            .asByteArray()
+    override fun certificateRequest(
+        finalize: AcmeFinalize,
+        account: AcmeAccount,
+        previousNonce: String
+    ): JsonRawData {
+        return wireE2eIdentity.certificateRequest(
+            toAcmeFinalize(finalize),
+            toUByteList(account),
+            previousNonce
+        ).toUByteArray().asByteArray()
     }
 
     override fun certificateResponse(certificateChain: String): List<String> {
@@ -137,7 +193,6 @@ class E2EIClientImpl constructor(
         fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(
             value.delegate.toUByteArray().asByteArray(), value.url
         )
-
 
         fun toAcmeChallenge(value: AcmeChallenge) = com.wire.crypto.AcmeChallenge(
             toUByteList(value.delegate), value.url

@@ -21,7 +21,6 @@ typealias JsonRawData = ByteArray
 typealias AcmeAccount = ByteArray
 typealias AcmeOrder = ByteArray
 
-
 data class AcmeDirectory(
     var newNonce: String,
     var newAccount: String,
@@ -49,6 +48,7 @@ data class AcmeFinalize(
     var certificateUrl: String
 )
 
+@Suppress("TooManyFunctions", "LongParameterList")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
     fun newAccountRequest(directory: AcmeDirectory, previousNonce: String): JsonRawData

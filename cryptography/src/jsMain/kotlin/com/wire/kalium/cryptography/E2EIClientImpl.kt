@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cryptography
 
-class E2EIClientImpl constructor() : E2EIClient {
+class E2EIClientImpl : E2EIClient {
     override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         TODO("Not yet implemented")
     }
