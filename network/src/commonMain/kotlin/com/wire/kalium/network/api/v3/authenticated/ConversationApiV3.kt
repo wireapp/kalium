@@ -172,6 +172,16 @@ internal open class ConversationApiV3 internal constructor(
             }
         }
 
+    override suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+        httpClient.delete(
+            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId/self"
+        )
+    }
+
     companion object {
         const val PATH_TEAM = "team"
         const val PATH_GLOBAL = "global"
