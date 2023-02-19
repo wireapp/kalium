@@ -25,6 +25,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will return the details of a client.
@@ -40,16 +43,19 @@ interface GetClientDetailsUseCase {
 class GetClientDetailsUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetClientDetailsUseCase {
-    override suspend fun invoke(clientId: ClientId): GetClientDetailsResult = clientRepository.clientInfo(clientId)
-        .fold(
-            { GetClientDetailsResult.Failure.Generic(it) },
-            { client ->
-                provideClientId.invoke().getOrNull()?.let { currentClientId ->
-                    GetClientDetailsResult.Success(client, currentClientId.value == clientId.value)
-                } ?: GetClientDetailsResult.Success(client, false)
-            }
-        )
+    override suspend fun invoke(clientId: ClientId): GetClientDetailsResult = withContext(dispatchers.io) {
+        clientRepository.clientInfo(clientId)
+            .fold(
+                { GetClientDetailsResult.Failure.Generic(it) },
+                { client ->
+                    provideClientId.invoke().getOrNull()?.let { currentClientId ->
+                        GetClientDetailsResult.Success(client, currentClientId.value == clientId.value)
+                    } ?: GetClientDetailsResult.Success(client, false)
+                }
+            )
+    }
 }
 
 sealed class GetClientDetailsResult {

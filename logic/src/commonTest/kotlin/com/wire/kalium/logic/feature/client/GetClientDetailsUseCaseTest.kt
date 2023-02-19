@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
@@ -34,12 +36,14 @@ import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GetClientDetailsUseCaseTest {
 
     @Mock
@@ -50,10 +54,11 @@ class GetClientDetailsUseCaseTest {
     @Mock
     private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
     private lateinit var getClientDetailsUseCase: GetClientDetailsUseCase
+    private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
     @BeforeTest
     fun setup() {
-        getClientDetailsUseCase = GetClientDetailsUseCaseImpl(clientRepository, provideClientId = currentClientIdProvider)
+        getClientDetailsUseCase = GetClientDetailsUseCaseImpl(clientRepository, currentClientIdProvider, testDispatchers)
         given(currentClientIdProvider)
             .suspendFunction(currentClientIdProvider::invoke)
             .whenInvoked()
@@ -61,7 +66,7 @@ class GetClientDetailsUseCaseTest {
     }
 
     @Test
-    fun givenAClientIdSuccess_thenTheSuccessPropagated() = runTest {
+    fun givenAClientIdSuccess_thenTheSuccessPropagated() = runTest(testDispatchers.io) {
         val expected = CLIENT_RESULT
         given(clientRepository)
             .suspendFunction(clientRepository::clientInfo)
@@ -73,7 +78,7 @@ class GetClientDetailsUseCaseTest {
     }
 
     @Test
-    fun givenClientDetailsFail_thenTheErrorPropagated() = runTest {
+    fun givenClientDetailsFail_thenTheErrorPropagated() = runTest(testDispatchers.io) {
         val expected = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("some error")))
         given(clientRepository)
             .suspendFunction(clientRepository::clientInfo)
