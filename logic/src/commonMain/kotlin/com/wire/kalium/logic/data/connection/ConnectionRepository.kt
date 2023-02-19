@@ -258,10 +258,10 @@ internal class ConnectionDataSource(
             }
 
             ACCEPTED -> {
-                kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
-                conversationDAO.updateConversationType(
-                    connection.qualifiedConversationId.toDao(),
-                    ConversationEntity.Type.ONE_ON_ONE
+                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+                    member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
+                    conversationID = connection.qualifiedConversationId.toDao(),
+                    status = connectionStatusMapper.toDaoModel(connection.status)
                 )
             }
 
@@ -279,7 +279,6 @@ internal class ConnectionDataSource(
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =
         wrapStorageRequest {
             conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                // TODO(IMPORTANT!!!!!!): setting a default value for member role is incorrect and can lead to unexpected behaviour
                 member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
                 status = connectionStatusMapper.toDaoModel(connection.status),
                 conversationID = connection.qualifiedConversationId.toDao()
