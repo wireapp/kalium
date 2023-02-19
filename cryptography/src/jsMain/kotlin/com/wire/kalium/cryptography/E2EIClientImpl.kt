@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cryptography
 
-@Suppress("FunctionParameterNaming", "LongParameterList")
+@Suppress("TooManyFunctions")
 class E2EIClientImpl : E2EIClient {
     override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         TODO("Not yet implemented")
@@ -49,7 +49,8 @@ class E2EIClientImpl : E2EIClient {
 
     override fun newAuthzRequest(
         url: String,
-        account: AcmeAccount, previousNonce: String
+        account: AcmeAccount,
+        previousNonce: String
     ): JsonRawData {
         TODO("Not yet implemented")
     }
@@ -118,7 +119,8 @@ class E2EIClientImpl : E2EIClient {
 
     override fun certificateRequest(
         finalize: AcmeFinalize,
-        account: AcmeAccount, previousNonce: String
+        account: AcmeAccount,
+        previousNonce: String
     ): JsonRawData {
         TODO("Not yet implemented")
     }

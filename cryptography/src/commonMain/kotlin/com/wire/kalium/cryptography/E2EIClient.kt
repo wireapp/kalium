@@ -48,7 +48,7 @@ data class AcmeFinalize(
     var certificateUrl: String
 )
 
-@Suppress("FunctionParameterNaming", "LongParameterList")
+@Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
     fun newAccountRequest(

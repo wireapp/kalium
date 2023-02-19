@@ -21,7 +21,7 @@ import com.wire.crypto.WireE2eIdentity
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 import sun.jvm.hotspot.oops.CellTypeState.value
 
-@Suppress("FunctionParameterNaming", "LongParameterList")
+@Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl constructor(
     private val wireE2eIdentity: WireE2eIdentity
