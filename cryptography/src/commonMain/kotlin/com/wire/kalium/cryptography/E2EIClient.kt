@@ -56,6 +56,7 @@ interface E2EIClient {
         previousNonce: String
     ): JsonRawData
 
+    @Suppress("LongParameterList")
     fun newOrderRequest(
         displayName: String,
         domain: String,
@@ -75,6 +76,8 @@ interface E2EIClient {
     ): JsonRawData
 
     fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
+
+    @Suppress("LongParameterList")
     fun createDpopToken(
         accessTokenUrl: String,
         userId: String,
