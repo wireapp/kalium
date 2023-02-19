@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -72,7 +73,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -1217,6 +1217,7 @@ class CallRepositoryTest {
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
+            .givenLeaveSubconversationSuccessful()
             .arrange()
 
         var onEpochChangeCallCount = 0
@@ -1235,6 +1236,36 @@ class CallRepositoryTest {
         advanceUntilIdle()
 
         assertEquals(1, onEpochChangeCallCount)
+    }
+
+    @Test
+    fun givenMlsConferenceCall_whenLeaveMlsConference_thenLeaveSubconversation() = runTest(TestKaliumDispatcher.default) {
+        val epochFlow = MutableSharedFlow<GroupID>()
+
+        val (arrangement, callRepository) = Arrangement()
+            .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
+            .givenJoinSubconversationSuccessful()
+            .givenObserveEpochChangesReturns(epochFlow)
+            .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
+            .givenGetMLSClientSucceeds()
+            .givenGetMlsEpochReturns(1UL)
+            .givenMlsMembersReturns(emptyList())
+            .givenDeriveSecretSuccessful()
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
+        yield()
+        advanceUntilIdle()
+
+        callRepository.leaveMlsConference(Arrangement.conversationId)
+        yield()
+        advanceUntilIdle()
+
+        verify(arrangement.leaveSubconversationUseCase)
+            .suspendFunction(arrangement.leaveSubconversationUseCase::invoke)
+            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1407,6 +1438,9 @@ class CallRepositoryTest {
         val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
 
         @Mock
+        val leaveSubconversationUseCase = mock(classOf<LeaveSubconversationUseCase>())
+
+        @Mock
         val subconversationRepository = mock(classOf<SubconversationRepository>())
 
         @Mock
@@ -1431,7 +1465,8 @@ class CallRepositoryTest {
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             mlsClientProvider = mlsClientProvider,
-            joinSubconversationUseCase = joinSubconversationUseCase,
+            joinSubconversation = joinSubconversationUseCase,
+            leaveSubconversation = leaveSubconversationUseCase,
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
             kaliumDispatchers = TestKaliumDispatcher
@@ -1550,7 +1585,15 @@ class CallRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenLeaveSubconversationSuccessful() = apply {
+            given(leaveSubconversationUseCase)
+                .suspendFunction(leaveSubconversationUseCase::invoke)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+
+            fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::observeEpochChanges)
                 .whenInvoked()
