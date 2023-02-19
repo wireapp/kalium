@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cryptography
 
-@Suppress("TooManyFunctions")
+@Suppress("FunctionParameterNaming", "LongParameterList")
 class E2EIClientImpl : E2EIClient {
     override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         TODO("Not yet implemented")
