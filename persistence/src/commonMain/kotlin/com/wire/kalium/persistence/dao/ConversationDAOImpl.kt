@@ -543,4 +543,9 @@ class ConversationDAOImpl(
     override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?) = withContext(coroutineContext) {
         conversationQueries.updateGuestRoomLink(link, conversationId)
     }
+
+    override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
+        conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().map {
+            it.executeAsOne().guest_room_link
+        }.flowOn(coroutineContext)
 }
