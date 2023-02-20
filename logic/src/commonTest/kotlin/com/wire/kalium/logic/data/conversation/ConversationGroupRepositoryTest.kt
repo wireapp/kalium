@@ -448,9 +448,10 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
+        val link = "www.wire.com"
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToGenerateGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB(link)
             .arrange()
 
         val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
@@ -495,7 +496,7 @@ class ConversationGroupRepositoryTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToRevokeGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB(null)
             .arrange()
 
         val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
@@ -509,7 +510,7 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), any())
+            .with(any(), eq(null))
             .wasInvoked(exactly = once)
     }
 
@@ -795,10 +796,10 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
+        fun withSuccessfulUpdateOfGuestRoomLinkInDB(link: String?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), eq(link))
                 .thenReturn(Unit)
         }
 
