@@ -15,25 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.config
 
-package com.wire.kalium.logic.featureFlags
+import com.russhwolf.settings.MapSettings
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-
-/**
- * This use case will observe and return the build configs.
- * @see KaliumConfigs
- */
-interface GetBuildConfigsUseCase {
-    suspend operator fun invoke(): Flow<KaliumConfigs>
-}
-
-internal class GetBuildConfigsUseCaseImpl(
-    private val kaliumConfigs: KaliumConfigs,
-) : GetBuildConfigsUseCase {
-
-    override suspend operator fun invoke(): Flow<KaliumConfigs> {
-        return flowOf(kaliumConfigs)
-    }
-}
+fun inMemoryUserConfigStorage(): UserConfigStorage = UserConfigStorageImpl(
+    KaliumPreferencesSettings(MapSettings())
+)
