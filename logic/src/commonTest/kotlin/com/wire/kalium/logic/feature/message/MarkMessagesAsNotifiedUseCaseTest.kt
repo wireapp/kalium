@@ -114,9 +114,6 @@ class MarkMessagesAsNotifiedUseCaseTest {
         @Mock
         val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
-        @Mock
-        val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
-
         fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
@@ -132,7 +129,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         }
 
         fun arrange() = this to MarkMessagesAsNotifiedUseCase(
-            conversationRepository, messageRepository
+            conversationRepository
         )
 
     }

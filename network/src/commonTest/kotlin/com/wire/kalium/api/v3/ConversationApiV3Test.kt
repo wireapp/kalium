@@ -188,7 +188,7 @@ class ConversationApiV3Test : ApiTest {
     @Test
     fun givenRequest_whenDeletingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            "groupinfo".encodeToByteArray(),
+            ByteArray(0),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertDelete()
@@ -205,6 +205,26 @@ class ConversationApiV3Test : ApiTest {
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub",
             deleteRequest
+        )
+    }
+
+    @Test
+    fun givenRequest_whenLeavingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ByteArray(0),
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertDelete()
+                assertPathEqual(
+                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/self"
+                )
+            }
+        )
+
+        val conversationApi = ConversationApiV3(networkClient)
+        conversationApi.leaveSubconversation(
+            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+            "sub",
         )
     }
 

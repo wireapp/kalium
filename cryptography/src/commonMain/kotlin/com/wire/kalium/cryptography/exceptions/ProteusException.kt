@@ -1,3 +1,21 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.wire.kalium.cryptography.exceptions
 
 class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
@@ -131,6 +149,7 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
     }
 
     companion object {
+        @Suppress("MagicNumber")
         fun fromNativeCode(code: Int): Code {
             return when (code) {
                 1 -> Code.STORAGE_ERROR
@@ -145,6 +164,28 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
                 13 -> Code.IDENTITY_ERROR
                 14 -> Code.PREKEY_NOT_FOUND
                 15 -> Code.PANIC
+                else -> Code.UNKNOWN_ERROR
+            }
+        }
+
+        // Napping source:
+        // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
+        // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
+        fun fromProteusCode(code: Int): Code {
+            @Suppress("MagicNumber")
+            return when (code) {
+                501 -> Code.STORAGE_ERROR
+                205 -> Code.SESSION_NOT_FOUND
+                3, 301, 302, 303 -> Code.DECODE_ERROR
+                204 -> Code.REMOTE_IDENTITY_CHANGED
+                206, 207, 210 -> Code.INVALID_SIGNATURE
+                200, 201, 202, 205, 213 -> Code.INVALID_MESSAGE
+                209 -> Code.DUPLICATE_MESSAGE
+                211, 212 -> Code.TOO_DISTANT_FUTURE
+                208 -> Code.OUTDATED_MESSAGE
+                300 -> Code.IDENTITY_ERROR
+                101 -> Code.PREKEY_NOT_FOUND
+                5 -> Code.PANIC
                 else -> Code.UNKNOWN_ERROR
             }
         }

@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.GlobalConfigDataSource
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -49,23 +47,21 @@ import com.wire.kalium.logic.feature.server.StoreServerConfigUseCaseImpl
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
+import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
-import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
-import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
-import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Scope that exposes all operations that are user and backend agnostic, like
@@ -83,7 +79,9 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider
-) {
+) : CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
@@ -111,9 +109,6 @@ class GlobalKaliumScope internal constructor(
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
             NotificationTokenDataSource(globalPreferences.value.tokenStorage)
-    private val globalConfigRepository: GlobalConfigRepository
-        get() =
-            GlobalConfigDataSource(globalPreferences.value.globalAppConfigStorage)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -123,6 +118,7 @@ class GlobalKaliumScope internal constructor(
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
@@ -139,9 +135,6 @@ class GlobalKaliumScope internal constructor(
             observeValidAccounts,
             userSessionScopeProvider.value
         )
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
-    val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
 
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)

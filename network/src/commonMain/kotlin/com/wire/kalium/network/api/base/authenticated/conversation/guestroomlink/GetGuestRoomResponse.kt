@@ -16,28 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.user.loggingStatus
+package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
-import com.wire.kalium.logic.functional.fold
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-/**
- * Checks if logging is enabled for the current user.
- */
-interface IsLoggingEnabledUseCase {
-    /**
-     * @return true if logging is enabled, false otherwise.
-     */
-    operator fun invoke(): Boolean
-}
-
-internal class IsLoggingEnabledUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
-) : IsLoggingEnabledUseCase {
-    override operator fun invoke(): Boolean =
-        globalConfigRepository.isLoggingEnabled().fold({
-            false
-        }, {
-            it
-        })
-}
+@Serializable
+data class GetGuestRoomResponse(
+    @SerialName("uri") val uri: String,
+    @SerialName("key") val key: String,
+    @SerialName("code") val code: String
+)

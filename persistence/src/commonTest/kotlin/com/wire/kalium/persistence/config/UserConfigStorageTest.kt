@@ -22,14 +22,17 @@ import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserConfigStorageTest {
     private val settings: Settings = MapSettings()
 
@@ -77,6 +80,36 @@ class UserConfigStorageTest {
     fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
         userConfigStorage.persistReadReceipts(true)
         assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
+    }
+
+    @Test
+    fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
+        userConfigStorage.persistFileSharingStatus(true, true)
+        userConfigStorage.setFileSharingAsNotified()
+        assertEquals(IsFileSharingEnabledEntity(true, false), userConfigStorage.isFileSharingEnabled())
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(false)
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(true)
+        assertTrue {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
     }
 
 }
