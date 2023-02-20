@@ -46,6 +46,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Limited
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
+import kotlinx.coroutines.flow.Flow
 
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
@@ -60,7 +61,7 @@ interface ConversationGroupRepository {
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
-
+    suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -223,4 +224,7 @@ internal class ConversationGroupRepositoryImpl(
         }.onSuccess {
             conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
         }.map { }
+
+    override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 }
