@@ -30,7 +30,7 @@ data class FeatureConfigModel(
     val legalHoldModel: ConfigsStatusModel,
     val searchVisibilityModel: ConfigsStatusModel,
     val selfDeletingMessagesModel: SelfDeletingMessagesModel,
-    val sndFactorPasswordChallengeModel: ConfigsStatusModel,
+    val secondFactorPasswordChallengeModel: ConfigsStatusModel,
     val ssoModel: ConfigsStatusModel,
     val validateSAMLEmailsModel: ConfigsStatusModel,
     val mlsModel: MLSModel
