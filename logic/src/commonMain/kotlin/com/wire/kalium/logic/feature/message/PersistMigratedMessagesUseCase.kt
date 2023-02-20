@@ -51,7 +51,7 @@ interface PersistMigratedMessagesUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesApi::class) constructor(
+internal class PersistMigratedMessagesUseCaseImpl constructor(
     private val selfUserId: UserId,
     private val migrationDAO: MigrationDAO,
     private val coroutineContext: CoroutineDispatcher = KaliumDispatcherImpl.default.limitedParallelism(2),

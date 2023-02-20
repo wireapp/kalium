@@ -60,6 +60,8 @@ sealed interface Message {
         val visibility: Visibility
     }
 
+    data class Ephemeral(val expireAfterMillis: Long, val message : Regular)
+
     data class Regular(
         override val id: String,
         override val content: MessageContent.Regular,

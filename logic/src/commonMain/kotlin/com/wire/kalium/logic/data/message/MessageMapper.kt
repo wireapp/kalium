@@ -52,10 +52,9 @@ interface MessageMapper {
 }
 
 class MessageMapperImpl(
-    private val idMapper: IdMapper,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
@@ -83,9 +82,9 @@ class MessageMapperImpl(
                 visibility = visibility,
                 senderName = message.senderUserName,
                 isSelfMessage = message.isSelfMessage,
-                expectsReadConfirmation = message.expectsReadConfirmation
+                expectsReadConfirmation = message.expectsReadConfirmation,
+                expireAfterMillis = message.expireAfterMillis
             )
-
             is Message.System -> MessageEntity.System(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),

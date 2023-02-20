@@ -69,6 +69,7 @@ class MessageDAOImpl(
     ) = withContext(coroutineContext) {
         queries.transaction {
             val messageCreationInstant = message.date
+
             if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
             }

@@ -100,6 +100,7 @@ object MessageMapper {
                         )
                     }
                 }
+
                 MessageEntity.MemberChangeType.REMOVED -> {
                     if (userIdList.contains(senderUserId) && userIdList.size == 1) {
                         MessagePreviewEntityContent.MemberLeft(senderName)
@@ -183,7 +184,6 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             senderUserId = senderUserId
         )
-
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -231,7 +231,8 @@ object MessageMapper {
         selfReactionsJson: String?,
         senderName: String?,
         isSelfMessage: Boolean,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -249,7 +250,8 @@ object MessageMapper {
             ),
             senderName = senderName,
             isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation
+            expectsReadConfirmation = expectsReadConfirmation,
+            expireAfterMillis = expireAfterMillis
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -281,6 +283,7 @@ object MessageMapper {
         lastEditTimestamp: Instant?,
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -415,9 +418,11 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(
                 receiptMode = newConversationReceiptMode ?: false
             )
+
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
                 receiptMode = conversationReceiptModeChanged ?: false
             )
+
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
         }
 
@@ -435,7 +440,8 @@ object MessageMapper {
             selfReactionsJson,
             senderName,
             isSelfMessage,
-            expectsReadConfirmation ?: false
+            expectsReadConfirmation,
+            expireAfterMillis
         )
     }
 

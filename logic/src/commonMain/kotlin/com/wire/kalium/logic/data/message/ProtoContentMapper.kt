@@ -126,7 +126,7 @@ class ProtoContentMapperImpl(
             }
             ProtoContent.Readable(
                 messageUid = genericMessage.messageId,
-                messageContent =  getReadableContent(genericMessage, encodedContent),
+                messageContent = getReadableContent(genericMessage, encodedContent),
                 expectsReadConfirmation = expectsReadConfirmation,
                 expiresAfterMillis = expiresAfterMillis
             )

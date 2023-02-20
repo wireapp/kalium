@@ -18,6 +18,7 @@ CREATE TABLE Message (
       last_edit_date INTEGER AS Instant,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
+      expire_after_millis INTEGER DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -185,6 +186,7 @@ Message.status AS status,
 Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
+Message.expire_after_millis AS expireAfterMillis,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -428,8 +430,8 @@ INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, 
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation, expire_after_millis)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)

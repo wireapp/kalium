@@ -38,7 +38,6 @@ sealed class MessageEntity(
     open val visibility: Visibility,
     open val isSelfMessage: Boolean,
 ) {
-
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
@@ -52,7 +51,8 @@ sealed class MessageEntity(
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false
+        val expectsReadConfirmation: Boolean = false,
+        val expireAfterMillis: Long? = null
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
