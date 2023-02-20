@@ -82,9 +82,9 @@ class MessageMapperImpl(
                 visibility = visibility,
                 senderName = message.senderUserName,
                 isSelfMessage = message.isSelfMessage,
-                expectsReadConfirmation = message.expectsReadConfirmation,
-                expireAfterMillis = message.expireAfterMillis
+                expectsReadConfirmation = message.expectsReadConfirmation
             )
+
             is Message.System -> MessageEntity.System(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
@@ -95,6 +95,31 @@ class MessageMapperImpl(
                 visibility = visibility,
                 senderName = message.senderUserName,
             )
+
+            is Message.Ephemeral -> {
+                with(message.ephemeralMessage) {
+                    MessageEntity.Ephemeral(
+                        expireAfterMillis = message.expireAfterMillis,
+                        ephemeralMessage = MessageEntity.Regular(
+                            id = id,
+                            content = toMessageEntityContent(content),
+                            conversationId = conversationId.toDao(),
+                            date = date.toInstant(),
+                            senderUserId = senderUserId.toDao(),
+                            senderClientId = senderClientId.value,
+                            status = status,
+                            editStatus = when (editStatus) {
+                                is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
+                                is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(editStatus.lastTimeStamp.toInstant())
+                            },
+                            visibility = visibility,
+                            senderName = senderUserName,
+                            isSelfMessage = isSelfMessage,
+                            expectsReadConfirmation = expectsReadConfirmation
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -106,27 +131,26 @@ class MessageMapperImpl(
             MessageEntity.Status.FAILED -> Message.Status.FAILED
             MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
         }
-        val visibility = message.visibility.toModel()
-
         return when (message) {
-            is MessageEntity.Regular -> Message.Regular(
-                id = message.id,
-                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
-                conversationId = message.conversationId.toModel(),
-                date = message.date.toIsoDateTimeString(),
-                senderUserId = message.senderUserId.toModel(),
-                senderClientId = ClientId(message.senderClientId),
-                status = status,
-                editStatus = when (val editStatus = message.editStatus) {
-                    MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
-                },
-                visibility = visibility,
-                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
-                senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage,
-                expectsReadConfirmation = message.expectsReadConfirmation
-            )
+            is MessageEntity.Regular ->
+                Message.Regular(
+                    id = message.id,
+                    content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
+                    conversationId = message.conversationId.toModel(),
+                    date = message.date.toIsoDateTimeString(),
+                    senderUserId = message.senderUserId.toModel(),
+                    senderClientId = ClientId(message.senderClientId),
+                    status = status,
+                    editStatus = when (val editStatus = message.editStatus) {
+                        MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+                        is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+                    },
+                    visibility = message.visibility.toModel(),
+                    reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+                    senderUserName = message.senderName,
+                    isSelfMessage = message.isSelfMessage,
+                    expectsReadConfirmation = message.expectsReadConfirmation
+                )
 
             is MessageEntity.System -> Message.System(
                 id = message.id,
@@ -135,9 +159,33 @@ class MessageMapperImpl(
                 date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 status = status,
-                visibility = visibility,
+                visibility = message.visibility.toModel(),
                 senderUserName = message.senderName,
             )
+
+            is MessageEntity.Ephemeral -> with(message.ephemeralMessage) {
+                Message.Ephemeral(
+                    expireAfterMillis = message.expireAfterMillis,
+                    ephemeralMessage = Message.Regular(
+                        id =id,
+                        content = content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
+                        conversationId = conversationId.toModel(),
+                        date = date.toIsoDateTimeString(),
+                        senderUserId = senderUserId.toModel(),
+                        senderClientId = ClientId(senderClientId),
+                        status = status,
+                        editStatus = when (val editStatus = editStatus) {
+                            MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+                            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+                        },
+                        visibility = visibility.toModel(),
+                        reactions = Message.Reactions(reactions.totalReactions, reactions.selfUserReactions),
+                        senderUserName = senderName,
+                        isSelfMessage = isSelfMessage,
+                        expectsReadConfirmation = expectsReadConfirmation
+                    )
+                )
+            }
         }
     }
 
@@ -211,6 +259,7 @@ class MessageMapperImpl(
                     LocalNotificationCommentType.MISSED_CALL
                 )
             }
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null

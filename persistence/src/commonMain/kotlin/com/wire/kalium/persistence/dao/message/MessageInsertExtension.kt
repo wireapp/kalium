@@ -87,7 +87,7 @@ internal class MessageInsertExtensionImpl(
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
-            expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMillis else null
+            expire_after_millis = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null
         )
     }
 

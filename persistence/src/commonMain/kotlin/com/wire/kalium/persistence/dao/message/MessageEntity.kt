@@ -51,9 +51,22 @@ sealed class MessageEntity(
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false,
-        val expireAfterMillis: Long? = null
+        val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+
+    data class Ephemeral(
+        val expireAfterMillis: Long,
+        val ephemeralMessage: Regular
+    ) : MessageEntity(
+        ephemeralMessage.id,
+        ephemeralMessage.content,
+        ephemeralMessage.conversationId,
+        ephemeralMessage.date,
+        ephemeralMessage.senderUserId,
+        ephemeralMessage.status,
+        ephemeralMessage.visibility,
+        ephemeralMessage.isSelfMessage
+    )
 
     data class System(
         override val id: String,

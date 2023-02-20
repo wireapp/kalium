@@ -250,8 +250,7 @@ object MessageMapper {
             ),
             senderName = senderName,
             isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation,
-            expireAfterMillis = expireAfterMillis
+            expectsReadConfirmation = expectsReadConfirmation
         )
 
         is MessageEntityContent.System -> MessageEntity.System(

@@ -60,7 +60,22 @@ sealed interface Message {
         val visibility: Visibility
     }
 
-    data class Ephemeral(val expireAfterMillis: Long, val message : Regular)
+    data class Ephemeral(val expireAfterMillis: Long,val ephemeralMessage: Regular) : Standalone {
+        override val id: String
+            get() = ephemeralMessage.id
+        override val content: MessageContent.Regular
+            get() = ephemeralMessage.content
+        override val conversationId: ConversationId
+            get() = ephemeralMessage.conversationId
+        override val date: String
+            get() = ephemeralMessage.date
+        override val senderUserId: UserId
+            get() = ephemeralMessage.senderUserId
+        override val status: Status
+            get() = ephemeralMessage.status
+        override val visibility: Visibility
+            get() = ephemeralMessage.visibility
+    }
 
     data class Regular(
         override val id: String,
@@ -76,7 +91,7 @@ sealed interface Message {
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val expireAfterMillis : Long? = null
+        val expireAfterMillis: Long? = null
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -256,9 +271,11 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+
                 is MessageContent.NewConversationReceiptMode -> mutableMapOf(
                     typeKey to "newConversationReceiptMode"
                 )
+
                 is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
                     typeKey to "conversationReceiptModeChanged"
                 )
