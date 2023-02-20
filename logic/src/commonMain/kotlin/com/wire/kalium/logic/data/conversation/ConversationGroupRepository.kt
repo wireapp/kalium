@@ -221,6 +221,6 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest {
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            conversationDAO.updateGuestRoomLink(conversationId.toDao(), "")
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
         }.map { }
 }
