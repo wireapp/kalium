@@ -49,4 +49,8 @@ internal actual class UserSessionWorkSchedulerImpl(
         TODO("Not yet implemented")
     }
 
+    override fun cancelScheduledSendingOfPendingMessages() {
+        TODO("Not yet implemented")
+    }
+
 }
