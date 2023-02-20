@@ -448,9 +448,10 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
+        val link = "www.wire.com"
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToGenerateGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB(link)
             .arrange()
 
         val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
@@ -481,6 +482,51 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationApi)
             .suspendFunction(arrangement.conversationApi::generateGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenASuccessApiCall_whenTryingToRevokeGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulCallToRevokeGuestRoomLinkApi()
+            .withSuccessfulUpdateOfGuestRoomLinkInDB(null)
+            .arrange()
+
+        val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::revokeGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), eq(null))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAFailedApiCall_whenTryingToRevokingGuestRoomLink_ThenReturnFailure() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withFailedCallToRevokeGuestRoomLinkApi()
+            .arrange()
+
+        val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
+
+        result.shouldFail()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::revokeGuestRoomLink)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -750,11 +796,35 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB() = apply {
+        fun withSuccessfulUpdateOfGuestRoomLinkInDB(link: String?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), eq(link))
                 .thenReturn(Unit)
+        }
+
+        fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::revokeGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        Unit,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withFailedCallToRevokeGuestRoomLinkApi() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::revokeGuestRoomLink)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
         }
 
         fun arrange() = this to conversationGroupRepository

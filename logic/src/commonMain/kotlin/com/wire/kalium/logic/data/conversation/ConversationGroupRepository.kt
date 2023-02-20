@@ -59,6 +59,8 @@ interface ConversationGroupRepository {
     suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -214,4 +216,11 @@ internal class ConversationGroupRepositoryImpl(
             it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri) }
             it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link) }
         }.map { Either.Right(Unit) }
+
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.revokeGuestRoomLink(conversationId.toApi())
+        }.onSuccess {
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
+        }.map { }
 }
