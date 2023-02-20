@@ -19,7 +19,6 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.WireE2eIdentity
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
-import sun.jvm.hotspot.oops.CellTypeState.value
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)

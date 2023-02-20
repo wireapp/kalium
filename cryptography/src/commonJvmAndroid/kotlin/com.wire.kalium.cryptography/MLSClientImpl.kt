@@ -75,7 +75,7 @@ actual class MLSClientImpl actual constructor(
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
-    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), null)
