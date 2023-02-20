@@ -548,6 +548,4 @@ class ConversationDAOImpl(
         conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().map {
             it.executeAsOne().guest_room_link
         }.flowOn(coroutineContext)
-
-
 }
