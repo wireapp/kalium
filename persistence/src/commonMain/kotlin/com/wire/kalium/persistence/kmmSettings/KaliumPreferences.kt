@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.KSerializer
 
 @Suppress("TooManyFunctions")
-internal interface KaliumPreferences {
+interface KaliumPreferences {
     fun remove(key: String)
     fun hasValue(key: String): Boolean
     fun putString(key: String, value: String?)
@@ -46,7 +46,7 @@ internal interface KaliumPreferences {
 
 }
 
-internal class KaliumPreferencesSettings(
+class KaliumPreferencesSettings(
     private val encryptedSettings: Settings
 ) : KaliumPreferences {
 

@@ -53,4 +53,10 @@ internal actual class UserSessionWorkSchedulerImpl(
             "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
+
+    override fun cancelScheduledSendingOfPendingMessages() {
+        kaliumLogger.withFeatureId(SYNC).w(
+            "Cancelling scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
+        )
+    }
 }

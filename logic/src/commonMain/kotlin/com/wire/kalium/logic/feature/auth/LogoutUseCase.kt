@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -53,7 +54,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clearUserDataUseCase: ClearUserDataUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val pushTokenRepository: PushTokenRepository,
-    private val globalCoroutineScope: CoroutineScope
+    private val globalCoroutineScope: CoroutineScope,
+    private val userSessionWorkScheduler: UserSessionWorkScheduler,
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -65,6 +67,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             logoutRepository.logout()
             sessionRepository.logout(userId = userId, reason)
             logoutRepository.onLogout(reason)
+            userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
 
             when (reason) {
                 LogoutReason.SELF_HARD_LOGOUT -> {
