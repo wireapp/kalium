@@ -110,7 +110,8 @@ object NotificationEventsResponseJson {
         |    "id": "${eventData.qualifiedFrom.value}"
         |  },
         |  "time": "${eventData.time}",
-        |  "type": "conversation.mls-message-add"
+        |  "type": "conversation.mls-message-add",
+        |  "subconv": "${eventData.subconversation}"
         |}    
         """.trimMargin()
     }
@@ -123,7 +124,8 @@ object NotificationEventsResponseJson {
             "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsn" +
             "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
             "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
-            "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
+            "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4=",
+            "subconv"
         ),
         newMlsMessageSerializer
     )
@@ -214,6 +216,17 @@ object NotificationEventsResponseJson {
         ),
         newFeatureConfigSerializer
     )
+
+    val notificationWithLastEvent =  """
+        {
+            "payload": [
+                {
+                    "type": "aVeryWeirdEventType"
+                }
+            ],
+            "id": "fcfb33e4-8037-11ec-8001-22000ac39a27"
+    }
+    """.trimIndent()
 
     val notificationsWithUnknownEventAtFirstPosition = """
         {

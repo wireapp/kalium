@@ -64,6 +64,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
@@ -138,6 +139,8 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -177,6 +180,7 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -195,6 +199,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -255,6 +260,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -263,6 +269,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -289,7 +296,8 @@ class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    platformUserStorageProperties: PlatformUserStorageProperties
+    platformUserStorageProperties: PlatformUserStorageProperties,
+    networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -333,6 +341,8 @@ class UserSessionScope internal constructor(
             proteusSelfConversationIdProvider
         )
     }
+
+    private val epochsFlow = MutableSharedFlow<GroupID>()
 
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
@@ -382,7 +392,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
             mlsPublicKeysRepository,
-            commitBundleEventReceiver
+            commitBundleEventReceiver,
+            epochsFlow
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -476,7 +487,8 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             kaliumFileSystem,
-            userStorage.database.databaseExporter
+            userStorage.database.databaseExporter,
+            securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
@@ -507,7 +519,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             subconversationRepository = subconversationRepository,
-            joinSubconversationUseCase = joinSubconversationUseCase,
+            joinSubconversation = joinSubconversationUseCase,
+            leaveSubconversation = leaveSubconversationUseCase,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             teamRepository = teamRepository,
@@ -632,6 +645,13 @@ class UserSessionScope internal constructor(
             subconversationRepository
         )
 
+    private val leaveSubconversationUseCase: LeaveSubconversationUseCase
+        get() = LeaveSubconversationUseCaseImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            mlsClientProvider,
+            subconversationRepository
+        )
+
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
             syncSelfUser,
@@ -652,7 +672,8 @@ class UserSessionScope internal constructor(
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
-            slowSyncRecoveryHandler
+            slowSyncRecoveryHandler,
+            networkStateObserver
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -687,7 +708,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             incrementalSyncWorker,
             incrementalSyncRepository,
-            incrementalSyncRecoveryHandler
+            incrementalSyncRecoveryHandler,
+            networkStateObserver
         )
     }
 
@@ -754,6 +776,7 @@ class UserSessionScope internal constructor(
             userRepository = userRepository,
             currentClientIdProvider = clientIdProvider,
             conversationRepository = conversationRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
@@ -781,7 +804,9 @@ class UserSessionScope internal constructor(
         get() = MLSMessageUnpackerImpl(
             mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
+            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 
@@ -904,7 +929,10 @@ class UserSessionScope internal constructor(
             clientIdProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    private val logoutRepository: LogoutRepository = LogoutDataSource(
+        authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi,
+        userStorage.database.metadataDAO
+    )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -928,6 +956,7 @@ class UserSessionScope internal constructor(
             userId,
             isAllowedToRegisterMLSClient,
             clientIdProvider,
+            userStorage,
             slowSyncRepository
         )
     val conversations: ConversationScope
@@ -1026,7 +1055,9 @@ class UserSessionScope internal constructor(
             client.clearClientData,
             clearUserData,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            globalScope,
+            authenticatedDataSourceSet.userSessionWorkScheduler
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)
@@ -1041,6 +1072,10 @@ class UserSessionScope internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+
+    val markFileSharingStatusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
+        get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
+
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)

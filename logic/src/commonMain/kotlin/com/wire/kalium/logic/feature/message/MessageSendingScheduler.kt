@@ -38,4 +38,10 @@ interface MessageSendingScheduler {
      *  it's OK to just don't do anything, ideally logging a warning about the lack of implementation.
      */
     fun scheduleSendingOfPendingMessages()
+
+    /**
+     * Cancels the scheduled execution of [PendingMessagesSenderWorker], which attempts to send
+     *  all pending messages of this user, because the account has been logged out for instance.
+     */
+    fun cancelScheduledSendingOfPendingMessages()
 }

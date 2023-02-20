@@ -36,6 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO

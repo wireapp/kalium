@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -42,6 +43,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -64,6 +67,7 @@ class LogoutUseCaseTest {
                 .arrange()
 
             logoutUseCase.invoke(reason)
+            arrangement.globalTestScope.advanceUntilIdle()
 
             verify(arrangement.deregisterTokenUseCase)
                 .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
@@ -83,10 +87,18 @@ class LogoutUseCaseTest {
                 .function(arrangement.userSessionScopeProvider::delete)
                 .with(any())
                 .wasInvoked(exactly = once)
-            verify(arrangement.pushTokenRepository)
-                .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-                .with(eq(true))
-                .wasInvoked(exactly = once)
+
+            if (reason == LogoutReason.SELF_HARD_LOGOUT) {
+                verify(arrangement.pushTokenRepository)
+                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                    .with(eq(true))
+                    .wasNotInvoked()
+            } else {
+                verify(arrangement.pushTokenRepository)
+                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                    .with(eq(true))
+                    .wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -105,6 +117,7 @@ class LogoutUseCaseTest {
             .arrange()
 
         logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
 
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -130,6 +143,7 @@ class LogoutUseCaseTest {
                 .arrange()
 
             logoutUseCase.invoke(reason)
+            arrangement.globalTestScope.advanceUntilIdle()
 
             verify(arrangement.clearClientDataUseCase)
                 .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -161,6 +175,7 @@ class LogoutUseCaseTest {
             .arrange()
 
         logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
 
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -201,6 +216,11 @@ class LogoutUseCaseTest {
         @Mock
         val pushTokenRepository = mock(classOf<PushTokenRepository>())
 
+        @Mock
+        val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
+
+        val globalTestScope = TestScope()
+
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
@@ -210,7 +230,9 @@ class LogoutUseCaseTest {
             clearClientDataUseCase,
             clearUserDataUseCase,
             userSessionScopeProvider,
-            pushTokenRepository
+            pushTokenRepository,
+            globalTestScope,
+            userSessionWorkScheduler
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

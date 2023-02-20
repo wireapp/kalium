@@ -15,25 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.featureFlags
+package com.wire.kalium.logic.network
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-/**
- * This use case will observe and return the build configs.
- * @see KaliumConfigs
- */
-interface GetBuildConfigsUseCase {
-    suspend operator fun invoke(): Flow<KaliumConfigs>
-}
+actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-internal class GetBuildConfigsUseCaseImpl(
-    private val kaliumConfigs: KaliumConfigs,
-) : GetBuildConfigsUseCase {
-
-    override suspend operator fun invoke(): Flow<KaliumConfigs> {
-        return flowOf(kaliumConfigs)
-    }
+    override fun observeNetworkState(): Flow<NetworkState> =
+        flowOf(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
 }

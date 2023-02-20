@@ -23,6 +23,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -32,17 +33,20 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 
 // TODO(testing): create unit test
-class OnHttpRequest(
+internal class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
     private val messageSender: MessageSender,
-    private val callingScope: CoroutineScope
+    private val callingScope: CoroutineScope,
+    private val selfConversationIdProvider: SelfConversationIdProvider
 ) {
     @Suppress("LongParameterList")
     fun sendHandlerSuccess(
@@ -51,11 +55,30 @@ class OnHttpRequest(
         conversationId: ConversationId,
         avsSelfUserId: UserId,
         avsSelfClientId: ClientId,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        sendInSelfConversation: Boolean
     ) {
         callingScope.launch {
             messageString?.let { message ->
-                when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message, messageTarget)) {
+
+                 val result = if (sendInSelfConversation) {
+                     selfConversationIdProvider().flatMap { selfConversationIds ->
+                         selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                             sendCallingMessage(
+                                conversationId,
+                                avsSelfUserId,
+                                avsSelfClientId,
+                                message,
+                                messageTarget,
+                                selfConversationId
+                            )
+                         }
+                     }
+                } else {
+                     sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message, messageTarget)
+                }
+
+                when (result) {
                     is Either.Right -> {
                         callingLogger.i("[OnHttpRequest] -> Success")
                         calling.wcall_resp(
@@ -79,24 +102,27 @@ class OnHttpRequest(
         }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun sendCallingMessage(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId,
         data: String,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        selfConversationId: ConversationId? = null
     ): Either<CoreFailure, Unit> {
-        val messageContent = MessageContent.Calling(data)
+        val messageContent = MessageContent.Calling(data, conversationId)
         val date = DateTimeUtil.currentIsoDateTimeString()
         val message = Message.Signaling(
             id = uuid4().toString(),
             content = messageContent,
-            conversationId = conversationId,
+            conversationId = selfConversationId ?: conversationId,
             date = date,
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT,
         )
+
         return messageSender.sendMessage(message, messageTarget)
     }
 }

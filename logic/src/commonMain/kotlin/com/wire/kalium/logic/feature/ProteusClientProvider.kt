@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.mapLeft
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.KaliumDispatcher
@@ -98,7 +98,7 @@ class ProteusClientProviderImpl(
         return if (kaliumConfigs.encryptProteusStorage) {
             ProteusClientImpl(
                 rootProteusPath,
-                SecurityHelper(passphraseStorage).proteusDBSecret(userId),
+                SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId),
                 defaultContext = dispatcher.default,
                 ioContext = dispatcher.io
             )

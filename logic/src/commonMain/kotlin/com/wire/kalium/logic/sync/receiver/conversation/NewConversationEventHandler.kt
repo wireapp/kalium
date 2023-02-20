@@ -57,7 +57,7 @@ internal class NewConversationEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = conversationRepository
         .persistConversations(listOf(event.conversation), selfTeamIdProvider().getOrNull()?.value, originatedFromEvent = true)
-        .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentIsoDateTimeString()) }
+        .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant()) }
         .flatMap {
             userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }
                 .toSet())

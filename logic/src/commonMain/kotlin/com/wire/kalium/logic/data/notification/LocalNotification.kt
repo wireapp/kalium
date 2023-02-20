@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserAssetId
+import kotlinx.datetime.Instant
 
 /**
  * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
@@ -32,41 +34,43 @@ data class LocalNotificationConversation(
     val isOneToOneConversation: Boolean
 )
 
-sealed class LocalNotificationMessage(open val author: LocalNotificationMessageAuthor, open val time: String) {
+sealed class LocalNotificationMessage(
+    open val author: LocalNotificationMessageAuthor,
+    open val time: Instant
+) {
     data class Text(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String,
+        override val time: Instant,
         val text: String,
-        val isQuotingSelfUser: Boolean = false,
-        val isMentionedSelf: Boolean = false
+        val isQuotingSelfUser: Boolean = false
     ) :
         LocalNotificationMessage(author, time)
 
     // shared file, picture, reaction
     data class Comment(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String,
+        override val time: Instant,
         val type: LocalNotificationCommentType
     ) : LocalNotificationMessage(author, time)
 
     data class Knock(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String
+        override val time: Instant
     ) : LocalNotificationMessage(author, time)
 
     data class ConnectionRequest(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String,
+        override val time: Instant,
         val authorId: QualifiedID
     ) : LocalNotificationMessage(author, time)
 
     data class ConversationDeleted(
         override val author: LocalNotificationMessageAuthor,
-        override val time: String
+        override val time: Instant
     ) : LocalNotificationMessage(author, time)
 }
 
-data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)
+data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)
 
 enum class LocalNotificationCommentType {
     PICTURE, FILE, REACTION, MISSED_CALL, NOT_SUPPORTED_YET

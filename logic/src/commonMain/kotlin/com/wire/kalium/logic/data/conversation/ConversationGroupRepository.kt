@@ -58,6 +58,9 @@ interface ConversationGroupRepository {
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
+    suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -204,5 +207,20 @@ internal class ConversationGroupRepositoryImpl(
             if (response is ConversationMemberRemovedResponse.Changed) {
                 memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))
             }
+        }.map { }
+
+    override suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.generateGuestRoomLink(conversationId.toApi())
+        }.onSuccess {
+            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri) }
+            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link) }
+        }.map { Either.Right(Unit) }
+
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.revokeGuestRoomLink(conversationId.toApi())
+        }.onSuccess {
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
         }.map { }
 }

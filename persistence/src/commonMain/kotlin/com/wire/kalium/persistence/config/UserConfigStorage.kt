@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("TooManyFunctions")
 interface UserConfigStorage {
 
     /**
@@ -46,6 +47,8 @@ interface UserConfigStorage {
      */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
+    fun setFileSharingAsNotified()
+
     /**
      * returns a Flow containing the status and list of classified domains
      */
@@ -55,6 +58,22 @@ interface UserConfigStorage {
      * save the flag and list of trusted domains
      */
     fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
+
+    /**
+     * Saves the flag that indicates whether a 2FA challenge is
+     * required for some operations such as:
+     * Login, Create Account, Register Client, etc.
+     * @see isSecondFactorPasswordChallengeRequired
+     */
+    fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean)
+
+    /**
+     * Checks if the 2FA challenge is
+     * required for some operations such as:
+     * Login, Create Account, Register Client, etc.
+     * @see persistSecondFactorPasswordChallengeStatus
+     */
+    fun isSecondFactorPasswordChallengeRequired(): Boolean
 
     /**
      * save flag from the user settings to enable and disable MLS
@@ -101,7 +120,7 @@ data class ClassifiedDomainsEntity(
 )
 
 @Suppress("TooManyFunctions")
-internal class UserConfigStorageImpl internal constructor(
+class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
 
@@ -121,10 +140,10 @@ internal class UserConfigStorageImpl internal constructor(
         kaliumPreferences.putSerializable(
             FILE_SHARING,
             IsFileSharingEnabledEntity(status, isStatusChanged),
-            IsFileSharingEnabledEntity.serializer().also {
-                isFileSharingEnabledFlow.tryEmit(Unit)
-            }
-        )
+            IsFileSharingEnabledEntity.serializer()
+        ).also {
+            isFileSharingEnabledFlow.tryEmit(Unit)
+        }
     }
 
     override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
@@ -134,6 +153,19 @@ internal class UserConfigStorageImpl internal constructor(
         .map { isFileSharingEnabled() }
         .onStart { emit(isFileSharingEnabled()) }
         .distinctUntilChanged()
+
+    override fun setFileSharingAsNotified() {
+        val newValue =
+            kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())?.copy(isStatusChanged = false)
+                ?: return
+        kaliumPreferences.putSerializable(
+            FILE_SHARING,
+            newValue,
+            IsFileSharingEnabledEntity.serializer()
+        ).also {
+            isFileSharingEnabledFlow.tryEmit(Unit)
+        }
+    }
 
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
         return isClassifiedDomainsEnabledFlow
@@ -158,6 +190,13 @@ internal class UserConfigStorageImpl internal constructor(
             isClassifiedDomainsEnabledFlow.tryEmit(Unit)
         }
     }
+
+    override fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean) {
+        kaliumPreferences.putBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, isRequired)
+    }
+
+    override fun isSecondFactorPasswordChallengeRequired(): Boolean =
+        kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
     override fun enableMLS(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
@@ -190,5 +229,6 @@ internal class UserConfigStorageImpl internal constructor(
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
+        const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
     }
 }

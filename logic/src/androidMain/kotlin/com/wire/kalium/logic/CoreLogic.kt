@@ -25,10 +25,12 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -51,7 +53,7 @@ actual class CoreLogic(
         lazy {
             GlobalDatabaseProvider(
                 appContext,
-                SecurityHelper(globalPreferences.value.passphraseStorage).globalDBSecret(),
+                SecurityHelperImpl(globalPreferences.value.passphraseStorage).globalDBSecret(),
                 kaliumConfigs.shouldEncryptData
             )
         }
@@ -72,6 +74,9 @@ actual class CoreLogic(
         appContext = appContext,
         coreLogic = this
     )
+    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
+        appContext = appContext
+    )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
@@ -82,6 +87,7 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
+            networkStateObserver
         )
     }
 }
