@@ -48,6 +48,41 @@ data class AcmeFinalize(
     var certificateUrl: String
 )
 
+data class AcmeOrderRequest(
+    var displayName: String,
+    var domain: String,
+    var clientId: String,
+    var handle: String,
+    var expiryDays: UInt,
+    var directory: AcmeDirectory,
+    var account: AcmeAccount,
+    var previousNonce: String
+)
+
+data class DpopTokenRequest(
+    var accessTokenUrl: String,
+    var userId: String,
+    var clientId: ULong,
+    var domain: String,
+    var clientIdChallenge: AcmeChallenge,
+    var backendNonce: String,
+    var expiryDays: UInt
+)
+
+data class DpopChallengeRequest(
+    val accessToken: String,
+    val dpopChallenge: AcmeChallenge,
+    val account: AcmeAccount,
+    val previousNonce: String
+)
+
+data class OidcChallengeRequest(
+    val idToken: String,
+    val oidcChallenge: AcmeChallenge,
+    val account: AcmeAccount,
+    val previousNonce: String
+)
+
 @Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
@@ -56,17 +91,7 @@ interface E2EIClient {
         previousNonce: String
     ): JsonRawData
 
-    @Suppress("LongParameterList")
-    fun newOrderRequest(
-        displayName: String,
-        domain: String,
-        clientId: String,
-        handle: String,
-        expiryDays: UInt,
-        directory: AcmeDirectory,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
+    fun newOrderRequest(order: AcmeOrderRequest): JsonRawData
 
     fun newOrderResponse(order: JsonRawData): NewAcmeOrder
     fun newAuthzRequest(
@@ -77,30 +102,11 @@ interface E2EIClient {
 
     fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
 
-    @Suppress("LongParameterList")
-    fun createDpopToken(
-        accessTokenUrl: String,
-        userId: String,
-        clientId: ULong,
-        domain: String,
-        clientIdChallenge: AcmeChallenge,
-        backendNonce: String,
-        expiryDays: UInt
-    ): String
+    fun createDpopToken(request: DpopTokenRequest): String
 
-    fun newDpopChallengeRequest(
-        accessToken: String,
-        dpopChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
+    fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData
 
-    fun newOidcChallengeRequest(
-        idToken: String,
-        oidcChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
+    fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData
 
     fun newChallengeResponse(challenge: JsonRawData)
     fun checkOrderRequest(

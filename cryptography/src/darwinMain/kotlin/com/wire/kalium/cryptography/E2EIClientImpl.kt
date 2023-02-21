@@ -30,16 +30,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(
-        displayName: String,
-        domain: String,
-        clientId: String,
-        handle: String,
-        expiryDays: UInt,
-        directory: AcmeDirectory,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun newOrderRequest(order: AcmeOrderRequest): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -59,33 +50,15 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(
-        accessTokenUrl: String,
-        userId: String,
-        clientId: ULong,
-        domain: String,
-        clientIdChallenge: AcmeChallenge,
-        backendNonce: String,
-        expiryDays: UInt
-    ): String {
+    override fun createDpopToken(request: DpopTokenRequest): String {
         TODO("Not yet implemented")
     }
 
-    override fun newDpopChallengeRequest(
-        accessToken: String,
-        dpopChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newOidcChallengeRequest(
-        idToken: String,
-        oidcChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData {
         TODO("Not yet implemented")
     }
 

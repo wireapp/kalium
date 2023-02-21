@@ -40,26 +40,19 @@ class E2EIClientImpl constructor(
         ).toUByteArray().asByteArray()
     }
 
-    override fun newOrderRequest(
-        displayName: String,
-        domain: String,
-        clientId: String,
-        handle: String,
-        expiryDays: UInt,
-        directory: AcmeDirectory,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
-        return wireE2eIdentity.newOrderRequest(
-            displayName,
-            domain,
-            clientId,
-            handle,
-            expiryDays,
-            toAcmeDirectory(directory),
-            toUByteList(account),
-            previousNonce
-        ).toUByteArray().asByteArray()
+    override fun newOrderRequest(order: AcmeOrderRequest): JsonRawData {
+        with(order) {
+            return wireE2eIdentity.newOrderRequest(
+                displayName,
+                domain,
+                clientId,
+                handle,
+                expiryDays,
+                toAcmeDirectory(directory),
+                toUByteList(account),
+                previousNonce
+            ).toUByteArray().asByteArray()
+        }
     }
 
     override fun newOrderResponse(order: JsonRawData): NewAcmeOrder {
@@ -82,50 +75,38 @@ class E2EIClientImpl constructor(
         return toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
     }
 
-    override fun createDpopToken(
-        accessTokenUrl: String,
-        userId: String,
-        clientId: ULong,
-        domain: String,
-        clientIdChallenge: AcmeChallenge,
-        backendNonce: String,
-        expiryDays: UInt
-    ): String {
-        return wireE2eIdentity.createDpopToken(
-            accessTokenUrl,
-            userId,
-            clientId,
-            domain,
-            toAcmeChallenge(clientIdChallenge),
-            backendNonce,
-            expiryDays
-        )
+    override fun createDpopToken(request: DpopTokenRequest): String {
+        with(request) {
+            return wireE2eIdentity.createDpopToken(
+                accessTokenUrl,
+                userId,
+                clientId,
+                domain,
+                toAcmeChallenge(clientIdChallenge),
+                backendNonce,
+                expiryDays
+            )
+        }
     }
 
-    override fun newDpopChallengeRequest(
-        accessToken: String,
-        dpopChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
-        return wireE2eIdentity.newDpopChallengeRequest(
-            accessToken,
-            toAcmeChallenge(dpopChallenge),
-            toUByteList(account), previousNonce
-        ).toUByteArray().asByteArray()
+    override fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData {
+        with(request) {
+            return wireE2eIdentity.newDpopChallengeRequest(
+                accessToken,
+                toAcmeChallenge(dpopChallenge),
+                toUByteList(account), previousNonce
+            ).toUByteArray().asByteArray()
+        }
     }
 
-    override fun newOidcChallengeRequest(
-        idToken: String,
-        oidcChallenge: AcmeChallenge,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
-        return wireE2eIdentity.newOidcChallengeRequest(
-            idToken, toAcmeChallenge(oidcChallenge),
-            toUByteList(account),
-            previousNonce
-        ).toUByteArray().asByteArray()
+    override fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData {
+        with(request) {
+            return wireE2eIdentity.newOidcChallengeRequest(
+                idToken, toAcmeChallenge(oidcChallenge),
+                toUByteList(account),
+                previousNonce
+            ).toUByteArray().asByteArray()
+        }
     }
 
     override fun newChallengeResponse(challenge: JsonRawData) {
