@@ -10,5 +10,5 @@ CREATE TABLE MessageRecipientFailure (
       recipient_failure_type TEXT AS RecipientFailureType NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
+      PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
 );
