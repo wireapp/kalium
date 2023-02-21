@@ -16,23 +16,22 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.user
+package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import kotlinx.coroutines.flow.Flow
 
 /**
- * Checks if the self user is a team member or not.
- * @return true if the self user is a team member, false otherwise.
+ * observe guest room link
  */
-fun interface IsSelfATeamMemberUseCase {
-    suspend operator fun invoke(): Boolean
+interface ObserveGuestRoomLinkUseCase {
+    suspend operator fun invoke(conversationId: ConversationId): Flow<String?>
 }
 
-class IsSelfATeamMemberUseCaseImpl internal constructor(
-    private val selfTeamIdProvider: SelfTeamIdProvider
-) : IsSelfATeamMemberUseCase {
-    override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
-        it != null
-    })
+class ObserveGuestRoomLinkUseCaseImpl internal constructor(
+    private val conversationGroupRepository: ConversationGroupRepository
+) : ObserveGuestRoomLinkUseCase {
+    override suspend fun invoke(conversationId: ConversationId): Flow<String?> =
+        conversationGroupRepository.observeGuestRoomLink(conversationId)
 }
