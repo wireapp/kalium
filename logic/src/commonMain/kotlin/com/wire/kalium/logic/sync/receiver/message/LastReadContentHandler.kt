@@ -19,11 +19,10 @@
 package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 
 interface LastReadContentHandler {
     suspend fun handle(
@@ -52,7 +51,7 @@ internal class LastReadContentHandlerImpl internal constructor(
             // to synchronize the state across the clients.
             conversationRepository.updateConversationReadDate(
                 qualifiedID = messageContent.conversationId,
-                date = messageContent.time.toIsoDateTimeString()
+                date = messageContent.time
             )
         }
     }

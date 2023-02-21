@@ -45,16 +45,16 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
-        // We always return true because our BE is currently enforcing that this constraint is always true
-        return true
-    }
-
-    override fun clientIsExistingGroupUser(clientId: List<UByte>, existingClients: List<List<UByte>>): Boolean {
+    override fun clientIsExistingGroupUser(conversationId: ConversationId, clientId: ClientId, existingClients: List<ClientId>): Boolean {
         val userId = toClientID(clientId)?.userId ?: return false
         return existingClients.find {
             toClientID(it)?.userId == userId
         } != null
+    }
+
+    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
+        // We always return true because our BE is currently enforcing that this constraint is always true
+        return true
     }
 
     companion object {

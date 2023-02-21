@@ -33,7 +33,6 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
-import com.wire.kalium.persistence.dao.message.AssetTypeEntity.IMAGE
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -48,7 +47,7 @@ interface MessageMapper {
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
-    fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage
+    fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
@@ -65,6 +64,7 @@ class MessageMapperImpl(
             Message.Status.SENT -> MessageEntity.Status.SENT
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
+            Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
         }
         val visibility = message.visibility.toEntityVisibility()
         return when (message) {
@@ -105,6 +105,7 @@ class MessageMapperImpl(
             MessageEntity.Status.SENT -> Message.Status.SENT
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
+            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
         }
         val visibility = message.visibility.toModel()
 
@@ -176,53 +177,53 @@ class MessageMapperImpl(
     @Suppress("ComplexMethod")
     override fun fromMessageToLocalNotificationMessage(
         message: NotificationMessageEntity
-    ): LocalNotificationMessage =
-        when (val content = message.content) {
-            is MessagePreviewEntityContent.Text -> LocalNotificationMessage.Text(
-                LocalNotificationMessageAuthor(
-                    content.senderName ?: "",
-                    null
-                ), message.date, content.messageBody
+    ): LocalNotificationMessage? {
+        val sender = LocalNotificationMessageAuthor(
+            message.senderName.orEmpty(),
+            message.senderImage?.toModel()
+        )
+        return when (message.contentType) {
+            MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
+                author = sender,
+                text = message.text.orEmpty(),
+                time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
             )
 
-            is MessagePreviewEntityContent.Asset -> {
-                val type = if (content.type == IMAGE) LocalNotificationCommentType.PICTURE
-                else LocalNotificationCommentType.FILE
-                LocalNotificationMessage.Comment(LocalNotificationMessageAuthor(content.senderName ?: "", null), message.date, type)
+            MessageEntity.ContentType.ASSET -> {
+                val type = message.assetMimeType?.contains("image/")?.let {
+                    if (it) LocalNotificationCommentType.PICTURE else LocalNotificationCommentType.FILE
+                } ?: LocalNotificationCommentType.FILE
+
+                LocalNotificationMessage.Comment(sender, message.date, type)
             }
 
-            is MessagePreviewEntityContent.MissedCall ->
+            MessageEntity.ContentType.KNOCK -> {
+                LocalNotificationMessage.Knock(
+                    sender,
+                    message.date
+                )
+            }
+
+            MessageEntity.ContentType.MISSED_CALL -> {
                 LocalNotificationMessage.Comment(
-                    LocalNotificationMessageAuthor(content.senderName ?: "", null),
+                    sender,
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
                 )
-
-            is MessagePreviewEntityContent.Knock -> LocalNotificationMessage.Knock(
-                LocalNotificationMessageAuthor(content.senderName ?: "", null),
-                message.date
-            )
-
-            is MessagePreviewEntityContent.MentionedSelf -> LocalNotificationMessage.Text(
-                author = LocalNotificationMessageAuthor(content.senderName ?: "", null),
-                time = message.date,
-                text = content.messageBody,
-                isMentionedSelf = true,
-            )
-
-            is MessagePreviewEntityContent.QuotedSelf -> LocalNotificationMessage.Text(
-                author = LocalNotificationMessageAuthor(name = content.senderName ?: "", imageUri = null),
-                time = message.date,
-                text = content.messageBody,
-                isQuotingSelfUser = true
-            )
-            // TODO(notifications): Handle other message types
-            else -> LocalNotificationMessage.Comment(
-                LocalNotificationMessageAuthor("", null),
-                message.date,
-                LocalNotificationCommentType.NOT_SUPPORTED_YET
-            )
+            }
+            MessageEntity.ContentType.MEMBER_CHANGE -> null
+            MessageEntity.ContentType.RESTRICTED_ASSET -> null
+            MessageEntity.ContentType.CONVERSATION_RENAMED -> null
+            MessageEntity.ContentType.UNKNOWN -> null
+            MessageEntity.ContentType.FAILED_DECRYPTION -> null
+            MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
+            MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
+            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
+            MessageEntity.ContentType.HISTORY_LOST -> null
         }
+    }
 
     @Suppress("ComplexMethod")
     override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {

@@ -49,6 +49,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -133,7 +134,8 @@ internal class CallDataSource(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val mlsClientProvider: MLSClientProvider,
-    private val joinSubconversationUseCase: JoinSubconversationUseCase,
+    private val joinSubconversation: JoinSubconversationUseCase,
+    private val leaveSubconversation: LeaveSubconversationUseCase,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper(),
@@ -498,11 +500,18 @@ internal class CallDataSource(
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
-    ) = joinSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
-        callJobs[conversationId] = scope.launch {
-            observeEpochInfo(conversationId).onSuccess {
-                it.collectLatest { epochInfo ->
-                    onEpochChange(conversationId, epochInfo)
+    ): Either<CoreFailure, Unit> {
+        callingLogger.i(
+            "Joining MLS conference for conversation = " +
+                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+        )
+
+        return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
+            callJobs[conversationId] = scope.launch {
+                observeEpochInfo(conversationId).onSuccess {
+                    it.collectLatest { epochInfo ->
+                        onEpochChange(conversationId, epochInfo)
+                    }
                 }
             }
         }
@@ -521,7 +530,7 @@ internal class CallDataSource(
         staleParticipantJobs.values.forEach { it.cancel() }
         staleParticipantJobs.clear()
 
-        // TODO leaveSubconversationUseCase(conversationId, CALL_SUBCONVERSATION_ID)
+        leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
     }
 
     private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =

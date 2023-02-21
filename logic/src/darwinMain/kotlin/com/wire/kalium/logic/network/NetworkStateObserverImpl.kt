@@ -15,29 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.network
 
-package com.wire.kalium.logic.feature.user.loggingStatus
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
-import com.wire.kalium.logic.functional.fold
+actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-/**
- * Checks if logging is enabled for the current user.
- */
-interface IsLoggingEnabledUseCase {
-    /**
-     * @return true if logging is enabled, false otherwise.
-     */
-    operator fun invoke(): Boolean
-}
-
-internal class IsLoggingEnabledUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
-) : IsLoggingEnabledUseCase {
-    override operator fun invoke(): Boolean =
-        globalConfigRepository.isLoggingEnabled().fold({
-            false
-        }, {
-            it
-        })
+    override fun observeNetworkState(): Flow<NetworkState> =
+        flowOf(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
 }

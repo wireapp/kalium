@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -90,6 +91,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            val subconversationId: SubconversationId?,
             val senderUserId: UserId,
             val timestampIso: String,
             val content: String

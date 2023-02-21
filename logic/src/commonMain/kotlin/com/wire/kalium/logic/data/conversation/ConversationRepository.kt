@@ -74,6 +74,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -136,15 +137,14 @@ interface ConversationRepository {
         mutedStatusTimestamp: Long
     ): Either<NetworkFailure, Unit>
 
-    suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
 
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
-    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
+    suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
@@ -444,11 +444,6 @@ internal class ConversationDataSource internal constructor(
             )
         }
 
-    override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
-        conversationDAO.getConversationsForNotifications()
-            .filterNotNull()
-            .map { it.map(conversationMapper::fromDaoModel) }
-
     override suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>> =
@@ -469,7 +464,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateConversationModifiedDate(
         qualifiedID: QualifiedID,
-        date: String
+        date: Instant
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(qualifiedID.toDao(), date) }
 
@@ -507,7 +502,7 @@ internal class ConversationDataSource internal constructor(
     /**
      * Update the conversation seen date, which is a date when the user sees the content of the conversation.
      */
-    override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+    override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationReadDate(qualifiedID.toDao(), date) }
 
     /**

@@ -16,14 +16,22 @@ CREATE TABLE Conversation (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
+    -- when even a conversation event is received, last_modified_date is updated for specific events
+    -- e.g. updated when a new message text is received but not when a message is deleted
+    -- this is used for sorting conversations
     last_modified_date INTEGER AS Instant NOT NULL,
+    -- whenever a user is notified about the message belonging to this conversation
+    -- last_notified_date is updated, this would be typically a notification on the client side
     last_notified_date INTEGER AS Instant,
+    -- whenever a user opens a conversation, last_read_date is updated with date of the last_modified_date,
+    -- so that it reflects that timestamp of the last read message.
     last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
     mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
-    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
+    guest_room_link TEXT
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -40,7 +48,7 @@ DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
 INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -203,7 +211,7 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT * FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
@@ -220,9 +228,6 @@ SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND protocol = ?;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
-
-selectConversationsWithUnnotifiedMessages:
-SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR last_modified_date > lastNotifiedMessageDate);
 
 updateConversationMutingStatus:
 UPDATE Conversation
@@ -270,3 +275,11 @@ updateConversationReceiptMode:
 UPDATE Conversation
 SET receipt_mode = ?
 WHERE qualified_id = ?;
+
+updateGuestRoomLink:
+UPDATE Conversation
+SET guest_room_link = ?
+WHERE qualified_id = ?;
+
+getGuestRoomLinkByConversationId:
+SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;

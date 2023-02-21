@@ -168,8 +168,9 @@ object TestEvent {
         "eventId",
         TestConversation.ID,
         false,
+        null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
-        "content"
+        "content",
     )
 }
