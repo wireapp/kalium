@@ -20,6 +20,7 @@ package com.wire.kalium.cryptography
 typealias JsonRawData = ByteArray
 typealias AcmeAccount = ByteArray
 typealias AcmeOrder = ByteArray
+typealias DpopToken = String
 
 data class AcmeDirectory(
     var newNonce: String,
@@ -102,7 +103,7 @@ interface E2EIClient {
 
     fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
 
-    fun createDpopToken(request: DpopTokenRequest): String
+    fun createDpopToken(request: DpopTokenRequest): DpopToken
 
     fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData
 

@@ -75,7 +75,7 @@ class E2EIClientImpl constructor(
         return toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
     }
 
-    override fun createDpopToken(request: DpopTokenRequest): String {
+    override fun createDpopToken(request: DpopTokenRequest): DpopToken {
         with(request) {
             return wireE2eIdentity.createDpopToken(
                 accessTokenUrl,

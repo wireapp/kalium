@@ -50,7 +50,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(request: DpopTokenRequest): String {
+    override fun createDpopToken(request: DpopTokenRequest): DpopToken {
         TODO("Not yet implemented")
     }
 
