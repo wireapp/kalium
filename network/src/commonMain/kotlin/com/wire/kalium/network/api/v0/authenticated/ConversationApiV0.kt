@@ -326,6 +326,10 @@ internal open class ConversationApiV0 internal constructor(
             httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
 
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+    }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
