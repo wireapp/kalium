@@ -53,7 +53,7 @@ sealed class MessageEntity(
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val recipientFailureEntity: MessageRecipientFailureEntity? = null,
+        val recipientFailures: MessageRecipientFailureEntity = mapOf(),
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -311,11 +311,6 @@ enum class RecipientFailureType {
     MESSAGE_DELIVERY_FAILED
 }
 
-data class MessageRecipientFailureEntity(
-    val recipientFailureList: List<QualifiedIDEntity>,
-    val recipientFailureType: RecipientFailureType
-)
-
 /**
  * Simplified model of [MessageEntity]
  * used everywhere where there is no need to have all the fields
@@ -397,3 +392,4 @@ enum class AssetTypeEntity {
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
+typealias MessageRecipientFailureEntity = Map<RecipientFailureType, List<UserIDEntity>>
