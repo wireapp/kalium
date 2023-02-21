@@ -16,24 +16,22 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.featureFlags
+package com.wire.kalium.logic.feature.conversation.guestroomlink
 
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 
 /**
- * This use case will observe and return the build configs.
- * @see KaliumConfigs
+ * observe guest room link
  */
-interface GetBuildConfigsUseCase {
-    suspend operator fun invoke(): Flow<KaliumConfigs>
+interface ObserveGuestRoomLinkUseCase {
+    suspend operator fun invoke(conversationId: ConversationId): Flow<String?>
 }
 
-internal class GetBuildConfigsUseCaseImpl(
-    private val kaliumConfigs: KaliumConfigs,
-) : GetBuildConfigsUseCase {
-
-    override suspend operator fun invoke(): Flow<KaliumConfigs> {
-        return flowOf(kaliumConfigs)
-    }
+class ObserveGuestRoomLinkUseCaseImpl internal constructor(
+    private val conversationGroupRepository: ConversationGroupRepository
+) : ObserveGuestRoomLinkUseCase {
+    override suspend fun invoke(conversationId: ConversationId): Flow<String?> =
+        conversationGroupRepository.observeGuestRoomLink(conversationId)
 }
