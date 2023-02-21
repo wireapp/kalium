@@ -1,8 +1,8 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.RecipientFailureType;
+import com.wire.kalium.persistence.dao.message.RecipientFailureType;
 import kotlin.collections.List;
 
-CREATE TABLE MessageRecipientFailureContent (
+CREATE TABLE MessageRecipientFailure (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
