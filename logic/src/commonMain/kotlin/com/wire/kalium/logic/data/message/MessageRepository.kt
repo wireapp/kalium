@@ -45,6 +45,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -334,9 +335,19 @@ class MessageDataSource(
                 else -> networkFailure
             }
             Either.Left(failure)
-        }, {
-            Either.Right(it.time)
+        }, { response: QualifiedSendMessageResponse ->
+            checkDeliveryFailure(response)
+            Either.Right(response.time)
         })
+    }
+
+    /**
+     * Will check in case some recipients did not receive the message.
+     */
+    private fun checkDeliveryFailure(response: QualifiedSendMessageResponse) {
+        if (response.failed?.isNotEmpty() == true) {
+
+        }
     }
 
     override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =

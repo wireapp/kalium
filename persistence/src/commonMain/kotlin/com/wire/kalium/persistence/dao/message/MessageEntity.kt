@@ -52,7 +52,8 @@ sealed class MessageEntity(
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false
+        val expectsReadConfirmation: Boolean = false,
+        val recipientFailureEntity: MessageRecipientFailureEntity? = null,
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -182,23 +183,6 @@ sealed class MessageEntity(
         val isVisible get() = this == VISIBLE
     }
 
-    /**
-     * The type of the failure that happened when trying to deliver a message to a recipient.
-     */
-    enum class RecipientFailureType {
-        /**
-         * The message was not *attempted* to be delivered because there is no known clients for the recipient.
-         * It will never be delivered for these recipients.
-         */
-        NO_CLIENTS_TO_DELIVER,
-
-        /**
-         * The message was not delivered "now" because of a communication error while the backend tried to deliver it.
-         * It might be delivered later.
-         */
-        MESSAGE_DELIVERY_FAILED
-    }
-
     @Serializable
     data class Mention(
         @SerialName("start") val start: Int,
@@ -309,6 +293,28 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     object HistoryLost : System()
 }
+
+/**
+ * The type of the failure that happened when trying to deliver a message to a recipient.
+ */
+enum class RecipientFailureType {
+    /**
+     * The message was not *attempted* to be delivered because there is no known clients for the recipient.
+     * It will never be delivered for these recipients.
+     */
+    NO_CLIENTS_TO_DELIVER,
+
+    /**
+     * The message was not delivered "now" because of a communication error while the backend tried to deliver it.
+     * It might be delivered later.
+     */
+    MESSAGE_DELIVERY_FAILED
+}
+
+data class MessageRecipientFailureEntity(
+    val recipientFailureList: List<QualifiedIDEntity>,
+    val recipientFailureType: RecipientFailureType
+)
 
 /**
  * Simplified model of [MessageEntity]

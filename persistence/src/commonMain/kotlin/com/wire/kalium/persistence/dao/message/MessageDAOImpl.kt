@@ -335,6 +335,14 @@ class MessageDAOImpl(
         )
     }
 
+    override suspend fun insertFailedRecipientDelivery(
+        id: String,
+        conversationsId: QualifiedIDEntity,
+        recipientsFailed: List<QualifiedIDEntity>
+    ) = withContext(coroutineContext) {
+        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, RecipientFailureType.MESSAGE_DELIVERY_FAILED)
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }

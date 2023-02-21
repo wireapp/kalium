@@ -1,8 +1,8 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.RecipientFailureType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.RecipientFailureType;
 import kotlin.Boolean;
 import kotlin.Int;
 import kotlin.collections.List;
@@ -174,7 +174,7 @@ CREATE TABLE MessageConversationReceiptModeChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageRecipientFailureContent (
+CREATE TABLE MessageRecipientFailure (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
@@ -610,3 +610,7 @@ UPDATE OR IGNORE Message
 SET creation_date = creation_date + :delivery_duration
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
+
+insertMessageRecipientsFailure:
+INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
+VALUES(?, ?, ?, ?);
