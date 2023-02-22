@@ -20,6 +20,7 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.model.conversation.ConversationResponseJson
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
@@ -64,7 +65,7 @@ object NotificationEventsResponseJson {
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
             NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", DeviceTypeDTO.Phone, "desktop", "OS X 10.15 10.15"
+                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", ClientTypeDTO.Permanent, DeviceTypeDTO.Desktop, "OS X 10.15 10.15"
             )
         ),
         newClientSerializer
@@ -123,9 +124,9 @@ object NotificationEventsResponseJson {
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
             "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsn" +
-            "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
-            "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
-            "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4=",
+                    "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
+                    "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
+                    "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4=",
             "subconv"
         ),
         newMlsMessageSerializer
@@ -218,7 +219,7 @@ object NotificationEventsResponseJson {
         newFeatureConfigSerializer
     )
 
-    val notificationWithLastEvent =  """
+    val notificationWithLastEvent = """
         {
             "payload": [
                 {
