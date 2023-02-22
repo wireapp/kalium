@@ -283,7 +283,9 @@ QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
-ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
+FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -294,6 +296,8 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
 -- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
