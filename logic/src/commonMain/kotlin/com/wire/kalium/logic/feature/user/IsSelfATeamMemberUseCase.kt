@@ -29,7 +29,7 @@ fun interface IsSelfATeamMemberUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-internal class IsSelfATeamMemberUseCaseImpl internal constructor(
+class IsSelfATeamMemberUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : IsSelfATeamMemberUseCase {
     override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
