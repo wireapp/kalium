@@ -379,7 +379,7 @@ typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
 /**
  * The type of the failure that happened when trying to deliver a message to a recipient.
  */
-enum class RecipientFailureType {
+enum class RecipientFailureTypeEntity {
     /**
      * The message was not *attempted* to be delivered because there is no known clients for the recipient.
      * It will never be delivered for these recipients.

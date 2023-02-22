@@ -51,6 +51,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -126,7 +127,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, MessageSentDTO>
+    ): Either<CoreFailure, MessageSent>
 
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
@@ -163,6 +164,12 @@ interface MessageRepository {
         messageUuid: String,
         serverDate: Instant,
         millis: Long
+    ): Either<CoreFailure, Unit>
+
+    suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        messageSent: MessageSent
     ): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
@@ -304,7 +311,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, MessageSentDTO> {
+    ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
@@ -336,6 +343,7 @@ class MessageDataSource(
             }
             Either.Left(failure)
         }, { response: QualifiedSendMessageResponse ->
+            // not sure about this forced cast, but it seems should be the case here to receive a QualifiedSendMessageResponse.MessageSent
             Either.Right(SendMessagePartialFailureMapperImpl.fromDTO(response as QualifiedSendMessageResponse.MessageSent))
         })
     }
@@ -420,6 +428,22 @@ class MessageDataSource(
             messageUuid,
             serverDate,
             millis
+        )
+    }
+
+    /**
+     * Persist a list of users ids that failed to receive the message [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
+     */
+    override suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        messageSent: MessageSent,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertFailedRecipientDelivery(
+            messageUuid,
+            conversationId.toDao(),
+            listOf(),
+            RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
         )
     }
 }

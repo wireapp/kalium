@@ -20,20 +20,21 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 
-interface SendMessagePartialFailureMapper {
-    // fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure
-}
-
+/**
+ * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.
+ * This mapper is useful in case we receive a successful response from the backend, but there are some
+ * users that failed to receive the message. ie: federated users and/or conversations.
+ */
 object SendMessagePartialFailureMapperImpl {
-    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSentDTO {
-        return MessageSentDTO(
+    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent {
+        return MessageSent(
             time = sendMessageResponse.time,
             failed = sendMessageResponse.failed.orEmpty()
         )
     }
 }
 
-data class MessageSentDTO(
+data class MessageSent(
     val time: String,
     val missing: Map<String, Map<String, List<String>>> = mapOf(),
     val redundant: Map<String, Map<String, List<String>>> = mapOf(),

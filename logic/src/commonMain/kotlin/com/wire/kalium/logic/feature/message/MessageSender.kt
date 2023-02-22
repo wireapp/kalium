@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -239,7 +240,20 @@ internal class MessageSenderImpl internal constructor(
 
                 else -> Either.Left(it)
             }
-        }, {
-            Either.Right(it)
+        }, { messageSent ->
+            handleRecipientsDeliveryFailure(message, messageSent).flatMap {
+                Either.Right(messageSent.time)
+            }
         })
+
+    /**
+     * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
+     */
+    private suspend fun handleRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) {
+            Either.Right(Unit)
+        } else {
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent)
+        }
+
 }

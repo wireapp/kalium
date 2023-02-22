@@ -187,6 +187,7 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
+
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
@@ -338,9 +339,10 @@ class MessageDAOImpl(
     override suspend fun insertFailedRecipientDelivery(
         id: String,
         conversationsId: QualifiedIDEntity,
-        recipientsFailed: List<QualifiedIDEntity>
+        recipientsFailed: List<QualifiedIDEntity>,
+        recipientFailureTypeEntity: RecipientFailureTypeEntity
     ) = withContext(coroutineContext) {
-        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, RecipientFailureType.MESSAGE_DELIVERY_FAILED)
+        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
