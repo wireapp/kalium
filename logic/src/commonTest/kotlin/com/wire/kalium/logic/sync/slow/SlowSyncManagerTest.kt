@@ -38,9 +38,12 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -56,6 +59,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SlowSyncManagerTest {
 
     @Test
@@ -324,7 +328,7 @@ class SlowSyncManagerTest {
 
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
-            withNetworkState(flowOf(NetworkState.ConnectedWithInternet))
+            withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
@@ -357,7 +361,7 @@ class SlowSyncManagerTest {
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
         }
 
-        fun withNetworkState(networkStateFlow: Flow<NetworkState>) = apply {
+        fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
             given(networkStateObserver)
                 .function(networkStateObserver::observeNetworkState)
                 .whenInvoked()
