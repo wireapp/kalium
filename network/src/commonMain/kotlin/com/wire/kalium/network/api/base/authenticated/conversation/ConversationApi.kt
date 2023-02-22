@@ -125,10 +125,17 @@ interface ConversationApi {
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit>
 
+    suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit>
+
     suspend fun updateReceiptMode(
         conversationId: ConversationId,
         receiptMode: ConversationReceiptModeDTO
     ): NetworkResponse<UpdateConversationReceiptModeResponse>
 
     suspend fun generateGuestRoomLink(conversationId: ConversationId): NetworkResponse<GenerateGuestRoomLinkResponse>
+
+    suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 }

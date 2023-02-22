@@ -16,8 +16,15 @@ CREATE TABLE Conversation (
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
+    -- when even a conversation event is received, last_modified_date is updated for specific events
+    -- e.g. updated when a new message text is received but not when a message is deleted
+    -- this is used for sorting conversations
     last_modified_date INTEGER AS Instant NOT NULL,
+    -- whenever a user is notified about the message belonging to this conversation
+    -- last_notified_date is updated, this would be typically a notification on the client side
     last_notified_date INTEGER AS Instant,
+    -- whenever a user opens a conversation, last_read_date is updated with date of the last_modified_date,
+    -- so that it reflects that timestamp of the last read message.
     last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
@@ -273,3 +280,6 @@ updateGuestRoomLink:
 UPDATE Conversation
 SET guest_room_link = ?
 WHERE qualified_id = ?;
+
+getGuestRoomLinkByConversationId:
+SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;
