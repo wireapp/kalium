@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.framework.TestConversation
@@ -597,7 +598,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -642,7 +643,7 @@ class MessageSenderTest {
             getConversationsRecipientFailing: Boolean = false,
             prepareRecipientsForNewOutGoingMessageFailing: Boolean = false,
             createOutgoingEnvelopeFailing: Boolean = false,
-            sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
+            sendEnvelopeWithResult: Either<CoreFailure, MessageSent>? = null,
             updateMessageStatusFailing: Boolean = false,
             updateMessageDateFailing: Boolean = false,
         ) =
