@@ -48,6 +48,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -442,7 +443,10 @@ class MessageDataSource(
         messageDAO.insertFailedRecipientDelivery(
             messageUuid,
             conversationId.toDao(),
-            listOf(),
+            messageSent.failed.map { it.key to it.value.keys }
+                .map { (domain, userIds) ->
+                    userIds.map { user -> QualifiedIDEntity(user, domain) }
+                }.flatten(),
             RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
         )
     }
