@@ -143,7 +143,7 @@ class MessageRepositoryTest {
 
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(it.time, TEST_DATETIME)
             }
     }
 
@@ -160,7 +160,7 @@ class MessageRepositoryTest {
 
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(it.time, TEST_DATETIME)
             }
 
         with(arrangement) {
