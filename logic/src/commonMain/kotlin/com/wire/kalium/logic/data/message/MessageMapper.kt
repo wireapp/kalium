@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.persistence.dao.message.RecipientFailureEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -126,7 +127,14 @@ class MessageMapperImpl(
                 reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                 senderUserName = message.senderName,
                 isSelfMessage = message.isSelfMessage,
-                expectsReadConfirmation = message.expectsReadConfirmation
+                expectsReadConfirmation = message.expectsReadConfirmation,
+                recipientsFailure = when (val recipientsFailure = message.recipientsFailure) {
+                    is RecipientFailureEntity.NoDeliveryError -> RecipientFailure.NoDeliveryError
+                    is RecipientFailureEntity.PartialDeliveryError -> RecipientFailure.PartialDeliveryError(
+                        recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
+                        recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
+                    )
+                },
             )
 
             is MessageEntity.System -> Message.System(
@@ -212,6 +220,7 @@ class MessageMapperImpl(
                     LocalNotificationCommentType.MISSED_CALL
                 )
             }
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
