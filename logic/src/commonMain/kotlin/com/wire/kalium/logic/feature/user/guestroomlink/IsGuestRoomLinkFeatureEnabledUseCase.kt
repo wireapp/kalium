@@ -24,6 +24,9 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * Returns guest link feature status
+ */
 interface IsGuestRoomLinkFeatureEnabledUseCase {
     operator fun invoke(): GuestRoomLinkStatus
 }

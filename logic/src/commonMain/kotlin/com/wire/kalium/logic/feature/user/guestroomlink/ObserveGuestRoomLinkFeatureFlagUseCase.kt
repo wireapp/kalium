@@ -26,6 +26,9 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * observe on guest link feature status
+ */
 interface ObserveGuestRoomLinkFeatureFlagUseCase {
     suspend operator fun invoke(): Flow<GuestRoomLinkStatus>
 }

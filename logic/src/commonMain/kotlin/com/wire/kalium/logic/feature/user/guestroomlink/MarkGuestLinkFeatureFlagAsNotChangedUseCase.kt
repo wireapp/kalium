@@ -21,6 +21,9 @@ package com.wire.kalium.logic.feature.user.guestroomlink
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.onSuccess
 
+/**
+ * Mark Guest Link Feature Flag state as not changed
+ */
 interface MarkGuestLinkFeatureFlagAsNotChangedUseCase {
     operator fun invoke()
 }
