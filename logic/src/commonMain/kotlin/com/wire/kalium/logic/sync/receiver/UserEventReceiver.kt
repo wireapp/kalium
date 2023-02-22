@@ -34,6 +34,7 @@ import com.wire.kalium.logic.kaliumLogger
 
 interface UserEventReceiver : EventReceiver<Event.User>
 
+@Suppress("LongParameterList")
 class UserEventReceiverImpl internal constructor(
     private val newClientManager: NewClientManager,
     private val connectionRepository: ConnectionRepository,

@@ -24,11 +24,18 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMap
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
+/**
+ * Observes new Clients for all the users that are logged in on device
+ * returns [NewClientResult] which may be:
+ * [NewClientResult.InCurrentAccount] if new Client appears for the user that is currently used.
+ * [NewClientResult.InOtherAccount] if new Client appears for the user that is logged in on device, but not currently used.
+ * [NewClientResult.Error] in case of error,
+ * in most cases it means that the user for which new Client appeared is no longer logged it on the device.
+ */
 interface ObserveNewClientsUseCase {
     suspend operator fun invoke(): Flow<NewClientResult>
 }
