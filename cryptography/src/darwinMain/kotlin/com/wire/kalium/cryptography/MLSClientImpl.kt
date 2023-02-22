@@ -38,12 +38,12 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
+import okio.internal.commonToUtf8String
 import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
-import okio.internal.commonToUtf8String
 
 private class Callbacks : CoreCryptoCallbacks {
 
@@ -225,6 +225,10 @@ actual class MLSClientImpl actual constructor(
 
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
+    }
+
+    override fun newAcmeEnrollment(): E2EIClient {
+        TODO("Not yet implemented")
     }
 
     companion object {
