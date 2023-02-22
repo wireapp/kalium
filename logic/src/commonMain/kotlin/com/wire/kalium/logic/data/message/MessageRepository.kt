@@ -126,7 +126,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, String>
+    ): Either<CoreFailure, MessageSentDTO>
 
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
@@ -304,7 +304,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, MessageSentDTO> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
@@ -336,18 +336,8 @@ class MessageDataSource(
             }
             Either.Left(failure)
         }, { response: QualifiedSendMessageResponse ->
-            checkDeliveryFailure(response)
-            Either.Right(response.time)
+            Either.Right(SendMessagePartialFailureMapperImpl.fromDTO(response as QualifiedSendMessageResponse.MessageSent))
         })
-    }
-
-    /**
-     * Will check in case some recipients did not receive the message.
-     */
-    private fun checkDeliveryFailure(response: QualifiedSendMessageResponse) {
-        if (response.failed?.isNotEmpty() == true) {
-
-        }
     }
 
     override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =
