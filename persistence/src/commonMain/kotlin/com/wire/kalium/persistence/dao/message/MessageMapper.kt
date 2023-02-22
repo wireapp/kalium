@@ -100,6 +100,7 @@ object MessageMapper {
                         )
                     }
                 }
+
                 MessageEntity.MemberChangeType.REMOVED -> {
                     if (userIdList.contains(senderUserId) && userIdList.size == 1) {
                         MessagePreviewEntityContent.MemberLeft(senderName)
@@ -231,7 +232,9 @@ object MessageMapper {
         selfReactionsJson: String?,
         senderName: String?,
         isSelfMessage: Boolean,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -249,7 +252,11 @@ object MessageMapper {
             ),
             senderName = senderName,
             isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation
+            expectsReadConfirmation = expectsReadConfirmation,
+            recipientsFailure = RecipientDeliveryFailureMapper.toEntity(
+                recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+                recipientsFailedDeliveryList = recipientsFailedDeliveryList
+            )
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -338,7 +345,9 @@ object MessageMapper {
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
-        conversationReceiptModeChanged: Boolean?
+        conversationReceiptModeChanged: Boolean?,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -415,9 +424,11 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(
                 receiptMode = newConversationReceiptMode ?: false
             )
+
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
                 receiptMode = conversationReceiptModeChanged ?: false
             )
+
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
         }
 
@@ -435,7 +446,9 @@ object MessageMapper {
             selfReactionsJson,
             senderName,
             isSelfMessage,
-            expectsReadConfirmation ?: false
+            expectsReadConfirmation ?: false,
+            recipientsFailedWithNoClientsList,
+            recipientsFailedDeliveryList
         )
     }
 
