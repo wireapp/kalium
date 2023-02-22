@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.location.LocationMapper
@@ -70,6 +71,19 @@ class ClientMapper(
             ?: run { null },
         model = response.model,
         mlsPublicKeys = response.mlsPublicKeys ?: emptyMap()
+    )
+
+    fun fromNewClientEvent(event: Event.User.NewClient): Client = Client(
+        id = event.clientId,
+        type = fromClientTypeDTO(event.clientType),
+        registrationTime = event.registrationTime,
+        location = null,
+        deviceType = fromDeviceTypeDTO(event.deviceType),
+        label = event.label,
+        cookie = null,
+        capabilities = null,
+        model = event.model,
+        mlsPublicKeys = emptyMap()
     )
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =

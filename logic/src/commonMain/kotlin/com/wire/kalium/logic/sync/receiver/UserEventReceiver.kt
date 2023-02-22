@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.client.NewClientManager
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -34,6 +35,7 @@ import com.wire.kalium.logic.kaliumLogger
 interface UserEventReceiver : EventReceiver<Event.User>
 
 class UserEventReceiverImpl internal constructor(
+    private val newClientManager: NewClientManager,
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -48,6 +50,7 @@ class UserEventReceiverImpl internal constructor(
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
             is Event.User.Update -> handleUserUpdate(event)
+            is Event.User.NewClient -> handleNewClient(event)
         }
     }
 
@@ -66,6 +69,10 @@ class UserEventReceiverImpl internal constructor(
             if (currentClientId == event.clientId)
                 logout(LogoutReason.REMOVED_CLIENT)
         }
+    }
+
+    private suspend fun handleNewClient(event: Event.User.NewClient) {
+        newClientManager.scheduleNewClientEvent(event, selfUserId)
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {

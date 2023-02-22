@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.client.NewClientManager
+import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -145,6 +147,7 @@ class UserEventReceiverTest {
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
+            NewClientManagerImpl,
             connectionRepository,
             conversationRepository,
             userRepository,

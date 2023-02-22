@@ -20,6 +20,7 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.model.conversation.ConversationResponseJson
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
@@ -49,7 +50,7 @@ object NotificationEventsResponseJson {
             |    "time": "${eventData.client.registrationTime}",
             |    "model": "${eventData.client.model}",
             |    "id": "71ff8872e468a970",
-            |    "type": "${eventData.client.deviceType}",
+            |    "type": "${eventData.client.clientType}",
             |    "class": "desktop",
             |    "capabilities": {
             |      "capabilities": []
@@ -63,7 +64,7 @@ object NotificationEventsResponseJson {
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
             NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", "temporary", "desktop", "OS X 10.15 10.15"
+                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", DeviceTypeDTO.Phone, "desktop", "OS X 10.15 10.15"
             )
         ),
         newClientSerializer

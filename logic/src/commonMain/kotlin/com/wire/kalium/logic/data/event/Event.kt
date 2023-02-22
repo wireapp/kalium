@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -34,6 +33,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.utils.toJsonElement
 import com.wire.kalium.util.DateTimeUtil
@@ -515,6 +516,30 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                     "id" to id.obfuscateId(),
                     "userId" to "${userId.value.obfuscateId()}@${userId.domain.obfuscateDomain()}",
                     "timestampIso" to timestampIso
+                )
+                return "${properties.toJsonElement()}"
+            }
+        }
+
+        data class NewClient(
+            override val transient: Boolean,
+            override val id: String,
+            val clientId: ClientId,
+            val registrationTime: String,
+            val model: String?,
+            val clientType: ClientTypeDTO,
+            val deviceType: DeviceTypeDTO,
+            val label: String?
+        ) : User(id, transient) {
+            override fun toString(): String {
+                val properties = mapOf(
+                    "id" to id.obfuscateId(),
+                    "clientId" to clientId.value.obfuscateId(),
+                    "registrationTime" to registrationTime,
+                    "model" to (model ?: ""),
+                    "clientType" to clientType,
+                    "deviceType" to deviceType,
+                    "label" to (label ?: ""),
                 )
                 return "${properties.toJsonElement()}"
             }
