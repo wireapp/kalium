@@ -42,6 +42,9 @@ interface UserConfigRepository {
     fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    fun isGuestRoomLinkEnabled(): Either<StorageFailure, GuestRoomLinkStatus>
+    fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
 }
 
 @Suppress("TooManyFunctions")
@@ -115,4 +118,23 @@ class UserConfigDataSource(
         wrapStorageRequest {
             userConfigStorage.persistReadReceipts(enabled)
         }
+
+    override fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistGuestRoomLinkFeatureFlag(status, isStatusChanged)
+        }
+
+    override fun isGuestRoomLinkEnabled(): Either<StorageFailure, GuestRoomLinkStatus> =
+        wrapStorageRequest { userConfigStorage.isGuestRoomLinkEnabled() }.map {
+            with(it) { GuestRoomLinkStatus(status, isStatusChanged) }
+        }
+
+    override fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>> =
+        userConfigStorage.isGuestRoomLinkEnabledFlow()
+            .wrapStorageRequest()
+            .map {
+                it.map { isGuestRoomLinkEnabledEntity ->
+                    GuestRoomLinkStatus(isGuestRoomLinkEnabledEntity.status, isGuestRoomLinkEnabledEntity.isStatusChanged)
+                }
+            }
 }

@@ -105,6 +105,9 @@ interface UserConfigStorage {
      */
     fun persistReadReceipts(enabled: Boolean)
 
+    fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
+    fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
+    fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
 }
 
 @Serializable
@@ -119,6 +122,12 @@ data class ClassifiedDomainsEntity(
     @SerialName("trustedDomains") val trustedDomains: List<String>,
 )
 
+@Serializable
+data class IsGuestRoomLinkEnabledEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+)
+
 @Suppress("TooManyFunctions")
 class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
@@ -131,6 +140,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isClassifiedDomainsEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -222,8 +234,31 @@ class UserConfigStorageImpl(
         }
     }
 
+    override fun persistGuestRoomLinkFeatureFlag(
+        status: Boolean,
+        isStatusChanged: Boolean?
+    ) {
+        kaliumPreferences.putSerializable(
+            GUEST_ROOM_LINK,
+            IsGuestRoomLinkEnabledEntity(status, isStatusChanged),
+            IsGuestRoomLinkEnabledEntity.serializer()
+        ).also {
+            isGuestRoomLinkEnabledFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
+        kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
+
+    override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
+        isGuestRoomLinkEnabledFlow
+            .map { isGuestRoomLinkEnabled() }
+            .onStart { emit(isGuestRoomLinkEnabled()) }
+            .distinctUntilChanged()
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
+        const val GUEST_ROOM_LINK = "guest_room_link"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"

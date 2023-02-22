@@ -64,6 +64,7 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
                 Status.ENABLED

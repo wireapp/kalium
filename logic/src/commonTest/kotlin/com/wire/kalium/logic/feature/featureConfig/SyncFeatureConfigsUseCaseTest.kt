@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.IsGuestRoomLinkFeatureEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -333,6 +334,9 @@ class SyncFeatureConfigsUseCaseTest {
         @Mock
         val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
 
+        @Mock
+        val isGuestRoomLinkFeatureEnabled = mock(classOf<IsGuestRoomLinkFeatureEnabledUseCase>())
+
         var kaliumConfigs = KaliumConfigs()
 
         private val syncFeatureConfigsUseCase
@@ -340,6 +344,7 @@ class SyncFeatureConfigsUseCaseTest {
                 userConfigRepository,
                 featureConfigRepository,
                 isFileSharingEnabledUseCase,
+                isGuestRoomLinkFeatureEnabled,
                 kaliumConfigs,
                 SELF_USER_ID
             )
