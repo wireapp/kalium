@@ -186,7 +186,8 @@ class MessageDataSource(
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -344,7 +345,7 @@ class MessageDataSource(
             Either.Left(failure)
         }, { response: QualifiedSendMessageResponse ->
             // not sure about this forced cast, but it seems should be the case here to receive a QualifiedSendMessageResponse.MessageSent
-            Either.Right(SendMessagePartialFailureMapperImpl.fromDTO(response as QualifiedSendMessageResponse.MessageSent))
+            Either.Right(sendMessagePartialFailureMapper.fromDTO(response as QualifiedSendMessageResponse.MessageSent))
         })
     }
 

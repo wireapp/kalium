@@ -26,8 +26,12 @@ import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessa
  * This mapper is useful in case we receive a successful response from the backend, but there are some
  * users that failed to receive the message. ie: federated users and/or conversations.
  */
-object SendMessagePartialFailureMapperImpl {
-    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent {
+interface SendMessagePartialFailureMapper {
+    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent
+}
+
+internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMapper {
+    override fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent {
         return MessageSent(
             time = sendMessageResponse.time,
             failed = sendMessageResponse.failed
