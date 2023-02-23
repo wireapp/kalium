@@ -253,7 +253,7 @@ internal class MessageSenderImpl internal constructor(
         if (messageSent.failed.isEmpty()) {
             Either.Right(Unit)
         } else {
-            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent)
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
         }
 
 }

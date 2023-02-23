@@ -251,14 +251,14 @@ class MessageRepositoryTest {
     fun whenPersistingFailedDeliveryRecipients_thenDAOFunctionIsCalled() = runTest {
         val messageID = TEST_MESSAGE_ID
         val conversationID = TEST_CONVERSATION_ID
-        val expectedMessageSent = MessageSent(time = TEST_DATETIME, failed = TEST_FAILED_DELIVERY_USERS)
-        val expectedFailedUsers = listOf(TEST_USER_ID.toDao(), OTHER_USER_ID_2.toDao())
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toDao() }
 
         val (arrangement, messageRepository) = Arrangement()
             .withInsertFailedRecipients()
             .arrange()
 
-        messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, expectedMessageSent).shouldSucceed()
+        messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
 
         verify(arrangement.messageDAO)
             .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
