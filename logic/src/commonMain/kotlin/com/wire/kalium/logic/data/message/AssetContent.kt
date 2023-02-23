@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
+
 data class AssetContent(
     val sizeInBytes: Long,
     val name: String? = null,
@@ -27,6 +29,28 @@ data class AssetContent(
     val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
     val downloadStatus: Message.DownloadStatus
 ) {
+
+    private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
+
+    private val isValidAsset =
+        when (metadata) {
+            // in some cases back-end returns no width and height
+            // in that case we do not want to show the asset
+            // and mark it as invalid
+            is AssetMetadata.Image ->
+                metadata.width > 0 && metadata.height > 0
+
+            is AssetMetadata.Audio ->
+                true
+
+            is AssetMetadata.Video -> true
+
+            null -> false
+
+        }
+
+    val shouldBeDisplayed = !isPreviewMessage && isValidAsset
+
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()
         data class Video(val width: Int?, val height: Int?, val durationMs: Long?) : AssetMetadata()
