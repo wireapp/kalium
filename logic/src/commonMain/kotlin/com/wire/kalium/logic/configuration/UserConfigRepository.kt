@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 interface UserConfigRepository {
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
@@ -37,10 +38,13 @@ interface UserConfigRepository {
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun setSecondFactorPasswordChallengeStatus(required: Boolean): Either<StorageFailure, Unit>
+    fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
+@Suppress("TooManyFunctions")
 class UserConfigDataSource(
     private val userConfigStorage: UserConfigStorage
 ) : UserConfigRepository {
@@ -94,6 +98,15 @@ class UserConfigDataSource(
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
         }
+
+    override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistSecondFactorPasswordChallengeStatus(isRequired)
+        }
+
+    override fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        userConfigStorage.isSecondFactorPasswordChallengeRequired()
+    }
 
     override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isReadReceiptsEnabled().wrapStorageRequest()

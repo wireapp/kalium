@@ -55,6 +55,7 @@ class DecryptedMessageBundle(
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean
 )
+
 @JvmInline
 value class Ed22519Key(
     val value: ByteArray
@@ -265,6 +266,13 @@ interface MLSClient {
      * @return secret key
      */
     fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
+
+    /**
+     * Enroll Wire E2EIdentity ACME Client for E2
+     *
+     * @return wire end to end identity client
+     */
+    fun newAcmeEnrollment(): E2EIClient
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

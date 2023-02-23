@@ -139,6 +139,8 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -260,6 +262,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -486,7 +489,8 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             kaliumFileSystem,
-            userStorage.database.databaseExporter
+            userStorage.database.databaseExporter,
+            securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
     val verifyBackupUseCase: VerifyBackupUseCase
@@ -517,7 +521,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             subconversationRepository = subconversationRepository,
-            joinSubconversationUseCase = joinSubconversationUseCase,
+            joinSubconversation = joinSubconversationUseCase,
+            leaveSubconversation = leaveSubconversationUseCase,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             teamRepository = teamRepository,
@@ -639,6 +644,13 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
+            subconversationRepository
+        )
+
+    private val leaveSubconversationUseCase: LeaveSubconversationUseCase
+        get() = LeaveSubconversationUseCaseImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            mlsClientProvider,
             subconversationRepository
         )
 
@@ -1053,7 +1065,8 @@ class UserSessionScope internal constructor(
             clearUserData,
             userSessionScopeProvider,
             pushTokenRepository,
-            globalScope
+            globalScope,
+            authenticatedDataSourceSet.userSessionWorkScheduler
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

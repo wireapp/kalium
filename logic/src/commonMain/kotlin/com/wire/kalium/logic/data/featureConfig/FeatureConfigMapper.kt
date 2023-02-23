@@ -47,7 +47,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 legalHoldModel = ConfigsStatusModel(fromDTO(legalHold.status)),
                 searchVisibilityModel = ConfigsStatusModel(fromDTO(searchVisibility.status)),
                 selfDeletingMessagesModel = fromDTO(featureConfigResponse.selfDeletingMessages),
-                sndFactorPasswordChallengeModel = ConfigsStatusModel(
+                secondFactorPasswordChallengeModel = ConfigsStatusModel(
                     fromDTO(sndFactorPasswordChallenge.status)
                 ),
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
