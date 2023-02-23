@@ -208,7 +208,7 @@ class EventMapper(
     ) = Event.Conversation.MemberJoin(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        addedBy = eventContentDTO.qualifiedFrom?.toModel()?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
+        addedBy = eventContentDTO.qualifiedFrom?.toModel() ?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time,
         transient = transient
@@ -221,7 +221,7 @@ class EventMapper(
     ) = Event.Conversation.MemberLeave(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        removedBy = eventContentDTO.qualifiedFrom?.toModel()?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
+        removedBy = eventContentDTO.qualifiedFrom?.toModel() ?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
         removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
         transient = transient
