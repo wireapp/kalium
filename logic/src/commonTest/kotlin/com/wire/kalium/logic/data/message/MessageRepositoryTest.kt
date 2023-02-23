@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -38,6 +39,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.anything
@@ -245,6 +247,30 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun whenPersistingFailedDeliveryRecipients_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val expectedMessageSent = MessageSent(time = TEST_DATETIME, failed = TEST_FAILED_DELIVERY_USERS)
+        val expectedFailedUsers = listOf(TEST_USER_ID.toDao(), OTHER_USER_ID_2.toDao())
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withInsertFailedRecipients()
+            .arrange()
+
+        messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, expectedMessageSent).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
+            .with(
+                eq(messageID),
+                eq(conversationID.toDao()),
+                eq(expectedFailedUsers),
+                eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
+            )
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -322,6 +348,13 @@ class MessageRepositoryTest {
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper
         )
+
+        fun withInsertFailedRecipients() = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::insertFailedRecipientDelivery)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .then { _, _, _, _ -> Unit }
+        }
     }
 
     private companion object {
@@ -354,6 +387,15 @@ class MessageRepositoryTest {
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
+        )
+
+        val TEST_FAILED_DELIVERY_USERS: Map<String, Map<String, List<String>>> = mapOf(
+            TEST_USER_ID.domain to mapOf(
+                TEST_USER_ID.value to listOf(TEST_CLIENT_ID.value, ClientId("clientId2").value),
+                OTHER_USER_ID_2.value to listOf(
+                    TEST_CLIENT_ID.value, ClientId("clientId2").value
+                )
+            )
         )
     }
 }
