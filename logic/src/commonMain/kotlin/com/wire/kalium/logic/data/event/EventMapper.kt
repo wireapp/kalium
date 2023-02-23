@@ -30,7 +30,9 @@ import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.QualifiedID.Companion.WIRE_PRODUCTION_DOMAIN
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -206,7 +208,7 @@ class EventMapper(
     ) = Event.Conversation.MemberJoin(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        addedBy = eventContentDTO.qualifiedFrom.toModel(),
+        addedBy = eventContentDTO.qualifiedFrom?.toModel()?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time,
         transient = transient
@@ -219,7 +221,7 @@ class EventMapper(
     ) = Event.Conversation.MemberLeave(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        removedBy = eventContentDTO.qualifiedFrom.toModel(),
+        removedBy = eventContentDTO.qualifiedFrom?.toModel()?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
         removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
         transient = transient

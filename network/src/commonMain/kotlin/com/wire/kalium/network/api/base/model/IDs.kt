@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.model
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,8 +37,14 @@ data class QualifiedID(
     @SerialName("id")
     val value: String,
     @SerialName("domain")
-    val domain: String
-)
+    @EncodeDefault val domain: String = WIRE_PRODUCTION_DOMAIN
+) {
+    companion object {
+        // TODO: this may be problematic for premiss backends
+        // TODO maybe secure when it is other backend
+        const val WIRE_PRODUCTION_DOMAIN = "wire.com"
+    }
+}
 
 @Serializable
 data class UserSsoIdDTO(

@@ -160,7 +160,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.member-join")
         data class MemberJoinDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId?,
             val time: String,
             @SerialName("data") val members: ConversationMembers,
             @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom")) @SerialName("from") val from: String
@@ -170,7 +170,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.member-leave")
         data class MemberLeaveDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId?,
             val time: String,
             // TODO: rename members to something else since the name is confusing (it's only userIDs)
             @SerialName("data") val members: ConversationUsers,
@@ -181,7 +181,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.member-update")
         data class MemberUpdateDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId?,
             val time: String,
             @SerialName("from") val from: String,
             @SerialName("data") val roleChange: ConversationRoleChange

@@ -27,10 +27,12 @@ object BackupConstants {
     const val BACKUP_ENCRYPTED_EXTENSION = "cc20"
     const val BACKUP_DB_EXTENSION = "db"
     const val BACKUP_METADATA_EXTENSION = "json"
+    const val BACKUP_WEB_EXTENSION = "desktop_wbu"
 
     val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,
         BACKUP_DB_EXTENSION,
-        BACKUP_METADATA_EXTENSION
+        BACKUP_METADATA_EXTENSION,
+        BACKUP_WEB_EXTENSION
     )
 }

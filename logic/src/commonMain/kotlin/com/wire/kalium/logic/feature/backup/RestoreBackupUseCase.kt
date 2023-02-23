@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INV
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -41,14 +42,19 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.DecodeSequenceMode
+import kotlinx.serialization.json.decodeToSequence
 import okio.Path
 import okio.Source
 import okio.buffer
@@ -70,9 +76,11 @@ internal class RestoreBackupUseCaseImpl(
     private val databaseImporter: DatabaseImporter,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userId: UserId,
+    private val eventProcessor: EventProcessor,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
@@ -81,7 +89,10 @@ internal class RestoreBackupUseCaseImpl(
                 .flatMap { extractedBackupRootPath ->
                     runSanityChecks(extractedBackupRootPath, password)
                         .map { (encryptedFilePath, isPasswordProtected) ->
-                            if (isPasswordProtected) {
+                            if (isWebBackup(extractedBackupRootPath)) {
+                                importFromJson(extractedBackupRootPath)
+                                Failure(IncompatibleBackup("Web version")) // TODO KBX implement proper status
+                            } else if (isPasswordProtected) {
                                 decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
                             } else {
                                 val isFromOtherClient = isFromOtherClient(extractedBackupRootPath)
@@ -192,6 +203,29 @@ internal class RestoreBackupUseCaseImpl(
         } ?: Failure(BackupIOFailure("No valid db file found in the backup"))
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun importFromJson(encryptedFilePath: Path) = with(kaliumFileSystem) {
+        listDirectories(encryptedFilePath).firstOrNull {
+            it.name == "events.json"
+        }?.let { path ->
+            source(path).buffer()
+                .use {
+                    kaliumLogger.d("KBX buffer starts") // TODO add status instead
+                    val sequence = KtxSerializer.json.decodeToSequence<EventContentDTO>(
+                        it.inputStream(),
+                        DecodeSequenceMode.ARRAY_WRAPPED
+                    )
+                    val iterator = sequence.iterator()
+
+                    while (iterator.hasNext()) {
+                        val next = iterator.next()
+                        eventProcessor.processEvent(eventMapper.fromEventContentDTO("", next, false))
+                    }
+                    kaliumLogger.d("KBX decode ends")
+                }
+        }
+    }
+
     private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean) = wrapStorageRequest {
         databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient)
     }.fold({ Failure(BackupIOFailure("There was an error when importing the DB")) }, { RestoreBackupResult.Success })
@@ -204,9 +238,21 @@ internal class RestoreBackupUseCaseImpl(
             .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
             ?.let { metadataFile ->
                 source(metadataFile).buffer()
-                    .use { Json.decodeFromString<BackupMetadata>(it.readUtf8()) }
+                    .use { KtxSerializer.json.decodeFromString<BackupMetadata>(it.readUtf8()) }
             }
     }
+
+    private suspend fun backupWebMetadata(extractedBackupPath: Path): BackupMetadata? = with(kaliumFileSystem) {
+        listDirectories(extractedBackupPath)
+            .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
+            ?.let { metadataFile ->
+                source(metadataFile).buffer()
+                    .use { KtxSerializer.json.decodeFromString<BackupMetadata>(it.readUtf8()) }
+            }
+    }
+
+    private suspend fun isWebBackup(extractedBackupPath: Path): Boolean =
+        backupWebMetadata(extractedBackupPath)?.platform == "Web"
 
     private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean =
         backupMetadata(extractedBackupPath)?.userId == userId.toString()

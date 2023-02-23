@@ -499,6 +499,7 @@ class UserSessionScope internal constructor(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
             userId,
+            eventProcessor,
             clientIdProvider
         )
 
