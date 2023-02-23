@@ -37,16 +37,10 @@ data class AssetContent(
             // in some cases back-end returns no width and height
             // in that case we do not want to show the asset
             // and mark it as invalid
-            is AssetMetadata.Image ->
-                metadata.width > 0 && metadata.height > 0
-
-            is AssetMetadata.Audio ->
-                true
-
+            is AssetMetadata.Image -> metadata.width > 0 && metadata.height > 0
+            is AssetMetadata.Audio -> true
             is AssetMetadata.Video -> true
-
             null -> false
-
         }
 
     val shouldBeDisplayed = !isPreviewMessage && isValidAsset

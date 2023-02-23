@@ -27,7 +27,7 @@ internal class AssetMessageHandlerImpl(
     override suspend fun handle(message: Message.Regular, messageContent: MessageContent.Asset) {
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
-                processNonRestrictedAssetMessage(message)
+                processNonRestrictedAssetMessage(message,messageContent)
             } else {
                 val newMessage = message.copy(
                     content = MessageContent.RestrictedAsset(
@@ -41,9 +41,7 @@ internal class AssetMessageHandlerImpl(
         }
     }
 
-    private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
-        val assetContent = message.content as MessageContent.Asset
-
+    private suspend fun processNonRestrictedAssetMessage(message: Message.Regular, assetContent: MessageContent.Asset) {
         messageRepository.getMessageById(message.conversationId, message.id).onFailure {
             // No asset message was received previously, so just persist the preview of the asset message
             // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
@@ -54,7 +52,7 @@ internal class AssetMessageHandlerImpl(
             )
             persistMessage(previewMessage)
         }.onSuccess { persistedMessage ->
-            val validDecryptionKeys = message.content.value.remoteData
+            val validDecryptionKeys = assetContent.value.remoteData
             // Check the second asset message is from the same original sender
             if (isSenderVerified(
                     persistedMessage.id,
