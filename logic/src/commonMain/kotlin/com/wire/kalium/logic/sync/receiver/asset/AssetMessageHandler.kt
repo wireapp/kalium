@@ -27,7 +27,7 @@ internal class AssetMessageHandlerImpl(
     override suspend fun handle(message: Message.Regular, messageContent: MessageContent.Asset) {
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
-                processNonRestrictedAssetMessage(message,messageContent)
+                processNonRestrictedAssetMessage(message, messageContent)
             } else {
                 val newMessage = message.copy(
                     content = MessageContent.RestrictedAsset(
