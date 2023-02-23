@@ -155,7 +155,9 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCase
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
+import com.wire.kalium.logic.feature.message.ObservePendingSelfDeletionMessagesUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -164,6 +166,7 @@ import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
+import com.wire.kalium.logic.feature.message.SelfDeletingMessageManagerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -1074,6 +1077,21 @@ class UserSessionScope internal constructor(
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, kaliumConfigs, userId
+        )
+
+
+    private val selfDeletingMessageManager = SelfDeletingMessageManagerImpl(
+        coroutineScope = this,
+        messageRepository = messageRepository
+    )
+
+    val enqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCase(
+        selfDeletingMessageManager = selfDeletingMessageManager
+    )
+
+    val observePendingSelfDeletionMessagesUseCase =
+        ObservePendingSelfDeletionMessagesUseCase(
+            selfDeletingMessageManager = selfDeletingMessageManager
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)

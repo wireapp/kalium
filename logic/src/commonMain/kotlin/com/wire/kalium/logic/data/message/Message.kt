@@ -60,7 +60,7 @@ sealed interface Message {
         val visibility: Visibility
     }
 
-    data class Ephemeral(val expireAfterMillis: Long,val ephemeralMessage: Regular) : Standalone {
+    data class Ephemeral(val expireAfterMillis: Long, val ephemeralMessage: Regular) : Standalone {
         override val id: String
             get() = ephemeralMessage.id
         override val content: MessageContent.Regular
