@@ -19,6 +19,7 @@ package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi.ActionToBeVerified
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
@@ -34,7 +35,7 @@ internal open class VerificationCodeApiV0 internal constructor(
 
     override suspend fun sendVerificationCode(
         email: String,
-        action: VerificationCodeApi.ActionToBeVerified
+        action: ActionToBeVerified
     ): NetworkResponse<Unit> {
         return wrapKaliumResponse {
             httpClient.post(PATH_VERIFICATION_CODE_SEND) {
@@ -44,13 +45,13 @@ internal open class VerificationCodeApiV0 internal constructor(
     }
 
     private fun createSendVerificationCodeBody(
-        action: VerificationCodeApi.ActionToBeVerified,
+        action: ActionToBeVerified,
         email: String
     ) = SendVerificationCodeRequest(
         when (action) {
-            VerificationCodeApi.ActionToBeVerified.LOGIN_OR_CLIENT_REGISTRATION -> SendVerificationCodeRequest.Action.LOGIN
-            VerificationCodeApi.ActionToBeVerified.CREATE_SCIM_TOKEN -> SendVerificationCodeRequest.Action.CREATE_SCIM_TOKEN
-            VerificationCodeApi.ActionToBeVerified.DELETE_TEAM -> SendVerificationCodeRequest.Action.DELETE_TEAM
+            ActionToBeVerified.LOGIN_OR_CLIENT_REGISTRATION -> SendVerificationCodeRequest.Action.LOGIN
+            ActionToBeVerified.CREATE_SCIM_TOKEN -> SendVerificationCodeRequest.Action.CREATE_SCIM_TOKEN
+            ActionToBeVerified.DELETE_TEAM -> SendVerificationCodeRequest.Action.DELETE_TEAM
         },
         email
     )
@@ -60,19 +61,24 @@ internal open class VerificationCodeApiV0 internal constructor(
         @SerialName("action") val action: Action,
         @SerialName("email") val email: String
     ) {
-        enum class Action {
+        @Serializable
+        enum class Action(private val serialName: String) {
             @SerialName("create_scim_token")
-            CREATE_SCIM_TOKEN,
+            CREATE_SCIM_TOKEN("create_scim_token"),
 
             @SerialName("login")
-            LOGIN,
+            LOGIN("login"),
 
             @SerialName("delete_team")
-            DELETE_TEAM,
+            DELETE_TEAM("delete_team");
+
+            override fun toString(): String {
+                return serialName
+            }
         }
     }
 
-    private companion object {
+    internal companion object {
         const val PATH_VERIFICATION_CODE_SEND = "verification-code/send"
     }
 }
