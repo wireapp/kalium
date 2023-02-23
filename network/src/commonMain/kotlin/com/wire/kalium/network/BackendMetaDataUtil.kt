@@ -76,6 +76,7 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
             }
         } ?: run {
             kaliumLogger.w("empty app/server config list")
+            kaliumLogger.w("remove me")
             ApiVersionDTO.Invalid.Unknown
         }
     }

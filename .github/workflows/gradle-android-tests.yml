@@ -13,7 +13,7 @@ jobs:
         uses: ./.github/workflows/codestyle.yml
     gradle-run-tests:
         needs: [detekt]
-        runs-on: macos-latest
+        runs-on: buildjet-4vcpu-ubuntu-2204
         strategy:
             matrix:
                 api-level: [30]
@@ -44,31 +44,38 @@ jobs:
               run: |
                   ./gradlew :samples:compileDebugSources
 
-            - name: AVD cache
-              uses: actions/cache@v3
-              id: avd-cache
-              with:
-                  path: |
-                      ~/.android/avd/*
-                      ~/.android/adb*
-                  key: avd-${{ matrix.api-level }}
+            # - name: AVD cache
+            #   uses: actions/cache@v3
+            #   id: avd-cache
+            #   with:
+            #       path: |
+            #           ~/.android/avd/*
+            #           ~/.android/adb*
+            #       key: avd-${{ matrix.api-level }}
 
-            - name: Create AVD and generate snapshot for caching
-              if: steps.avd-cache.outputs.cache-hit != 'true'
+            # - name: Create AVD and generate snapshot for caching
+            #   if: steps.avd-cache.outputs.cache-hit != 'true'
+            #   uses: reactivecircus/android-emulator-runner@v2.27.0
+            #   with:
+            #       api-level: ${{ matrix.api-level }}
+            #       force-avd-creation: false
+            #       target: google_apis
+            #       emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+            #       cores: 4
+            #       ram-size: 4096M
+            #       heap-size: 2048M
+            #       disable-animations: false
+            #       script: echo "Generated AVD snapshot for caching."
+
+            - name: Android Instrumentation Tests
               uses: reactivecircus/android-emulator-runner@v2.27.0
               with:
                   api-level: ${{ matrix.api-level }}
-                  force-avd-creation: false
                   target: google_apis
-                  emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-                  disable-animations: false
-                  script: echo "Generated AVD snapshot for caching."
-
-            - name: Android Instrumentation Tests
-              uses: reactivecircus/android-emulator-runner@v2
-              with:
-                  api-level: ${{ matrix.api-level }}
-                  target: google_apis
+                  emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+                  cores: 4
+                  ram-size: 4096M
+                  heap-size: 2048M
                   script: ./gradlew connectedAndroidOnlyAffectedTest
               env:
                   GITHUB_USER: ${{ github.actor }}

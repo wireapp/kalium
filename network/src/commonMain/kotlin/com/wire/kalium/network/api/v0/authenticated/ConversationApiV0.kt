@@ -272,6 +272,14 @@ internal open class ConversationApiV0 internal constructor(
             APINotSupported("MLS: deleteSubconversation api is only available on API V3")
         )
 
+    override suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: leaveSubconversation api is only available on API V3")
+        )
+
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ConversationMemberAddedResponse> =
@@ -317,6 +325,10 @@ internal open class ConversationApiV0 internal constructor(
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
+
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+    }
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

@@ -113,7 +113,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
     }
 
     override suspend fun newLastPreKey(): PreKeyCrypto {
-        return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
+        return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId().toInt(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
@@ -184,8 +184,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         try {
             return b()
         } catch (e: CryptoException) {
-            // TODO underlying proteus error is not exposed atm
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }

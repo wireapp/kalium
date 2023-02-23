@@ -45,16 +45,16 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
-        // We always return true because our BE is currently enforcing that this constraint is always true
-        return true
-    }
-
-    override fun clientIsExistingGroupUser(clientId: List<UByte>, existingClients: List<List<UByte>>): Boolean {
+    override fun clientIsExistingGroupUser(conversationId: ConversationId, clientId: ClientId, existingClients: List<ClientId>): Boolean {
         val userId = toClientID(clientId)?.userId ?: return false
         return existingClients.find {
             toClientID(it)?.userId == userId
         } != null
+    }
+
+    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
+        // We always return true because our BE is currently enforcing that this constraint is always true
+        return true
     }
 
     companion object {
@@ -75,6 +75,7 @@ actual class MLSClientImpl actual constructor(
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
+    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), null)
@@ -136,7 +137,7 @@ actual class MLSClientImpl actual constructor(
         externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
-            CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+            defaultCiphersuiteName,
             externalSenders.map { toUByteList(it.value) },
             defaultGroupConfiguration
         )
@@ -209,6 +210,10 @@ actual class MLSClientImpl actual constructor(
 
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
+    }
+
+    override fun newAcmeEnrollment(): E2EIClient {
+        return E2EIClientImpl(coreCrypto.newAcmeEnrollment(defaultCiphersuiteName))
     }
 
     companion object {

@@ -234,7 +234,7 @@ class ConnectionRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
-            .wasInvoked(once)
+            .wasInvoked(exactly = twice)
     }
 
     @Test
