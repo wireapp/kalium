@@ -134,7 +134,13 @@ data class SelfUser(
     override val completePicture: UserAssetId?,
     override val availabilityStatus: UserAvailabilityStatus,
     override val managedBy: ManagedBy
-) : User()
+) : User() {
+
+    /**
+     * When the self user is other than [WIRE] managed, it means that the user is provided user and cannot edit its profile details.
+     */
+    val isReadOnlyProfile = managedBy != WIRE
+}
 
 data class OtherUserMinimized(
     val id: UserId,
