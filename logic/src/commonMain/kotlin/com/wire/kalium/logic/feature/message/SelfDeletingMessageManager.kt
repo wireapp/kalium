@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.map
@@ -43,7 +44,8 @@ internal class SelfDeletingMessageManagerImpl(
 
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
-            if (outgoingSelfDeletingMessagesTimeLeft.value[conversationId to messageId] != null) return@launch
+            val isSelfDeletionOutgoing = outgoingSelfDeletingMessagesTimeLeft.value[conversationId to messageId] != null
+            if (isSelfDeletionOutgoing) return@launch
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
                 require(message is Message.Ephemeral)
@@ -59,22 +61,18 @@ internal class SelfDeletingMessageManagerImpl(
             addOutgoingSelfDeletingMessage(selfDeletingMessage)
 
             val isEnqueuedForFirstTime = message.selfDeletionDate == null
-
             if (isEnqueuedForFirstTime) {
                 messageRepository.markSelfDeletionDate(
-                    deletionTimeMark = Clock.System.now().toEpochMilliseconds() + message.expireAfterMillis
+                    conversationId = message.conversationId,
+                    messageUuid = message.id,
+                    deletionDate = Clock.System.now().toEpochMilliseconds() + message.expireAfterMillis()
                 )
             }
 
             selfDeletingMessage.startSelfDeletionTimer(
-                expireAfterMillis = calculateExpireAfterMillis(message)
+                expireAfterMillis = message.expireAfterMillis()
             )
         }
-    }
-
-    private fun calculateExpireAfterMillis(ephemeralMessage: Message.Ephemeral): Long {
-        return if (ephemeralMessage.selfDeletionDate == null) 0
-        else Clock.System.now().toEpochMilliseconds() - ephemeralMessage.selfDeletionDate
     }
 
     private fun addOutgoingSelfDeletingMessage(selfDeletingMessage: SelfDeletingMessage) {
@@ -116,9 +114,9 @@ internal class SelfDeletingMessageManagerImpl(
 
     override fun enqueuePendingSelfDeletionMessages() {
         launch {
-            messageRepository.getAllEphemeralMessages().onSuccess { ephemeralMessage ->
-                ephemeralMessage.forEach { ephemeralMessage ->
-                    enqueueMessage(ephemeralMessage)
+            messageRepository.getAllEphemeralMessages().onSuccess { ephemeralMessages ->
+                ephemeralMessages.forEach { ephemeralMessage ->
+                    enqueueMessage(message = ephemeralMessage)
                 }
             }
         }

@@ -232,26 +232,35 @@ object MessageMapper {
         senderName: String?,
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
-        expireAfterMillis: Long?
+        expireAfterMillis: Long?,
+        selfDeletionDate: Long?
     ): MessageEntity = when (content) {
-        is MessageEntityContent.Regular -> MessageEntity.Regular(
-            content = content,
-            id = id,
-            conversationId = conversationId,
-            date = date,
-            senderUserId = senderUserId,
-            senderClientId = senderClientId!!,
-            status = status,
-            editStatus = mapEditStatus(lastEdit),
-            visibility = visibility,
-            reactions = ReactionsEntity(
-                totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
-                selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-            ),
-            senderName = senderName,
-            isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation
-        )
+        is MessageEntityContent.Regular -> {
+            val regularMessage = MessageEntity.Regular(
+                content = content,
+                id = id,
+                conversationId = conversationId,
+                date = date,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId!!,
+                status = status,
+                editStatus = mapEditStatus(lastEdit),
+                visibility = visibility,
+                reactions = ReactionsEntity(
+                    totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
+                    selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
+                ),
+                senderName = senderName,
+                isSelfMessage = isSelfMessage,
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+
+            if (expireAfterMillis != null) {
+                MessageEntity.Ephemeral(expireAfterMillis, selfDeletionDate, regularMessage)
+            } else {
+                regularMessage
+            }
+        }
 
         is MessageEntityContent.System -> MessageEntity.System(
             content = content,
@@ -283,6 +292,7 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
+        selfDeletionDate: Long?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -440,7 +450,8 @@ object MessageMapper {
             senderName,
             isSelfMessage,
             expectsReadConfirmation,
-            expireAfterMillis
+            expireAfterMillis,
+            selfDeletionDate
         )
     }
 

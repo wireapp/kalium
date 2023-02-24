@@ -188,6 +188,7 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
+
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
@@ -337,8 +338,14 @@ class MessageDAOImpl(
     }
 
     override suspend fun getEphemeralMessages(): List<MessageEntity> {
-        return withContext(coroutineContext){
+        return withContext(coroutineContext) {
+            queries.selectAllEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+        }
+    }
 
+    override suspend fun updateSelfDeletionDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionDate: Long) {
+        return withContext(coroutineContext) {
+            queries.selectAllEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 

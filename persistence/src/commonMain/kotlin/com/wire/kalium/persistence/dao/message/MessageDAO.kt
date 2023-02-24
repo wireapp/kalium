@@ -124,5 +124,7 @@ interface MessageDAO {
 
     suspend fun getEphemeralMessages(): List<MessageEntity>
 
+    suspend fun updateSelfDeletionDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionDate: Long)
+
     val platformExtensions: MessageExtensions
 }

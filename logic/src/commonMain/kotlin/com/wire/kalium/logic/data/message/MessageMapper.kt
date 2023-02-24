@@ -100,6 +100,7 @@ class MessageMapperImpl(
                 with(message.ephemeralMessage) {
                     MessageEntity.Ephemeral(
                         expireAfterMillis = message.expireAfterMillis,
+                        selfDeletionDate = message.selfDeletionDate,
                         ephemeralMessage = MessageEntity.Regular(
                             id = id,
                             content = toMessageEntityContent(content),
@@ -166,6 +167,7 @@ class MessageMapperImpl(
             is MessageEntity.Ephemeral -> with(message.ephemeralMessage) {
                 Message.Ephemeral(
                     expireAfterMillis = message.expireAfterMillis,
+                    selfDeletionDate = message.selfDeletionDate,
                     ephemeralMessage = Message.Regular(
                         id =id,
                         content = content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),

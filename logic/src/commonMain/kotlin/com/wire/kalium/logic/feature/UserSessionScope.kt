@@ -1157,6 +1157,9 @@ class UserSessionScope internal constructor(
         launch {
             conversationsRecoveryManager.invoke()
         }
+        launch {
+            selfDeletingMessageManager.enqueuePendingSelfDeletionMessages()
+        }
     }
 
     fun onDestroy() {

@@ -188,6 +188,7 @@ Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 Message.expire_after_millis AS expireAfterMillis,
+Message.self_deletion_date AS selfDeletionDate,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -431,8 +432,8 @@ INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, 
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation, expire_after_millis)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation, expire_after_millis, self_deletion_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
@@ -603,5 +604,10 @@ WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
 
 selectAllEphemeralMessages:
-SELECT * FROM Message
-WHERE expire_after_millis NOT NULL;
+SELECT * FROM MessageDetailsView
+WHERE expireAfterMillis NOT NULL;
+
+markSelfDeletionDate:
+UPDATE Message
+SET self_deletion_date = ?
+WHERE id = ?;

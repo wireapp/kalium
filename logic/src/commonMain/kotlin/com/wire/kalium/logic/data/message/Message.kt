@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -61,10 +62,15 @@ sealed interface Message {
     }
 
     data class Ephemeral(
-        val expireAfterMillis: Long,
+        private val expireAfterMillis: Long,
         val selfDeletionDate: Long?,
         val ephemeralMessage: Regular
     ) : Standalone {
+        fun expireAfterMillis(): Long {
+            return if (selfDeletionDate == null) expireAfterMillis
+            else Clock.System.now().toEpochMilliseconds() - selfDeletionDate
+        }
+
         override val id: String
             get() = ephemeralMessage.id
         override val content: MessageContent.Regular
