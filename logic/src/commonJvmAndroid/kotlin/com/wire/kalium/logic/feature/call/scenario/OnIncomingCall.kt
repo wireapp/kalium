@@ -23,15 +23,11 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.CALL_SUBCONVERSATION_ID
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.logic.feature.call.usecase.LeaveStaleMlsConferenceUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.functional.onFailure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
