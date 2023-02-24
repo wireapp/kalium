@@ -49,5 +49,3 @@ internal fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key
 internal fun SubconversationId.toApi(): String = value
 
 internal fun GroupID.toCrypto(): MLSGroupId = value
-
-
