@@ -60,18 +60,25 @@ internal class SelfDeletingMessageManagerImpl(
 
     override fun observePendingMessageDeletionState(): Flow<Map<String, Long>> =
         outgoingSelfDeletingMessages.flatMapLatest { outgoingSelfDeletingMessages ->
-            combine(outgoingSelfDeletingMessages.map { entry ->
+            val observableTimeLeftOfMessages: List<Flow<Pair<String, Long>>> = outgoingSelfDeletingMessages.map { entry ->
                 val (_, messageId) = entry.key
                 val selfDeletingMessage = entry.value
 
-                selfDeletingMessage.timeLeft.map { timeLeft ->
+                val observableTimeLeftAssociatedWithMessageId = selfDeletingMessage.timeLeft.map { timeLeft ->
                     messageId to timeLeft
                 }
-            }) {
-                it.associate { (messageId, timeLeft) -> messageId to timeLeft }
+
+                observableTimeLeftAssociatedWithMessageId
             }
+
+            combineTimeLeftOfSelfDeletingMessage(observableTimeLeftOfMessages)
         }
 
+    private fun combineTimeLeftOfSelfDeletingMessage(observableTimeLeftOfMessages: List<Flow<Pair<String, Long>>>): Flow<Map<String, Long>> {
+        return combine(observableTimeLeftOfMessages) {
+            it.associate { (messageId, timeLeft) -> messageId to timeLeft }
+        }
+    }
 }
 
 internal class SelfDeletingMessage(
