@@ -23,6 +23,14 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Updates the verification status of a client.
+ * @param userId The user id of the client.
+ * @param clientId The client id of the client.
+ * @param verified The new verification status of the client.
+ * @return [UpdateClientVerificationStatusUseCase.Result.Success] if the client was updated successfully.
+ * [UpdateClientVerificationStatusUseCase.Result.Failure] if the client could not be updated.
+ */
 class UpdateClientVerificationStatusUseCase internal constructor(
     private val clientRepository: ClientRepository
 ) {
