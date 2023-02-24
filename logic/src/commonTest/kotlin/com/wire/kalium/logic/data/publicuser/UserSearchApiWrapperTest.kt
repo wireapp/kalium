@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
@@ -441,6 +442,7 @@ class UserSearchApiWrapperTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+                    managedBy = ManagedBy.WIRE
                 )
             }
 
@@ -456,6 +458,7 @@ class UserSearchApiWrapperTest {
                 previewPicture = null,
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+                managedBy = ManagedBy.WIRE
             )
 
             const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
@@ -474,7 +477,8 @@ class UserSearchApiWrapperTest {
                 availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
                 userType = UserTypeEntity.EXTERNAL,
                 botService = null,
-                deleted = false
+                deleted = false,
+                managedBy = null
             )
         }
     }

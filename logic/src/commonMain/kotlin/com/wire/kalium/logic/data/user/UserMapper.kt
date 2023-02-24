@@ -31,6 +31,7 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
+import com.wire.kalium.network.api.base.model.ManagedByDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserAssetDTO
@@ -40,6 +41,7 @@ import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
@@ -110,7 +112,8 @@ internal class UserMapperImpl(
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = assets.getPreviewAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
             completePicture = assets.getCompleteAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
-            availabilityStatus = UserAvailabilityStatus.NONE
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            managedBy = managedByDTO?.let { it.toModel() } ?: ManagedBy.WIRE
         )
     }
 
@@ -131,7 +134,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
-            deleted = userProfileDTO.deleted ?: false
+            deleted = userProfileDTO.deleted ?: false,
+            managedBy = null
         )
     }
 
@@ -147,7 +151,8 @@ internal class UserMapperImpl(
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewAssetId?.toModel(),
             completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            managedBy?.let { it.toModel() } ?: ManagedBy.WIRE
         )
     }
 
@@ -166,7 +171,8 @@ internal class UserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            managedBy = selfUser.managedBy.toDao()
         )
     }
 
@@ -206,7 +212,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            managedBy = user.managedBy.toDao()
         )
     }
 
@@ -224,7 +231,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = userDTO.deleted ?: false
+            deleted = userDTO.deleted ?: false,
+            managedBy = userDTO.managedByDTO?.toDao()
         )
     }
 
@@ -256,7 +264,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
-            deleted = false
+            deleted = false,
+            managedBy = null
         )
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
@@ -286,7 +295,8 @@ internal class UserMapperImpl(
                     isService = user.service != null
                 ),
             botService = user.service?.let { BotEntity(it.id, it.provider) },
-            deleted = false
+            deleted = false,
+            managedBy = null
         )
     }
 
@@ -303,5 +313,27 @@ internal class UserMapperImpl(
                     ?: persistedEntity.completeAssetId
             )
         }
+    }
+
+    private fun ManagedByDTO.toDao(): ManagedByEntity = when (this) {
+        ManagedByDTO.SCIM -> ManagedByEntity.SCIM
+        ManagedByDTO.WIRE -> ManagedByEntity.WIRE
+    }
+
+    private fun ManagedByDTO.toModel(): ManagedBy =
+        when (this) {
+            ManagedByDTO.SCIM -> ManagedBy.SCIM
+            ManagedByDTO.WIRE -> ManagedBy.WIRE
+        }
+
+
+    private fun ManagedByEntity.toModel(): ManagedBy = when (this) {
+        ManagedByEntity.SCIM -> ManagedBy.SCIM
+        ManagedByEntity.WIRE -> ManagedBy.WIRE
+    }
+
+    private fun ManagedBy.toDao(): ManagedByEntity = when (this) {
+        ManagedBy.SCIM -> ManagedByEntity.SCIM
+        ManagedBy.WIRE -> ManagedByEntity.WIRE
     }
 }

@@ -49,7 +49,8 @@ class UserMapper {
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
             botService = user.bot_service,
-            deleted = user.deleted
+            deleted = user.deleted,
+            managedBy = user.managed_by
         )
     }
 
@@ -90,7 +91,8 @@ class UserDAOImpl internal constructor(
             user.completeAssetId,
             user.userType,
             user.botService,
-            user.deleted
+            user.deleted,
+            user.managedBy
         )
     }
 
@@ -146,7 +148,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.managedBy
                     )
                 }
             }
@@ -184,7 +187,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.managedBy
                     )
                 }
             }
@@ -210,7 +214,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.managedBy
                     )
                 }
             }

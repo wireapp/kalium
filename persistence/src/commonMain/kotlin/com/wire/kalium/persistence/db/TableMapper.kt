@@ -152,7 +152,8 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
-        bot_serviceAdapter = BotServiceAdapter()
+        bot_serviceAdapter = BotServiceAdapter(),
+        managed_byAdapter = EnumColumnAdapter()
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter

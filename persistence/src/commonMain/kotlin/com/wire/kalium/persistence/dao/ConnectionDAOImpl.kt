@@ -67,7 +67,8 @@ private class ConnectionMapper {
         user_availability_status: UserAvailabilityStatusEntity?,
         user_type: UserTypeEntity?,
         bot_service: BotEntity?,
-        deleted: Boolean?
+        deleted: Boolean?,
+        managed_by: ManagedByEntity?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -92,7 +93,8 @@ private class ConnectionMapper {
             userType = user_type.requireField("user_type"),
             botService = bot_service,
             deleted = deleted.requireField("deleted"),
-        ) else null
+            managedBy = managed_by
+            ) else null
     )
 
 }

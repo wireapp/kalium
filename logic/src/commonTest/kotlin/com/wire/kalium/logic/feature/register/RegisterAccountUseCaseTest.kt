@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -214,7 +215,8 @@ class RegisterAccountUseCaseTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            ManagedBy.WIRE
         )
         val TEST_AUTH_TOKENS = AuthTokens(
             accessToken = "access_token",

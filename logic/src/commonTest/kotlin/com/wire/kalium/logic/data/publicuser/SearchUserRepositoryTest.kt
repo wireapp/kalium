@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -567,7 +568,8 @@ class SearchUserRepositoryTest {
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
-            deleted = false
+            deleted = false,
+            managedBy = null
         )
 
         val SELF_USER = SelfUser(
@@ -582,6 +584,7 @@ class SearchUserRepositoryTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+            managedBy = ManagedBy.WIRE
         )
 
     }

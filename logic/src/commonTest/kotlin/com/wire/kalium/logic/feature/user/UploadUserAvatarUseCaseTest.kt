@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -129,7 +130,8 @@ class UploadUserAvatarUseCaseTest {
             ConnectionState.ACCEPTED,
             UserAssetId("value1", "domain"),
             UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            ManagedBy.WIRE
         )
 
         fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {

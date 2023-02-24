@@ -94,7 +94,8 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAvailabilityStatusEntity.NONE,
             UserTypeEntity.STANDARD,
             botService = null,
-            false
+            false,
+            null
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -121,7 +122,8 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAvailabilityStatusEntity.NONE,
             UserTypeEntity.STANDARD,
             botService = null,
-            false
+            false,
+            null
         )
 
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
@@ -220,7 +222,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     UserAvailabilityStatusEntity.NONE,
                     UserTypeEntity.STANDARD,
                     botService = null,
-                    false
+                    false,
+                    null
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -236,7 +239,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     UserAvailabilityStatusEntity.NONE,
                     UserTypeEntity.STANDARD,
                     botService = null,
-                    deleted = false
+                    deleted = false,
+                    null
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers

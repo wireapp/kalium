@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.ManagedBy.WIRE
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.utils.toJsonElement
 import kotlinx.serialization.SerialName
@@ -41,6 +42,15 @@ sealed class User {
     abstract val previewPicture: UserAssetId?
     abstract val completePicture: UserAssetId?
     abstract val availabilityStatus: UserAvailabilityStatus
+    abstract val managedBy: ManagedBy?
+}
+
+/**
+ * Relevant field for self user.
+ * Indicating in only in case of [WIRE] that the user is managed by Wire therefore, can edit its profile.
+ */
+enum class ManagedBy {
+    WIRE, SCIM
 }
 
 // TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
@@ -122,7 +132,8 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    override val managedBy: ManagedBy
 ) : User()
 
 data class OtherUserMinimized(
@@ -146,7 +157,8 @@ data class OtherUser(
     val userType: UserType,
     override val availabilityStatus: UserAvailabilityStatus,
     val botService: BotService?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    override val managedBy: ManagedBy? = null,
 ) : User() {
 
     /**

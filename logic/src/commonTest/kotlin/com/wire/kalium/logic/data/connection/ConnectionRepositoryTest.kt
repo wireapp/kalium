@@ -388,7 +388,8 @@ class ConnectionRepositoryTest {
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
-            deleted = false
+            deleted = false,
+            managedBy = null
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")

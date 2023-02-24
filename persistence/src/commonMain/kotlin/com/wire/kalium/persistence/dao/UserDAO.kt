@@ -51,8 +51,17 @@ data class UserEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
     val botService: BotEntity?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val managedBy: ManagedByEntity?
 )
+
+/**
+ * Relevant field for self user.
+ * Indicating in only in case of [WIRE] that the user is managed by Wire therefore, can edit its profile.
+ */
+enum class ManagedByEntity {
+    WIRE, SCIM
+}
 
 data class UserEntityMinimized(
     val id: QualifiedIDEntity,

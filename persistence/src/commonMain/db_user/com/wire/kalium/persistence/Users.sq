@@ -3,6 +3,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import com.wire.kalium.persistence.dao.UserTypeEntity;
+import com.wire.kalium.persistence.dao.ManagedByEntity;
 import kotlin.Int;
 import kotlin.Boolean;
 
@@ -20,7 +21,8 @@ CREATE TABLE User (
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
     user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'STANDARD',
     bot_service TEXT AS BotEntity,
-    deleted INTEGER AS Boolean NOT NULL DEFAULT 0
+    deleted INTEGER AS Boolean NOT NULL DEFAULT 0,
+    managed_by TEXT AS ManagedByEntity
 );
 CREATE INDEX user_team_index ON User(team);
 
@@ -31,8 +33,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, managed_by)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
@@ -45,7 +47,8 @@ preview_asset_id = excluded.preview_asset_id,
 complete_asset_id = excluded.complete_asset_id,
 user_type = excluded.user_type,
 bot_service = excluded.bot_service,
-deleted = excluded.deleted;
+deleted = excluded.deleted,
+managed_by = excluded.managed_by;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted)

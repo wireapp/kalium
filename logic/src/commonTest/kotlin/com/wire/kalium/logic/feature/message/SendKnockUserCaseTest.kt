@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -95,7 +96,8 @@ class SendKnockUserCaseTest {
             ConnectionState.ACCEPTED,
             previewPicture = UserAssetId("value1", "domain"),
             completePicture = UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            ManagedBy.WIRE
         )
 
         fun withSuccessfulResponse(hotKnock: Boolean): Arrangement {

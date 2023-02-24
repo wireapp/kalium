@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
@@ -176,7 +177,8 @@ class CallingParticipantsOrderTest {
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = null,
             completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.AVAILABLE
+            availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+            managedBy = ManagedBy.WIRE
         )
 
         const val selfClientId = "client1"

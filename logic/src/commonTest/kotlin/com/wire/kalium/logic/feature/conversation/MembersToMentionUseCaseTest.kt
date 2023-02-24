@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -121,7 +122,8 @@ class MembersToMentionUseCaseTest {
             ConnectionState.ACCEPTED,
             UserAssetId("value1", DOMAIN),
             UserAssetId("value2", DOMAIN),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            ManagedBy.WIRE
         )
         private val OTHER_USER = OtherUser(
             UserId(value = "other-id", DOMAIN),

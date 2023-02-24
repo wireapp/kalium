@@ -20,6 +20,7 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ManagedBy
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -63,7 +64,8 @@ object TestUser {
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
-        availabilityStatus = UserAvailabilityStatus.NONE
+        availabilityStatus = UserAvailabilityStatus.NONE,
+        managedBy = ManagedBy.WIRE
     )
 
     val OTHER = OtherUser(
@@ -80,7 +82,8 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = UserType.EXTERNAL,
         botService = null,
-        deleted = false
+        deleted = false,
+        managedBy = null
     )
 
     val ENTITY = UserEntity(
@@ -97,7 +100,8 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = UserTypeEntity.EXTERNAL,
         botService = null,
-        deleted = false
+        deleted = false,
+        managedBy = null
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

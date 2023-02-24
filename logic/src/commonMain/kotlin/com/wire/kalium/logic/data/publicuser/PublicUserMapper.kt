@@ -106,7 +106,8 @@ class PublicUserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotEntity(it.id, it.provider) },
-            deleted = deleted
+            deleted = deleted,
+            managedBy = null
         )
     }
 
@@ -158,7 +159,8 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
         botService = userDetailResponse.service?.let { BotEntity(it.id, it.provider) },
-        deleted = userDetailResponse.deleted ?: false
+        deleted = userDetailResponse.deleted ?: false,
+        managedBy = null
     )
 
 }
