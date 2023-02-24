@@ -7,6 +7,7 @@ CREATE TABLE Client (
     id TEXT NOT NULL,
     device_type TEXT AS DeviceTypeEntity,
     is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
+    is_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
@@ -47,3 +48,6 @@ UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :cl
 
 conversationRecipets:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
+
+updateClientVerificatioStatus:
+UPDATE Client SET is_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;

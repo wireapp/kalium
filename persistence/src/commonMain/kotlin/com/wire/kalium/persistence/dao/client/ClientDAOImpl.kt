@@ -33,8 +33,9 @@ internal object ClientMapper {
         user_id: QualifiedIDEntity,
         id: String,
         device_type: DeviceTypeEntity?,
-        is_valid: Boolean
-    ): Client = Client(user_id, id, device_type, is_valid)
+        is_valid: Boolean,
+        is_verified: Boolean
+    ): Client = Client(user_id, id, device_type, is_valid, is_verified)
 }
 
 internal class ClientDAOImpl internal constructor(
@@ -74,6 +75,11 @@ internal class ClientDAOImpl internal constructor(
             }
         }
     }
+
+    override suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) =
+        withContext(queriesContext) {
+            clientsQueries.updateClientVerificatioStatus(verified, userId, clientId)
+        }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
