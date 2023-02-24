@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 
 /**
@@ -25,19 +26,24 @@ import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessa
  * This mapper is useful in case we receive a successful response from the backend, but there are some
  * users that failed to receive the message. ie: federated users and/or conversations.
  */
-object SendMessagePartialFailureMapperImpl {
-    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent {
+interface SendMessagePartialFailureMapper {
+    fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent
+}
+
+internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMapper {
+    override fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse.MessageSent): MessageSent {
         return MessageSent(
             time = sendMessageResponse.time,
-            failed = sendMessageResponse.failed.orEmpty()
+            failed = sendMessageResponse.failed
+                ?.map { it.key to it.value.keys }
+                ?.map { (domain, userIds) ->
+                    userIds.map { user -> UserId(user, domain) }
+                }?.flatten().orEmpty()
         )
     }
 }
 
 data class MessageSent(
     val time: String,
-    val missing: Map<String, Map<String, List<String>>> = mapOf(),
-    val redundant: Map<String, Map<String, List<String>>> = mapOf(),
-    val deleted: Map<String, Map<String, List<String>>> = mapOf(),
-    val failed: Map<String, Map<String, List<String>>> = mapOf(),
+    val failed: List<UserId> = listOf(),
 )
