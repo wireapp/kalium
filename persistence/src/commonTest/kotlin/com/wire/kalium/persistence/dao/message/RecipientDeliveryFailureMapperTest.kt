@@ -29,7 +29,7 @@ class RecipientDeliveryFailureMapperTest {
         val result = RecipientDeliveryFailureMapper.toEntity(listOf(), listOf())
 
         assertEquals(
-            RecipientFailureEntity.NoDeliveryError,
+            DeliveryStatusEntity.CompleteDelivery,
             result
         )
     }
@@ -42,7 +42,7 @@ class RecipientDeliveryFailureMapperTest {
                 recipientsFailedDeliveryList = listOf(UserIDEntity("user2", "domain1.com"))
             )
 
-        assertTrue(result is RecipientFailureEntity.PartialDeliveryError)
+        assertTrue(result is DeliveryStatusEntity.PartialDelivery)
         assertTrue(result.recipientsFailedWithNoClients.isNotEmpty() && result.recipientsFailedDelivery.isNotEmpty())
         assertEquals(result.recipientsFailedDelivery.first(), UserIDEntity("user2", "domain1.com"))
         assertEquals(result.recipientsFailedWithNoClients.first(), UserIDEntity("user1", "domain1.com"))

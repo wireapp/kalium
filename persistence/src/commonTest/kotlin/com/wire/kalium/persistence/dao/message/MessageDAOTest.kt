@@ -1368,7 +1368,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         assertTrue {
-            ((result as MessageEntity.Regular).recipientsFailure as RecipientFailureEntity.PartialDeliveryError)
+            ((result as MessageEntity.Regular).deliveryStatus as DeliveryStatusEntity.PartialDelivery)
                 .recipientsFailedDelivery.size == 2
         }
     }
