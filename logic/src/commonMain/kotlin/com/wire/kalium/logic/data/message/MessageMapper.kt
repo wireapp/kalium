@@ -33,12 +33,12 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
+import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
-import com.wire.kalium.persistence.dao.message.RecipientFailureEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -128,9 +128,9 @@ class MessageMapperImpl(
                 senderUserName = message.senderName,
                 isSelfMessage = message.isSelfMessage,
                 expectsReadConfirmation = message.expectsReadConfirmation,
-                recipientsFailure = when (val recipientsFailure = message.recipientsFailure) {
-                    is RecipientFailureEntity.NoDeliveryError -> RecipientFailure.NoDeliveryError
-                    is RecipientFailureEntity.PartialDeliveryError -> RecipientFailure.PartialDeliveryError(
+                deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
+                    is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
+                    is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
                         recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
                         recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
                     )

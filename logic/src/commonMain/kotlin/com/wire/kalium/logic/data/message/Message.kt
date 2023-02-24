@@ -74,7 +74,7 @@ sealed interface Message {
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val recipientsFailure: RecipientFailure = RecipientFailure.NoDeliveryError
+        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -126,7 +126,7 @@ sealed interface Message {
                 "senderClientId" to senderClientId.value.obfuscateId(),
                 "editStatus" to "$editStatus",
                 "expectsReadConfirmation" to "$expectsReadConfirmation",
-                "recipientsFailure" to "$recipientsFailure"
+                "deliveryStatus" to "$deliveryStatus"
             )
 
             properties.putAll(standardProperties)
@@ -392,11 +392,11 @@ enum class AssetType {
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>
 
-sealed class RecipientFailure {
-    data class PartialDeliveryError(
+sealed class DeliveryStatus {
+    data class PartialDelivery(
         val recipientsFailedWithNoClients: List<UserId>,
         val recipientsFailedDelivery: List<UserId>
-    ) : RecipientFailure()
+    ) : DeliveryStatus()
 
-    object NoDeliveryError : RecipientFailure()
+    object CompleteDelivery : DeliveryStatus()
 }

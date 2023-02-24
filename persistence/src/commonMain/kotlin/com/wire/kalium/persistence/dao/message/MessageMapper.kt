@@ -253,7 +253,7 @@ object MessageMapper {
             senderName = senderName,
             isSelfMessage = isSelfMessage,
             expectsReadConfirmation = expectsReadConfirmation,
-            recipientsFailure = RecipientDeliveryFailureMapper.toEntity(
+            deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
                 recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
                 recipientsFailedDeliveryList = recipientsFailedDeliveryList
             )

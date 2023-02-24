@@ -24,10 +24,10 @@ object RecipientDeliveryFailureMapper {
     fun toEntity(
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?
-    ): RecipientFailureEntity = if (recipientsFailedWithNoClientsList.isNullOrEmpty() && recipientsFailedDeliveryList.isNullOrEmpty()) {
-        RecipientFailureEntity.NoDeliveryError
+    ): DeliveryStatusEntity = if (recipientsFailedWithNoClientsList.isNullOrEmpty() && recipientsFailedDeliveryList.isNullOrEmpty()) {
+        DeliveryStatusEntity.CompleteDelivery
     } else {
-        RecipientFailureEntity.PartialDeliveryError(
+        DeliveryStatusEntity.PartialDelivery(
             recipientsFailedWithNoClients = recipientsFailedWithNoClientsList ?: emptyList(),
             recipientsFailedDelivery = recipientsFailedDeliveryList ?: emptyList()
         )

@@ -53,7 +53,7 @@ sealed class MessageEntity(
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val recipientsFailure: RecipientFailureEntity = RecipientFailureEntity.NoDeliveryError,
+        val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -393,11 +393,11 @@ enum class RecipientFailureTypeEntity {
     MESSAGE_DELIVERY_FAILED
 }
 
-sealed class RecipientFailureEntity {
-    data class PartialDeliveryError(
+sealed class DeliveryStatusEntity {
+    data class PartialDelivery(
         val recipientsFailedWithNoClients: List<UserIDEntity>,
         val recipientsFailedDelivery: List<UserIDEntity>
-    ) : RecipientFailureEntity()
+    ) : DeliveryStatusEntity()
 
-    object NoDeliveryError : RecipientFailureEntity()
+    object CompleteDelivery : DeliveryStatusEntity()
 }
