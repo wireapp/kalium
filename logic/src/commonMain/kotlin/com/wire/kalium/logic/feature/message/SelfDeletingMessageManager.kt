@@ -114,8 +114,10 @@ internal class SelfDeletingMessageManagerImpl(
 
     override fun enqueuePendingSelfDeletionMessages() {
         launch {
-            messageRepository.getAllEphemeralMessages().onSuccess { ephemeralMessages ->
+            messageRepository.getEphemeralMessages().onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
+                    require(ephemeralMessage is Message.Ephemeral)
+
                     enqueueMessage(message = ephemeralMessage)
                 }
             }

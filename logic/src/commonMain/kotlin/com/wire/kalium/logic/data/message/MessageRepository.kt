@@ -425,9 +425,7 @@ class MessageDataSource(
     }
 
     override suspend fun getEphemeralMessages(): Either<CoreFailure, List<Message>> = wrapStorageRequest {
-        messageDAO.getEphemeralMessages().map { messageList ->
-            messageList.map(messageMapper::fromEntityToMessage)
-        }
+        messageDAO.getEphemeralMessages().map(messageMapper::fromEntityToMessage)
     }
 
     override suspend fun markSelfDeletionDate(
