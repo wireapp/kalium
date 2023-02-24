@@ -498,7 +498,14 @@ class MessageSenderTest {
     fun givenARemoteProteusConversationPartiallyFails_WhenSendingOutgoingMessage_ThenReturnSuccessAndPersistFailedRecipients() {
         // given
         val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(sendEnvelopeWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))))
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = listOf(TEST_MEMBER_2)
+                    )
+                )
+            )
             .withPromoteMessageToSentUpdatingServerTime()
             .withSendMessagePartialSuccess()
             .arrange()

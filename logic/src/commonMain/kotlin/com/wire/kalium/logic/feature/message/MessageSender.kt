@@ -187,10 +187,10 @@ internal class MessageSenderImpl internal constructor(
 
         return target.flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
-            // map a filtered recipients in case there is an error for x,y,z clients of users
+            // TODO(federation) map a filtered recipients in case there is an error for x,y,z clients of users
         }.fold({
-            // if (it is NetworkFailure.FederatedBackendError)
-            // handle federated failure to filter clients and add to QualifiedMessageOption.IgnoreSome
+            // TODO(federation) if (it is NetworkFailure.FederatedBackendError)
+            // TODO(federation) handle federated failure to filter clients and add to QualifiedMessageOption.IgnoreSome
             Either.Left(it)
         }, { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->

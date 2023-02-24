@@ -344,8 +344,7 @@ class MessageDataSource(
             }
             Either.Left(failure)
         }, { response: QualifiedSendMessageResponse ->
-            // not sure about this forced cast, but it seems should be the case here to receive a QualifiedSendMessageResponse.MessageSent
-            Either.Right(sendMessagePartialFailureMapper.fromDTO(response as QualifiedSendMessageResponse.MessageSent))
+            Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
         })
     }
 
