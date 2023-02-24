@@ -116,4 +116,8 @@ actual class MLSClientImpl actual constructor(
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         TODO("Not yet implemented")
     }
+
+    override fun newAcmeEnrollment(): E2EIClient {
+        TODO("Not yet implemented")
+    }
 }

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -215,6 +216,9 @@ class LogoutUseCaseTest {
         @Mock
         val pushTokenRepository = mock(classOf<PushTokenRepository>())
 
+        @Mock
+        val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
+
         val globalTestScope = TestScope()
 
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
@@ -227,7 +231,8 @@ class LogoutUseCaseTest {
             clearUserDataUseCase,
             userSessionScopeProvider,
             pushTokenRepository,
-            globalTestScope
+            globalTestScope,
+            userSessionWorkScheduler
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

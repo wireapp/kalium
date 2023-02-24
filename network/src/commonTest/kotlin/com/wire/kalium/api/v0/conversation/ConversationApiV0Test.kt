@@ -373,6 +373,29 @@ class ConversationApiV0Test : ApiTest {
         assertIs<NetworkResponse.Success<GenerateGuestRoomLinkResponse>>(response)
     }
 
+    @Test
+    fun givenRightAccess_whenRevokingGuestRoomLink_thenRequestIsConfiguredCorrectly() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertDelete()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.value}/${PATH_CODE}")
+            }
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+
+        // when
+        val response = conversationApi.revokeGuestRoomLink(conversationId)
+
+        // then
+        assertIs<NetworkResponse.Success<Unit>>(response)
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"

@@ -122,6 +122,10 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
+    override fun cancelScheduledSendingOfPendingMessages() {
+        WorkManager.getInstance(appContext).cancelUniqueWork(WORK_NAME_PREFIX_PER_USER + userId.value)
+    }
+
     private companion object {
         const val WORK_NAME_PREFIX_PER_USER = "scheduled-message-"
     }

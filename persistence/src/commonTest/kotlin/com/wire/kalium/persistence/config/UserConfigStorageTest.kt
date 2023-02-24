@@ -29,6 +29,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,6 +87,29 @@ class UserConfigStorageTest {
         userConfigStorage.persistFileSharingStatus(true, true)
         userConfigStorage.setFileSharingAsNotified()
         assertEquals(IsFileSharingEnabledEntity(true, false), userConfigStorage.isFileSharingEnabled())
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(false)
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(true)
+        assertTrue {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
     }
 
 }

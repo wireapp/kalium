@@ -55,10 +55,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
             // TODO handle other feature flags
-            checkFileSharingStatus(it.fileSharingModel)
-            checkMLSStatus(it.mlsModel)
-            checkClassifiedDomainsStatus(it.classifiedDomainsModel)
-            checkConferenceCalling(it.conferenceCallingModel)
+            handleFileSharingStatus(it.fileSharingModel)
+            handleMLSStatus(it.mlsModel)
+            handleClassifiedDomainsStatus(it.classifiedDomainsModel)
+            handleConferenceCalling(it.conferenceCallingModel)
+            handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -75,17 +76,22 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
         }
 
-    private fun checkConferenceCalling(model: ConferenceCallingModel) {
+    private fun handleConferenceCalling(model: ConferenceCallingModel) {
         val conferenceCallingEnabled = model.status == Status.ENABLED
         userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
     }
 
-    private fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
+    private fun handlePasswordChallengeStatus(model: ConfigsStatusModel) {
+        val isRequired = model.status == Status.ENABLED
+        userConfigRepository.setSecondFactorPasswordChallengeStatus(isRequired)
+    }
+
+    private fun handleClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
         val classifiedDomainsEnabled = model.status == Status.ENABLED
         userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, model.config.domains)
     }
 
-    private fun checkFileSharingStatus(model: ConfigsStatusModel) {
+    private fun handleFileSharingStatus(model: ConfigsStatusModel) {
         if (kaliumConfigs.fileRestrictionEnabled) {
             userConfigRepository.setFileSharingStatus(false, null)
         } else {
@@ -98,7 +104,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private suspend fun checkMLSStatus(featureConfig: MLSModel) {
+    private fun handleMLSStatus(featureConfig: MLSModel) {
         val mlsEnabled = featureConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)

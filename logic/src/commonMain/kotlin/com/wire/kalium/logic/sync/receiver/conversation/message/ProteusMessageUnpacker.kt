@@ -75,7 +75,7 @@ internal class ProteusMessageUnpackerImpl(
             .onFailure {
                 when (it) {
                     is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
-                    is ProteusFailure -> logger.e("ProteusFailure when processing message: $it", it.proteusException)
+                    is ProteusFailure -> logger.e("ProteusFailure when processing message: ${it.proteusException.code.name}")
                     else -> logger.e("Failure when processing message: $it")
                 }
             }.map { readableContent ->
