@@ -66,6 +66,11 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -174,4 +179,12 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
+
+    override suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
+    }
 }

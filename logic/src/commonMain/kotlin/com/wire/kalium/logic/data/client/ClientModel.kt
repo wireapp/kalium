@@ -49,7 +49,7 @@ data class Client(
     val cookie: String?,
     val capabilities: Capabilities?,
     val model: String?,
-    val mlsPublicKeys: Map<String, String>
+    val mlsPublicKeys: Map<String, String>,
 ) {
     val name by lazy { model ?: label ?: "Unknown Client" } // TODO: ask design about the name when model/liable is null
 }
@@ -79,5 +79,6 @@ enum class ClientCapability {
 data class OtherUserClient(
     val deviceType: DeviceType,
     val id: String,
-    val isValid: Boolean
+    val isValid: Boolean,
+    val isVerified: Boolean
 )

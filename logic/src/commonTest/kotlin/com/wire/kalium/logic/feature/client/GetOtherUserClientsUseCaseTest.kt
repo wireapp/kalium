@@ -43,7 +43,8 @@ class GetOtherUserClientsUseCaseTest {
         // Given
         val userId = UserId("123", "wire.com")
         val otherUserClients = listOf(
-            OtherUserClient(DeviceType.Phone, "111", true), OtherUserClient(DeviceType.Desktop, "2222", true)
+            OtherUserClient(DeviceType.Phone, "111", true, isVerified = false),
+            OtherUserClient(DeviceType.Desktop, "2222", true, isVerified = true)
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
             .withSuccessfulResponse(otherUserClients)
