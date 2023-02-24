@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -72,6 +73,11 @@ internal class SelfDeletingMessageManagerImpl(
             selfDeletingMessage.startSelfDeletionTimer(
                 expireAfterMillis = message.expireAfterMillis()
             )
+
+            selfDeletingMessage.timeLeft.filterIsInstance<SelfDeletingMessage.SelfDeletionTimerState>().collect {
+                messageRepository.deleteMessage(message.id, message.conversationId)
+                removeOutgoingSelfDeletingMessage(message.conversationId, message.id)
+            }
         }
     }
 
@@ -81,10 +87,14 @@ internal class SelfDeletingMessageManagerImpl(
         }
     }
 
+    private fun removeOutgoingSelfDeletingMessage(conversationId: ConversationId, messageId: String) {
+        outgoingSelfDeletingMessagesTimeLeft.update { currentMap ->
+            currentMap - (conversationId to messageId)
+        }
+    }
+
     private fun createOutgoingSelfDeletingMessage(conversationId: ConversationId, messageId: String): SelfDeletingMessage {
         return SelfDeletingMessage(
-            messageRepository = messageRepository,
-            conversationId = conversationId,
             messageId = messageId,
             coroutineScope = coroutineScope
         )
@@ -127,17 +137,17 @@ internal class SelfDeletingMessageManagerImpl(
 }
 
 internal class SelfDeletingMessage(
-    val conversationId: ConversationId,
     val messageId: String,
-    private val messageRepository: MessageRepository,
     private val coroutineScope: CoroutineScope
 ) : CoroutineScope by coroutineScope {
     private companion object {
         const val TIMER_UPDATE_INTERVAL_IN_MILLIS = 1000L
     }
 
-    private val mutableTimeLeft: MutableStateFlow<Long> = MutableStateFlow(0)
-    val timeLeft: StateFlow<Long> = mutableTimeLeft
+    private val mutableTimeLeft: MutableStateFlow<Pair<String, SelfDeletionTimerState>> =
+        MutableStateFlow(Pair(messageId, SelfDeletionTimerState.OnGoing(0)))
+    val timeLeft: StateFlow<Pair<String, SelfDeletionTimerState>> = mutableTimeLeft
+
     fun startSelfDeletionTimer(expireAfterMillis: Long) {
         launch {
             var elapsedTime = 0L
@@ -146,11 +156,17 @@ internal class SelfDeletingMessage(
                 delay(TIMER_UPDATE_INTERVAL_IN_MILLIS)
                 elapsedTime += TIMER_UPDATE_INTERVAL_IN_MILLIS
 
-                mutableTimeLeft.value = expireAfterMillis - elapsedTime
+                mutableTimeLeft.value = messageId to SelfDeletionTimerState.OnGoing(expireAfterMillis - elapsedTime)
             }
 
-            messageRepository.deleteMessage(messageId, conversationId)
+            mutableTimeLeft.value = messageId to SelfDeletionTimerState.Finished
         }
     }
 
+
+    sealed class SelfDeletionTimerState {
+        data class OnGoing(val timeLeft: Long) : SelfDeletionTimerState()
+
+        object Finished : SelfDeletionTimerState()
+    }
 }
