@@ -23,11 +23,15 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.call.CALL_SUBCONVERSATION_ID
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.call.usecase.LeaveStaleMlsConferenceUseCase
+import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.functional.onFailure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -55,14 +59,20 @@ class OnIncomingCall(
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = mappedConversationType == ConversationType.Conference
         val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
+        val qualifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         scope.launch {
             callRepository.createCall(
-                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId),
+                conversationId = qualifiedConversationId,
                 status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
                 isCameraOn = isVideoCall
             )
+
+            if (status == CallStatus.STILL_ONGOING && mappedConversationType == ConversationType.ConferenceMls) {
+                callingLogger.i("MLS conference is still on going, try to leave if we are still a member")
+                callRepository.leaveMlsConference(qualifiedConversationId)
+            }
         }
     }
 }

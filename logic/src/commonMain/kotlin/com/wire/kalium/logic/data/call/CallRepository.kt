@@ -531,6 +531,12 @@ internal class CallDataSource(
         staleParticipantJobs.clear()
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
+            .onSuccess {
+                callingLogger.i("Successfully left MLS conference")
+            }
+            .onFailure {
+                callingLogger.e("Failed to leave MLS conference: $it")
+            }
     }
 
     private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =
