@@ -132,16 +132,19 @@ internal class SelfDeletingMessage(
     private val messageRepository: MessageRepository,
     private val coroutineScope: CoroutineScope
 ) : CoroutineScope by coroutineScope {
+    private companion object {
+        const val TIMER_UPDATE_INTERVAL_IN_MILLIS = 1000L
+    }
 
     private val mutableTimeLeft: MutableStateFlow<Long> = MutableStateFlow(0)
     val timeLeft: StateFlow<Long> = mutableTimeLeft
     fun startSelfDeletionTimer(expireAfterMillis: Long) {
         launch {
-            var elapsedTime = 0
+            var elapsedTime = 0L
 
             while (elapsedTime < expireAfterMillis) {
-                delay(1000)
-                elapsedTime += 1000
+                delay(TIMER_UPDATE_INTERVAL_IN_MILLIS)
+                elapsedTime += TIMER_UPDATE_INTERVAL_IN_MILLIS
 
                 mutableTimeLeft.value = expireAfterMillis - elapsedTime
             }
