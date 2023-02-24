@@ -45,11 +45,13 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -125,7 +127,7 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, String>
+    ): Either<CoreFailure, MessageSent>
 
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
@@ -164,6 +166,12 @@ interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -178,7 +186,8 @@ class MessageDataSource(
     private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -303,7 +312,7 @@ class MessageDataSource(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
@@ -334,8 +343,8 @@ class MessageDataSource(
                 else -> networkFailure
             }
             Either.Left(failure)
-        }, {
-            Either.Right(it.time)
+        }, { response: QualifiedSendMessageResponse ->
+            Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
         })
     }
 
@@ -419,6 +428,22 @@ class MessageDataSource(
             messageUuid,
             serverDate,
             millis
+        )
+    }
+
+    /**
+     * Persist a list of users ids that failed to receive the message [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
+     */
+    override suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertFailedRecipientDelivery(
+            messageUuid,
+            conversationId.toDao(),
+            usersWithFailedDeliveryList.map { it.toDao() },
+            RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
         )
     }
 }
