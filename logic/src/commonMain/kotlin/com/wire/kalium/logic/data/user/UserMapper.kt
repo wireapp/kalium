@@ -92,6 +92,7 @@ interface UserMapper {
     fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity
 }
 
+@Suppress("TooManyFunctions")
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
@@ -325,7 +326,6 @@ internal class UserMapperImpl(
             ManagedByDTO.SCIM -> ManagedBy.SCIM
             ManagedByDTO.WIRE -> ManagedBy.WIRE
         }
-
 
     private fun ManagedByEntity.toModel(): ManagedBy = when (this) {
         ManagedByEntity.SCIM -> ManagedBy.SCIM
