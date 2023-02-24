@@ -62,7 +62,7 @@ sealed interface Message {
     }
 
     data class Ephemeral(
-        private val expireAfterMillis: Long,
+        val expireAfterMillis: Long,
         val selfDeletionDate: Long?,
         val ephemeralMessage: Regular
     ) : Standalone {

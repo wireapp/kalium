@@ -164,7 +164,7 @@ interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
-    suspend fun getAllEphemeralMessages(): Either<CoreFailure, List<Message.Ephemeral>>
+    suspend fun getEphemeralMessages(): Either<CoreFailure, List<Message>>
     suspend fun markSelfDeletionDate(conversationId: ConversationId, messageUuid: String, deletionDate: Long): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
@@ -396,7 +396,6 @@ class MessageDataSource(
         userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-
         messageDAO.markMessagesAsDecryptionResolved(
             conversationId = conversationId.toDao(),
             userId = userId.toDao(),
@@ -425,8 +424,10 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getAllEphemeralMessages(): Either<CoreFailure, List<Message.Ephemeral>> = wrapStorageRequest {
-        messageDAO.getAllEphemeralMessages()
+    override suspend fun getEphemeralMessages(): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+        messageDAO.getEphemeralMessages().map { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage)
+        }
     }
 
     override suspend fun markSelfDeletionDate(
