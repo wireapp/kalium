@@ -1092,7 +1092,7 @@ class UserSessionScope internal constructor(
 
 
     private val selfDeletingMessageManager = SelfDeletingMessageManagerImpl(
-        coroutineScope = this,
+        userSessionCoroutineScope = this,
         messageRepository = messageRepository
     )
 
