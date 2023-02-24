@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 
@@ -62,7 +62,7 @@ class MLSClientProviderImpl(
                 cryptoUserId,
                 currentClientId,
                 location,
-                SecurityHelper(passphraseStorage).mlsDBSecret(userId)
+                SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
             )
             mlsClient = newClient
             Either.Right(newClient)
