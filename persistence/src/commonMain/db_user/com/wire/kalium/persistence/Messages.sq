@@ -19,6 +19,7 @@ CREATE TABLE Message (
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
+      self_deletion_date INTEGER DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -600,3 +601,7 @@ UPDATE OR IGNORE Message
 SET creation_date = creation_date + :delivery_duration
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
+
+selectAllEphemeralMessages:
+SELECT * FROM Message
+WHERE expire_after_millis NOT NULL;

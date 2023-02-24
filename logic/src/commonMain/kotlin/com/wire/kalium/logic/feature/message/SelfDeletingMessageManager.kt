@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -17,68 +18,112 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
 
 interface SelfDeletingMessageManager {
-    fun enqueue(conversationId: ConversationId, messageId: String)
+    fun startSelfDeletion(conversationId: ConversationId, messageId: String)
 
     fun observePendingMessageDeletionState(): Flow<Map<String, Long>>
+
+    fun enqueuePendingSelfDeletionMessages()
 }
 
 internal class SelfDeletingMessageManagerImpl(
     private val coroutineScope: CoroutineScope,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val messageRepository: MessageRepository
-) : SelfDeletingMessageManager, CoroutineScope {
+) : SelfDeletingMessageManager, CoroutineScope by coroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default.limitedParallelism(1) + SupervisorJob()
 
-    private val outgoingSelfDeletingMessages: MutableStateFlow<Map<Pair<ConversationId, String>, SelfDeletingMessage>> =
+    private val outgoingSelfDeletingMessagesTimeLeft: MutableStateFlow<Map<Pair<ConversationId, String>, SelfDeletingMessage>> =
         MutableStateFlow(emptyMap())
 
-    override fun enqueue(conversationId: ConversationId, messageId: String) {
+    override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
-            if (outgoingSelfDeletingMessages.value[conversationId to messageId] != null) {
-                println("message deletion is already pending")
-            } else {
-                val selfDeletingMessage = SelfDeletingMessage(
-                    messageRepository = messageRepository,
-                    conversationId = conversationId,
-                    messageId = messageId,
-                    coroutineScope = coroutineScope
-                )
+            if (outgoingSelfDeletingMessagesTimeLeft.value[conversationId to messageId] != null) return@launch
 
-                outgoingSelfDeletingMessages.update { currentMap ->
-                    currentMap + ((conversationId to messageId) to selfDeletingMessage)
-                }
+            messageRepository.getMessageById(conversationId, messageId).map { message ->
+                require(message is Message.Ephemeral)
 
-                selfDeletingMessage.startDeletion()
+                enqueueMessage(message)
             }
         }
     }
 
-    override fun observePendingMessageDeletionState(): Flow<Map<String, Long>> =
-        outgoingSelfDeletingMessages.flatMapLatest { outgoingSelfDeletingMessages ->
-            val observableTimeLeftOfMessages: List<Flow<Pair<String, Long>>> = outgoingSelfDeletingMessages.map { entry ->
-                val (_, messageId) = entry.key
-                val selfDeletingMessage = entry.value
+    private fun enqueueMessage(message: Message.Ephemeral) {
+        launch {
+            val selfDeletingMessage = createOutgoingSelfDeletingMessage(message.conversationId, message.id)
+            addOutgoingSelfDeletingMessage(selfDeletingMessage)
 
-                val observableTimeLeftAssociatedWithMessageId = selfDeletingMessage.timeLeft.map { timeLeft ->
-                    messageId to timeLeft
-                }
+            val isEnqueuedForFirstTime = message.selfDeletionDate == null
 
-                observableTimeLeftAssociatedWithMessageId
+            if (isEnqueuedForFirstTime) {
+                messageRepository.markSelfDeletionDate(
+                    deletionTimeMark = Clock.System.now().toEpochMilliseconds() + message.expireAfterMillis
+                )
             }
 
+            selfDeletingMessage.startSelfDeletionTimer(
+                expireAfterMillis = calculateExpireAfterMillis(message)
+            )
+        }
+    }
+
+    private fun calculateExpireAfterMillis(ephemeralMessage: Message.Ephemeral): Long {
+        return if (ephemeralMessage.selfDeletionDate == null) 0
+        else Clock.System.now().toEpochMilliseconds() - ephemeralMessage.selfDeletionDate
+    }
+
+    private fun addOutgoingSelfDeletingMessage(selfDeletingMessage: SelfDeletingMessage) {
+        outgoingSelfDeletingMessagesTimeLeft.update { currentMap ->
+            currentMap + ((selfDeletingMessage.conversationId to selfDeletingMessage.messageId) to selfDeletingMessage)
+        }
+    }
+
+    private fun createOutgoingSelfDeletingMessage(conversationId: ConversationId, messageId: String): SelfDeletingMessage {
+        return SelfDeletingMessage(
+            messageRepository = messageRepository,
+            conversationId = conversationId,
+            messageId = messageId,
+            coroutineScope = coroutineScope
+        )
+    }
+
+    override fun observePendingMessageDeletionState(): Flow<Map<String, Long>> =
+        outgoingSelfDeletingMessagesTimeLeft.flatMapLatest { outgoingSelfDeletingMessages ->
+            val observableTimeLeftOfMessages = createObservableTimeLeftOfMessages(outgoingSelfDeletingMessages)
             combineTimeLeftOfSelfDeletingMessage(observableTimeLeftOfMessages)
         }
+
+    private fun createObservableTimeLeftOfMessages(
+        outgoingSelfDeletingMessages: Map<Pair<ConversationId, String>, SelfDeletingMessage>
+    ): List<Flow<Pair<String, Long>>> {
+        return outgoingSelfDeletingMessages.map { (conversationIdWithMessageId, selfDeletingMessage) ->
+            val (_, messageId) = conversationIdWithMessageId
+
+            selfDeletingMessage.timeLeft.map { timeLeft -> messageId to timeLeft }
+        }
+    }
 
     private fun combineTimeLeftOfSelfDeletingMessage(observableTimeLeftOfMessages: List<Flow<Pair<String, Long>>>): Flow<Map<String, Long>> {
         return combine(observableTimeLeftOfMessages) {
             it.associate { (messageId, timeLeft) -> messageId to timeLeft }
         }
     }
+
+    override fun enqueuePendingSelfDeletionMessages() {
+        launch {
+            messageRepository.getAllEphemeralMessages().onSuccess { ephemeralMessage ->
+                ephemeralMessage.forEach { ephemeralMessage ->
+                    enqueueMessage(ephemeralMessage)
+                }
+            }
+        }
+    }
+
 }
 
 internal class SelfDeletingMessage(
@@ -90,23 +135,19 @@ internal class SelfDeletingMessage(
 
     private val mutableTimeLeft: MutableStateFlow<Long> = MutableStateFlow(0)
     val timeLeft: StateFlow<Long> = mutableTimeLeft
-
-    fun startDeletion() {
+    fun startSelfDeletionTimer(expireAfterMillis: Long) {
         launch {
-            messageRepository.getMessageById(conversationId, messageId).map { message ->
-                require(message is Message.Ephemeral)
+            var elapsedTime = 0
 
-                var elapsedTime = 0L
+            while (elapsedTime < expireAfterMillis) {
+                delay(1000)
+                elapsedTime += 1000
 
-                while (elapsedTime < message.expireAfterMillis) {
-                    delay(1000)
-                    elapsedTime += 1000
-
-                    mutableTimeLeft.value = message.expireAfterMillis - elapsedTime
-                }
-
-                messageRepository.deleteMessage(messageId, conversationId)
+                mutableTimeLeft.value = expireAfterMillis - elapsedTime
             }
+
+            messageRepository.deleteMessage(messageId, conversationId)
         }
     }
+
 }

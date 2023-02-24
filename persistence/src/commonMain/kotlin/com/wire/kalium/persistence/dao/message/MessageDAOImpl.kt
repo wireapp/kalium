@@ -336,6 +336,12 @@ class MessageDAOImpl(
         )
     }
 
+    override suspend fun getEphemeralMessages(): List<MessageEntity> {
+        return withContext(coroutineContext){
+
+        }
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }

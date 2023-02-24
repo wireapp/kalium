@@ -56,6 +56,7 @@ sealed class MessageEntity(
 
     data class Ephemeral(
         val expireAfterMillis: Long,
+        val selfDeletionDate: Long?,
         val ephemeralMessage: Regular
     ) : MessageEntity(
         ephemeralMessage.id,

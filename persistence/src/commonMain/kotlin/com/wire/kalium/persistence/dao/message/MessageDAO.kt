@@ -122,5 +122,7 @@ interface MessageDAO {
         millis: Long
     )
 
+    suspend fun getEphemeralMessages(): List<MessageEntity>
+
     val platformExtensions: MessageExtensions
 }

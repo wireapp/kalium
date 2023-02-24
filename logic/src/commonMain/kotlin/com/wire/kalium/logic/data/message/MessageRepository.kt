@@ -164,6 +164,11 @@ interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
+    suspend fun getAllEphemeralMessages(): Either<CoreFailure, List<Message.Ephemeral>>
+    suspend fun markSelfDeletionDate(deletionTimeMark: Long): Either<CoreFailure, Unit> {
+
+    }
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -421,4 +426,9 @@ class MessageDataSource(
             millis
         )
     }
+
+    override suspend fun getAllEphemeralMessages(): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+        messageDAO.getAllEphemeralMessages()
+    }
+
 }
