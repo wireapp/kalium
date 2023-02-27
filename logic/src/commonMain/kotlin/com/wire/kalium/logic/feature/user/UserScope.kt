@@ -103,7 +103,7 @@ class UserScope internal constructor(
             sessionRepository = sessionRepository
         )
 
-    val isReadOnlyAccountUseCase: IsReadOnlyAccountUseCase
+    val isReadOnlyAccount: IsReadOnlyAccountUseCase
         get() = IsReadOnlyAccountUseCaseImpl(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
