@@ -61,10 +61,9 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
      */
     actual fun fromCurrentInstantToSimpleDateTimeString(): String {
-        val instant = Clock.System.now()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            secondsDateTimeFormat.format(instant)
+            secondsDateTimeFormat.format(System.currentTimeMillis())
         else
-            secondsDateTimeFormat.format(Date(instant.toEpochMilliseconds()))
+            secondsDateTimeFormat.format(Date(Clock.System.now().toEpochMilliseconds()))
     }
 }
