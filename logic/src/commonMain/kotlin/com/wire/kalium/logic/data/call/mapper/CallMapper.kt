@@ -87,9 +87,9 @@ class CallMapperImpl(
 
     override fun fromIntToConversationType(conversationType: Int): ConversationType {
         return when (conversationType) {
-            0 -> ConversationType.OneOnOne
-            2 -> ConversationType.Conference
-            3 -> ConversationType.ConferenceMls
+            ConversationTypeCalling.OneOnOne.avsValue -> ConversationType.OneOnOne
+            ConversationTypeCalling.Conference.avsValue -> ConversationType.Conference
+            ConversationTypeCalling.ConferenceMls.avsValue -> ConversationType.ConferenceMls
             else -> ConversationType.Unknown
         }
     }
