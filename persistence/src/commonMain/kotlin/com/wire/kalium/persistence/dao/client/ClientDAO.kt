@@ -25,7 +25,8 @@ data class Client(
     val userId: QualifiedIDEntity,
     val id: String,
     val deviceType: DeviceTypeEntity?,
-    val isValid: Boolean
+    val isValid: Boolean,
+    val isVerified: Boolean
 )
 
 data class InsertClientParam(
@@ -54,4 +55,5 @@ interface ClientDAO {
     suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
+    suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
 }

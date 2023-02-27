@@ -23,7 +23,6 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -66,6 +65,11 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -74,8 +78,6 @@ class ClientDataSource(
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -174,4 +176,12 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
+
+    override suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
+    }
 }
