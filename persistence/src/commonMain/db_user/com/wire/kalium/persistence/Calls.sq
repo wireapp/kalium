@@ -9,6 +9,7 @@ CREATE TABLE Call (
     caller_id TEXT NOT NULL,
     conversation_type TEXT AS ConversationEntity.Type NOT NULL,
     created_at TEXT NOT NULL,
+    type TEXT AS CallEntity.Type NOT NULL DEFAULT 'UNKNOWN',
     PRIMARY KEY (conversation_id, id)
 );
 CREATE INDEX call_date_index ON Call(created_at);

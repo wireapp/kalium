@@ -37,7 +37,8 @@ internal object CallMapper {
         id = dbEntry.id,
         status = dbEntry.status,
         callerId = dbEntry.caller_id,
-        conversationType = dbEntry.conversation_type
+        conversationType = dbEntry.conversation_type,
+        type = dbEntry.type
     )
 
     @Suppress("FunctionParameterNaming", "LongParameterList", "UNUSED_PARAMETER")
@@ -48,12 +49,14 @@ internal object CallMapper {
         callerId: String,
         conversationType: ConversationEntity.Type,
         createdAt: String,
+        type: CallEntity.Type
     ): CallEntity = CallEntity(
         conversationId = conversationId,
         id = id,
         status = status,
         callerId = callerId,
-        conversationType = conversationType
+        conversationType = conversationType,
+        type = type
     )
 }
 
