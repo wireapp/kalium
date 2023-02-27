@@ -1,3 +1,4 @@
+import com.wire.kalium.persistence.dao.ManagedByEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.model.LogoutReason;
 import kotlin.Boolean;
@@ -9,7 +10,8 @@ CREATE TABLE Accounts (
     tenant TEXT,
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
-    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0
+    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0,
+    managed_by TEXT AS ManagedByEntity NOT NULL DEFAULT 'WIRE'
 );
 
 insertOrReplace:
@@ -60,3 +62,6 @@ UPDATE Accounts SET scim_external_id = :scimExternalId, subject = :subject, tena
 
 fullAccountInfo:
 SELECT * FROM Accounts WHERE id = :userId;
+
+updateManagedBy:
+UPDATE Accounts SET managed_by = :managedBy WHERE id = :userId;
