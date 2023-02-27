@@ -22,59 +22,41 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-actual class NetworkStateObserverImpl(
-    appContext: Context,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : NetworkStateObserver {
+actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
     private val connectivityManager: ConnectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager
-    private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.io)
-    private val networkStateSharedFlow: Flow<NetworkState> = callbackFlow {
+    private val networkStateFlow: MutableStateFlow<NetworkState>
+
+    init {
+        val initialState = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState()
+        networkStateFlow = MutableStateFlow(initialState)
+
         val callback = object : ConnectivityManager.NetworkCallback() {
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                trySend(networkCapabilities.toState())
+                networkStateFlow.tryEmit(networkCapabilities.toState())
             }
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 super.onBlockedStatusChanged(network, blocked)
-                trySend(if (blocked) NetworkState.ConnectedWithoutInternet else NetworkState.ConnectedWithInternet)
+                networkStateFlow.tryEmit(if (blocked) NetworkState.ConnectedWithoutInternet else NetworkState.ConnectedWithInternet)
             }
 
             override fun onLost(network: Network) {
-                trySend(NetworkState.NotConnected)
+                networkStateFlow.tryEmit(NetworkState.NotConnected)
                 super.onLost(network)
             }
 
             override fun onUnavailable() {
-                trySend(NetworkState.NotConnected)
+                networkStateFlow.tryEmit(NetworkState.NotConnected)
                 super.onUnavailable()
             }
         }
-
-        trySend(connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState())
-
         connectivityManager.registerDefaultNetworkCallback(callback)
-
-        awaitClose {
-            connectivityManager.unregisterNetworkCallback(callback)
-        }
-    }.shareIn(
-        scope = scope,
-        started = SharingStarted.WhileSubscribed(),
-        replay = 1
-    )
+    }
 
     private fun NetworkCapabilities?.toState(): NetworkState {
         val hasInternet = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
@@ -88,5 +70,5 @@ actual class NetworkStateObserverImpl(
         }
     }
 
-    override fun observeNetworkState(): Flow<NetworkState> = networkStateSharedFlow.distinctUntilChanged()
+    override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
 }

@@ -15,24 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.unauthenticated
 
-package com.wire.kalium.logic.feature.user
+import com.wire.kalium.network.utils.NetworkResponse
 
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.functional.fold
+interface VerificationCodeApi {
 
-/**
- * Checks if the self user is a team member or not.
- * @return true if the self user is a team member, false otherwise.
- */
-fun interface IsSelfATeamMemberUseCase {
-    suspend operator fun invoke(): Boolean
-}
+    /**
+     * A backend-facing action that requires a verification code
+     */
+    enum class ActionToBeVerified {
+        LOGIN_OR_CLIENT_REGISTRATION,
+        CREATE_SCIM_TOKEN,
+        DELETE_TEAM
+    }
 
-class IsSelfATeamMemberUseCaseImpl internal constructor(
-    private val selfTeamIdProvider: SelfTeamIdProvider
-) : IsSelfATeamMemberUseCase {
-    override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
-        it != null
-    })
+    /**
+     * Sends a verification code to an email.
+     * This verification might be required by some endpoints.
+     * @see ActionToBeVerified
+     */
+    suspend fun sendVerificationCode(
+        email: String,
+        action: ActionToBeVerified
+    ): NetworkResponse<Unit>
 }

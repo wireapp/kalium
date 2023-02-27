@@ -346,7 +346,9 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo =
-        conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOne()
+        withContext(coroutineContext) {
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOne()
+        }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)

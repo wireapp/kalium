@@ -15,24 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v3.unauthenticated
 
-package com.wire.kalium.logic.feature.user
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v0.unauthenticated.VerificationCodeApiV0
 
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.functional.fold
-
-/**
- * Checks if the self user is a team member or not.
- * @return true if the self user is a team member, false otherwise.
- */
-fun interface IsSelfATeamMemberUseCase {
-    suspend operator fun invoke(): Boolean
-}
-
-class IsSelfATeamMemberUseCaseImpl internal constructor(
-    private val selfTeamIdProvider: SelfTeamIdProvider
-) : IsSelfATeamMemberUseCase {
-    override suspend operator fun invoke(): Boolean = selfTeamIdProvider().fold({ false }, {
-        it != null
-    })
-}
+internal open class VerificationCodeApiV3 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : VerificationCodeApiV0(unauthenticatedNetworkClient)
