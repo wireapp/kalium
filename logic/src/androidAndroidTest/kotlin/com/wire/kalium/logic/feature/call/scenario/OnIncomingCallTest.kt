@@ -20,14 +20,16 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
-import io.mockative.anything
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -41,7 +43,7 @@ class OnIncomingCallTest {
     val testScope = TestScope()
 
     @Test
-    fun givenStillOngoingMlsConference_whenIncomingCall_thenAttemptToLeaveMlsConference() = testScope.runTest() {
+    fun givenNewIncomingCall_whenIncomingCall_thenAttemptToLeaveMlsConference() = testScope.runTest() {
         val (arrangement, callback) = Arrangement(testScope)
             .arrange()
 
@@ -52,14 +54,21 @@ class OnIncomingCallTest {
             clientId = TestClient.CLIENT_ID.value,
             isVideoCall = false,
             shouldRing = false,
-            conversationType = ConversationTypeCalling.ConferenceMls.avsValue,
+            conversationType = ConversationTypeCalling.Conference.avsValue,
             arg = null
         )
         advanceUntilIdle()
 
         verify(arrangement.callRepository)
-            .suspendFunction(arrangement.callRepository::leaveMlsConference)
-            .with(anything())
+            .suspendFunction(arrangement.callRepository::createCall)
+            .with(
+                eq(TestConversation.CONVERSATION.id),
+                eq(CallStatus.INCOMING),
+                eq(TestUser.USER_ID),
+                eq(true),
+                eq(false),
+                eq(ConversationType.Conference)
+            )
             .wasInvoked(exactly = once)
     }
 
