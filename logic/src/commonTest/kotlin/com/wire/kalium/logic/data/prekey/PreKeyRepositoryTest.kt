@@ -20,26 +20,43 @@ package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.createSessions
+import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.PrekeyDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PreKeyRepositoryTest {
 
     @Test
@@ -111,6 +128,128 @@ class PreKeyRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenFetchingPreKeysWithNullClients_whenPreparingSessions_thenTryToInvalidateINvalidSessions() = runTest {
+        val preKey = PreKeyDTO(42, "encodedData")
+        val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
+
+        val userPreKeysResult = NetworkResponse.Success(
+            mapOf(
+                TEST_USER_ID_1.domain to mapOf(
+                    TEST_USER_ID_1.value to mapOf(
+                        TEST_CLIENT_ID_1.value to preKey,
+                        "invalidClient" to null,
+
+                        )
+                )
+            ),
+            emptyMap(),
+            200
+        )
+        val expectedValid: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
+            mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to prekeyCrypto)))
+
+        val expectedInvalid: Map<UserId, List<ClientId>> =
+            mapOf(TEST_USER_ID_1 to listOf(ClientId("invalidClient")))
+
+        val (arrangement, preKeyRepository) = Arrangement()
+            .withDoesSessionExist(false)
+            .withPreKeysOfClientsByQualifiedUsersSuccess(userPreKeysResult)
+            .arrange()
+
+        preKeyRepository.establishSessions(expectedInvalid)
+
+        verify(arrangement.proteusClient)
+            .coroutine { arrangement.proteusClient.createSessions(expectedValid) }
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.clientDAO)
+            .coroutine {
+                arrangement.clientDAO.tryMarkInvalid(
+                    listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
+                )
+            }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCreatingSessionsThrows_whenPreparingSessions_thenItShouldFail() = runTest {
+        val exception = ProteusException("PANIC!!!11!eleven!", ProteusException.Code.PANIC)
+
+        val preKey = PreKeyDTO(42, "encodedData")
+        val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
+
+        val (_, prekeyRepository) = Arrangement()
+            .withGetRemoteUsersPreKeySuccess(userPreKeysResult)
+            .withDoesSessionExist(false)
+            .withCreateSession(exception)
+            .arrange()
+
+        prekeyRepository.establishSessions(mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
+            .shouldFail {
+                assertIs<ProteusFailure>(it)
+                assertEquals(exception, it.proteusException)
+            }
+    }
+
+    @Test
+    fun givenASessionIsNotEstablished_whenPreparingSessions_thenPreKeysShouldBeFetched() = runTest {
+
+        val (arrangement, sessionEstablisher) = Arrangement()
+            .withDoesSessionExist(false)
+            .withGetRemoteUsersPreKeySuccess(
+                mapOf(
+                    TEST_USER_ID_1.domain to mapOf(
+                        TEST_USER_ID_1.value to mapOf(
+                            TEST_CLIENT_ID_1.value to PreKeyDTO(
+                                42,
+                                "encodedData"
+                            )
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        sessionEstablisher.establishSessions(mapOf(TEST_RECIPIENT_1.id to TEST_RECIPIENT_1.clients))
+
+        verify(arrangement.preKeyApi)
+            .suspendFunction(arrangement.preKeyApi::getUsersPreKey)
+            .with(
+                eq(
+                    mapOf(
+                        TEST_USER_ID_1.domain to mapOf(
+                            TEST_USER_ID_1.value to listOf(TEST_CLIENT_ID_1.value)
+                        )
+                    )
+                )
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenFetchingPreKeysFails_whenPreparingSessions_thenFailureShouldBePropagated() = runTest {
+        val failure = NETWORK_ERROR
+
+        val (_, sessionEstablisher) = Arrangement()
+            .withDoesSessionExist(false)
+            .withGetRemoteUsersPreKeyFail(NetworkResponse.Error(failure.kaliumException))
+            .arrange()
+
+        sessionEstablisher.establishSessions(mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
+            .shouldFail {
+                assertIs<NetworkFailure.ServerMiscommunication>(it)
+                assertEquals(failure.kaliumException, it.kaliumException)
+            }
+    }
+
+    private companion object {
+        val TEST_USER_ID_1 = TestUser.USER_ID
+        val TEST_CLIENT_ID_1 = TestClient.CLIENT_ID
+        val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
+        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -125,13 +264,21 @@ class PreKeyRepositoryTest {
         @Mock
         val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
 
-        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClientProvider, prekeyDAO)
+        @Mock
+        val clientDAO: ClientDAO = mock(ClientDAO::class)
+
+        private val preKeyRepository: PreKeyDataSource = PreKeyDataSource(preKeyApi, proteusClientProvider, prekeyDAO, clientDAO)
 
         init {
             given(proteusClientProvider)
                 .suspendFunction(proteusClientProvider::getOrCreate)
                 .whenInvoked()
                 .thenReturn(proteusClient)
+
+            given(proteusClientProvider)
+                .suspendFunction(proteusClientProvider::getOrError)
+                .whenInvoked()
+                .thenReturn(Either.Right(proteusClient))
         }
 
         fun withGetRemoteUsersPreKeySuccess(preKeyMap: DomainToUserIdToClientsToPreKeyMap) = apply {
@@ -141,11 +288,18 @@ class PreKeyRepositoryTest {
                 .then { NetworkResponse.Success(preKeyMap, emptyMap(), 200) }
         }
 
-        fun withGetRemoteUsersPreKeyFail() = apply {
-            given(preKeyApi)
-                .suspendFunction(preKeyApi::getUsersPreKey)
-                .whenInvokedWith(any())
-                .then { NetworkResponse.Error(KaliumException.GenericError(IOException("offline"))) }
+        fun withGetRemoteUsersPreKeyFail(error: NetworkResponse.Error? = null) = apply {
+            if (error == null) {
+                given(preKeyApi)
+                    .suspendFunction(preKeyApi::getUsersPreKey)
+                    .whenInvokedWith(any())
+                    .then { NetworkResponse.Error(KaliumException.GenericError(IOException("offline"))) }
+            } else {
+                given(preKeyApi)
+                    .suspendFunction(preKeyApi::getUsersPreKey)
+                    .whenInvokedWith(any())
+                    .then { error }
+            }
         }
 
         suspend fun withGenerateNewPreKeysSuccess(from: Int, count: Int, expected: List<PreKeyCrypto>) = apply {
@@ -158,6 +312,36 @@ class PreKeyRepositoryTest {
             given(proteusClient)
                 .coroutine { proteusClient.newLastPreKey() }
                 .then { expected }
+        }
+
+        fun withMarkInvalid() = apply {
+            given(clientDAO)
+                .suspendFunction(clientDAO::tryMarkInvalid)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+        }
+
+        fun withDoesSessionExist(result: Boolean) = apply {
+            given(proteusClient)
+                .suspendFunction(proteusClient::doesSessionExist)
+                .whenInvokedWith(any())
+                .then { result }
+        }
+
+        fun withPreKeysOfClientsByQualifiedUsersSuccess(
+            preKeyMap: NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>>
+        ) = apply {
+            given(preKeyApi)
+                .suspendFunction(preKeyApi::getUsersPreKey)
+                .whenInvokedWith(any())
+                .then { preKeyMap }
+        }
+
+        fun withCreateSession(throwable: Throwable) = apply {
+            given(proteusClient)
+                .suspendFunction(proteusClient::createSession)
+                .whenInvokedWith(anything(), anything())
+                .thenThrow(throwable)
         }
 
         fun arrange() = this to preKeyRepository

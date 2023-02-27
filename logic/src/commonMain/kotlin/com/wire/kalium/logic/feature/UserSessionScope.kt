@@ -547,7 +547,7 @@ class UserSessionScope internal constructor(
         )
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
@@ -921,7 +921,8 @@ class UserSessionScope internal constructor(
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
             authenticatedDataSourceSet.proteusClientProvider,
-            userStorage.database.prekeyDAO
+            userStorage.database.prekeyDAO,
+            userStorage.database.clientDAO
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -999,7 +1000,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            userStorage,
             this,
         )
     val messages: MessageScope
@@ -1022,7 +1022,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            applicationMessageHandler,
             userStorage,
             userPropertyRepository,
             incrementalSyncRepository,

@@ -27,7 +27,10 @@ import java.io.File
 import java.io.FileNotFoundException
 
 @Suppress("TooManyFunctions")
-class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, private val databaseKey: ProteusDBSecret) : ProteusClient {
+class ProteusClientCoreCryptoImpl internal constructor(
+    private val rootDir: String,
+    private val databaseKey: ProteusDBSecret
+) : ProteusClient {
 
     private val path: String = "$rootDir/$KEYSTORE_NAME"
     private lateinit var coreCrypto: CoreCrypto
@@ -102,6 +105,10 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
 
     override fun getLocalFingerprint(): ByteArray {
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
+    }
+
+    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = wrapException {
+        coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray()
     }
 
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
