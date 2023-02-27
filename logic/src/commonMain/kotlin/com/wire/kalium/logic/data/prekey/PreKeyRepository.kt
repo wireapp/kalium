@@ -106,7 +106,9 @@ class PreKeyDataSource(
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
     }
 
-    private suspend fun establishProteusSessions(preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>): Either<CoreFailure, Unit> =
+    private suspend fun establishProteusSessions(
+        preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+    ): Either<CoreFailure, Unit> =
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
                 val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)

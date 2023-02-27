@@ -58,7 +58,7 @@ internal class SessionEstablisherImpl internal constructor(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
         getAllMissingClients(recipients).flatMap {
-            if(it.isEmpty()) {
+            if (it.isEmpty()) {
                 return@flatMap Either.Right(Unit)
             }
             preKeyRepository.establishSessions(it)

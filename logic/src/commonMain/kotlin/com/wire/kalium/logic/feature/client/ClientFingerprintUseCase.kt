@@ -60,7 +60,6 @@ class ClientFingerprintUseCase internal constructor(
             Result::Success
         )
 
-
     private suspend fun onProteusFailure(proteusFailure: ProteusFailure, userId: UserId, clientId: ClientId): Result =
         when (proteusFailure.proteusException.code) {
             ProteusException.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId)
