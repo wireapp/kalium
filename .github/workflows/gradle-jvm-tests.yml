@@ -1,6 +1,7 @@
 name: "JVM & JS Tests"
 
 on:
+  merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
   push:
