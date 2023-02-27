@@ -197,7 +197,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = Arrangement.callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.Conference
         )
 
         // then
@@ -246,7 +247,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = Arrangement.callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.Conference
         )
 
         // then
@@ -291,7 +293,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.Conference
         )
 
         // then
@@ -345,7 +348,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.Conference
         )
 
         // then
@@ -393,7 +397,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.Conference
         )
 
         // then
@@ -426,7 +431,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.OneOnOne
         )
 
         // then
@@ -463,7 +469,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.OneOnOne
         )
 
         // then
@@ -500,7 +507,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.OneOnOne
         )
 
         verify(arrangement.persistMessage)
@@ -545,7 +553,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.OneOnOne
         )
 
         // then
@@ -581,7 +590,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            type = ConversationType.OneOnOne
         )
 
         // then
@@ -1392,7 +1402,8 @@ class CallRepositoryTest {
         id = "abcd-1234",
         status = CallEntity.Status.STARTED,
         callerId = callerId.toString(),
-        conversationType = ConversationEntity.Type.GROUP
+        conversationType = ConversationEntity.Type.GROUP,
+        type = CallEntity.Type.CONFERENCE
     )
 
     private fun createCallMetadata() = CallMetadata(

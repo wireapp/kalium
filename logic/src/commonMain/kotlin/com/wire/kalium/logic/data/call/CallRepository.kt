@@ -38,7 +38,9 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -83,6 +85,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlin.math.max
+import kotlin.reflect.typeOf
 import kotlin.time.toDuration
 
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
@@ -100,6 +103,7 @@ interface CallRepository {
     suspend fun establishedCallConversationId(): ConversationId?
     suspend fun createCall(
         conversationId: ConversationId,
+        type: ConversationType,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
@@ -175,6 +179,7 @@ internal class CallDataSource(
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,
+        conversationType: ConversationType,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
@@ -193,6 +198,7 @@ internal class CallDataSource(
         val callEntity = callMapper.toCallEntity(
             conversationId = conversationId,
             id = uuid4().toString(),
+            type = conversationType,
             status = status,
             conversationType = conversation.conversation.type,
             callerId = callerIdWithDomain
@@ -471,6 +477,7 @@ internal class CallDataSource(
         )
 
     override suspend fun updateOpenCallsToClosedStatus() {
+        leavePreviouslyJoinedMlsConferences()
         callDAO.updateOpenCallsToClosedStatus()
     }
 
@@ -496,6 +503,15 @@ internal class CallDataSource(
                 )
             }
         }
+
+    private suspend fun leavePreviouslyJoinedMlsConferences() {
+        callDAO.observeEstablishedCalls()
+            .first()
+            .filter { it.type == CallEntity.Type.MLS_CONFERENCE }
+            .forEach {
+                leaveMlsConference(it.conversationId.toModel())
+            }
+    }
 
     override suspend fun joinMlsConference(
         conversationId: ConversationId,

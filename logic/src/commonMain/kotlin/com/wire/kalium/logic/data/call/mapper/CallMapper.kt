@@ -48,6 +48,7 @@ interface CallMapper {
     fun toCallEntity(
         conversationId: ConversationId,
         id: String,
+        type: ConversationType,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -118,6 +119,7 @@ class CallMapperImpl(
     override fun toCallEntity(
         conversationId: ConversationId,
         id: String,
+        type: ConversationType,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -129,7 +131,8 @@ class CallMapperImpl(
         id = id,
         status = toCallEntityStatus(callStatus = status),
         callerId = callerId.toString(),
-        conversationType = toConversationEntityType(conversationType = conversationType)
+        conversationType = toConversationEntityType(conversationType = conversationType),
+        type = toCallEntityType(type)
     )
 
     override fun toCall(
@@ -156,6 +159,13 @@ class CallMapperImpl(
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
         Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
         else -> ConversationEntity.Type.ONE_ON_ONE
+    }
+
+    private fun toCallEntityType(conversationType: ConversationType): CallEntity.Type = when(conversationType) {
+        ConversationType.OneOnOne -> CallEntity.Type.ONE_ON_ONE
+        ConversationType.Conference -> CallEntity.Type.CONFERENCE
+        ConversationType.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
+        ConversationType.Unknown -> CallEntity.Type.CONFERENCE
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {

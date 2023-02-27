@@ -227,6 +227,7 @@ class CallManagerImpl internal constructor(
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
+            type = conversationType,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,

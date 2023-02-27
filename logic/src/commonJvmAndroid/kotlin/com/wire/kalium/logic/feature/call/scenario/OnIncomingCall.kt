@@ -62,13 +62,9 @@ class OnIncomingCall(
                 status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
-                isCameraOn = isVideoCall
+                isCameraOn = isVideoCall,
+                type = mappedConversationType
             )
-
-            if (status == CallStatus.STILL_ONGOING && mappedConversationType == ConversationType.ConferenceMls) {
-                callingLogger.i("MLS conference is still on going, try to leave if we are still a member")
-                callRepository.leaveMlsConference(qualifiedConversationId)
-            }
         }
     }
 }
