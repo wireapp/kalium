@@ -65,3 +65,6 @@ SELECT * FROM Accounts WHERE id = :userId;
 
 updateManagedBy:
 UPDATE Accounts SET managed_by = :managedBy WHERE id = :userId;
+
+managedBy:
+SELECT managed_by FROM Accounts WHERE id = :userId;

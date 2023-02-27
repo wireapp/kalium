@@ -103,6 +103,12 @@ class UserScope internal constructor(
             sessionRepository = sessionRepository
         )
 
+    val isReadOnlyAccountUseCase: IsReadOnlyAccountUseCase
+        get() = IsReadOnlyAccountUseCaseImpl(
+            selfUserId = selfUserId,
+            sessionRepository = sessionRepository
+        )
+
     val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
         get() = ObserveReadReceiptsEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository

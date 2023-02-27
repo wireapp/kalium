@@ -76,6 +76,7 @@ interface SessionRepository {
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
+    suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -211,6 +212,10 @@ internal class SessionDataSource(
 
     override suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?> = wrapStorageNullableRequest {
         authTokenStorage.getToken(userId.toDao())?.cookieLabel
+    }
+
+    override suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        accountsDAO.getAccountManagedBy(userId.toDao()) != ManagedByEntity.WIRE
     }
 
     internal fun ManagedByDTO.toDao() = when (this) {
