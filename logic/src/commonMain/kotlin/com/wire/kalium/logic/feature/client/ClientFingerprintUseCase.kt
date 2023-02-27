@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -27,7 +26,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapCryptoRequest
 
@@ -41,17 +42,24 @@ import com.wire.kalium.logic.wrapCryptoRequest
  */
 
 class ClientFingerprintUseCase internal constructor(
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val prekeyRepository: PreKeyRepository
 ) {
-    suspend fun invoke(userId: UserId, clientId: ClientId): Result = wrapCryptoRequest {
-        proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
-    }.fold(
-        {
-            onProteusFailure(it, userId, clientId)
-        },
-        Result::Success
-    )
+    suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
+        proteusClientProvider.getOrError().flatMap { proteusClient ->
+            wrapCryptoRequest {
+                proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
+            }
+        }.fold(
+            {
+                when (it) {
+                    is ProteusFailure -> onProteusFailure(it, userId, clientId)
+                    else -> Result.Failure(it)
+                }
+            },
+            Result::Success
+        )
+
 
     private suspend fun onProteusFailure(proteusFailure: ProteusFailure, userId: UserId, clientId: ClientId): Result =
         when (proteusFailure.proteusException.code) {
@@ -63,8 +71,10 @@ class ClientFingerprintUseCase internal constructor(
         return prekeyRepository.establishSessions(mapOf(userId to listOf(clientId))).fold(
             { error -> Either.Left(error) },
             {
-                wrapCryptoRequest {
-                    proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
+                proteusClientProvider.getOrError().flatMap { proteusClient ->
+                    wrapCryptoRequest {
+                        proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
+                    }
                 }
             }
         )
