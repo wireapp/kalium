@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
@@ -107,33 +106,6 @@ class SessionEstablisherTest {
     }
 
     @Test
-    fun givenFetchingPreKeysSucceeds_whenPreparingSessions_thenProteusClientShouldCreateSessions() = runTest {
-        val preKey = PreKeyDTO(42, "encodedData")
-        val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
-        val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
-        val expected: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
-            mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to prekeyCrypto)))
-
-        val (arrangement, sessionEstablisher) = Arrangement()
-            .withDoesSessionExist(false)
-//             .withPreKeysOfClientsByQualifiedUsers(Either.Right(userPreKeysResult))
-            .withEstablishSessions(Either.Right(Unit))
-            .arrange()
-
-        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
-
-        verify(arrangement.preKeyRepository)
-            .suspendFunction( arrangement.preKeyRepository::establishSessions)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.proteusClient)
-            .suspendFunction(arrangement.proteusClient::doesSessionExist)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenCreatingSessionsSucceeds_whenPreparingSessions_thenItShouldSucceed() = runTest {
         val preKey = PreKeyDTO(42, "encodedData")
         val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
@@ -194,15 +166,6 @@ class SessionEstablisherTest {
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
-
-//         fun withPreKeysOfClientsByQualifiedUsers(
-//             result: Either<NetworkFailure, Map<String, Map<String, Map<String, PreKeyDTO?>>>>
-//         ) = apply {
-//             given(preKeyRepository)
-//                 .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
-//                 .whenInvokedWith(anything())
-//                 .then { result }
-//         }
 
         fun withDoesSessionExist(result: Boolean) = apply {
             given(proteusClient)
