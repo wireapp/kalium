@@ -21,6 +21,7 @@ package com.wire.kalium.util
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.text.SimpleDateFormat
@@ -31,9 +32,11 @@ import java.util.TimeZone
 
 actual open class PlatformDateTimeUtil actual constructor() {
 
-    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.pattern, Locale.getDefault()).apply {
+    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.millisPattern, Locale.getDefault()).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
+
+    private val secondsDateTimeFormat = SimpleDateFormat(DateTimeUtil.secondsPattern, Locale.getDefault())
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
@@ -51,4 +54,17 @@ actual open class PlatformDateTimeUtil actual constructor() {
             isoDateTimeFormatter.format(instant.toJavaInstant())
         else
             isoDateTimeFormat.format(Date(instant.toEpochMilliseconds()))
+
+
+    /**
+     * Parse current [kotlinx.datetime.Instant] into date-time string in ISO-8601 format with up to seconds precision.
+     * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
+     */
+    actual fun fromCurrentInstantToSimpleDateTimeString(): String {
+        val instant = Clock.System.now()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            secondsDateTimeFormat.format(instant)
+        else
+            secondsDateTimeFormat.format(Date(instant.toEpochMilliseconds()))
+    }
 }

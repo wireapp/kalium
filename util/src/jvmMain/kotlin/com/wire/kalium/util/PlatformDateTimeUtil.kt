@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatterBuilder
 
 actual open class PlatformDateTimeUtil actual constructor() {
     private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
+    private val simpleIsoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(0).toFormatter()
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
@@ -36,4 +37,11 @@ actual open class PlatformDateTimeUtil actual constructor() {
      */
     actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
         isoDateTimeFormatter.format(instant.toJavaInstant())
+
+    /**
+     * Parse current [kotlinx.datetime.Instant] into date-time string in ISO-8601 format with up to seconds precision.
+     * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
+     */
+    actual fun fromCurrentInstantToSimpleDateTimeString(): String =
+        simpleIsoDateTimeFormatter.format(Instant.now().toJavaInstant())
 }
