@@ -1380,6 +1380,32 @@ class CallRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenMlsConferenceCall_whenClosingOpenCalls_thenAttemptToLeaveMlsConference() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.ESTABLISHED,
+            callerId = "callerId@domain",
+            type = CallEntity.Type.MLS_CONFERENCE
+        )
+        val (arrangement, callRepository) = Arrangement()
+            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        // when
+        callRepository.updateOpenCallsToClosedStatus()
+        yield()
+        advanceUntilIdle()
+
+        // then
+        verify(arrangement.leaveSubconversationUseCase)
+            .suspendFunction(arrangement.leaveSubconversationUseCase::invoke)
+            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            .wasInvoked(exactly = once)
+
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
