@@ -437,6 +437,20 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             }
         }
 
+        data class GuestRoomLinkUpdated(
+            override val id: String,
+            override val transient: Boolean,
+            val model: ConfigsStatusModel,
+        ) : FeatureConfig(id, transient) {
+            override fun toString(): String {
+                val properties = mapOf(
+                    "id" to id.obfuscateId(),
+                    "status" to model.status.name,
+                )
+                return "${properties.toJsonElement()}"
+            }
+        }
+
         data class UnknownFeatureUpdated(
             override val id: String,
             override val transient: Boolean,

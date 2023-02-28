@@ -109,13 +109,23 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box.encryptFromSession(sessionId.value, message) }
+        return wrapException {
+            box.encryptFromSession(sessionId.value, message)
+        }?.let { it } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return sessionIds.associateWith { sessionId ->
-            encrypt(message, sessionId)
-        }
+            try {
+                encrypt(message, sessionId)
+            } catch (e: ProteusException) {
+                if (e.code == ProteusException.Code.SESSION_NOT_FOUND) {
+                    ByteArray(0)
+                } else {
+                    throw e
+                }
+            }
+        }.filter { it.value.isNotEmpty() }
     }
 
     override suspend fun encryptWithPreKey(

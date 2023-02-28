@@ -21,12 +21,14 @@ package com.wire.kalium.network.api.v2.unauthenticated.networkContainer
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.v2.unauthenticated.LoginApiV2
 import com.wire.kalium.network.api.v2.unauthenticated.RegisterApiV2
 import com.wire.kalium.network.api.v2.unauthenticated.SSOLoginApiV2
+import com.wire.kalium.network.api.v2.unauthenticated.VerificationCodeApiV2
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProvider
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProviderImpl
@@ -45,6 +47,7 @@ class UnauthenticatedNetworkContainerV2 constructor(
         engine
     ) {
     override val loginApi: LoginApi get() = LoginApiV2(unauthenticatedNetworkClient)
+    override val verificationCodeApi: VerificationCodeApi get() = VerificationCodeApiV2(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV2(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV2(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)

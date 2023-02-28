@@ -50,7 +50,7 @@ class UserConfigStorageTest {
     }
 
     @Test
-    fun givenAFileSharingStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
+    fun givenAFileSharingStatusValue_whenCAllPersistItSaveAnd_thenCanRestoreTheValueLocally() = runTest {
         userConfigStorage.persistFileSharingStatus(true, null)
         assertEquals(IsFileSharingEnabledEntity(true, null), userConfigStorage.isFileSharingEnabled())
 
@@ -112,4 +112,19 @@ class UserConfigStorageTest {
         }
     }
 
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() {
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = false, isStatusChanged = false)
+        userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
+            assertFalse { it }
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() {
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = false)
+        userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
+            assertTrue { it }
+        }
+    }
 }

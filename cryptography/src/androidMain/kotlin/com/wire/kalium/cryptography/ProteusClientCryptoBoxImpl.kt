@@ -129,18 +129,16 @@ class ProteusClientCryptoBoxImpl constructor(
 
     override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray = lock.withLock {
         withContext(defaultContext) {
-            withContext(defaultContext) {
-                val session = box.tryGetSession(sessionId.value)
-                wrapException {
-                    if (session != null) {
-                        val decryptedMessage = session.decrypt(message)
-                        session.save()
-                        decryptedMessage
-                    } else {
-                        val result = box.initSessionFromMessage(sessionId.value, message)
-                        result.session.save()
-                        result.message
-                    }
+            val session = box.tryGetSession(sessionId.value)
+            wrapException {
+                if (session != null) {
+                    val decryptedMessage = session.decrypt(message)
+                    session.save()
+                    decryptedMessage
+                } else {
+                    val result = box.initSessionFromMessage(sessionId.value, message)
+                    result.session.save()
+                    result.message
                 }
             }
         }
@@ -160,11 +158,17 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> =
-        lock.withLock {
-            sessionIds.associateWith { sessionId ->
+        sessionIds.associateWith { sessionId ->
+            try {
                 encrypt(message, sessionId)
+            } catch (e: ProteusException) {
+                if (e.code == ProteusException.Code.SESSION_NOT_FOUND) {
+                    ByteArray(0)
+                } else {
+                    throw e
+                }
             }
-        }
+        }.filter { it.value.isNotEmpty() }
 
     override suspend fun encryptWithPreKey(
         message: ByteArray,

@@ -154,6 +154,27 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertEquals(ProteusException.Code.DUPLICATE_MESSAGE, exception.code)
     }
 
+    @IgnoreJS
+    @IgnoreIOS
+    @Test
+    fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        aliceClient.openOrCreate()
+
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        bobClient.openOrCreate()
+
+        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val message1 = "Hi Alice!"
+        bobClient.createSession(aliceKey, aliceSessionId)
+
+        val missingAliceSessionId = CryptoSessionId(alice.id, CryptoClientId("missing"))
+        val encryptedMessages = bobClient.encryptBatched(message1.encodeToByteArray(), listOf(aliceSessionId, missingAliceSessionId))
+
+        assertEquals(1, encryptedMessages.size)
+        assertTrue(encryptedMessages.containsKey(aliceSessionId))
+    }
+
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))

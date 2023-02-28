@@ -21,11 +21,15 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME_PREFIX
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
+import com.wire.kalium.logic.framework.TestUser.SELF
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.IgnoreIOS
@@ -33,6 +37,7 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
@@ -80,12 +85,14 @@ class CreateBackupUseCaseTest {
         // Given
         val plainDB = "some-dummy-plain.db"
         val password = ""
+        val selfUser = SELF.copy(handle = "self.handle")
         val currentDBData = "some-dummy.db".decodeBase64Bytes()
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
             .withExportedDB(plainDB, currentDBData)
             .withDeleteBackupDB(true)
             .withUserDBPassphrase(null)
+            .withUserHandle(selfUser)
             .arrange()
 
         // When
@@ -94,7 +101,7 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertTrue(result is CreateBackupResult.Success)
-        assertEquals(result.backupFilePath.name, BACKUP_ZIP_FILE_NAME)
+        assertTrue(result.backupFilePath.name.contains(".zip"))
         verify(arrangement.clientIdProvider)
             .suspendFunction(arrangement.clientIdProvider::invoke)
             .wasInvoked(once)
@@ -121,9 +128,11 @@ class CreateBackupUseCaseTest {
     fun givenSomeInvalidDBData_whenCreatingNonEncryptedBackup_thenTheRightErrorIsThrown() = runTest(dispatcher.default) {
         // Given
         val password = ""
+        val selfUser = SELF.copy(handle = "self.handle")
         val (arrangement, createBackupUseCase) = Arrangement()
             .withUserDBPassphrase(null)
             .withExportedDBError()
+            .withUserHandle(selfUser)
             .arrange()
 
         // When
@@ -145,11 +154,13 @@ class CreateBackupUseCaseTest {
         val plainDBFileLocation = "backup-encrypted.db"
         val password = "S0m3T0pS3CR3tP4\$\$w0rd"
         val dummyDBData = "some-dummy.db".decodeBase64Bytes()
+        val selfUser = SELF.copy(handle = "self.handle")
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
             .withExportedDB(plainDBFileLocation, dummyDBData)
             .withDeleteBackupDB(true)
             .withUserDBPassphrase(null)
+            .withUserHandle(selfUser)
             .arrange()
 
         // When
@@ -180,6 +191,9 @@ class CreateBackupUseCaseTest {
         val clientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
+        @Mock
         val databaseExporter = mock(classOf<DatabaseExporter>())
 
         @Mock
@@ -191,6 +205,7 @@ class CreateBackupUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(passphrase)
         }
+
         fun withObservedClientId(clientId: ClientId?) = apply {
             given(clientIdProvider)
                 .suspendFunction(clientIdProvider::invoke)
@@ -229,10 +244,18 @@ class CreateBackupUseCaseTest {
                 .thenReturn(result)
         }
 
+        fun withUserHandle(selfUser: SelfUser) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::getSelfUser)
+                .whenInvoked()
+                .thenReturn(selfUser)
+        }
+
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =
             this to CreateBackupUseCaseImpl(
                 userId,
                 clientIdProvider,
+                userRepository,
                 fakeFileSystem,
                 databaseExporter,
                 securityHelper,
