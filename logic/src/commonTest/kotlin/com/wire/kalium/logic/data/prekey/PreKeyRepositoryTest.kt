@@ -139,7 +139,6 @@ class PreKeyRepositoryTest {
                     TEST_USER_ID_1.value to mapOf(
                         TEST_CLIENT_ID_1.value to preKey,
                         "invalidClient" to null,
-
                         )
                 )
             ),
