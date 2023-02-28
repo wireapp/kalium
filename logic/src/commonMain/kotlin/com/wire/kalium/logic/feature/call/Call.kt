@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
