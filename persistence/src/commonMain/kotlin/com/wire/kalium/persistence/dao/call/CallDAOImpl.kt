@@ -75,7 +75,8 @@ internal class CallDAOImpl(
             status = call.status,
             caller_id = call.callerId,
             conversation_type = call.conversationType,
-            created_at = createdTime.toString()
+            created_at = createdTime.toString(),
+            type = call.type
         )
     }
 
