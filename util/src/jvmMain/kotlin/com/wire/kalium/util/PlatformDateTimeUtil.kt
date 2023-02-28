@@ -19,6 +19,7 @@
 package com.wire.kalium.util
 
 import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.time.format.DateTimeFormatterBuilder
@@ -43,5 +44,5 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
      */
     actual fun fromCurrentInstantToSimpleDateTimeString(): String =
-        simpleIsoDateTimeFormatter.format(Instant.now().toJavaInstant())
+        simpleIsoDateTimeFormatter.format(Clock.System.now().toJavaInstant())
 }
