@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.user.type
 
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
@@ -112,7 +111,7 @@ interface UserTypeMapper<T> {
         otherUserDomain: String,
         selfUserTeamId: String?,
         otherUserTeamId: String?,
-        selfUserDomain: String?,
+        selfUserDomain: String,
         isService: Boolean,
     ): T = when {
         isService -> service
@@ -122,8 +121,8 @@ interface UserTypeMapper<T> {
         else -> none
     }
 
-    private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String?): Boolean =
-        !otherUserDomain.contains(selfDomain ?: QualifiedID.WIRE_PRODUCTION_DOMAIN)
+    private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String): Boolean =
+        otherUserDomain.lowercase() != selfDomain.lowercase()
 
     private fun isFromTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
         otherUserTeamId?.let { it == selfUserTeamId } ?: false
