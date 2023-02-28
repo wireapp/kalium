@@ -129,7 +129,7 @@ class PreKeyRepositoryTest {
     }
 
     @Test
-    fun givenFetchingPreKeysWithNullClients_whenPreparingSessions_thenTryToInvalidateINvalidSessions() = runTest {
+    fun givenFetchingPreKeysWithNullClients_whenPreparingSessions_thenTryToInvalidateInvalidSessions() = runTest {
         val preKey = PreKeyDTO(42, "encodedData")
         val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
 
