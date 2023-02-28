@@ -45,6 +45,8 @@ interface CallMapper {
     fun fromIntToConversationType(conversationType: Int): ConversationType
     fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling
     fun toVideoStateCalling(videoState: VideoState): VideoStateCalling
+
+    @Suppress("LongParameterList")
     fun toCallEntity(
         conversationId: ConversationId,
         id: String,
@@ -66,6 +68,7 @@ interface CallMapper {
     fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client
 }
 
+@Suppress("TooManyFunctions")
 class CallMapperImpl(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : CallMapper {
@@ -161,7 +164,7 @@ class CallMapperImpl(
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
-    private fun toCallEntityType(conversationType: ConversationType): CallEntity.Type = when(conversationType) {
+    private fun toCallEntityType(conversationType: ConversationType): CallEntity.Type = when (conversationType) {
         ConversationType.OneOnOne -> CallEntity.Type.ONE_ON_ONE
         ConversationType.Conference -> CallEntity.Type.CONFERENCE
         ConversationType.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
