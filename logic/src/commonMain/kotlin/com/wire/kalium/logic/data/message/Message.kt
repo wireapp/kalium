@@ -73,7 +73,8 @@ sealed interface Message {
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
-        val expectsReadConfirmation: Boolean = false
+        val expectsReadConfirmation: Boolean = false,
+        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -124,7 +125,8 @@ sealed interface Message {
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
                 "editStatus" to "$editStatus",
-                "expectsReadConfirmation" to "$expectsReadConfirmation"
+                "expectsReadConfirmation" to "$expectsReadConfirmation",
+                "deliveryStatus" to "$deliveryStatus"
             )
 
             properties.putAll(standardProperties)
@@ -253,9 +255,11 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+
                 is MessageContent.NewConversationReceiptMode -> mutableMapOf(
                     typeKey to "newConversationReceiptMode"
                 )
+
                 is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
                     typeKey to "conversationReceiptModeChanged"
                 )
@@ -387,3 +391,12 @@ enum class AssetType {
 
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>
+
+sealed class DeliveryStatus {
+    data class PartialDelivery(
+        val recipientsFailedWithNoClients: List<UserId>,
+        val recipientsFailedDelivery: List<UserId>
+    ) : DeliveryStatus()
+
+    object CompleteDelivery : DeliveryStatus()
+}
