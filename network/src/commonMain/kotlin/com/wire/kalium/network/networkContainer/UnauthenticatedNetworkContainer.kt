@@ -22,6 +22,7 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
@@ -37,6 +38,7 @@ interface UnauthenticatedNetworkContainer {
     val registerApi: RegisterApi
     val sso: SSOLoginApi
     val appVersioningApi: AppVersioningApi
+    val verificationCodeApi: VerificationCodeApi
 
     companion object {
         fun create(

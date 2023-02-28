@@ -19,13 +19,14 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
+import com.wire.kalium.logic.functional.Either
 
 /**
  * Persists a list of conversations migrated from old clients
@@ -41,7 +42,7 @@ fun interface PersistMigratedConversationUseCase {
      * @param conversations list of migrated conversations
      * @return true or false depending on success operation
      */
-    suspend operator fun invoke(conversations: List<Conversation>): Boolean
+    suspend operator fun invoke(conversations: List<Conversation>): Either<StorageFailure, Unit>
 }
 
 internal class PersistMigratedConversationUseCaseImpl(
@@ -51,12 +52,9 @@ internal class PersistMigratedConversationUseCaseImpl(
 
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
 
-    override suspend fun invoke(conversations: List<Conversation>): Boolean {
+    override suspend fun invoke(conversations: List<Conversation>): Either<StorageFailure, Unit> {
         return conversations.map { conversationMapper.fromMigrationModel(it) }.let {
-            wrapStorageRequest { migrationDAO.insertConversation(it) }.fold({
-                logger.e("Error while persisting migrated conversations $it")
-                false
-            }) { true }
+            wrapStorageRequest { migrationDAO.insertConversation(it) }
         }
     }
 }
