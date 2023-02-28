@@ -27,7 +27,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
@@ -116,7 +118,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
+        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup)
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
@@ -224,6 +226,12 @@ class RestoreBackupUseCaseTest {
         val databaseImporter = mock(classOf<DatabaseImporter>())
 
         @Mock
+        val persistMigratedMessagesUseCase = mock(classOf<PersistMigratedMessagesUseCase>())
+
+        @Mock
+        val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
+
+        @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         val fakeDBFileName = "fakeDBFile.db"
@@ -241,6 +249,10 @@ class RestoreBackupUseCaseTest {
                     userId.toString(),
                     creationTime,
                     clientId,
+                    null,
+                    null,
+                    null,
+                    null
                 )
             )
             fakeFileSystem.sink(metadataFilePath).buffer().use {
@@ -329,7 +341,9 @@ class RestoreBackupUseCaseTest {
             kaliumFileSystem = fakeFileSystem,
             userId = selfUserId,
             currentClientIdProvider = currentClientIdProvider,
-            idMapper = idMapper
+            idMapper = idMapper,
+            persistMigratedMessages = persistMigratedMessagesUseCase,
+            restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase
         )
     }
 

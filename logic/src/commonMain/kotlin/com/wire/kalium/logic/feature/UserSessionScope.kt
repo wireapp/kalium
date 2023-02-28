@@ -81,6 +81,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -166,6 +168,8 @@ import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
+import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
+import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -499,8 +503,9 @@ class UserSessionScope internal constructor(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
             userId,
-            eventProcessor,
-            clientIdProvider
+            clientIdProvider,
+            persistMigratedMessage,
+            restartSlowSyncProcessForRecoveryUseCase
         )
 
     val persistMessage: PersistMessageUseCase
@@ -941,6 +946,16 @@ class UserSessionScope internal constructor(
     val setConnectionPolicy: SetConnectionPolicyUseCase
         get() = SetConnectionPolicyUseCase(incrementalSyncRepository)
 
+    private val protoContentMapper: ProtoContentMapper
+        get() = ProtoContentMapperImpl(selfUserId = userId)
+
+    val persistMigratedMessage: PersistMigratedMessagesUseCase
+        get() = PersistMigratedMessagesUseCaseImpl(
+            userId,
+            userStorage.database.migrationDAO,
+            protoContentMapper = protoContentMapper
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1027,6 +1042,7 @@ class UserSessionScope internal constructor(
             userStorage,
             userPropertyRepository,
             incrementalSyncRepository,
+            protoContentMapper,
             this
         )
     val users: UserScope

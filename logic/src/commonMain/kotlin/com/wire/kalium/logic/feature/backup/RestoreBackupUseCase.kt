@@ -25,24 +25,27 @@ import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INV
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.event.EventMapper
+import com.wire.kalium.logic.data.event.toMigratedMessage
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_MESSAGES_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.InvalidUserId
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
+import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -50,6 +53,7 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
@@ -76,32 +80,53 @@ internal class RestoreBackupUseCaseImpl(
     private val databaseImporter: DatabaseImporter,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userId: UserId,
-    private val eventProcessor: EventProcessor,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val persistMigratedMessages: PersistMigratedMessagesUseCase,
+    private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
         withContext(dispatchers.io) {
             extractCompressedBackup(backupFilePath.normalized())
                 .flatMap { extractedBackupRootPath ->
-                    runSanityChecks(extractedBackupRootPath, password)
-                        .map { (encryptedFilePath, isPasswordProtected) ->
-                            if (isWebBackup(extractedBackupRootPath)) {
-                                importFromJson(extractedBackupRootPath)
-                                Failure(IncompatibleBackup("Web version")) // TODO KBX implement proper status
-                            } else if (isPasswordProtected) {
-                                decryptExtractAndImportBackup(encryptedFilePath!!, extractedBackupRootPath, password!!)
-                            } else {
-                                val isFromOtherClient = isFromOtherClient(extractedBackupRootPath)
-                                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
-                            }
-                        }
+                    if (password.isNullOrEmpty()) {
+                        importUnencryptedBackup(extractedBackupRootPath, this)
+                    } else {
+                        importEncryptedBackup(extractedBackupRootPath, password)
+                    }
                 }
-                .fold({ it }, { it })
+                .fold({ Failure(it) }, { RestoreBackupResult.Success })
         }
+
+    private suspend fun importUnencryptedBackup(
+        extractedBackupRootPath: Path,
+        coroutineScope: CoroutineScope
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
+        return checkIsValidAuthor(extractedBackupRootPath).flatMap { metaData ->
+            if (metaData.isWebBackup()) {
+                kaliumLogger.d("KBX backup version ${metaData.version}")
+                if (metaData.version == "19") {
+                    return importWebBackup(extractedBackupRootPath, coroutineScope)
+                } else {
+                    return Either.Left(IncompatibleBackup("The provided backup format is not supported"))
+                }
+            } else {
+                val isFromOtherClient = isFromOtherClient(metaData)
+                return getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
+            }
+        }
+    }
+
+    private suspend fun importEncryptedBackup(
+        extractedBackupRootPath: Path,
+        password: String
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
+        return checkIsValidEncryption(extractedBackupRootPath).flatMap { encryptedFilePath ->
+            decryptExtractAndImportBackup(encryptedFilePath, extractedBackupRootPath, password)
+        }
+    }
 
     private fun createExtractedFilesRootPath(): Path {
         val extractedFilesRootPath = kaliumFileSystem.tempFilePath(EXTRACTED_FILES_PATH)
@@ -115,13 +140,13 @@ internal class RestoreBackupUseCaseImpl(
         return extractedFilesRootPath
     }
 
-    private fun extractCompressedBackup(backupFilePath: Path): Either<Failure, Path> {
+    private fun extractCompressedBackup(backupFilePath: Path): Either<RestoreBackupResult.BackupRestoreFailure, Path> {
         val tempCompressedFileSource = kaliumFileSystem.source(backupFilePath)
         val extractedFilesRootPath = createExtractedFilesRootPath()
         return extractFiles(tempCompressedFileSource, extractedFilesRootPath)
             .fold({
                 kaliumLogger.e("Failed to extract backup files")
-                Either.Left(Failure(BackupIOFailure("Failed to extract backup files")))
+                Either.Left(BackupIOFailure("Failed to extract backup files"))
             }, {
                 Either.Right(extractedFilesRootPath)
             })
@@ -131,7 +156,7 @@ internal class RestoreBackupUseCaseImpl(
         encryptedFilePath: Path,
         extractedBackupRootPath: Path,
         password: String
-    ): RestoreBackupResult {
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
         val backupSource = kaliumFileSystem.source(encryptedFilePath)
         val extractedBackupPath = extractedBackupRootPath / BACKUP_ZIP_FILE_NAME
         val backupSink = kaliumFileSystem.sink(extractedBackupPath)
@@ -144,51 +169,43 @@ internal class RestoreBackupUseCaseImpl(
         )
 
         if (decodingError != null) {
-            return mappedDecodingError(decodingError)
+            return Either.Left(mappedDecodingError(decodingError))
         }
 
         return if (backupSize > 0) {
             // On successful decryption, we still need to extract the zip file to do sanity checks and get the database file
             extractFiles(kaliumFileSystem.source(extractedBackupPath), extractedBackupRootPath).fold({
                 kaliumLogger.e("Failed to extract encrypted backup files")
-                Failure(BackupIOFailure("Failed to extract encrypted backup files"))
+                Either.Left(BackupIOFailure("Failed to extract encrypted backup files"))
             }, {
-                val isFromOtherClient = isFromOtherClient(extractedBackupRootPath)
                 kaliumFileSystem.delete(extractedBackupPath)
-                getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
+                backupMetadata(extractedBackupRootPath).flatMap { metadata ->
+                    val isFromOtherClient = isFromOtherClient(metadata)
+                    getDbPathAndImport(extractedBackupRootPath, isFromOtherClient)
+                }
             })
         } else {
-            Failure(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
+            Either.Left(RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
         }
     }
 
-    private fun mappedDecodingError(decodingError: HeaderDecodingErrors): RestoreBackupResult = when (decodingError) {
-        INVALID_USER_ID -> Failure(InvalidUserId)
-        INVALID_VERSION -> Failure(IncompatibleBackup("The provided backup version is lower than the minimum supported version"))
-        INVALID_FORMAT -> Failure(IncompatibleBackup("The provided backup format is not supported"))
+    private fun mappedDecodingError(decodingError: HeaderDecodingErrors): RestoreBackupResult.BackupRestoreFailure = when (decodingError) {
+        INVALID_USER_ID -> InvalidUserId
+        INVALID_VERSION -> IncompatibleBackup("The provided backup version is lower than the minimum supported version")
+        INVALID_FORMAT -> IncompatibleBackup("The provided backup format is not supported")
     }
 
-    private suspend fun runSanityChecks(extractedBackupPath: Path, password: String?): Either<Failure, Pair<Path?, Boolean>> =
-        if (password.isNullOrEmpty()) {
-            // Backup is not encrypted so we don't need to return the path to the encrypted file
-            checkIsValidAuthor(extractedBackupPath).fold({ Either.Left(it) }, { Either.Right(null to false) })
-        } else {
-            // If the backup is encrypted, the sanity checks are done when decoding the file
-            checkIsValidEncryption(extractedBackupPath)
+    private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<RestoreBackupResult.BackupRestoreFailure, Path> =
+        with(kaliumFileSystem) {
+            val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull {
+                it.name.substringAfterLast('.', "") == BACKUP_ENCRYPTED_EXTENSION
+            }
+            return if (encryptedFilePath == null) return Either.Left(DecryptionFailure("No encrypted backup file found"))
+            else Either.Right(encryptedFilePath)
         }
 
-    private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<Failure, Pair<Path?, Boolean>> = with(kaliumFileSystem) {
-        val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull {
-            it.name.substringAfterLast('.', "") == BACKUP_ENCRYPTED_EXTENSION
-        }
-        return if (encryptedFilePath == null) return Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
-        else Either.Right(encryptedFilePath to true)
-    }
-
-    private suspend fun checkIsValidAuthor(extractedBackupRootPath: Path): Either<Failure, Unit> {
-        val isValidBackupAuthor = isValidBackupAuthor(extractedBackupRootPath)
-        return if (!isValidBackupAuthor) Either.Left(Failure(InvalidUserId))
-        else Either.Right(Unit)
+    private suspend fun checkIsValidAuthor(extractedBackupRootPath: Path): Either<RestoreBackupResult.BackupRestoreFailure, BackupMetadata> {
+        return backupMetadata(extractedBackupRootPath).flatMap { isValidBackupAuthor(it) }
     }
 
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
@@ -197,68 +214,84 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun getDbPathAndImport(
         extractedBackupRootPath: Path,
         isFromOtherClient: Boolean
-    ): RestoreBackupResult {
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
         return getBackupDBPath(extractedBackupRootPath)?.let { dbPath ->
             importDBFile(dbPath, isFromOtherClient)
-        } ?: Failure(BackupIOFailure("No valid db file found in the backup"))
+        } ?: Either.Left(BackupIOFailure("No valid db file found in the backup"))
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private suspend fun importFromJson(encryptedFilePath: Path) = with(kaliumFileSystem) {
-        listDirectories(encryptedFilePath).firstOrNull {
-            it.name == "events.json"
-        }?.let { path ->
+    private suspend fun importWebBackup(
+        encryptedFilePath: Path,
+        coroutineScope: CoroutineScope
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> = with(kaliumFileSystem) {
+        listDirectories(encryptedFilePath).firstOrNull { it.name == BACKUP_WEB_MESSAGES_FILE_NAME }?.let { path ->
             source(path).buffer()
                 .use {
-                    kaliumLogger.d("KBX buffer starts") // TODO add status instead
                     val sequence = KtxSerializer.json.decodeToSequence<EventContentDTO>(
                         it.inputStream(),
                         DecodeSequenceMode.ARRAY_WRAPPED
                     )
                     val iterator = sequence.iterator()
 
+                    val migratedMessagesBatch = mutableListOf<MigratedMessage>()
                     while (iterator.hasNext()) {
-                        val next = iterator.next()
-                        eventProcessor.processEvent(eventMapper.fromEventContentDTO("", next, false))
+                        val eventContentDTO = iterator.next()
+                        val migratedMessage = eventContentDTO.toMigratedMessage(userId.domain)
+                        if (migratedMessage != null) {
+                            migratedMessagesBatch.add(migratedMessage)
+                        }
+
+                        // send migrated messages in batches to not face any OOM errors
+                        if (migratedMessagesBatch.size == 1000) {
+                            persistMigratedMessages(migratedMessagesBatch, coroutineScope)
+                            migratedMessagesBatch.clear()
+                        }
                     }
-                    kaliumLogger.d("KBX decode ends")
+                    persistMigratedMessages(migratedMessagesBatch, coroutineScope)
+                    migratedMessagesBatch.clear()
+
+                    kaliumLogger.d("$TAG restartSlowSyncProcessForRecovery")
+                    restartSlowSyncProcessForRecovery.invoke()
+                    Either.Right(Unit)
                 }
-        }
+        } ?: Either.Left(BackupIOFailure("No valid db file found in the backup"))
     }
 
-    private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean) = wrapStorageRequest {
-        databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient)
-    }.fold({ Failure(BackupIOFailure("There was an error when importing the DB")) }, { RestoreBackupResult.Success })
+    private suspend fun importDBFile(userDBPath: Path, isFromOtherClient: Boolean): Either<RestoreBackupResult.BackupRestoreFailure, Unit> =
+        wrapStorageRequest {
+            databaseImporter.importFromFile(userDBPath.toString(), isFromOtherClient)
+        }.mapLeft { BackupIOFailure("There was an error when importing the DB") }
 
     private suspend fun getBackupDBPath(extractedBackupRootFilesPath: Path): Path? =
         kaliumFileSystem.listDirectories(extractedBackupRootFilesPath).firstOrNull { it.name.contains(".db") }
 
-    private suspend fun backupMetadata(extractedBackupPath: Path): BackupMetadata? = with(kaliumFileSystem) {
-        listDirectories(extractedBackupPath)
-            .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
-            ?.let { metadataFile ->
-                source(metadataFile).buffer()
-                    .use { KtxSerializer.json.decodeFromString<BackupMetadata>(it.readUtf8()) }
-            }
+    private suspend fun backupMetadata(extractedBackupPath: Path): Either<RestoreBackupResult.BackupRestoreFailure, BackupMetadata> =
+        with(kaliumFileSystem) {
+            listDirectories(extractedBackupPath)
+                .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
+                ?.let { metadataFile ->
+                    try {
+                        source(metadataFile).buffer()
+                            .use { Either.Right(KtxSerializer.json.decodeFromString(it.readUtf8())) }
+                    } catch (e: Exception) {
+                        Either.Left(IncompatibleBackup(e.toString()))
+                    }
+                } ?: Either.Left(IncompatibleBackup("The provided backup format is not supported"))
+        }
+
+    private fun isValidBackupAuthor(metadata: BackupMetadata): Either<RestoreBackupResult.BackupRestoreFailure, BackupMetadata> =
+        if (metadata.userId == userId.toString() || metadata.userId == userId.value)
+            Either.Right(metadata)
+        else
+            Either.Left(InvalidUserId)
+
+    private suspend fun isFromOtherClient(metadata: BackupMetadata): Boolean =
+        metadata.clientId != currentClientIdProvider().fold({ "" }, { it.value })
+
+    private companion object {
+        const val TAG = "[RestoreBackupUseCase]"
     }
-
-    private suspend fun backupWebMetadata(extractedBackupPath: Path): BackupMetadata? = with(kaliumFileSystem) {
-        listDirectories(extractedBackupPath)
-            .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
-            ?.let { metadataFile ->
-                source(metadataFile).buffer()
-                    .use { KtxSerializer.json.decodeFromString<BackupMetadata>(it.readUtf8()) }
-            }
-    }
-
-    private suspend fun isWebBackup(extractedBackupPath: Path): Boolean =
-        backupWebMetadata(extractedBackupPath)?.platform == "Web"
-
-    private suspend fun isValidBackupAuthor(extractedBackupPath: Path): Boolean =
-        backupMetadata(extractedBackupPath)?.userId == userId.toString()
-
-    private suspend fun isFromOtherClient(extractedBackupPath: Path): Boolean =
-        backupMetadata(extractedBackupPath)?.clientId != currentClientIdProvider().fold({ "" }, { it.value })
 }
 
 sealed class RestoreBackupResult {

@@ -87,6 +87,10 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.NewGroupConversationDTO -> TODO()
+            is EventContentDTO.Conversation.WebAssetMessageDTO -> TODO()
+            is EventContentDTO.Conversation.WebKnockMessageDTO -> TODO()
+            is EventContentDTO.Conversation.WebTextMessageDTO -> TODO()
         }
 
     private fun conversationReceiptModeUpdate(

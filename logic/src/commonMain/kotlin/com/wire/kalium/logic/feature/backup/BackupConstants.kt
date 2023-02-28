@@ -28,6 +28,7 @@ object BackupConstants {
     const val BACKUP_DB_EXTENSION = "db"
     const val BACKUP_METADATA_EXTENSION = "json"
     const val BACKUP_WEB_EXTENSION = "desktop_wbu"
+    const val BACKUP_WEB_MESSAGES_FILE_NAME = "events.json"
 
     val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,

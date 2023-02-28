@@ -38,28 +38,13 @@ data class BackupMetadata(
     @SerialName("user_database_passphrase")
     val userDBPassphrase: String?,
     @SerialName("is_user_db_sql_ciphered")
-    val isUserDBSQLCiphered: Boolean?
-) {
-    override fun toString(): String = Json.encodeToString(this)
-}
-
-@Serializable
-data class BackupWebMetadata(
-    @SerialName("client_id")
-    val clientId: String,
-    @SerialName("creation_time")
-    val creationTime: String,
-    @SerialName("platform")
-    val platform: String,
+    val isUserDBSQLCiphered: Boolean?,
     @SerialName("user_handle")
     val userHandle: String?,
-    @SerialName("user_id")
-    val userId: String,
     @SerialName("user_name")
-    val userName: String,
-    @SerialName("version")
-    val version: String,
-
+    val userName: String?,
 ) {
     override fun toString(): String = Json.encodeToString(this)
 }
+
+fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"

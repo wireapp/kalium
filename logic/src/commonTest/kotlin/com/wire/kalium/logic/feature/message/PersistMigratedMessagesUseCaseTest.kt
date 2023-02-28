@@ -69,6 +69,7 @@ class PersistMigratedMessagesUseCaseTest {
             senderClientId = TestClient.CLIENT_ID,
             0,
             "some_content",
+            null,
             genericMessage.encodeToByteArray(),
             null,
             null,
