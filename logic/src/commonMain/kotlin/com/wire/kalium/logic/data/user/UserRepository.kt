@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -106,6 +107,7 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
+    private val teamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -192,7 +194,7 @@ internal class UserDataSource internal constructor(
                             otherUserDomain = userProfileDTO.id.domain,
                             selfUserTeamId = selfUser?.teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser?.id?.domain,
+                            selfUserDomain = selfUserId.domain,
                             isService = userProfileDTO.service != null
                         )
                     )
@@ -299,18 +301,20 @@ internal class UserDataSource internal constructor(
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
-        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.map { userProfile ->
-            val selfUser = getSelfUser()
-            publicUserMapper.fromUserDetailResponseWithUsertype(
-                userDetailResponse = userProfile,
-                userType = userTypeMapper.fromTeamAndDomain(
-                    otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = selfUser?.teamId?.value,
-                    otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUser?.id?.domain,
-                    isService = userProfile.service != null
-                )
-            )
+        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
+            teamIdProvider()
+                .map { selfTeamId ->
+                    publicUserMapper.fromUserDetailResponseWithUsertype(
+                        userDetailResponse = userProfileDTO,
+                        userType = userTypeMapper.fromTeamAndDomain(
+                            otherUserDomain = userProfileDTO.id.domain,
+                            selfUserTeamId = selfTeamId?.value,
+                            otherUserTeamId = userProfileDTO.teamId,
+                            selfUserDomain = selfUserId.domain,
+                            isService = userProfileDTO.service != null
+                        )
+                    )
+                }
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {

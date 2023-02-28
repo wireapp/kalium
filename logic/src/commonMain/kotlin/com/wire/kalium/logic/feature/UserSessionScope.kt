@@ -448,7 +448,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
             userId,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            selfTeamId
         )
 
     internal val pushTokenRepository: PushTokenRepository
