@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
+import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -288,6 +290,92 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
+    fun givenGuestRoomLinkIsEnabledWithoutChange_whenSyncing_thenShouldStoreAsDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withGetFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withGuestRoomLinkEnabledReturning(
+                GuestRoomLinkStatus(
+                    isGuestRoomLinkEnabled = true,
+                    isStatusChanged = false
+                )
+            )
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getGuestRoomLinkStatus().shouldSucceed {
+            assertFalse { it.isStatusChanged!! }
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkIsDisabledWithoutChange_whenSyncing_thenShouldStoreChangedAsFalse() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withGetFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
+            )
+            .withGuestRoomLinkEnabledReturning(
+                GuestRoomLinkStatus(
+                    isGuestRoomLinkEnabled = false,
+                    isStatusChanged = false
+                )
+            )
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getGuestRoomLinkStatus().shouldSucceed {
+            assertFalse { it.isStatusChanged!! }
+        }
+    }
+
+    @Test
+    fun givenGuestLinkChangedFromEnabledToDisabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withGetFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
+            )
+            .withGuestRoomLinkEnabledReturning(
+                GuestRoomLinkStatus(
+                    isGuestRoomLinkEnabled = true,
+                    isStatusChanged = false
+                )
+            )
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getGuestRoomLinkStatus().shouldSucceed {
+            assertTrue { it.isStatusChanged!! }
+            assertFalse { it.isGuestRoomLinkEnabled!! }
+        }
+    }
+
+    @Test
+    fun givenFileGuestLinkChangedFromDisabledToEnabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withGetFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withGuestRoomLinkEnabledReturning(
+                GuestRoomLinkStatus(
+                    isGuestRoomLinkEnabled = false,
+                    isStatusChanged = false
+                )
+            )
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getGuestRoomLinkStatus().shouldSucceed {
+            assertTrue { it.isStatusChanged!! }
+            assertTrue { it.isGuestRoomLinkEnabled!! }
+        }
+    }
+
+    @Test
     fun givenRepositoryCallFailWithInvalidCredentials_thenOperationDeniedIsReturned() = runTest {
         // Given
         val operationDeniedException = TestNetworkException.operationDenied
@@ -333,6 +421,9 @@ class SyncFeatureConfigsUseCaseTest {
         @Mock
         val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
 
+        @Mock
+        val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
+
         var kaliumConfigs = KaliumConfigs()
 
         private val syncFeatureConfigsUseCase
@@ -340,6 +431,7 @@ class SyncFeatureConfigsUseCaseTest {
                 userConfigRepository,
                 featureConfigRepository,
                 isFileSharingEnabledUseCase,
+                isGuestRoomLinkFeatureEnabled,
                 kaliumConfigs,
                 SELF_USER_ID
             )
@@ -349,6 +441,12 @@ class SyncFeatureConfigsUseCaseTest {
             withFileSharingEnabledReturning(
                 FileSharingStatus(
                     isFileSharingEnabled = true,
+                    isStatusChanged = false
+                )
+            )
+            withGuestRoomLinkEnabledReturning(
+                GuestRoomLinkStatus(
+                    isGuestRoomLinkEnabled = true,
                     isStatusChanged = false
                 )
             )
@@ -369,6 +467,13 @@ class SyncFeatureConfigsUseCaseTest {
                 .function(isFileSharingEnabledUseCase::invoke)
                 .whenInvoked()
                 .thenReturn(fileSharingStatus)
+        }
+
+        fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
+            given(isGuestRoomLinkFeatureEnabled)
+                .function(isGuestRoomLinkFeatureEnabled::invoke)
+                .whenInvoked()
+                .thenReturn(guestRoomLinkStatus)
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
