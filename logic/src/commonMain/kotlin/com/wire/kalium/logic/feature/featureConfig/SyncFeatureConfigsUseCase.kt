@@ -50,7 +50,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
-    private val isGuestRoomLinkFeatureEnabled: GetGuestRoomLinkFeatureStatusUseCase,
+    private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {
@@ -112,7 +112,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             userConfigRepository.setGuestRoomStatus(false, null)
         } else {
             val status: Boolean = model.status == Status.ENABLED
-            val isStatusChanged = when (isGuestRoomLinkFeatureEnabled().isGuestRoomLinkEnabled) {
+            val isStatusChanged = when (getGuestRoomLinkFeatureStatus().isGuestRoomLinkEnabled) {
                 null, status -> false
                 else -> true
             }

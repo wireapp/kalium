@@ -1079,7 +1079,7 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val isGuestRoomLinkEnabled: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
+    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
@@ -1098,7 +1098,7 @@ class UserSessionScope internal constructor(
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
-            userConfigRepository, featureConfigRepository, isFileSharingEnabled, isGuestRoomLinkEnabled, kaliumConfigs, userId
+            userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
