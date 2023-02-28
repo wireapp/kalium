@@ -168,7 +168,7 @@ class CallMapperImpl(
         ConversationType.OneOnOne -> CallEntity.Type.ONE_ON_ONE
         ConversationType.Conference -> CallEntity.Type.CONFERENCE
         ConversationType.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
-        ConversationType.Unknown -> CallEntity.Type.CONFERENCE
+        ConversationType.Unknown -> CallEntity.Type.UNKNOWN
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
