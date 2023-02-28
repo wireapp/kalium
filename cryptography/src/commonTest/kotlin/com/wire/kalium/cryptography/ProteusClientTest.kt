@@ -167,6 +167,33 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
     }
 
+    @Test
+    fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        bobClient.openOrCreate()
+
+        assertFailsWith<ProteusException> {
+            bobClient.remoteFingerPrint(aliceSessionId)
+        }.also {
+            assertEquals(ProteusException.Code.SESSION_NOT_FOUND, it.code)
+        }
+    }
+
+    @Test
+    fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        aliceClient.openOrCreate()
+
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        bobClient.openOrCreate()
+
+        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        bobClient.createSession(aliceKey, aliceSessionId)
+        bobClient.remoteFingerPrint(aliceSessionId).also {
+            assertEquals(aliceClient.getLocalFingerprint().decodeToString(), it.decodeToString())
+        }
+    }
+
     companion object {
         val PROTEUS_DB_SECRET = ProteusDBSecret("secret")
     }
