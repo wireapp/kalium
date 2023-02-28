@@ -31,16 +31,15 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class IsReadOnlyAccountUseCaseTest {
 
     @Test
-    fun givenUIsReadOnlyAccount_NotManagedByWire_thenReturnTrue() = runTest {
+    fun givenAUser_NotManagedByWireOrFailure_thenReturnTrue() = runTest {
         val (arrangement, isReadOnlyAccountUseCase) = Arrangement()
-            .withIsReadOnlyAccountRepository(Either.Right(true))
+            .withIsReadOnlyAccountRepository(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
         val result = isReadOnlyAccountUseCase()
@@ -51,13 +50,13 @@ class IsReadOnlyAccountUseCaseTest {
     }
 
     @Test
-    fun givenUIsNotReadOnlyAccount_ManagedByWire_thenReturnFalse() = runTest {
+    fun givenUIsNotReadOnlyAccount_ManagedByWire_thenReturnTheValue() = runTest {
         val (arrangement, isReadOnlyAccountUseCase) = Arrangement()
-            .withIsReadOnlyAccountRepository(Either.Right(false))
+            .withIsReadOnlyAccountRepository(Either.Right(true))
             .arrange()
 
         val result = isReadOnlyAccountUseCase()
-        assertFalse(result)
+        assertTrue(result)
         verify(arrangement.sessionRepository)
             .coroutine { arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId) }
             .wasInvoked(exactly = once)

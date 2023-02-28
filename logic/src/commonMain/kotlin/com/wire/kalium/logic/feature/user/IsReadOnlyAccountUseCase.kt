@@ -37,9 +37,12 @@ internal class IsReadOnlyAccountUseCaseImpl(
     override suspend operator fun invoke(): Boolean =
         sessionRepository.isAccountReadOnly(selfUserId).fold(
             {
-                kaliumLogger.e("Error while computing if the account is read only $it")
-                false
+                kaliumLogger.e("Error while computing if the account is read only, fallback to true $it")
+                true
             },
-            { it }
+            {
+                // Only WIRE managed accounts are able to edit some information of the profile
+                it
+            }
         )
 }
