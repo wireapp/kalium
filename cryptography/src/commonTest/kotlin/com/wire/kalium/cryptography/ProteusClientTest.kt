@@ -188,6 +188,8 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
     }
 
+    // TODO: cryptobox4j does not expose the session
+    @IgnoreJvm
     @Test
     fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
@@ -200,6 +202,9 @@ class ProteusClientTest : BaseProteusClientTest() {
         }
     }
 
+    @IgnoreJvm // cryptobox4j does not expose the session
+    @IgnoreJS
+    @IgnoreIOS //  underlying proteus error is not exposed atm
     @Test
     fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))

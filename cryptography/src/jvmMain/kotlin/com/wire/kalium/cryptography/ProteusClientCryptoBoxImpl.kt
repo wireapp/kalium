@@ -85,7 +85,7 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
-        TODO("Not yet implemented")
+        TODO("get session is private in Cryptobox4j")
     }
 
     override suspend fun newLastPreKey(): PreKeyCrypto {
