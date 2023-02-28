@@ -1,0 +1,1 @@
+ALTER TABLE Client ADD COLUMN is_verified INTEGER AS Boolean NOT NULL DEFAULT 0;

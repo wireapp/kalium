@@ -2,10 +2,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.collections.List;
 
--- add is_verified column to the client table
-ALTER TABLE Client ADD COLUMN is_verified INTEGER AS Boolean NOT NULL DEFAULT 0;
-
--- changes related to FailedRecipientsDeliveryFailed
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE TABLE MessageRecipientFailure (
