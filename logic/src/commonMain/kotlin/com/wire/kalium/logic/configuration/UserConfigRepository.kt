@@ -43,7 +43,7 @@ interface UserConfigRepository {
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
-    fun isGuestRoomLinkEnabled(): Either<StorageFailure, GuestRoomLinkStatus>
+    fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
 }
 
@@ -124,7 +124,7 @@ class UserConfigDataSource(
             userConfigStorage.persistGuestRoomLinkFeatureFlag(status, isStatusChanged)
         }
 
-    override fun isGuestRoomLinkEnabled(): Either<StorageFailure, GuestRoomLinkStatus> =
+    override fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus> =
         wrapStorageRequest { userConfigStorage.isGuestRoomLinkEnabled() }.map {
             with(it) { GuestRoomLinkStatus(status, isStatusChanged) }
         }

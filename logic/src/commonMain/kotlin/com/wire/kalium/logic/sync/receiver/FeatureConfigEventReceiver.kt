@@ -94,7 +94,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             userConfigRepository.setGuestRoomStatus(false, null)
         } else {
             val currentGuestRoomStatus: Boolean = userConfigRepository
-                .isGuestRoomLinkEnabled()
+                .getGuestRoomLinkStatus()
                 .fold({ true }, { it.isGuestRoomLinkEnabled ?: true })
 
             when (status) {

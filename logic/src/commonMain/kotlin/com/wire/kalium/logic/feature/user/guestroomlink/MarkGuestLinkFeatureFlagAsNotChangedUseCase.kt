@@ -32,7 +32,7 @@ class MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : MarkGuestLinkFeatureFlagAsNotChangedUseCase {
     override operator fun invoke() {
-        userConfigRepository.isGuestRoomLinkEnabled().onSuccess {
+        userConfigRepository.getGuestRoomLinkStatus().onSuccess {
             it.isStatusChanged?.let { isEnabled ->
                 userConfigRepository.setGuestRoomStatus(isEnabled, false)
             }

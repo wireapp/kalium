@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
-import com.wire.kalium.logic.feature.user.guestroomlink.IsGuestRoomLinkFeatureEnabledUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -50,7 +50,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
-    private val isGuestRoomLinkFeatureEnabled: IsGuestRoomLinkFeatureEnabledUseCase,
+    private val isGuestRoomLinkFeatureEnabled: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {

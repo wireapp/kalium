@@ -187,8 +187,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
-import com.wire.kalium.logic.feature.user.guestroomlink.IsGuestRoomLinkFeatureEnabledUseCase
-import com.wire.kalium.logic.feature.user.guestroomlink.IsGuestRoomLinkFeatureEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
@@ -1079,7 +1079,7 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val isGuestRoomLinkEnabled: IsGuestRoomLinkFeatureEnabledUseCase get() = IsGuestRoomLinkFeatureEnabledUseCaseImpl(userConfigRepository)
+    val isGuestRoomLinkEnabled: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)

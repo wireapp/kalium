@@ -27,16 +27,16 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Returns guest link feature status
  */
-interface IsGuestRoomLinkFeatureEnabledUseCase {
+interface GetGuestRoomLinkFeatureStatusUseCase {
     operator fun invoke(): GuestRoomLinkStatus
 }
 
-class IsGuestRoomLinkFeatureEnabledUseCaseImpl internal constructor(
+class GetGuestRoomLinkFeatureStatusUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
-) : IsGuestRoomLinkFeatureEnabledUseCase {
+) : GetGuestRoomLinkFeatureStatusUseCase {
 
     override operator fun invoke(): GuestRoomLinkStatus =
-        userConfigRepository.isGuestRoomLinkEnabled().fold({
+        userConfigRepository.getGuestRoomLinkStatus().fold({
             when (it) {
                 StorageFailure.DataNotFound -> {
                     kaliumLogger.e("Data not found in IsGuestRoomLinkUseCaseEnabledUseCase")

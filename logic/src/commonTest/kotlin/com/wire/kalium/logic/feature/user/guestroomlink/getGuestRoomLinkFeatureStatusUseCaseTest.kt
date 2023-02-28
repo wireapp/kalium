@@ -30,21 +30,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class IsGuestRoomLinkFeatureEnabledUseCaseTest {
+class getGuestRoomLinkFeatureStatusUseCaseTest {
 
     @Mock
     val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
-    lateinit var isGuestRoomLinkFeatureEnabled: IsGuestRoomLinkFeatureEnabledUseCase
+    lateinit var isGuestRoomLinkFeatureEnabled: GetGuestRoomLinkFeatureStatusUseCase
 
     @BeforeTest
     fun setUp() {
-        isGuestRoomLinkFeatureEnabled = IsGuestRoomLinkFeatureEnabledUseCaseImpl(userConfigRepository)
+        isGuestRoomLinkFeatureEnabled = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
     }
 
     @Test
     fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnNullStatus() {
-        given(userConfigRepository).invocation { isGuestRoomLinkEnabled() }
+        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
             .thenReturn(Either.Left(StorageFailure.DataNotFound))
 
         val result = isGuestRoomLinkFeatureEnabled()
@@ -56,7 +56,7 @@ class IsGuestRoomLinkFeatureEnabledUseCaseTest {
     @Test
     fun givenRepositoryReturnsSuccess_whenRunningUseCase_thenReturnValidStatus() {
         val expectedStatus = GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)
-        given(userConfigRepository).invocation { isGuestRoomLinkEnabled() }
+        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
             .thenReturn(Either.Right(expectedStatus))
 
         val result = isGuestRoomLinkFeatureEnabled()
