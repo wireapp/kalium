@@ -20,16 +20,15 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.ClientPayload
 import com.wire.kalium.logic.data.message.EncryptedMessageBlob
 import com.wire.kalium.logic.data.message.Message
@@ -44,9 +43,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapCryptoRequest
 
@@ -80,43 +76,23 @@ class MessageEnvelopeCreatorImpl(
         val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
         val (encodedContent, externalDataBlob) = getContentAndExternalData(actualMessageContent, recipients)
 
-        return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
-            recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
-                val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
-
-                proteusClientProvider.getOrError()
-                    .flatMap { proteusClient ->
-                        wrapCryptoRequest {
-                            proteusClient.encrypt(encodedContent.data, session)
-                        }
-                    }
-                    .map { EncryptedMessageBlob(it) }
-                    .fold({
-                        // when encryption fails because of SESSION_NOT_FOUND, we just skip the client
-                        // the reason is that the client might be buggy from the backend side and have no preKey
-                        // in that case we just skip the client and send the message to the rest of the clients
-                        // the only valid way to fitch client pryKey if the server response that we are missing clients
-                        if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
-                            Either.Right(clientAccumulator)
-                        } else {
-                            Either.Left(it)
-                        }
-                    }, { encryptedContent ->
-                        Either.Right(clientAccumulator.also {
-                            it.add(ClientPayload(client, encryptedContent))
-                            kaliumLogger.d("Encrypted message size: ${encryptedContent.data.size}")
-                        })
-                    })
+        val sessions = recipients.flatMap { recipient ->
+            recipient.clients.map { client ->
+                CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
             }
-                .map { clientEntries ->
-                    recipientAccumulator.also {
-                        it.add(RecipientEntry(recipient.id, clientEntries))
-                    }
-                }
         }
-            .map { recipientEntries ->
-                MessageEnvelope(senderClientId, recipientEntries, externalDataBlob)
+
+        return proteusClientProvider.getOrError().flatMap { proteusClient ->
+            wrapCryptoRequest {
+                proteusClient.encryptBatched(encodedContent.data, sessions)
             }
+        }.flatMap {
+            val recipientEntries = it.entries.groupBy(
+                { it.key.userId.toModel() },
+                { ClientPayload(it.key.cryptoClientId.toModel(), EncryptedMessageBlob(it.value)) }
+            ).map { RecipientEntry(it.key, it.value) }
+            Either.Right(MessageEnvelope(senderClientId, recipientEntries, externalDataBlob))
+        }
     }
 
     private fun getContentAndExternalData(

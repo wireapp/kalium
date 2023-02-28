@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -186,11 +187,16 @@ internal class MessageSenderImpl internal constructor(
 
         return target.flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
-        }.flatMap { recipients ->
+            // TODO(federation) map a filtered recipients in case there is an error for x,y,z clients of users
+        }.fold({
+            // TODO(federation) if (it is NetworkFailure.FederatedBackendError)
+            // TODO(federation) handle federated failure to filter clients and add to QualifiedMessageOption.IgnoreSome
+            Either.Left(it)
+        }, { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
                 trySendingProteusEnvelope(envelope, message, messageTarget)
             }
-        }
+        })
     }
 
     /**
@@ -229,12 +235,25 @@ internal class MessageSenderImpl internal constructor(
         messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({
             when (it) {
                 is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                    attemptToSend(message, messageTarget)
+                    attemptToSendWithProteus(message, messageTarget)
                 }
 
                 else -> Either.Left(it)
             }
-        }, {
-            Either.Right(it)
+        }, { messageSent ->
+            handleRecipientsDeliveryFailure(message, messageSent).flatMap {
+                Either.Right(messageSent.time)
+            }
         })
+
+    /**
+     * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
+     */
+    private suspend fun handleRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) {
+            Either.Right(Unit)
+        } else {
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
+        }
+
 }
