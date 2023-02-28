@@ -43,7 +43,37 @@ class OnIncomingCallTest {
     val testScope = TestScope()
 
     @Test
-    fun givenNewIncomingCall_whenIncomingCall_thenAttemptToLeaveMlsConference() = testScope.runTest() {
+    fun givenNewIncomingCall_whenIncomingCall_thenCreateCallWithStatusIncoming() = testScope.runTest() {
+        val (arrangement, callback) = Arrangement(testScope)
+            .arrange()
+
+        callback.onIncomingCall(
+            conversationId = TestConversation.CONVERSATION.id.toString(),
+            messageTime = Uint32_t(value = 1),
+            userId = TestUser.USER_ID.toString(),
+            clientId = TestClient.CLIENT_ID.value,
+            isVideoCall = false,
+            shouldRing = true,
+            conversationType = ConversationTypeCalling.Conference.avsValue,
+            arg = null
+        )
+        advanceUntilIdle()
+
+        verify(arrangement.callRepository)
+            .suspendFunction(arrangement.callRepository::createCall)
+            .with(
+                eq(TestConversation.CONVERSATION.id),
+                eq(ConversationType.Conference),
+                eq(CallStatus.INCOMING),
+                eq(TestUser.USER_ID.toString()),
+                eq(true),
+                eq(false)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOngoingCall_whenIncomingCall_thenCreateCallWithStatusStillOngoing() = testScope.runTest() {
         val (arrangement, callback) = Arrangement(testScope)
             .arrange()
 
@@ -63,11 +93,11 @@ class OnIncomingCallTest {
             .suspendFunction(arrangement.callRepository::createCall)
             .with(
                 eq(TestConversation.CONVERSATION.id),
-                eq(CallStatus.INCOMING),
-                eq(TestUser.USER_ID),
+                eq(ConversationType.Conference),
+                eq(CallStatus.STILL_ONGOING),
+                eq(TestUser.USER_ID.toString()),
                 eq(true),
-                eq(false),
-                eq(ConversationType.Conference)
+                eq(false)
             )
             .wasInvoked(exactly = once)
     }
