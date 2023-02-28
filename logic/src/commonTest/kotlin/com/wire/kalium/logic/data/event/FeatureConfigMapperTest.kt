@@ -103,6 +103,15 @@ class FeatureConfigMapperTest {
     }
 
     @Test
+    fun givenApiModelResponse_whenMappingGuestRoomLinkToModel_thenShouldBeMappedCorrectly() {
+        val (arrangement, mapper) = Arrangement().arrange()
+
+        val model = mapper.fromDTO(arrangement.featureConfigResponse.conversationGuestLinks)
+
+        assertEquals(Status.ENABLED, model.status)
+    }
+
+    @Test
     fun givenApiModelResponse_whenMappingConferenceCallingToModel_thenShouldBeMappedCorrectly() {
         val (arrangement, mapper) = Arrangement().arrange()
 
