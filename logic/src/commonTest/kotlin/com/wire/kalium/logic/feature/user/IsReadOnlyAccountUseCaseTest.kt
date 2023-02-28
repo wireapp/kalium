@@ -22,6 +22,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -35,9 +37,8 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class IsReadOnlyAccountUseCaseTest {
-
     @Test
-    fun givenAUser_NotManagedByWireOrFailure_thenReturnTrue() = runTest {
+    fun givenAUser_NotManagedByWireOrFailure_thenReturnTrue() = runTest(testDispatchers.io) {
         val (arrangement, isReadOnlyAccountUseCase) = Arrangement()
             .withIsReadOnlyAccountRepository(Either.Left(StorageFailure.DataNotFound))
             .arrange()
@@ -49,8 +50,9 @@ class IsReadOnlyAccountUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+
     @Test
-    fun givenUIsNotReadOnlyAccount_ManagedByWire_thenReturnTheValue() = runTest {
+    fun givenUIsNotReadOnlyAccount_ManagedByWire_thenReturnTheValue() = runTest(testDispatchers.io) {
         val (arrangement, isReadOnlyAccountUseCase) = Arrangement()
             .withIsReadOnlyAccountRepository(Either.Right(true))
             .arrange()
@@ -76,6 +78,10 @@ class IsReadOnlyAccountUseCaseTest {
                 .then { isReadOnlyResult }
         }
 
-        fun arrange() = this to IsReadOnlyAccountUseCaseImpl(selfUserId, sessionRepository)
+        fun arrange() = this to IsReadOnlyAccountUseCaseImpl(selfUserId, sessionRepository, testDispatchers)
+    }
+
+    companion object {
+        private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
     }
 }

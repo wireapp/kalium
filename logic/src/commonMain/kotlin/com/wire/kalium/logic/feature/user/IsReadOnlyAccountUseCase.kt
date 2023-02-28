@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Computes the managed_by property of the account to define if this is a read only account or not.
@@ -32,9 +35,10 @@ interface IsReadOnlyAccountUseCase {
 
 internal class IsReadOnlyAccountUseCaseImpl(
     private val selfUserId: UserId,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : IsReadOnlyAccountUseCase {
-    override suspend operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean = withContext(dispatchers.io) {
         sessionRepository.isAccountReadOnly(selfUserId).fold(
             {
                 kaliumLogger.e("Error while computing if the account is read only, fallback to true $it")
@@ -45,4 +49,5 @@ internal class IsReadOnlyAccountUseCaseImpl(
                 it
             }
         )
+    }
 }
