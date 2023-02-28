@@ -186,7 +186,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
             serverConfigId = "server_config_id",
             ssoId = null,
             PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false),
-            ManagedByEntity.WIRE
+            managedBy = null
         )
 
         val INVALID_ACCOUNT = FullAccountEntity(

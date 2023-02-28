@@ -11,7 +11,7 @@ CREATE TABLE Accounts (
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
     isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0,
-    managed_by TEXT AS ManagedByEntity NOT NULL DEFAULT 'WIRE'
+    managed_by TEXT AS ManagedByEntity
 );
 
 insertOrReplace:

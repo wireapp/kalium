@@ -133,11 +133,8 @@ internal class UserDataSource internal constructor(
             }
         }
 
-    private suspend fun updateSelfUserProviderAccountInfo(userDTO: UserDTO): Either<StorageFailure, Unit> {
-        return sessionRepository.updateSsoIdAndScimInfo(
-            userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO
-        )
-    }
+    private suspend fun updateSelfUserProviderAccountInfo(userDTO: UserDTO): Either<StorageFailure, Unit> =
+        sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->

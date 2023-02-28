@@ -34,7 +34,7 @@ data class UserDTO(
     @SerialName("id") val nonQualifiedId: NonQualifiedUserId,
     @SerialName("name") val name: String,
     @SerialName("locale") val locale: String,
-    @SerialName("managed_by") val managedByDTO: ManagedByDTO,
+    @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
     @SerialName("qualified_id") val id: UserId,
     @SerialName("service") val service: ServiceDTO?,
