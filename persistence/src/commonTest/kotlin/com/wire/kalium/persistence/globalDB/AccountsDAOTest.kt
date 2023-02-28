@@ -179,6 +179,25 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         assertEquals(false, exists)
     }
 
+    @Test
+    fun givenValidAccount_whenManagedByIsPresent_thenReturnsTheCorrespondingValue() = runTest {
+        val account = VALID_ACCOUNT
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        db.accountsDAO.updateSsoIdAndScimInfo(account.info.userIDEntity, account.ssoId, ManagedByEntity.SCIM)
+
+        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        assertEquals(ManagedByEntity.SCIM, result)
+    }
+
+    @Test
+    fun givenValidAccount_whenManagedByNotPresent_thenReturnsTheCorrespondingValue() = runTest {
+        val account = VALID_ACCOUNT
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+
+        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        assertEquals(null, result)
+    }
+
     private companion object {
 
         val VALID_ACCOUNT = FullAccountEntity(
