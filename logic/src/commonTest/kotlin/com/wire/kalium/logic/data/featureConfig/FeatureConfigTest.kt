@@ -30,6 +30,7 @@ object FeatureConfigTest {
         conversationGuestLinksModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         digitalSignaturesModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         fileSharingModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
+        guestRoomLink: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         legalHoldModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         searchVisibilityModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         selfDeletingMessagesModel: SelfDeletingMessagesModel = SelfDeletingMessagesModel(
@@ -47,6 +48,7 @@ object FeatureConfigTest {
         conversationGuestLinksModel,
         digitalSignaturesModel,
         fileSharingModel,
+        guestRoomLink,
         legalHoldModel,
         searchVisibilityModel,
         selfDeletingMessagesModel,
