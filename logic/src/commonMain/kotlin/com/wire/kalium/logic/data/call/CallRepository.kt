@@ -192,7 +192,6 @@ internal class CallDataSource(
         // to cover that case and have a valid UserId we have that workaround
         val callerIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(callerId)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
-
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val callEntity = callMapper.toCallEntity(
@@ -505,6 +504,8 @@ internal class CallDataSource(
         }
 
     private suspend fun leavePreviouslyJoinedMlsConferences() {
+        callingLogger.i("Leaving previously joined MLS conferences")
+
         callDAO.observeEstablishedCalls()
             .first()
             .filter { it.type == CallEntity.Type.MLS_CONFERENCE }

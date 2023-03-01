@@ -45,6 +45,7 @@ interface CallMapper {
     fun fromIntToConversationType(conversationType: Int): ConversationType
     fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling
     fun toVideoStateCalling(videoState: VideoState): VideoStateCalling
+    fun fromConversationToConversationType(conversation: Conversation): ConversationType
 
     @Suppress("LongParameterList")
     fun toCallEntity(
@@ -118,6 +119,18 @@ class CallMapperImpl(
         VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
         VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
     }
+
+    override fun fromConversationToConversationType(conversation: Conversation): ConversationType =
+        when (conversation.type) {
+            Conversation.Type.GROUP -> {
+                when (conversation.protocol) {
+                    is Conversation.ProtocolInfo.MLS -> ConversationType.ConferenceMls
+                    is Conversation.ProtocolInfo.Proteus -> ConversationType.Conference
+                }
+            }
+            Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
+            else -> ConversationType.Unknown
+        }
 
     override fun toCallEntity(
         conversationId: ConversationId,
