@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
-import com.wire.kalium.logic.data.id.QualifiedID.Companion.WIRE_PRODUCTION_DOMAIN
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -39,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.base.model.QualifiedID.Companion.WIRE_PRODUCTION_DOMAIN
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
@@ -306,6 +306,12 @@ class EventMapper(
             id,
             transient,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConferenceCalling)
+        )
+
+        is FeatureConfigData.ConversationGuestLinks -> Event.FeatureConfig.GuestRoomLinkUpdated(
+            id,
+            transient,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
         )
 
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)

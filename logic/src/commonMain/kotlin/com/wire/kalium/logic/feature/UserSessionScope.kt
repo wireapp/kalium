@@ -191,6 +191,12 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
+import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatus
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatusImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
@@ -446,7 +452,8 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
             userId,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            selfTeamId
         )
 
     internal val pushTokenRepository: PushTokenRepository
@@ -492,6 +499,7 @@ class UserSessionScope internal constructor(
         get() = CreateBackupUseCaseImpl(
             userId,
             clientIdProvider,
+            userRepository,
             kaliumFileSystem,
             userStorage.database.databaseExporter,
             securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
@@ -505,6 +513,7 @@ class UserSessionScope internal constructor(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
             userId,
+            userRepository,
             clientIdProvider,
             persistMigratedMessage,
             restartSlowSyncProcessForRecoveryUseCase
@@ -1099,6 +1108,14 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
+    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
+
+    val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
+        get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
+
+    val observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
+        get() = ObserveGuestRoomLinkFeatureFlagUseCaseImpl(userConfigRepository)
+
     val markFileSharingStatusAsNotified: MarkFileSharingChangeAsNotifiedUseCase
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
@@ -1110,7 +1127,7 @@ class UserSessionScope internal constructor(
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
-            userConfigRepository, featureConfigRepository, isFileSharingEnabled, kaliumConfigs, userId
+            userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)

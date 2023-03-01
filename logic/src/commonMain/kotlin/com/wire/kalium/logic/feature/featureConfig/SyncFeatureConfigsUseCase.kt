@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -49,12 +50,14 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
+    private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
             // TODO handle other feature flags
+            handleGuestRoomLinkFeatureFlag(it.guestRoomLinkModel)
             handleFileSharingStatus(it.fileSharingModel)
             handleMLSStatus(it.mlsModel)
             handleClassifiedDomainsStatus(it.classifiedDomainsModel)
@@ -101,6 +104,19 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 else -> true
             }
             userConfigRepository.setFileSharingStatus(status, isStatusChanged)
+        }
+    }
+
+    private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
+        if (!kaliumConfigs.guestRoomLink) {
+            userConfigRepository.setGuestRoomStatus(false, null)
+        } else {
+            val status: Boolean = model.status == Status.ENABLED
+            val isStatusChanged = when (getGuestRoomLinkFeatureStatus().isGuestRoomLinkEnabled) {
+                null, status -> false
+                else -> true
+            }
+            userConfigRepository.setGuestRoomStatus(status, isStatusChanged)
         }
     }
 

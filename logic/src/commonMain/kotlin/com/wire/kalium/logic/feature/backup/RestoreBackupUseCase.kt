@@ -29,11 +29,12 @@ import com.wire.kalium.logic.data.event.toMigratedMessage
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_MESSAGES_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
@@ -51,6 +52,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.backup.DatabaseImporter
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -80,6 +82,7 @@ internal class RestoreBackupUseCaseImpl(
     private val databaseImporter: DatabaseImporter,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userId: UserId,
+    private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val persistMigratedMessages: PersistMigratedMessagesUseCase,
     private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
@@ -158,7 +161,13 @@ internal class RestoreBackupUseCaseImpl(
         password: String
     ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
         val backupSource = kaliumFileSystem.source(encryptedFilePath)
-        val extractedBackupPath = extractedBackupRootPath / BACKUP_ZIP_FILE_NAME
+        val userHandle = userRepository.getSelfUser()?.handle?.map {
+            it.toString().replace(".", "-")
+        }?.first()
+        val timeStamp = DateTimeUtil.currentIsoDateTimeString()
+        val backupName = createBackupFileName(userHandle, timeStamp)
+        val extractedBackupPath = extractedBackupRootPath / backupName
+
         val backupSink = kaliumFileSystem.sink(extractedBackupPath)
         val userIdEntity = idMapper.toCryptoModel(userId)
         val (decodingError, backupSize) = decryptBackupFile(

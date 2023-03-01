@@ -27,6 +27,7 @@ data class FeatureConfigModel(
     val conversationGuestLinksModel: ConfigsStatusModel,
     val digitalSignaturesModel: ConfigsStatusModel,
     val fileSharingModel: ConfigsStatusModel,
+    val guestRoomLinkModel: ConfigsStatusModel,
     val legalHoldModel: ConfigsStatusModel,
     val searchVisibilityModel: ConfigsStatusModel,
     val selfDeletingMessagesModel: SelfDeletingMessagesModel,

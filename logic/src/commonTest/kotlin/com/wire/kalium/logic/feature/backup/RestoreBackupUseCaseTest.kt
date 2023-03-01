@@ -24,10 +24,13 @@ import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.IgnoreIOS
@@ -62,11 +65,13 @@ class RestoreBackupUseCaseTest {
     @Test
     fun givenACorrectNonEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredSuccessfully() = runTest {
         // given
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, currentTestUserId)
             .withCorrectDbImportAction()
+            .withSelfUser(selfUser)
             .arrange()
 
         // when
@@ -84,10 +89,12 @@ class RestoreBackupUseCaseTest {
     fun givenACorrectNonEncryptedBackupFileWithWrongAuthor_whenRestoring_thenTheCorrectErrorIsThrown() = runTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.zip")
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withUnencryptedBackup(backupPath, UserId("wrongUserId", "wrongDomain"))
             .withCorrectDbImportAction()
+            .withSelfUser(selfUser)
             .arrange()
 
         // when
@@ -131,9 +138,11 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
+            .withSelfUser(selfUser)
             .withCorrectDbImportAction()
             .arrange()
 
@@ -155,10 +164,12 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, UserId("Darth-Vader", "death-star"), password)
             .withCorrectDbImportAction()
+            .withSelfUser(selfUser)
             .arrange()
 
         // when
@@ -179,10 +190,12 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withCorrectDbImportAction()
+            .withSelfUser(selfUser)
             .arrange()
 
         // when
@@ -202,10 +215,12 @@ class RestoreBackupUseCaseTest {
         // given
         val backupPath = fakeFileSystem.tempFilePath("backup.cc20.zip")
         val password = "KittenWars"
+        val selfUser = TestUser.SELF.copy(handle = "self.handle")
         val (arrangement, useCase) = Arrangement()
             .withCurrentClientId(currentTestClientId)
             .withEncryptedBackup(backupPath, currentTestUserId, password)
             .withIncorrectDbImportAction()
+            .withSelfUser(selfUser)
             .arrange()
 
         // when
@@ -233,6 +248,9 @@ class RestoreBackupUseCaseTest {
 
         @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
 
         val fakeDBFileName = "fakeDBFile.db"
         private val selfUserId = currentTestUserId
@@ -336,10 +354,18 @@ class RestoreBackupUseCaseTest {
                 .thenReturn(Either.Right(clientId))
         }
 
+        fun withSelfUser(selfUser: SelfUser) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::getSelfUser)
+                .whenInvoked()
+                .thenReturn(selfUser)
+        }
+
         fun arrange() = this to RestoreBackupUseCaseImpl(
             databaseImporter = databaseImporter,
             kaliumFileSystem = fakeFileSystem,
             userId = selfUserId,
+            userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper,
             persistMigratedMessages = persistMigratedMessagesUseCase,

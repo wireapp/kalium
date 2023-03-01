@@ -27,12 +27,13 @@ import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ZIP_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -68,6 +69,7 @@ interface CreateBackupUseCase {
 internal class CreateBackupUseCaseImpl(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
+    private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val databaseExporter: DatabaseExporter,
     private val securityHelper: SecurityHelper,
@@ -76,7 +78,10 @@ internal class CreateBackupUseCaseImpl(
 ) : CreateBackupUseCase {
 
     override suspend operator fun invoke(password: String): CreateBackupResult = withContext(dispatchers.default) {
-        val backupFilePath = kaliumFileSystem.tempFilePath(BACKUP_ZIP_FILE_NAME)
+        val userHandle = userRepository.getSelfUser()?.handle?.replace(".", "-")
+        val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
+        val backupName = createBackupFileName(userHandle, timeStamp)
+        val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
         deletePreviousBackupFiles(backupFilePath)
 
         val plainDBPath =
@@ -107,7 +112,7 @@ internal class CreateBackupUseCaseImpl(
         if (backupEncryptedDataSize == 0L)
             return CreateBackupResult.Failure(StorageFailure.Generic(RuntimeException("Failed to encrypt backup file")))
 
-        val finalBackupFilePath = "$encryptedBackupFilePath.zip".toPath()
+        val finalBackupFilePath = kaliumFileSystem.tempFilePath("encrypted-${backupFilePath.name}")
 
         return createCompressedFile(
             listOf(kaliumFileSystem.source(encryptedBackupFilePath) to encryptedBackupFilePath.name),

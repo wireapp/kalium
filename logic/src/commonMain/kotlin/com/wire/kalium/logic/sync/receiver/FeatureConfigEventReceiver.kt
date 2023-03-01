@@ -81,7 +81,33 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
             }
 
+            is Event.FeatureConfig.GuestRoomLinkUpdated -> {
+                handleGuestRoomLinkFeatureConfig(event.model.status)
+            }
+
             is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
+        }
+    }
+
+    private fun handleGuestRoomLinkFeatureConfig(status: Status) {
+        if (!kaliumConfigs.guestRoomLink) {
+            userConfigRepository.setGuestRoomStatus(false, null)
+        } else {
+            val currentGuestRoomStatus: Boolean = userConfigRepository
+                .getGuestRoomLinkStatus()
+                .fold({ true }, { it.isGuestRoomLinkEnabled ?: true })
+
+            when (status) {
+                Status.ENABLED -> userConfigRepository.setGuestRoomStatus(
+                    status = true,
+                    isStatusChanged = !currentGuestRoomStatus
+                )
+
+                Status.DISABLED -> userConfigRepository.setGuestRoomStatus(
+                    status = false,
+                    isStatusChanged = currentGuestRoomStatus
+                )
+            }
         }
     }
 }
