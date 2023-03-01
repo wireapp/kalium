@@ -31,11 +31,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
-import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
-import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -494,35 +491,6 @@ class MessageSenderTest {
         }
     }
 
-    @Test
-    fun givenARemoteProteusConversationPartiallyFails_WhenSendingOutgoingMessage_ThenReturnSuccessAndPersistFailedRecipients() {
-        // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(
-                sendEnvelopeWithResult = Either.Right(
-                    MessageSent(
-                        time = MESSAGE_SENT_TIME,
-                        failed = listOf(TEST_MEMBER_2)
-                    )
-                )
-            )
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withSendMessagePartialSuccess()
-            .arrange()
-
-        arrangement.testScope.runTest {
-            // when
-            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
-
-            // then
-            result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
-                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasInvoked(exactly = once)
-        }
-    }
-
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -629,7 +597,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -674,7 +642,7 @@ class MessageSenderTest {
             getConversationsRecipientFailing: Boolean = false,
             prepareRecipientsForNewOutGoingMessageFailing: Boolean = false,
             createOutgoingEnvelopeFailing: Boolean = false,
-            sendEnvelopeWithResult: Either<CoreFailure, MessageSent>? = null,
+            sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
             updateMessageStatusFailing: Boolean = false,
             updateMessageDateFailing: Boolean = false,
         ) =
@@ -696,15 +664,6 @@ class MessageSenderTest {
             withCreateOutgoingMlsMessage()
             if (sendMlsMessageWithResult != null) withSendOutgoingMlsMessage(sendMlsMessageWithResult) else withSendOutgoingMlsMessage()
             withUpdateMessageStatus()
-        }
-
-        fun withSendMessagePartialSuccess(
-            result: Either<CoreFailure, Unit> = Either.Right(Unit),
-        ) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistRecipientsDeliveryFailure)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(result)
         }
 
         companion object {
