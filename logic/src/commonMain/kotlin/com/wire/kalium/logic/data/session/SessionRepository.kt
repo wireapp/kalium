@@ -215,7 +215,10 @@ internal class SessionDataSource(
     }
 
     override suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
-        accountsDAO.getAccountManagedBy(userId.toDao()) != ManagedByEntity.WIRE
+        when (accountsDAO.getAccountManagedBy(userId.toDao())) {
+            ManagedByEntity.WIRE, null -> false
+            else -> true
+        }
     }
 
     internal fun ManagedByDTO.toDao() = when (this) {
