@@ -31,11 +31,6 @@ data class QualifiedID(
     @SerialName("domain")
     val domain: String
 ) {
-    companion object {
-        // TODO: this may be problematic for premiss backends
-        const val WIRE_PRODUCTION_DOMAIN = "wire.com"
-    }
-
     override fun toString(): String = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
     fun toPlainID(): PlainId = PlainId(value)

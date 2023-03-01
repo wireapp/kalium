@@ -494,6 +494,7 @@ class UserSessionScope internal constructor(
         get() = CreateBackupUseCaseImpl(
             userId,
             clientIdProvider,
+            userRepository,
             kaliumFileSystem,
             userStorage.database.databaseExporter,
             securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
@@ -507,6 +508,7 @@ class UserSessionScope internal constructor(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
             userId,
+            userRepository,
             clientIdProvider
         )
 
