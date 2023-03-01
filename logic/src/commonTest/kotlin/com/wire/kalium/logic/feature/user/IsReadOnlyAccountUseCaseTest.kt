@@ -50,7 +50,6 @@ class IsReadOnlyAccountUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenUIsNotReadOnlyAccount_ManagedByWire_thenReturnTheValue() = runTest(testDispatchers.io) {
         val (arrangement, isReadOnlyAccountUseCase) = Arrangement()
