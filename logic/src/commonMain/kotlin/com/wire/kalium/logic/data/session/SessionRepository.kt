@@ -214,13 +214,14 @@ internal class SessionDataSource(
         authTokenStorage.getToken(userId.toDao())?.cookieLabel
     }
 
-    override suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageNullableRequest {
-        when (accountsDAO.getAccountManagedBy(userId.toDao())) {
-            // only WIRE and no-value accounts are considered as fully editables
-            ManagedByEntity.WIRE, null -> false
-            ManagedByEntity.SCIM -> true
+    override suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageNullableRequest { accountsDAO.getAccountManagedBy(userId.toDao()) }.map {
+            when (it) {
+                // Only WIRE and no-value accounts are considered as fully editable
+                ManagedByEntity.WIRE, null -> false
+                ManagedByEntity.SCIM -> true
+            }
         }
-    }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE
