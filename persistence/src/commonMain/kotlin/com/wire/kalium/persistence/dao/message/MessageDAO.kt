@@ -122,12 +122,5 @@ interface MessageDAO {
         millis: Long
     )
 
-    suspend fun insertFailedRecipientDelivery(
-        id: String,
-        conversationsId: QualifiedIDEntity,
-        recipientsFailed: List<QualifiedIDEntity>,
-        recipientFailureTypeEntity: RecipientFailureTypeEntity
-    )
-
     val platformExtensions: MessageExtensions
 }

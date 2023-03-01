@@ -123,7 +123,6 @@ class UserDatabaseBuilder internal constructor(
         UserAdapter = TableMapper.userAdapter,
         MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter,
         MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
-        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
     )
 
     init {

@@ -52,8 +52,7 @@ sealed class MessageEntity(
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false,
-        val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
+        val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
@@ -375,29 +374,3 @@ enum class AssetTypeEntity {
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
-
-/**
- * The type of the failure that happened when trying to deliver a message to a recipient.
- */
-enum class RecipientFailureTypeEntity {
-    /**
-     * The message was not *attempted* to be delivered because there is no known clients for the recipient.
-     * It will never be delivered for these recipients.
-     */
-    NO_CLIENTS_TO_DELIVER,
-
-    /**
-     * The message was not delivered "now" because of a communication error while the backend tried to deliver it.
-     * It might be delivered later.
-     */
-    MESSAGE_DELIVERY_FAILED
-}
-
-sealed class DeliveryStatusEntity {
-    data class PartialDelivery(
-        val recipientsFailedWithNoClients: List<UserIDEntity>,
-        val recipientsFailedDelivery: List<UserIDEntity>
-    ) : DeliveryStatusEntity()
-
-    object CompleteDelivery : DeliveryStatusEntity()
-}
