@@ -221,7 +221,6 @@ class CallManagerImpl internal constructor(
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
-        conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
         callingLogger.d(
@@ -230,9 +229,13 @@ class CallManagerImpl internal constructor(
         )
         val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
         val isCameraOn = callType == CallType.VIDEO
+        val type = conversationRepository.getConversationById(conversationId)?.let {
+            callMapper.fromConversationToConversationType(it)
+        } ?: ConversationType.Unknown
+
         callRepository.createCall(
             conversationId = conversationId,
-            type = conversationType,
+            type = type,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
@@ -241,7 +244,7 @@ class CallManagerImpl internal constructor(
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            val avsConversationType = callMapper.toConversationTypeCalling(type)
             // TODO: Handle response. Possible failure?
             wcall_start(
                 deferredHandle.await(),

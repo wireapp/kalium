@@ -41,7 +41,6 @@ class StartCallUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
-        conversationType: ConversationType,
         isAudioCbr: Boolean = false
     ) = syncManager.waitUntilLiveOrFailure().fold({
         Result.SyncFailure
@@ -49,7 +48,6 @@ class StartCallUseCase internal constructor(
         callManager.value.startCall(
             conversationId = conversationId,
             callType = callType,
-            conversationType = conversationType,
             isAudioCbr = isAudioCbr
         )
         Result.Success

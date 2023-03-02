@@ -36,7 +36,6 @@ class CallManagerImpl : CallManager {
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
-        conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
         TODO("Not yet implemented")
