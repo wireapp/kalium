@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.globalDB
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
+import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.FullAccountEntity
@@ -178,20 +179,41 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         assertEquals(false, exists)
     }
 
+    @Test
+    fun givenValidAccount_whenManagedByIsPresent_thenReturnsTheCorrespondingValue() = runTest {
+        val account = VALID_ACCOUNT
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        db.accountsDAO.updateSsoIdAndScimInfo(account.info.userIDEntity, account.ssoId, ManagedByEntity.SCIM)
+
+        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        assertEquals(ManagedByEntity.SCIM, result)
+    }
+
+    @Test
+    fun givenValidAccount_whenManagedByNotPresent_thenReturnsTheCorrespondingValue() = runTest {
+        val account = VALID_ACCOUNT
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+
+        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        assertEquals(null, result)
+    }
+
     private companion object {
 
         val VALID_ACCOUNT = FullAccountEntity(
             info = AccountInfoEntity(UserIDEntity("valid_user", "valid_domain"), null),
             serverConfigId = "server_config_id",
             ssoId = null,
-            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false)
+            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false),
+            managedBy = null
         )
 
         val INVALID_ACCOUNT = FullAccountEntity(
             info = AccountInfoEntity(UserIDEntity("invalid_user", "invalid_domain"), LogoutReason.REMOVED_CLIENT),
             serverConfigId = "server_config_id",
             ssoId = null,
-            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false)
+            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false),
+            ManagedByEntity.WIRE
         )
 
         val SERVER_CONFIG = ServerConfigEntity(
