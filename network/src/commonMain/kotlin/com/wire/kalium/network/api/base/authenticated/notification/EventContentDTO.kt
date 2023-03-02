@@ -29,9 +29,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
-import com.wire.kalium.network.api.base.authenticated.notification.conversation.UnEncryptedAssetEventData
-import com.wire.kalium.network.api.base.authenticated.notification.conversation.UnEncryptedKnockEventData
-import com.wire.kalium.network.api.base.authenticated.notification.conversation.UnEncryptedMessageEventData
 import com.wire.kalium.network.api.base.authenticated.notification.team.PermissionsData
 import com.wire.kalium.network.api.base.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.base.authenticated.notification.team.TeamUpdateData
@@ -143,23 +140,6 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
-        @SerialName("conversation.group-creation")
-        data class NewGroupConversationDTO(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
-            @SerialName("from") val from: String,
-            @SerialName("data") val members: GroupMembers,
-            val time: String,
-        ) : Conversation()
-
-        @Serializable
-        data class GroupMembers(
-            val allTeamMembers: Boolean,
-            val name: String,
-            val userIds: List<UserId>
-        )
-
-        @Serializable
         @SerialName("conversation.delete")
         data class DeletedConversationDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
@@ -217,45 +197,6 @@ sealed class EventContentDTO {
             val time: String,
             @SerialName("data") val data: MessageEventData,
         ) : Conversation()
-
-        @Serializable
-        @SerialName("conversation.message-add")
-        data class WebTextMessageDTO(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
-            @SerialName("from") val from: String,
-            @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
-            @SerialName("data") val data: UnEncryptedMessageEventData,
-            @SerialName("reactions") val reactions: Map<String, String>?
-        ) : Conversation()
-
-        @Serializable
-        @SerialName("conversation.asset-add")
-        data class WebAssetMessageDTO(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
-            @SerialName("from") val from: String,
-            @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
-            @SerialName("data") val data: UnEncryptedAssetEventData,
-            @SerialName("reactions") val reactions: Map<String,String>?
-        ) : Conversation()
-
-        @Serializable
-        @SerialName("conversation.knock")
-        data class WebKnockMessageDTO(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
-            @SerialName("from") val from: String,
-            @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
-            @SerialName("data") val data: UnEncryptedKnockEventData
-        ) : Conversation()
-
 
         @Serializable
         @SerialName("conversation.access-update")

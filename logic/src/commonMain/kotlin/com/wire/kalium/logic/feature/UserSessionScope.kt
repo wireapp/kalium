@@ -117,6 +117,8 @@ import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCaseImpl
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.RestoreWebBackupUseCase
+import com.wire.kalium.logic.feature.backup.RestoreWebBackupUseCaseImpl
 import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.backup.VerifyBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
@@ -508,6 +510,14 @@ class UserSessionScope internal constructor(
     val verifyBackupUseCase: VerifyBackupUseCase
         get() = VerifyBackupUseCaseImpl(kaliumFileSystem)
 
+    val restoreWebBackup: RestoreWebBackupUseCase
+        get() = RestoreWebBackupUseCaseImpl(
+            kaliumFileSystem,
+            userId,
+            persistMigratedMessage,
+            restartSlowSyncProcessForRecoveryUseCase
+        )
+
     val restoreBackup: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
@@ -515,8 +525,7 @@ class UserSessionScope internal constructor(
             userId,
             userRepository,
             clientIdProvider,
-            persistMigratedMessage,
-            restartSlowSyncProcessForRecoveryUseCase
+            restoreWebBackup
         )
 
     val persistMessage: PersistMessageUseCase

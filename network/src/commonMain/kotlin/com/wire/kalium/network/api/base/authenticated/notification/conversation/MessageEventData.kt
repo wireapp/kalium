@@ -20,7 +20,6 @@ package com.wire.kalium.network.api.base.authenticated.notification.conversation
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class MessageEventData(
@@ -28,48 +27,4 @@ data class MessageEventData(
     @SerialName("sender") val sender: String,
     @SerialName("recipient") val recipient: String,
     @SerialName("data") val encryptedExternalData: String? = null
-)
-
-@Serializable
-data class UnEncryptedMessageEventData(
-    @SerialName("content") val text: String,
-//     @SerialName("quote") val quote: QuoteDTO?,
-//     @SerialName("mentions") val mentions: List<String>?,
-    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
-    @SerialName("legal_hold_status") val legalHoldStatus: Int?
-    )
-
-@Serializable
-data class QuoteDTO(
-    @SerialName("message_id") val messageId: String?,
-    @SerialName("user_id") val userId: String?,
-)
-
-@Serializable
-data class UnEncryptedAssetEventData(
-    @SerialName("content_length") val contentLength: Int?,
-    @SerialName("content_type") val contentType: String?,
-    val domain: String?,
-    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
-    val info: AssetInfo?,
-    val key: String?,
-    @SerialName("legal_hold_status") val legalHoldStatus: Int,
-    @SerialName("otr_key") val otrKey: JsonObject?,
-    @SerialName("sha256") val sha256: JsonObject?,
-    val status: String?,
-    val token: String?
-)
-
-@Serializable
-data class UnEncryptedKnockEventData(
-    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
-    @SerialName("legal_hold_status") val legalHoldStatus: Int,
-)
-
-@Serializable
-data class AssetInfo(
-    val height: Int?,
-    val name: String?,
-    val tag: String?,
-    val width: Int?
 )

@@ -25,16 +25,16 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.logic.data.web.WebContent
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
 
-fun EventContentDTO.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
+fun WebContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
     return when (this) {
-        is EventContentDTO.Conversation.WebTextMessageDTO -> {
+        is WebContent.Conversation.TextMessage -> {
             MigratedMessage(
-                conversationId = qualifiedConversation.toModel(),
-                senderUserId = qualifiedFrom?.toModel() ?: QualifiedID(from, selfUserDomain),
+                conversationId = qualifiedConversation,
+                senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
                 senderClientId = ClientId(fromClientId),
                 timestamp = Instant.parse(time).toEpochMilliseconds(),
                 content = "",
@@ -51,10 +51,10 @@ fun EventContentDTO.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                 null
             )
         }
-        is EventContentDTO.Conversation.WebAssetMessageDTO ->
+        is WebContent.Conversation.AssetMessage ->
             MigratedMessage(
-                conversationId = qualifiedConversation.toModel(),
-                senderUserId = qualifiedFrom?.toModel() ?: QualifiedID(from, selfUserDomain),
+                conversationId = qualifiedConversation,
+                senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
                 senderClientId = ClientId(fromClientId),
                 timestamp = Instant.parse(time).toEpochMilliseconds(),
                 content = "",
