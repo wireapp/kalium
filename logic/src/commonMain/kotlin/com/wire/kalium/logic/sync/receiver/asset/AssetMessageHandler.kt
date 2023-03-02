@@ -62,12 +62,7 @@ internal class AssetMessageHandlerImpl(
             ) {
                 // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
                 // the preview message persisted previously with the rest of the data
-                persistMessage(
-                    updateAssetMessageWithDecryptionKeys(
-                        persistedMessage,
-                        validDecryptionKeys
-                    )
-                )
+                persistMessage(updateAssetMessageWithDecryptionKeys(persistedMessage, validDecryptionKeys))
             }
         }
     }
