@@ -22,46 +22,43 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case will return the details of a client.
  */
-interface GetClientDetailsUseCase {
+interface ObserveClientDetailsUseCase {
     /**
      * @param clientId the id of the client to get the details for
      * @return the [GetClientDetailsResult] with the client details, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(clientId: ClientId): GetClientDetailsResult
+    suspend fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult>
 }
 
-class GetClientDetailsUseCaseImpl(
+class ObserveClientDetailsUseCaseImpl(
     private val clientRepository: ClientRepository,
-    private val provideClientId: CurrentClientIdProvider,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : GetClientDetailsUseCase {
-    override suspend fun invoke(clientId: ClientId): GetClientDetailsResult = withContext(dispatchers.io) {
-        clientRepository.clientInfo(clientId)
-            .fold(
-                { GetClientDetailsResult.Failure.Generic(it) },
-                { client ->
+    private val provideClientId: CurrentClientIdProvider
+) : ObserveClientDetailsUseCase {
+    override suspend fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult> =
+        clientRepository.observeClientsByUserIdAndClientId(userId, clientId)
+            .map {
+                it.fold(
+                    { GetClientDetailsResult.Failure.Generic(it) }, { client ->
                     provideClientId.invoke().getOrNull()?.let { currentClientId ->
                         GetClientDetailsResult.Success(client, currentClientId.value == clientId.value)
                     } ?: GetClientDetailsResult.Success(client, false)
-                }
-            )
-    }
+                })
+            }
 }
+    sealed class GetClientDetailsResult {
+        data class Success(val client: Client, val isCurrentClient: Boolean) : GetClientDetailsResult()
 
-sealed class GetClientDetailsResult {
-    data class Success(val client: Client, val isCurrentClient: Boolean) : GetClientDetailsResult()
-
-    sealed class Failure : GetClientDetailsResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        sealed class Failure : GetClientDetailsResult() {
+            class Generic(val genericFailure: CoreFailure) : Failure()
+        }
     }
-}
