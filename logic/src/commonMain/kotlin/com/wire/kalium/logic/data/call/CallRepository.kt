@@ -223,7 +223,7 @@ internal class CallDataSource(
 
         callingLogger.i(
             "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
-                    " ConversationId: [${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}] " +
+                    " ConversationId: [${conversationId.toLogString()}] " +
                     "| status: [$status]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
@@ -321,7 +321,7 @@ internal class CallDataSource(
     override suspend fun persistMissedCall(conversationId: ConversationId) {
         callingLogger.i(
             "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
         val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
         callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)?.let { callerId ->
@@ -377,7 +377,7 @@ internal class CallDataSource(
             if (call.participants != participants) {
                 callingLogger.i(
                     "updateCallParticipants() -" +
-                            " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
+                            " conversationId: ${conversationIdToLog.toLogString()}" +
                             " with size of: ${participants.size}"
                 )
 
@@ -503,7 +503,7 @@ internal class CallDataSource(
     ): Either<CoreFailure, Unit> {
         callingLogger.i(
             "Joining MLS conference for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
 
         return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
@@ -520,7 +520,7 @@ internal class CallDataSource(
     override suspend fun leaveMlsConference(conversationId: ConversationId) {
         callingLogger.i(
             "Leaving MLS conference for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
 
         // Cancels flow observing epoch changes

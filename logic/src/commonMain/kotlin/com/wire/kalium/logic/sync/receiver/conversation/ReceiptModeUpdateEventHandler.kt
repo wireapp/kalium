@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
@@ -68,7 +67,7 @@ internal class ReceiptModeUpdateEventHandlerImpl(
             }
             .onFailure { coreFailure ->
                 logger.d("[ReceiptModeUpdateEventHandler][Error] - Receipt Mode: [${event.receiptMode}] " +
-                        "| Conversation: [${event.conversationId.toString().obfuscateId()}] " +
+                        "| Conversation: [${event.conversationId.toLogString()}] " +
                         "| CoreFailure: [$coreFailure]")
             }
     }

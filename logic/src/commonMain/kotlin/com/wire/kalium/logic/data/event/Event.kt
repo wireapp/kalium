@@ -41,7 +41,23 @@ import kotlinx.serialization.json.JsonNull
 
 sealed class Event(open val id: String, open val transient: Boolean) {
 
+    private companion object {
+        const val typeKey = "type"
+        const val idKey = "id"
+        const val clientIdKey = "clientId"
+        const val userIdKey = "userId"
+        const val conversationIdKey = "conversationId"
+        const val senderUserIdKey = "senderUserId"
+        const val teamIdKey = "teamId"
+        const val memberIdKey = "memberId"
+        const val timestampIsoKey = "timestampIso"
+    }
+
     fun shouldUpdateLastProcessedEventId() = !transient
+
+    open fun toLogString(): String {
+        return "{ \"$typeKey\" : \"unknown\"}"
+    }
 
     sealed class Conversation(
         id: String,
@@ -55,11 +71,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val qualifiedFrom: UserId,
             override val transient: Boolean
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "qualifiedFrom" to "${qualifiedFrom.value.obfuscateId()}@${qualifiedFrom.domain.obfuscateDomain()}"
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    "qualifiedFrom" to "${qualifiedFrom.toLogString()}"
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -75,13 +92,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val content: String,
             val encryptedExternalContent: EncryptedData?
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    senderUserIdKey to "${senderUserId.toLogString()}",
                     "senderClientId" to senderClientId.value.obfuscateId(),
-                    "timestampIso" to timestampIso
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -96,12 +114,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val timestampIso: String,
             val content: String
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    senderUserIdKey to "${senderUserId.toLogString()}",
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -114,11 +133,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val timestampIso: String,
             val conversation: ConversationResponse
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -132,13 +152,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val members: List<Member>,
             val timestampIso: String
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "addedBy" to "${addedBy.value.obfuscateId()}@${addedBy.domain.obfuscateDomain()}",
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    "addedBy" to "${addedBy.toLogString()}",
                     "members" to members.map { it.toMap() },
-                    "timestampIso" to timestampIso
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -152,12 +173,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val removedList: List<UserId>,
             val timestampIso: String
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "removedBy" to "${removedBy.value.obfuscateId()}@${removedBy.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    "removedBy" to "${removedBy.toLogString()}",
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -176,12 +198,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 override val transient: Boolean,
                 val member: Member?,
             ) : MemberChanged(id, conversationId, timestampIso, transient) {
-                override fun toString(): String {
+                override fun toLogString(): String {
                     val properties = mapOf(
-                        "id" to id.obfuscateId(),
-                        "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                        typeKey to this::class.qualifiedName,
+                        idKey to id.obfuscateId(),
+                        conversationIdKey to "${conversationId.toLogString()}",
                         "member" to (member?.toMap() ?: JsonNull),
-                        "timestampIso" to timestampIso
+                        timestampIsoKey to timestampIso
                     )
                     return "${properties.toJsonElement()}"
                 }
@@ -195,11 +218,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 val mutedConversationStatus: MutedConversationStatus,
                 val mutedConversationChangedTime: String
             ) : MemberChanged(id, conversationId, timestampIso, transient) {
-                override fun toString(): String {
+                override fun toLogString(): String {
                     val properties = mapOf(
-                        "id" to id.obfuscateId(),
-                        "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                        "timestampIso" to timestampIso,
+                        typeKey to this::class.qualifiedName,
+                        idKey to id.obfuscateId(),
+                        conversationIdKey to "${conversationId.toLogString()}",
+                        timestampIsoKey to timestampIso,
                         "mutedConversationStatus" to mutedConversationStatus.status,
                         "mutedConversationChangedTime" to mutedConversationChangedTime
                     )
@@ -212,10 +236,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 override val conversationId: ConversationId,
                 override val transient: Boolean
             ) : MemberChanged(id, conversationId, "", transient) {
-                override fun toString(): String {
+                override fun toLogString(): String {
                     val properties = mapOf(
-                        "id" to id.obfuscateId(),
-                        "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                        typeKey to this::class.qualifiedName,
+                        idKey to id.obfuscateId(),
+                        conversationIdKey to "${conversationId.toLogString()}",
                     )
                     return "${properties.toJsonElement()}"
                 }
@@ -230,12 +255,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val message: String,
             val timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso,
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    timestampIsoKey to timestampIso,
+                    senderUserIdKey to "${senderUserId.toLogString()}"
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -248,12 +274,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val senderUserId: UserId,
             val timestampIso: String,
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso,
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    timestampIsoKey to timestampIso,
+                    senderUserIdKey to "${senderUserId.toLogString()}"
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -267,13 +294,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val senderUserId: UserId,
             val timestampIso: String,
         ) : Conversation(id, transient, conversationId) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
+                    senderUserIdKey to "${senderUserId.toLogString()}",
                     "conversationName" to conversationName,
-                    "timestampIso" to timestampIso,
+                    timestampIsoKey to timestampIso,
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -289,10 +317,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
             override fun toString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to "${conversationId.toLogString()}",
                     "receiptMode" to receiptMode.name,
-                    "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
+                    senderUserIdKey to "${senderUserId.toLogString()}",
                 )
 
                 return "${properties.toJsonElement()}"
@@ -312,10 +341,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val icon: String,
             val name: String,
         ) : Team(id, teamId, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "teamId" to teamId,
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    teamIdKey to teamId,
                     "icon" to icon,
                     "name" to name,
                 )
@@ -329,11 +359,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val memberId: String,
         ) : Team(id, teamId, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "teamId" to teamId.obfuscateId(),
-                    "memberId" to memberId.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    teamIdKey to teamId.obfuscateId(),
+                    memberIdKey to memberId.obfuscateId(),
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -346,12 +377,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val memberId: String,
             val timestampIso: String,
         ) : Team(id, teamId, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "teamId" to teamId.obfuscateId(),
-                    "timestampIso" to timestampIso,
-                    "memberId" to memberId.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    teamIdKey to teamId.obfuscateId(),
+                    timestampIsoKey to timestampIso,
+                    memberIdKey to memberId.obfuscateId(),
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -364,12 +396,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val memberId: String,
             val permissionCode: Int?,
         ) : Team(id, teamId, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "teamId" to teamId.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    teamIdKey to teamId.obfuscateId(),
                     "permissionCode" to "$permissionCode",
-                    "memberId" to memberId.obfuscateId(),
+                    memberIdKey to memberId.obfuscateId(),
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -386,9 +419,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val model: ConfigsStatusModel
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "status" to model.status.name,
                 )
                 return "${properties.toJsonElement()}"
@@ -400,8 +434,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val model: MLSModel
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
-                val properties = mapOf("id" to id.obfuscateId(),
+            override fun toLogString(): String {
+                val properties = mapOf(
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "status" to model.status.name,
                     "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() })
                 return "${properties.toJsonElement()}"
@@ -413,9 +449,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val model: ClassifiedDomainsModel,
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "status" to model.status.name,
                     "domains" to model.config.domains.map { it.obfuscateDomain() }
                 )
@@ -428,9 +465,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val model: ConferenceCallingModel,
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "status" to model.status.name,
                 )
                 return "${properties.toJsonElement()}"
@@ -442,9 +480,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
             val model: ConfigsStatusModel,
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "status" to model.status.name,
                 )
                 return "${properties.toJsonElement()}"
@@ -455,9 +494,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val transient: Boolean,
         ) : FeatureConfig(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -481,10 +521,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val previewAssetId: String?,
             val completeAssetId: String?,
         ) : User(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "userId" to userId.obfuscateId()
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    userIdKey to userId.obfuscateId()
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -495,9 +536,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             val connection: Connection
         ) : User(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
                     "connection" to connection.toMap()
                 )
                 return "${properties.toJsonElement()}"
@@ -509,10 +551,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             val clientId: ClientId
         ) : User(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "clientId" to clientId.value.obfuscateId()
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    clientIdKey to clientId.value.obfuscateId()
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -524,11 +567,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val userId: UserId,
             val timestampIso: String = DateTimeUtil.currentIsoDateTimeString() // TODO we are not receiving it from API
         ) : User(id, transient) {
-            override fun toString(): String {
+            override fun toLogString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(),
-                    "userId" to "${userId.value.obfuscateId()}@${userId.domain.obfuscateDomain()}",
-                    "timestampIso" to timestampIso
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    userIdKey to "${userId.toLogString()}",
+                    timestampIsoKey to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -544,17 +588,27 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val transient: Boolean,
             val value: Boolean,
-        ) : UserProperty(id, transient)
-
+        ) : UserProperty(id, transient) {
+            override fun toLogString(): String {
+                val properties = mapOf(
+                    typeKey to this::class.qualifiedName,
+                    idKey to id.obfuscateId(),
+                    "transient" to "$transient",
+                    "value" to "$value"
+                )
+                return "${properties.toJsonElement()}"
+            }
+        }
     }
 
     data class Unknown(
         override val id: String,
         override val transient: Boolean,
     ) : Event(id, transient) {
-        override fun toString(): String {
+        override fun toLogString(): String {
             val properties = mapOf(
-                "id" to id.obfuscateId(),
+                typeKey to this::class.qualifiedName,
+                idKey to id.obfuscateId(),
             )
             return "${properties.toJsonElement()}"
         }

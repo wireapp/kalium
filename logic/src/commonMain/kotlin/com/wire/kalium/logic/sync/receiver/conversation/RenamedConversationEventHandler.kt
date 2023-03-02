@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -45,7 +44,7 @@ internal class RenamedConversationEventHandlerImpl(
     override suspend fun handle(event: Event.Conversation.RenamedConversation) {
         updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
             .onSuccess {
-                logger.d("The Conversation was renamed: ${event.conversationId.toString().obfuscateId()}")
+                logger.d("The Conversation was renamed: ${event.conversationId.toLogString()}")
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
@@ -57,7 +56,7 @@ internal class RenamedConversationEventHandlerImpl(
                 persistMessage(message)
             }
             .onFailure { coreFailure ->
-                logger.e("Error renaming the conversation [${event.conversationId.toString().obfuscateId()}] $coreFailure")
+                logger.e("Error renaming the conversation [${event.conversationId.toLogString()}] $coreFailure")
             }
     }
 

@@ -197,7 +197,7 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun processMessage(message: Message.Regular) {
-        logger.i(message = "Message received: { \"message\" : $message }")
+        logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
 
         when (val content = message.content) {
             // Persist Messages - > lists
@@ -211,7 +211,7 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.Asset -> assetMessageHandler.handle(message, content)
 
             is MessageContent.Unknown -> {
-                logger.i(message = "Unknown Message received: $message")
+                logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
 
