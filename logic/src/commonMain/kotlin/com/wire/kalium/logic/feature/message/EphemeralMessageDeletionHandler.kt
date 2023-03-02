@@ -100,16 +100,16 @@ internal class EphemeralMessageDeletionHandlerImpl(
     override fun observePendingMessageDeletionState() = ephemeralMessageDeletionTimeLeftMap
 
     override fun enqueuePendingSelfDeletionMessages() {
-//         launch {
-//             messageRepository.getEphemeralMessages()
-//                 .onSuccess { ephemeralMessages ->
-//                     ephemeralMessages.forEach { ephemeralMessage ->
-//                         require(ephemeralMessage is Message.Ephemeral)
-//
-//                         enqueueMessageDeletion(message = ephemeralMessage)
-//                     }
-//                 }
-//         }
+        launch {
+            messageRepository.getEphemeralMessages()
+                .onSuccess { ephemeralMessages ->
+                    ephemeralMessages.forEach { ephemeralMessage ->
+                        require(ephemeralMessage is Message.Ephemeral)
+
+                        enqueueMessageDeletion(message = ephemeralMessage)
+                    }
+                }
+        }
     }
 
 }
