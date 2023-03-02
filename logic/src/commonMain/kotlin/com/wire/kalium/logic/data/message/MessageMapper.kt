@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -100,7 +99,7 @@ class MessageMapperImpl(
                 with(message.ephemeralMessage) {
                     MessageEntity.Ephemeral(
                         expireAfterMillis = message.expireAfterMillis,
-                        selfDeletionDate = message.selfDeletionDate,
+                        selfDeletionStartDate = message.selfDeletionStartDate,
                         ephemeralMessage = MessageEntity.Regular(
                             id = id,
                             content = toMessageEntityContent(content),
@@ -167,9 +166,9 @@ class MessageMapperImpl(
             is MessageEntity.Ephemeral -> with(message.ephemeralMessage) {
                 Message.Ephemeral(
                     expireAfterMillis = message.expireAfterMillis,
-                    selfDeletionDate = message.selfDeletionDate,
+                    selfDeletionStartDate = message.selfDeletionStartDate,
                     ephemeralMessage = Message.Regular(
-                        id =id,
+                        id = id,
                         content = content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
                         conversationId = conversationId.toModel(),
                         date = date.toIsoDateTimeString(),

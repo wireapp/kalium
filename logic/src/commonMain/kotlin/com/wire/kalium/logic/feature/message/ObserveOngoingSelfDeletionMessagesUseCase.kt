@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 class ObserveOngoingSelfDeletionMessagesUseCase(
     private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler
 ) {
-    operator fun invoke(): Flow<Map<Pair<ConversationId, String>, Long>> =
+    operator fun invoke(): Flow<Map<Pair<ConversationId, String>, SelfDeletionTimeLeft>> =
         ephemeralMessageDeletionHandler.observePendingMessageDeletionState()
 
 }

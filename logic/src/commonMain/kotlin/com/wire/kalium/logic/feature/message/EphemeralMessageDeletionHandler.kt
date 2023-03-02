@@ -23,7 +23,7 @@ import kotlin.coroutines.CoroutineContext
 interface EphemeralMessageDeletionHandler {
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
 
-    fun observePendingMessageDeletionState(): Flow<Map<Pair<ConversationId, String>, Long>>
+    fun observePendingMessageDeletionState(): Flow<Map<Pair<ConversationId, String>, SelfDeletionTimeLeft>>
 
     fun enqueuePendingSelfDeletionMessages()
 }
@@ -37,37 +37,43 @@ internal class EphemeralMessageDeletionHandlerImpl(
         get() = kaliumDispatcher.default
 
     private val ephemeralMessageDeletionTimeLeftMapMutex = Mutex()
-    private val ephemeralMessageDeletionTimeLeftMap: MutableStateFlow<Map<Pair<ConversationId, String>, Long>> =
+    private val ephemeralMessageDeletionTimeLeftMap: MutableStateFlow<Map<Pair<ConversationId, String>, SelfDeletionTimeLeft>> =
         MutableStateFlow(emptyMap())
 
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
-        launch {
+        userSessionCoroutineScope.launch {
             ephemeralMessageDeletionTimeLeftMapMutex.withLock {
                 val isSelfDeletionOutgoing = ephemeralMessageDeletionTimeLeftMap.value[conversationId to messageId] != null
                 if (isSelfDeletionOutgoing) return@launch
+
+                ephemeralMessageDeletionTimeLeftMap.update { currentState ->
+                    currentState + ((conversationId to messageId) to SelfDeletionTimeLeft(0))
+                }
             }
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                // require(message is Message.Ephemeral)
+                require(message is Message.Ephemeral)
 
                 enqueueMessageDeletion(message)
             }
         }
     }
 
-    private fun enqueueMessageDeletion(message: Message) {
+    private fun enqueueMessageDeletion(message: Message.Ephemeral) {
         userSessionCoroutineScope.launch {
             val selfDeletingMessageTimer = SelfDeletingMessageTimer(
                 coroutineScope = userSessionCoroutineScope
             )
 
-            for (timerEvent in selfDeletingMessageTimer.startTimer(15000)) {
+            for (timerEvent in selfDeletingMessageTimer.startTimer(message.expireAfterMillis())) {
                 when (timerEvent) {
-                    is SelfDeletionTimerState.Started -> messageRepository.markSelfDeletionStartDate(
-                        conversationId = message.conversationId,
-                        messageUuid = message.id,
-                        deletionDate = timerEvent.startDate
-                    )
+                    is SelfDeletionTimerState.Started -> {
+                        messageRepository.markSelfDeletionStartDate(
+                            message.conversationId,
+                            message.id,
+                            Clock.System.now().toEpochMilliseconds()
+                        )
+                    }
 
                     is SelfDeletionTimerState.OnGoing -> {
                         ephemeralMessageDeletionTimeLeftMapMutex.withLock {
@@ -85,6 +91,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                             }
                         }
                     }
+
                 }
             }
         }
@@ -93,15 +100,16 @@ internal class EphemeralMessageDeletionHandlerImpl(
     override fun observePendingMessageDeletionState() = ephemeralMessageDeletionTimeLeftMap
 
     override fun enqueuePendingSelfDeletionMessages() {
-        launch {
-            messageRepository.getEphemeralMessages().onSuccess { ephemeralMessages ->
-                ephemeralMessages.forEach { ephemeralMessage ->
-                    require(ephemeralMessage is Message.Ephemeral)
-
-                    enqueueMessageDeletion(message = ephemeralMessage)
-                }
-            }
-        }
+//         launch {
+//             messageRepository.getEphemeralMessages()
+//                 .onSuccess { ephemeralMessages ->
+//                     ephemeralMessages.forEach { ephemeralMessage ->
+//                         require(ephemeralMessage is Message.Ephemeral)
+//
+//                         enqueueMessageDeletion(message = ephemeralMessage)
+//                     }
+//                 }
+//         }
     }
 
 }
@@ -119,12 +127,11 @@ internal class SelfDeletingMessageTimer(
         var elapsedTime = 0L
 
         while (elapsedTime < expireAfterMillis) {
-
-
             delay(TIMER_UPDATE_INTERVAL_IN_MILLIS)
-            elapsedTime += TIMER_UPDATE_INTERVAL_IN_MILLIS
 
-            send(SelfDeletionTimerState.OnGoing(expireAfterMillis - elapsedTime))
+            send(SelfDeletionTimerState.OnGoing(SelfDeletionTimeLeft(expireAfterMillis - elapsedTime)))
+
+            elapsedTime += TIMER_UPDATE_INTERVAL_IN_MILLIS
         }
 
         send(SelfDeletionTimerState.Finished)
@@ -133,9 +140,11 @@ internal class SelfDeletingMessageTimer(
 
 
 sealed class SelfDeletionTimerState {
-    data class Started(val startDate: Long) : SelfDeletionTimerState()
-    data class OnGoing(val timeLeft: Long) : SelfDeletionTimerState()
+
+    data class Started(val dateStart: Long) : SelfDeletionTimerState()
+    data class OnGoing(val timeLeft: SelfDeletionTimeLeft) : SelfDeletionTimerState()
 
     object Finished : SelfDeletionTimerState()
 }
 
+class SelfDeletionTimeLeft(val timeLeft: Long)

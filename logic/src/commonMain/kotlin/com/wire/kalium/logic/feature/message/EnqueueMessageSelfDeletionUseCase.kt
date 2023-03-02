@@ -6,7 +6,10 @@ class EnqueueMessageSelfDeletionUseCase(
     private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler,
 ) {
     operator fun invoke(conversationId: ConversationId, messageId: String) {
-        ephemeralMessageDeletionHandler.startSelfDeletion(conversationId,messageId)
+        ephemeralMessageDeletionHandler.startSelfDeletion(
+            conversationId = conversationId,
+            messageId = messageId
+        )
     }
 }
 

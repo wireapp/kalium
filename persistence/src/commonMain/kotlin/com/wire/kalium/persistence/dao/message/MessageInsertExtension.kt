@@ -94,7 +94,7 @@ internal class MessageInsertExtensionImpl(
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null,
-            self_deletion_start_date = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null
+            self_deletion_start_date = if (message is MessageEntity.Ephemeral) message.selfDeletionStartDate else null
         )
     }
 

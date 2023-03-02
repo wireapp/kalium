@@ -63,9 +63,21 @@ sealed interface Message {
 
     data class Ephemeral(
         val expireAfterMillis: Long,
-        val selfDeletionDate: Long?,
+        val selfDeletionStartDate: Long?,
         val ephemeralMessage: Regular
     ) : Standalone {
+
+        fun expireAfterMillis(): Long {
+            return if (selfDeletionStartDate == null) {
+                expireAfterMillis
+            } else {
+                Clock.System.now().toEpochMilliseconds() - selfDeletionStartDate
+            }
+        }
+
+        fun isDeletionOngoing(): Boolean {
+            return selfDeletionStartDate != null
+        }
 
         override val id: String
             get() = ephemeralMessage.id
