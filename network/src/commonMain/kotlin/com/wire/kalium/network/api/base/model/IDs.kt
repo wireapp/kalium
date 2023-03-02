@@ -37,14 +37,8 @@ data class QualifiedID(
     @SerialName("id")
     val value: String,
     @SerialName("domain")
-    @EncodeDefault val domain: String = WIRE_PRODUCTION_DOMAIN
-) {
-    companion object {
-        // TODO: this may be problematic for premiss backends
-        // TODO maybe secure when it is other backend
-        const val WIRE_PRODUCTION_DOMAIN = "wire.com"
-    }
-}
+    val domain: String
+)
 
 @Serializable
 data class UserSsoIdDTO(

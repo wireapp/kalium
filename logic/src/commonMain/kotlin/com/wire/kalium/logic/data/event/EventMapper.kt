@@ -38,7 +38,6 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.api.base.model.QualifiedID.Companion.WIRE_PRODUCTION_DOMAIN
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
@@ -208,7 +207,7 @@ class EventMapper(
     ) = Event.Conversation.MemberJoin(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        addedBy = eventContentDTO.qualifiedFrom?.toModel() ?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
+        addedBy = eventContentDTO.qualifiedFrom.toModel(),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time,
         transient = transient
@@ -221,7 +220,7 @@ class EventMapper(
     ) = Event.Conversation.MemberLeave(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
-        removedBy = eventContentDTO.qualifiedFrom?.toModel() ?: UserId(eventContentDTO.from, WIRE_PRODUCTION_DOMAIN),
+        removedBy = eventContentDTO.qualifiedFrom.toModel(),
         removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
         transient = transient

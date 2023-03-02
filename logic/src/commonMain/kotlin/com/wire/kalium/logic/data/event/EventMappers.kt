@@ -63,7 +63,7 @@ fun WebContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
                     MessageContent.Asset(
                         AssetContent(
                             sizeInBytes = data.contentLength?.toLong() ?: 0,
-                            name = null,
+                            name = data.info?.name,
                             mimeType = data.contentType ?: "",
                             remoteData = AssetContent.RemoteData(
                                 otrKey = data.otrKey?.toString()?.toByteArray() ?: ByteArray(0),
@@ -73,7 +73,7 @@ fun WebContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
                                 assetDomain = data.domain,
                                 encryptionAlgorithm = null
                             ),
-                            uploadStatus = Message.UploadStatus.UPLOADED,
+                            uploadStatus = Message.UploadStatus.NOT_UPLOADED,
                             downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                         )
                     ),
