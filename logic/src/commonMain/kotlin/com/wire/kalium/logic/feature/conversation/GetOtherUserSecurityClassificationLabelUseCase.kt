@@ -39,14 +39,16 @@ internal class GetOtherUserSecurityClassificationLabelUseCaseImpl(
 ) : GetOtherUserSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(otherUserId: UserId): SecurityClassificationType {
-        return getClassifiedDomainsStatus()?.let { listedDomains ->
-            otherUserId.domain == selfUserId.domain || listedDomains.contains(otherUserId.domain)
-        }.let { computedClassificationStatus ->
-            when (computedClassificationStatus) {
-                true -> SecurityClassificationType.CLASSIFIED
-                false -> SecurityClassificationType.NOT_CLASSIFIED
-                null -> SecurityClassificationType.NONE
-            }
+        val trustedDomains = getClassifiedDomainsStatus()
+        val computedStatus = if (trustedDomains == null) {
+            null
+        } else {
+            otherUserId.domain == selfUserId.domain || trustedDomains.contains(otherUserId.domain)
+        }
+        return when (computedStatus) {
+            true -> SecurityClassificationType.CLASSIFIED
+            false -> SecurityClassificationType.NOT_CLASSIFIED
+            null -> SecurityClassificationType.NONE
         }
     }
 
