@@ -1,0 +1,4 @@
+import com.wire.kalium.persistence.dao.call.CallEntity;
+
+ALTER TABLE Call
+ADD COLUMN type TEXT AS CallEntity.Type NOT NULL DEFAULT 'UNKNOWN';
