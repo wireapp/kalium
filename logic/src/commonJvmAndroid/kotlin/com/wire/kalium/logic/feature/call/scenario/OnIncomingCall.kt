@@ -50,18 +50,20 @@ class OnIncomingCall(
     ) {
         callingLogger.i(
             "[OnIncomingCall] -> ConversationId: ${conversationId.obfuscateId()}" +
-                    " | UserId: ${userId.obfuscateId()} | shouldRing: $shouldRing"
+                    " | UserId: ${userId.obfuscateId()} | shouldRing: $shouldRing | type: $conversationType"
         )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
-        val isMuted = mappedConversationType == ConversationType.Conference
+        val isMuted = setOf(ConversationType.Conference, ConversationType.ConferenceMls).contains(mappedConversationType)
         val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
+        val qualifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         scope.launch {
             callRepository.createCall(
-                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId),
+                conversationId = qualifiedConversationId,
                 status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
-                isCameraOn = isVideoCall
+                isCameraOn = isVideoCall,
+                type = mappedConversationType
             )
         }
     }

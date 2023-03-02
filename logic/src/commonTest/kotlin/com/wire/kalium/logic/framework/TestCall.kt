@@ -54,7 +54,8 @@ object TestCall {
         id = DATABASE_ID,
         status = CallEntity.Status.ESTABLISHED,
         callerId = CALLER_ID.toString(),
-        conversationType = ConversationEntity.Type.ONE_ON_ONE
+        conversationType = ConversationEntity.Type.ONE_ON_ONE,
+        type = CallEntity.Type.ONE_ON_ONE
     )
 
     // Call Metadata

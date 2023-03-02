@@ -204,6 +204,10 @@ class CallManagerImpl internal constructor(
             message.conversationId
         }
 
+        val type = conversationRepository.getConversationById(targetConversationId)?.let {
+            callMapper.fromConversationToConversationType(it)
+        } ?: ConversationType.Unknown
+
         wcall_recv_msg(
             inst = deferredHandle.await(),
             msg = msg,
@@ -212,7 +216,8 @@ class CallManagerImpl internal constructor(
             msg_time = Uint32_t(value = msgTime / 1000),
             convId = federatedIdMapper.parseToFederatedId(targetConversationId),
             userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-            clientId = message.senderClientId.value
+            clientId = message.senderClientId.value,
+            convType = callMapper.toConversationTypeCalling(type).avsValue
         )
         callingLogger.i("$TAG - wcall_recv_msg() called")
     }
@@ -231,6 +236,7 @@ class CallManagerImpl internal constructor(
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
+            type = conversationType,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
