@@ -321,6 +321,7 @@ class UserDatabaseDataGenerator(
         userDatabaseBuilder.userDAO.insertUser(userEntity)
 
         val conversationType = ConversationEntity.Type.values()[generatedCallsCount % ConversationEntity.Type.values().size]
+        val type = CallEntity.Type.values()[generatedCallsCount % CallEntity.Type.values().size]
 
         val sanitizedConversationType =
             if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
@@ -332,7 +333,8 @@ class UserDatabaseDataGenerator(
             id = "${callPrefix}Id${generatedCallsCount}",
             status = CallEntity.Status.values()[generatedCallsCount % CallEntity.Status.values().size],
             callerId = userEntity.id.value,
-            conversationType = sanitizedConversationType
+            conversationType = sanitizedConversationType,
+            type = type
         )
 
         userDatabaseBuilder.callDAO.insertCall(callEntity)
