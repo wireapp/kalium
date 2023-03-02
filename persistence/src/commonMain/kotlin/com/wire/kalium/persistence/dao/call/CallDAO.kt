@@ -27,7 +27,8 @@ data class CallEntity(
     val id: String,
     val status: Status,
     val callerId: String,
-    val conversationType: ConversationEntity.Type
+    val conversationType: ConversationEntity.Type,
+    val type: Type
 ) {
     enum class Status {
         STARTED,
@@ -39,6 +40,13 @@ data class CallEntity(
         CLOSED_INTERNALLY,
         CLOSED,
         REJECTED
+    }
+
+    enum class Type {
+        ONE_ON_ONE,
+        CONFERENCE,
+        MLS_CONFERENCE,
+        UNKNOWN
     }
 }
 

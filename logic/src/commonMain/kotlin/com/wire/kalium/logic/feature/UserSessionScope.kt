@@ -662,7 +662,9 @@ class UserSessionScope internal constructor(
         get() = LeaveSubconversationUseCaseImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             mlsClientProvider,
-            subconversationRepository
+            subconversationRepository,
+            userId,
+            clientIdProvider,
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
