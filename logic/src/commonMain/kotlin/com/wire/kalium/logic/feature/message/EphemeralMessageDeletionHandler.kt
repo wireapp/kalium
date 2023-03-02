@@ -68,7 +68,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 coroutineScope = userSessionCoroutineScope
             )
 
-            for (timerEvent in selfDeletingMessageTimer.startTimer(message.timeLeft())) {
+            for (timerEvent in selfDeletingMessageTimer.startTimer(message.actualExpireAfterMillis())) {
                 when (timerEvent) {
                     is SelfDeletionTimerState.Started -> {
                         if (!message.isDeletionOngoing()) {
@@ -111,6 +111,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
                         require(ephemeralMessage is Message.Ephemeral)
+
                         enqueueMessageDeletion(message = ephemeralMessage)
                     }
                 }
