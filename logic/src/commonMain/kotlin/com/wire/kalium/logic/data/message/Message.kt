@@ -67,13 +67,13 @@ sealed interface Message {
         val ephemeralMessage: Regular
     ) : Standalone {
 
-        fun actualExpireAfterMillis(): Long {
+        fun timeLeftForDeletion(): Long {
             return if (selfDeletionStartDate == null) {
                 expireAfterMillis
             } else {
-                // when we ask for expire after millis after the self deletion start data is determined
-                // we calculate it by knowing the time difference
-                expireAfterMillis - (Clock.System.now().toEpochMilliseconds() - selfDeletionStartDate)
+                val timeAlreadyElapsed = Clock.System.now().toEpochMilliseconds() - selfDeletionStartDate
+
+                expireAfterMillis - timeAlreadyElapsed
             }
         }
 

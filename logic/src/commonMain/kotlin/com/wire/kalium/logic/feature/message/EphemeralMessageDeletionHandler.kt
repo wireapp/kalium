@@ -68,7 +68,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 coroutineScope = userSessionCoroutineScope
             )
 
-            for (timerEvent in selfDeletingMessageTimer.startTimer(message.actualExpireAfterMillis())) {
+            for (timerEvent in selfDeletingMessageTimer.startTimer(message.timeLeftForDeletion())) {
                 when (timerEvent) {
                     is SelfDeletionTimerState.Started -> {
                         if (!message.isDeletionScheduledInThePast()) {
