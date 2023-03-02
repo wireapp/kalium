@@ -50,7 +50,6 @@ import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import okio.Path
@@ -199,11 +198,14 @@ internal class RestoreBackupUseCaseImpl(
             val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull {
                 it.name.substringAfterLast('.', "") == BACKUP_ENCRYPTED_EXTENSION
             }
-            return if (encryptedFilePath == null) return Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
-            else Either.Right(encryptedFilePath)
+            return if (encryptedFilePath == null) {
+                Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
+            } else {
+                Either.Right(encryptedFilePath)
+            }
         }
 
-    private suspend fun checkIsValidAuthor(metadata: BackupMetadata): Either<RestoreBackupResult, BackupMetadata> {
+    private fun checkIsValidAuthor(metadata: BackupMetadata): Either<RestoreBackupResult, BackupMetadata> {
         return isValidBackupAuthor(metadata)
     }
 

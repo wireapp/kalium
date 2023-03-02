@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.event.toMigratedMessage
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.logic.data.web.WebContent
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_MESSAGES_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
@@ -31,7 +32,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -46,7 +46,7 @@ import okio.use
 interface RestoreWebBackupUseCase {
 
     /**
-     * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.
+     * Restores a valid previously created web backup file into the current database, respecting the current data if there is any overlap.
      * @param backupRootPath The absolute file system path to the backup files.
      * @param metadata Containing information about backup files
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
@@ -81,7 +81,7 @@ internal class RestoreWebBackupUseCaseImpl(
         listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_MESSAGES_FILE_NAME }?.let { path ->
             source(path).buffer()
                 .use {
-                    val sequence = KtxSerializer.json.decodeToSequence<WebContent>(
+                    val sequence = KtxWebSerializer.json.decodeToSequence<WebContent>(
                         it.inputStream(),
                         DecodeSequenceMode.ARRAY_WRAPPED
                     )

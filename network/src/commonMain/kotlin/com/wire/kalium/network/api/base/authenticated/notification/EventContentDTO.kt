@@ -274,7 +274,6 @@ sealed class EventContentDTO {
             @SerialName("team") val teamId: TeamId,
             val time: String,
         ) : Team()
-
     }
 
     @Serializable

@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlin.jvm.JvmInline
 
 
 @Serializable
@@ -78,6 +79,10 @@ sealed class WebContent {
             @SerialName("data") val data: WebKnockData
         ) : Conversation()
     }
+
+    @Serializable
+    @SerialName("unknown")
+    object Unknown : WebContent()
 }
 
 @Serializable

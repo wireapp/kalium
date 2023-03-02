@@ -65,7 +65,7 @@ internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesA
 
         messages.filter { it.encryptedProto != null || it.unencryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {
-                if(migratedMessage.unencryptedProto != null) {
+                if (migratedMessage.unencryptedProto != null) {
                     protoMessages[migratedMessage] = migratedMessage.unencryptedProto
                 } else {
                     (try {
