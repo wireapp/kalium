@@ -168,14 +168,14 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
             }
         }
 
-        // Napping source:
+        // Mapping source:
         // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
         // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
         fun fromProteusCode(code: Int): Code {
             @Suppress("MagicNumber")
             return when (code) {
                 501 -> Code.STORAGE_ERROR
-                205 -> Code.SESSION_NOT_FOUND
+                102 -> Code.SESSION_NOT_FOUND
                 3, 301, 302, 303 -> Code.DECODE_ERROR
                 204 -> Code.REMOTE_IDENTITY_CHANGED
                 206, 207, 210 -> Code.INVALID_SIGNATURE

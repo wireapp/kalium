@@ -36,5 +36,6 @@ data class KaliumConfigs(
     val domain: String = "",
     val blacklistHost: String = "",
     val maxAccount: Int = 0,
-    val developmentApiEnabled: Boolean = false
+    val developmentApiEnabled: Boolean = false,
+    val guestRoomLink: Boolean = true
 )
