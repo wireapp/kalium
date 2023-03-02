@@ -77,18 +77,24 @@ internal class MessageInsertExtensionImpl(
 
     private fun insertBaseMessageOrError(message: MessageEntity) {
         // do not add withContext
+        val senderClientId = when (message) {
+            is MessageEntity.Ephemeral -> message.ephemeralMessage.senderClientId
+            is MessageEntity.Regular -> message.senderClientId
+            else -> null
+        }
+
         messagesQueries.insertMessage(
             id = message.id,
             conversation_id = message.conversationId,
             creation_date = message.date,
             sender_user_id = message.senderUserId,
-            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+            sender_client_id = senderClientId,
             visibility = message.visibility,
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null,
-            self_deletion_date = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null
+            self_deletion_start_date = if (message is MessageEntity.Ephemeral) message.expireAfterMillis else null
         )
     }
 

@@ -66,10 +66,6 @@ sealed interface Message {
         val selfDeletionDate: Long?,
         val ephemeralMessage: Regular
     ) : Standalone {
-        fun expireAfterMillis(): Long {
-            return if (selfDeletionDate == null) expireAfterMillis
-            else Clock.System.now().toEpochMilliseconds() - selfDeletionDate
-        }
 
         override val id: String
             get() = ephemeralMessage.id
@@ -100,8 +96,7 @@ sealed interface Message {
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
-        val expectsReadConfirmation: Boolean = false,
-        val expireAfterMillis: Long? = null
+        val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
         override fun toString(): String {

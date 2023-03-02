@@ -343,9 +343,9 @@ class MessageDAOImpl(
         }
     }
 
-    override suspend fun updateSelfDeletionDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionDate: Long) {
+    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Long) {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+            queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
         }
     }
 

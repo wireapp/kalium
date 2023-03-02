@@ -1122,7 +1122,7 @@ class UserSessionScope internal constructor(
     )
 
     val enqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCase(
-        selfDeletingMessageEnqueuer = selfDeletingMessageManager
+        ephemeralMessageDeletionHandler = selfDeletingMessageManager
     )
 
     val observeOngoingSelfDeletionMessagesUseCase =

@@ -52,21 +52,30 @@ sealed class MessageEntity(
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(
+        id = id,
+        content = content,
+        conversationId = conversationId,
+        date = date,
+        senderUserId = senderUserId,
+        status = status,
+        visibility = visibility,
+        isSelfMessage = isSelfMessage
+    )
 
     data class Ephemeral(
         val expireAfterMillis: Long,
         val selfDeletionDate: Long?,
         val ephemeralMessage: Regular
     ) : MessageEntity(
-        ephemeralMessage.id,
-        ephemeralMessage.content,
-        ephemeralMessage.conversationId,
-        ephemeralMessage.date,
-        ephemeralMessage.senderUserId,
-        ephemeralMessage.status,
-        ephemeralMessage.visibility,
-        ephemeralMessage.isSelfMessage
+        id = ephemeralMessage.id,
+        content = ephemeralMessage.content,
+        conversationId = ephemeralMessage.conversationId,
+        date = ephemeralMessage.date,
+        senderUserId = ephemeralMessage.senderUserId,
+        status = ephemeralMessage.status,
+        visibility = ephemeralMessage.visibility,
+        isSelfMessage = ephemeralMessage.isSelfMessage
     )
 
     data class System(
@@ -79,7 +88,16 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(
+        id = id,
+        content = content,
+        conversationId = conversationId,
+        date = date,
+        senderUserId = senderUserId,
+        status = status,
+        visibility = visibility,
+        isSelfMessage = isSelfMessage
+    )
 
     enum class Status {
         /**

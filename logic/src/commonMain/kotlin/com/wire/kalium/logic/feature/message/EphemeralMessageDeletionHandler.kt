@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
 
@@ -47,21 +48,27 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                require(message is Message.Ephemeral)
+                // require(message is Message.Ephemeral)
 
                 enqueueMessageDeletion(message)
             }
         }
     }
 
-    private fun enqueueMessageDeletion(message: Message.Ephemeral) {
+    private fun enqueueMessageDeletion(message: Message) {
         userSessionCoroutineScope.launch {
             val selfDeletingMessageTimer = SelfDeletingMessageTimer(
                 coroutineScope = userSessionCoroutineScope
             )
 
-            for (timerEvent in selfDeletingMessageTimer.startTimer(message.expireAfterMillis)) {
+            for (timerEvent in selfDeletingMessageTimer.startTimer(15000)) {
                 when (timerEvent) {
+                    is SelfDeletionTimerState.Started -> messageRepository.markSelfDeletionStartDate(
+                        conversationId = message.conversationId,
+                        messageUuid = message.id,
+                        deletionDate = timerEvent.startDate
+                    )
+
                     is SelfDeletionTimerState.OnGoing -> {
                         ephemeralMessageDeletionTimeLeftMapMutex.withLock {
                             ephemeralMessageDeletionTimeLeftMap.update { currentState ->
@@ -70,7 +77,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                         }
                     }
 
-                    SelfDeletionTimerState.Finished -> {
+                    is SelfDeletionTimerState.Finished -> {
                         messageRepository.deleteMessage(message.id, message.conversationId)
                         ephemeralMessageDeletionTimeLeftMapMutex.withLock {
                             ephemeralMessageDeletionTimeLeftMap.update { currentState ->
@@ -107,9 +114,13 @@ internal class SelfDeletingMessageTimer(
     }
 
     fun startTimer(expireAfterMillis: Long) = produce {
+        send(SelfDeletionTimerState.Started(Clock.System.now().toEpochMilliseconds()))
+
         var elapsedTime = 0L
 
         while (elapsedTime < expireAfterMillis) {
+
+
             delay(TIMER_UPDATE_INTERVAL_IN_MILLIS)
             elapsedTime += TIMER_UPDATE_INTERVAL_IN_MILLIS
 
@@ -122,6 +133,7 @@ internal class SelfDeletingMessageTimer(
 
 
 sealed class SelfDeletionTimerState {
+    data class Started(val startDate: Long) : SelfDeletionTimerState()
     data class OnGoing(val timeLeft: Long) : SelfDeletionTimerState()
 
     object Finished : SelfDeletionTimerState()

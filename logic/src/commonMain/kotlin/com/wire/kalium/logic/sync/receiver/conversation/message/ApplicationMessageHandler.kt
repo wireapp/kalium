@@ -120,10 +120,9 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation,
-                    expireAfterMillis = content.expiresAfterMillis
+                    expectsReadConfirmation = content.expectsReadConfirmation
                 )
-                processMessage(message)
+                processMessage(message, content.expiresAfterMillis)
             }
 
             is MessageContent.Signaling -> {
@@ -197,43 +196,46 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    private suspend fun processMessage(message: Message.Regular) {
+    private suspend fun processMessage(message: Message.Regular, expireAfterMillis: Long? = null) {
         logger.i(message = "Message received: { \"message\" : $message }")
 
         when (val content = message.content) {
             // Persist Messages - > lists
-            is MessageContent.Text -> handleTextMessage(message, content)
-            is MessageContent.FailedDecryption -> {
-                persistMessage(message)
-            }
-            is MessageContent.Knock -> handleKnock(message)
+            is MessageContent.Text -> persistRegularMessage(adjustTextMessageWithQoutedReference(message, content), expireAfterMillis)
+            is MessageContent.FailedDecryption -> persistRegularMessage(message, expireAfterMillis)
+            is MessageContent.Knock -> persistRegularMessage(message, expireAfterMillis)
             is MessageContent.Asset -> assetMessageHandler.handle(message, content)
+            is MessageContent.RestrictedAsset -> TODO()
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
-                persistMessage(message)
+                persistRegularMessage(message, expireAfterMillis)
             }
-            is MessageContent.RestrictedAsset -> TODO()
+
         }
     }
 
-    private suspend fun handleKnock(message: Message.Regular) {
-        persistMessage(message)
+    private suspend fun persistRegularMessage(message: Message.Regular, expireAfterMillis: Long? = null) {
+        if (expireAfterMillis != null) {
+            persistMessage(Message.Ephemeral(expireAfterMillis, null, message))
+        } else {
+            persistMessage(message)
+        }
     }
 
-    private suspend fun handleTextMessage(
+    private suspend fun adjustTextMessageWithQoutedReference(
         message: Message.Regular,
         messageContent: MessageContent.Text
-    ) {
+    ): Message.Regular {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
             verifyMessageQuote(quotedReference, message)
         } else {
             messageContent.quotedMessageReference
         }
-        val adjustedMessage = message.copy(
+
+        return message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage)
     }
 
     private suspend fun verifyMessageQuote(

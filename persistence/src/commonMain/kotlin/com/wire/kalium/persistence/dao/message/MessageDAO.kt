@@ -57,7 +57,6 @@ interface MessageDAO {
      * @see insertOrIgnoreMessage
      */
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
-
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
@@ -124,7 +123,7 @@ interface MessageDAO {
 
     suspend fun getEphemeralMessages(): List<MessageEntity>
 
-    suspend fun updateSelfDeletionDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionDate: Long)
+    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Long)
 
     val platformExtensions: MessageExtensions
 }
