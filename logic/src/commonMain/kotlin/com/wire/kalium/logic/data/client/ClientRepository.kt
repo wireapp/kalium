@@ -151,7 +151,8 @@ class ClientDataSource(
                 val list = clientList.map { clientMapper.toInsertClientParam(it, selfUserIdDTO) }
                 clientDAO.insertClientsAndRemoveRedundant(list)
             }.map {
-                // TODO: mapping directly from the api to the domain model is not ideal, and the verification status is not correctly reflected
+                // TODO: mapping directly from the api to the domain model is not ideal,
+                //  and the verification status is not correctly reflected
                 it.map { clientMapper.fromClientResponse(it) }
             }
     }

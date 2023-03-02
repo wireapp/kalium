@@ -30,7 +30,7 @@ import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 
 internal object ClientMapper {
-    @Suppress("FunctionParameterNaming")
+    @Suppress("FunctionParameterNaming", "LongParameterList")
     fun fromClient(
         user_id: QualifiedIDEntity,
         id: String,
@@ -54,6 +54,7 @@ internal object ClientMapper {
     )
 }
 
+@Suppress("TooManyFunctions")
 internal class ClientDAOImpl internal constructor(
     private val clientsQueries: ClientsQueries,
     private val queriesContext: CoroutineContext,

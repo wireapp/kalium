@@ -36,6 +36,7 @@ import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
+@Suppress("TooManyFunctions")
 class ClientMapper(
     private val preyKeyMapper: PreKeyMapper
 ) {
@@ -116,7 +117,6 @@ class ClientMapper(
             )
         }
 
-
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
         ClientType.Permanent -> ClientTypeDTO.Permanent
@@ -134,7 +134,6 @@ class ClientMapper(
         ClientTypeEntity.Permanent -> ClientType.Permanent
         ClientTypeEntity.LegalHold -> ClientType.LegalHold
     }
-
 
     private fun toClientCapabilityDTO(clientCapability: ClientCapability): ClientCapabilityDTO = when (clientCapability) {
         ClientCapability.LegalHoldImplicitConsent -> ClientCapabilityDTO.LegalHoldImplicitConsent
