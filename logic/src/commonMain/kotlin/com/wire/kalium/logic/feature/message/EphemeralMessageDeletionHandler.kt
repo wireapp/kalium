@@ -42,6 +42,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         userSessionCoroutineScope.launch {
+            // in case client start deletion couple of times for the message, we secure it with mutex
+            // that will update the map with a corresponding key and default value, so that coroutine
+            // launched after the first winning the race simply returns
             ephemeralMessageDeletionTimeLeftMapMutex.withLock {
                 val isSelfDeletionOutgoing = ephemeralMessageDeletionTimeLeftMap.value[conversationId to messageId] != null
                 if (isSelfDeletionOutgoing) return@launch
@@ -65,17 +68,20 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 coroutineScope = userSessionCoroutineScope
             )
 
-            for (timerEvent in selfDeletingMessageTimer.startTimer(message.expireAfterMillis())) {
+            for (timerEvent in selfDeletingMessageTimer.startTimer(message.timeLeft())) {
                 when (timerEvent) {
                     is SelfDeletionTimerState.Started -> {
-                        messageRepository.markSelfDeletionStartDate(
-                            message.conversationId,
-                            message.id,
-                            Clock.System.now().toEpochMilliseconds()
-                        )
+                        if (!message.isDeletionOngoing()) {
+                            messageRepository.markSelfDeletionStartDate(
+                                message.conversationId,
+                                message.id,
+                                Clock.System.now().toEpochMilliseconds()
+                            )
+                        }
                     }
 
                     is SelfDeletionTimerState.OnGoing -> {
+                        println("time left ${timerEvent.timeLeft.timeLeftInMs}")
                         ephemeralMessageDeletionTimeLeftMapMutex.withLock {
                             ephemeralMessageDeletionTimeLeftMap.update { currentState ->
                                 currentState + ((message.conversationId to message.id) to timerEvent.timeLeft)
@@ -105,7 +111,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
                         require(ephemeralMessage is Message.Ephemeral)
-
                         enqueueMessageDeletion(message = ephemeralMessage)
                     }
                 }
@@ -141,10 +146,12 @@ internal class SelfDeletingMessageTimer(
 
 sealed class SelfDeletionTimerState {
 
-    data class Started(val dateStart: Long) : SelfDeletionTimerState()
+    data class Started(val deletionStartDateInMs: Long) : SelfDeletionTimerState()
     data class OnGoing(val timeLeft: SelfDeletionTimeLeft) : SelfDeletionTimerState()
 
     object Finished : SelfDeletionTimerState()
 }
 
-class SelfDeletionTimeLeft(val timeLeft: Long)
+class SelfDeletionTimeLeft(val timeLeftInMs: Long){
+
+}

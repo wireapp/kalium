@@ -67,7 +67,7 @@ sealed interface Message {
         val ephemeralMessage: Regular
     ) : Standalone {
 
-        fun expireAfterMillis(): Long {
+        fun timeLeft(): Long {
             return if (selfDeletionStartDate == null) {
                 expireAfterMillis
             } else {
