@@ -8,17 +8,18 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.CoroutineContext
 
 
-interface SelfDeletingMessageManager {
+interface EphemeralMessageDeletionHandler {
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
 
     fun observePendingMessageDeletionState(): Flow<Map<Pair<ConversationId, String>, Long>>
@@ -26,21 +27,24 @@ interface SelfDeletingMessageManager {
     fun enqueuePendingSelfDeletionMessages()
 }
 
-internal class SelfDeletingMessageManagerImpl(
+internal class EphemeralMessageDeletionHandlerImpl(
     private val userSessionCoroutineScope: CoroutineScope,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val messageRepository: MessageRepository
-) : SelfDeletingMessageManager, CoroutineScope by userSessionCoroutineScope {
+) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
-        get() = kaliumDispatcher.default.limitedParallelism(1) + SupervisorJob()
+        get() = kaliumDispatcher.default
 
-    private val outgoingTimerSelfDeletingMessagesState: MutableStateFlow<Map<Pair<ConversationId, String>, Long>> =
+    private val ephemeralMessageDeletionTimeLeftMapMutex = Mutex()
+    private val ephemeralMessageDeletionTimeLeftMap: MutableStateFlow<Map<Pair<ConversationId, String>, Long>> =
         MutableStateFlow(emptyMap())
 
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
-            val isSelfDeletionOutgoing = outgoingTimerSelfDeletingMessagesState.value[conversationId to messageId] != null
-            if (isSelfDeletionOutgoing) return@launch
+            ephemeralMessageDeletionTimeLeftMapMutex.withLock {
+                val isSelfDeletionOutgoing = ephemeralMessageDeletionTimeLeftMap.value[conversationId to messageId] != null
+                if (isSelfDeletionOutgoing) return@launch
+            }
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
                 require(message is Message.Ephemeral)
@@ -59,15 +63,19 @@ internal class SelfDeletingMessageManagerImpl(
             for (timerEvent in selfDeletingMessageTimer.startTimer(message.expireAfterMillis)) {
                 when (timerEvent) {
                     is SelfDeletionTimerState.OnGoing -> {
-                        outgoingTimerSelfDeletingMessagesState.update { currentState ->
-                            currentState + ((message.conversationId to message.id) to timerEvent.timeLeft)
+                        ephemeralMessageDeletionTimeLeftMapMutex.withLock {
+                            ephemeralMessageDeletionTimeLeftMap.update { currentState ->
+                                currentState + ((message.conversationId to message.id) to timerEvent.timeLeft)
+                            }
                         }
                     }
 
                     SelfDeletionTimerState.Finished -> {
                         messageRepository.deleteMessage(message.id, message.conversationId)
-                        outgoingTimerSelfDeletingMessagesState.update { currentState ->
-                            currentState - (message.conversationId to message.id)
+                        ephemeralMessageDeletionTimeLeftMapMutex.withLock {
+                            ephemeralMessageDeletionTimeLeftMap.update { currentState ->
+                                currentState - (message.conversationId to message.id)
+                            }
                         }
                     }
                 }
@@ -75,7 +83,7 @@ internal class SelfDeletingMessageManagerImpl(
         }
     }
 
-    override fun observePendingMessageDeletionState() = outgoingTimerSelfDeletingMessagesState
+    override fun observePendingMessageDeletionState() = ephemeralMessageDeletionTimeLeftMap
 
     override fun enqueuePendingSelfDeletionMessages() {
         launch {

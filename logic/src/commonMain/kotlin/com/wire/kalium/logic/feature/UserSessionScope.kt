@@ -168,7 +168,7 @@ import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
-import com.wire.kalium.logic.feature.message.SelfDeletingMessageManagerImpl
+import com.wire.kalium.logic.feature.message.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -1091,18 +1091,18 @@ class UserSessionScope internal constructor(
         )
 
 
-    private val selfDeletingMessageManager = SelfDeletingMessageManagerImpl(
+    private val selfDeletingMessageManager = EphemeralMessageDeletionHandlerImpl(
         userSessionCoroutineScope = this,
         messageRepository = messageRepository
     )
 
     val enqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCase(
-        selfDeletingMessageManager = selfDeletingMessageManager
+        selfDeletingMessageEnqueuer = selfDeletingMessageManager
     )
 
     val observeOngoingSelfDeletionMessagesUseCase =
         ObserveOngoingSelfDeletionMessagesUseCase(
-            selfDeletingMessageManager = selfDeletingMessageManager
+            ephemeralMessageDeletionHandler = selfDeletingMessageManager
         )
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 

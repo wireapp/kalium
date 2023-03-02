@@ -9,11 +9,11 @@ class EnqueueMessageSelfDeletionUseCase {
 
     val testScope = TestScope()
 
-    private val selfDeletingMessageManager = SelfDeletingMessageManager(testScope)
+    private val selfDeletingMessageEnqueuer = EphemeralMessageDeletionHandler(testScope)
 
     @Test
     fun test() = runTest {
-        selfDeletingMessageManager.enqueue(ConversationId("test", "test"), "test")
+        selfDeletingMessageEnqueuer.enqueue(ConversationId("test", "test"), "test")
     }
 
 }

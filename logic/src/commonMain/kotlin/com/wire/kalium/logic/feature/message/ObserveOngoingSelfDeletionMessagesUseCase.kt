@@ -4,8 +4,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 class ObserveOngoingSelfDeletionMessagesUseCase(
-    private val selfDeletingMessageManager: SelfDeletingMessageManager
+    private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler
 ) {
-    operator fun invoke(): Flow<Map<Pair<ConversationId, String>, Long>> = selfDeletingMessageManager.observePendingMessageDeletionState()
+    operator fun invoke(): Flow<Map<Pair<ConversationId, String>, Long>> =
+        ephemeralMessageDeletionHandler.observePendingMessageDeletionState()
 
 }
