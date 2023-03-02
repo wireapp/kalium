@@ -37,7 +37,6 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -107,7 +106,6 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val teamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -302,8 +300,8 @@ internal class UserDataSource internal constructor(
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
-            teamIdProvider()
-                .map { selfTeamId ->
+            getSelfUser()?.teamId.let { selfTeamId ->
+                Either.Right(
                     publicUserMapper.fromUserDetailResponseWithUsertype(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromTeamAndDomain(
@@ -314,7 +312,8 @@ internal class UserDataSource internal constructor(
                             isService = userProfileDTO.service != null
                         )
                     )
-                }
+                )
+            }
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {

@@ -294,7 +294,7 @@ class UserRepositoryTest {
         val selfUserId = TestUser.SELF.id
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper, selfTeamIdProvider)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper)
         }
 
         init {
@@ -305,11 +305,6 @@ class UserRepositoryTest {
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.ENTITY) }
-
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(TestUser.ENTITY.team?.let { TeamId(it) }))
         }
 
         fun withSuccessfulGetUsersInfo(): Arrangement {
