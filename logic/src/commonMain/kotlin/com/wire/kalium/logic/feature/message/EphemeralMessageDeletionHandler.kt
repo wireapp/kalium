@@ -71,7 +71,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             for (timerEvent in selfDeletingMessageTimer.startTimer(message.actualExpireAfterMillis())) {
                 when (timerEvent) {
                     is SelfDeletionTimerState.Started -> {
-                        if (!message.isDeletionOngoing()) {
+                        if (!message.isDeletionScheduledInThePast()) {
                             messageRepository.markSelfDeletionStartDate(
                                 message.conversationId,
                                 message.id,
