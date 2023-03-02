@@ -120,7 +120,7 @@ internal class UserDataSource internal constructor(
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
             } else {
-                updateSelfUserSsoId(userDTO)
+                updateSelfUserProviderAccountInfo(userDTO)
                     .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.insertUser(userEntity) }
@@ -131,9 +131,8 @@ internal class UserDataSource internal constructor(
             }
         }
 
-    private suspend fun updateSelfUserSsoId(userDTO: UserDTO): Either<StorageFailure, Unit> {
-        return sessionRepository.updateSsoId(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID))
-    }
+    private suspend fun updateSelfUserProviderAccountInfo(userDTO: UserDTO): Either<StorageFailure, Unit> =
+        sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
