@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -38,7 +39,7 @@ import kotlin.test.assertEquals
 class GetOtherUserSecurityClassificationLabelUseCaseTest {
 
     @Test
-    fun givenAOtherUserId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest {
+    fun givenAOtherUserId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest(dispatcher.io) {
         val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
             .withGettingClassifiedDomainsDisabled()
             .arrange()
@@ -50,7 +51,7 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
 
     @Test
     fun givenAOtherUserId_WhenClassifiedFeatureFlagEnabledAndOtherUserInSameDomainAndTrusted_ThenClassificationIsClassified() =
-        runTest {
+        runTest(dispatcher.io) {
             val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
                 .withGettingClassifiedDomains()
                 .arrange()
@@ -62,7 +63,7 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
 
     @Test
     fun givenAOtherUserId_WhenClassifiedFeatureFlagEnabledAndOtherUserNotInSameDomain_ThenClassificationIsNotClassified() =
-        runTest {
+        runTest(dispatcher.io) {
             val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
                 .withGettingClassifiedDomains()
                 .arrange()
@@ -91,11 +92,15 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
         }
 
         fun arrange() = this to GetOtherUserSecurityClassificationLabelUseCaseImpl(
-            selfUserId, userConfigRepository
+            selfUserId, userConfigRepository, dispatcher
         )
 
         companion object {
             val selfUserId = UserId("someValue", "wire.com")
         }
+    }
+
+    companion object {
+        val dispatcher = TestKaliumDispatcher
     }
 }

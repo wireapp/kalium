@@ -21,7 +21,10 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 
 interface GetOtherUserSecurityClassificationLabelUseCase {
     /**
@@ -35,17 +38,18 @@ interface GetOtherUserSecurityClassificationLabelUseCase {
 
 internal class GetOtherUserSecurityClassificationLabelUseCaseImpl(
     private val selfUserId: UserId,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetOtherUserSecurityClassificationLabelUseCase {
 
-    override suspend fun invoke(otherUserId: UserId): SecurityClassificationType {
+    override suspend fun invoke(otherUserId: UserId): SecurityClassificationType = withContext(dispatchers.io) {
         val trustedDomains = getClassifiedDomainsStatus()
         val computedStatus = if (trustedDomains == null) {
             null
         } else {
             otherUserId.domain == selfUserId.domain || trustedDomains.contains(otherUserId.domain)
         }
-        return when (computedStatus) {
+        return@withContext when (computedStatus) {
             true -> SecurityClassificationType.CLASSIFIED
             false -> SecurityClassificationType.NOT_CLASSIFIED
             null -> SecurityClassificationType.NONE
