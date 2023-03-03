@@ -26,8 +26,6 @@ import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
@@ -117,7 +115,7 @@ class CallManagerImpl internal constructor(
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.observeSelfUser().first().id.also {
-            callingLogger.d("$TAG - userId ${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}")
+            callingLogger.d("$TAG - userId ${it.toLogString()}")
         }
     }
 
@@ -160,14 +158,20 @@ class CallManagerImpl internal constructor(
                     scope,
                     callMapper
                 ).keepingStrongReference(),
-                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
+                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
+                    .keepingStrongReference(),
+                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope)
+                    .keepingStrongReference(),
                 missedCallHandler = OnMissedCall,
-                answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-                establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+                answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper)
+                    .keepingStrongReference(),
+                establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
+                    .keepingStrongReference(),
+                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper)
+                    .keepingStrongReference(),
                 metricsHandler = metricsHandler,
-                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope).keepingStrongReference(),
+                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
+                    .keepingStrongReference(),
                 constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
                 videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
                 arg = null
@@ -188,7 +192,7 @@ class CallManagerImpl internal constructor(
         message: Message.Signaling,
         content: MessageContent.Calling,
     ) = withCalling {
-        callingLogger.i("$TAG - onCallingMessageReceived called")
+        callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
         val currTime = System.currentTimeMillis()
@@ -200,6 +204,10 @@ class CallManagerImpl internal constructor(
             message.conversationId
         }
 
+        val type = conversationRepository.getConversationById(targetConversationId)?.let {
+            callMapper.fromConversationToConversationType(it)
+        } ?: ConversationType.Unknown
+
         wcall_recv_msg(
             inst = deferredHandle.await(),
             msg = msg,
@@ -208,7 +216,8 @@ class CallManagerImpl internal constructor(
             msg_time = Uint32_t(value = msgTime / 1000),
             convId = federatedIdMapper.parseToFederatedId(targetConversationId),
             userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-            clientId = message.senderClientId.value
+            clientId = message.senderClientId.value,
+            convType = callMapper.toConversationTypeCalling(type).avsValue
         )
         callingLogger.i("$TAG - wcall_recv_msg() called")
     }
@@ -221,12 +230,13 @@ class CallManagerImpl internal constructor(
     ) {
         callingLogger.d(
             "$TAG -> starting call for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+                    "${conversationId.toLogString()}.."
         )
         val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
+            type = conversationType,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
@@ -247,7 +257,7 @@ class CallManagerImpl internal constructor(
 
             callingLogger.d(
                 "$TAG - wcall_start() called -> Call for conversation = " +
-                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} started"
+                        "${conversationId.toLogString()} started"
             )
         }
 
@@ -264,7 +274,7 @@ class CallManagerImpl internal constructor(
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
-                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}.."
+                        "${conversationId.toLogString()}.."
             )
             wcall_answer(
                 inst = deferredHandle.await(),
@@ -274,7 +284,7 @@ class CallManagerImpl internal constructor(
             )
             callingLogger.d(
                 "$TAG - wcall_answer() called -> Incoming call for conversation = " +
-                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} answered"
+                        "${conversationId.toLogString()} answered"
             )
         }
 
@@ -288,7 +298,7 @@ class CallManagerImpl internal constructor(
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d(
             "[$TAG][endCall] -> ConversationId: " +
-                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+                    "[${conversationId.toLogString()}]"
         )
         callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
         wcall_end(
@@ -300,7 +310,7 @@ class CallManagerImpl internal constructor(
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d(
             "[$TAG][rejectCall] -> ConversationId: " +
-                    "[${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}]"
+                    "[${conversationId.toLogString()}]"
         )
         callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
         wcall_reject(
@@ -358,7 +368,7 @@ class CallManagerImpl internal constructor(
         withCalling {
             callingLogger.d(
                 "$TAG - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
-                        "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} for epoch = ${epochInfo.epoch}"
+                        "${conversationId.toLogString()} for epoch = ${epochInfo.epoch}"
             )
 
             wcall_set_epoch_info(

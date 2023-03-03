@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -98,8 +99,11 @@ interface CallRepository {
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
+
+    @Suppress("LongParameterList")
     suspend fun createCall(
         conversationId: ConversationId,
+        type: ConversationType,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
@@ -175,6 +179,7 @@ internal class CallDataSource(
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,
+        type: ConversationType,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
@@ -187,12 +192,12 @@ internal class CallDataSource(
         // to cover that case and have a valid UserId we have that workaround
         val callerIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(callerId)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
-
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val callEntity = callMapper.toCallEntity(
             conversationId = conversationId,
             id = uuid4().toString(),
+            type = type,
             status = status,
             conversationType = conversation.conversation.type,
             callerId = callerIdWithDomain
@@ -223,7 +228,7 @@ internal class CallDataSource(
 
         callingLogger.i(
             "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
-                    " ConversationId: [${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}] " +
+                    " ConversationId: [${conversationId.toLogString()}] " +
                     "| status: [$status]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
@@ -321,7 +326,7 @@ internal class CallDataSource(
     override suspend fun persistMissedCall(conversationId: ConversationId) {
         callingLogger.i(
             "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
         val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
         callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)?.let { callerId ->
@@ -377,7 +382,7 @@ internal class CallDataSource(
             if (call.participants != participants) {
                 callingLogger.i(
                     "updateCallParticipants() -" +
-                            " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
+                            " conversationId: ${conversationIdToLog.toLogString()}" +
                             " with size of: ${participants.size}"
                 )
 
@@ -471,6 +476,7 @@ internal class CallDataSource(
         )
 
     override suspend fun updateOpenCallsToClosedStatus() {
+        leavePreviouslyJoinedMlsConferences()
         callDAO.updateOpenCallsToClosedStatus()
     }
 
@@ -497,13 +503,24 @@ internal class CallDataSource(
             }
         }
 
+    private suspend fun leavePreviouslyJoinedMlsConferences() {
+        callingLogger.i("Leaving previously joined MLS conferences")
+
+        callDAO.observeEstablishedCalls()
+            .first()
+            .filter { it.type == CallEntity.Type.MLS_CONFERENCE }
+            .forEach {
+                leaveMlsConference(it.conversationId.toModel())
+            }
+    }
+
     override suspend fun joinMlsConference(
         conversationId: ConversationId,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit> {
         callingLogger.i(
             "Joining MLS conference for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
 
         return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
@@ -520,7 +537,7 @@ internal class CallDataSource(
     override suspend fun leaveMlsConference(conversationId: ConversationId) {
         callingLogger.i(
             "Leaving MLS conference for conversation = " +
-                    "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}"
+                    "${conversationId.toLogString()}"
         )
 
         // Cancels flow observing epoch changes
@@ -531,6 +548,12 @@ internal class CallDataSource(
         staleParticipantJobs.clear()
 
         leaveSubconversation(conversationId, CALL_SUBCONVERSATION_ID)
+            .onSuccess {
+                callingLogger.i("Successfully left MLS conference")
+            }
+            .onFailure {
+                callingLogger.e("Failed to leave MLS conference: $it")
+            }
     }
 
     private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =

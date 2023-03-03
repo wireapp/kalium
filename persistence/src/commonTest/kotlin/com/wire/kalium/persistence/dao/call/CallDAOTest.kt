@@ -53,7 +53,8 @@ class CallDAOTest : BaseDatabaseTest() {
             id = callId,
             status = CallEntity.Status.STARTED,
             callerId = "callerId",
-            conversationType = ConversationEntity.Type.GROUP
+            conversationType = ConversationEntity.Type.GROUP,
+            type = CallEntity.Type.CONFERENCE
         )
 
         callDAO.insertCall(call = callEntity)

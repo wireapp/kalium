@@ -55,7 +55,8 @@ internal object TableMapper {
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        conversation_typeAdapter = EnumColumnAdapter()
+        conversation_typeAdapter = EnumColumnAdapter(),
+        typeAdapter = EnumColumnAdapter()
     )
     val clientAdapter = Client.Adapter(
         user_idAdapter = QualifiedIDAdapter,
