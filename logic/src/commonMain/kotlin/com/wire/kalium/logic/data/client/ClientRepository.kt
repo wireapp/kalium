@@ -149,7 +149,10 @@ class ClientDataSource(
             .onSuccess { clientList ->
                 val selfUserIdDTO = selfUserID.toApi()
                 val list = clientList.map { clientMapper.toInsertClientParam(it, selfUserIdDTO) }
-                clientDAO.insertClientsAndRemoveRedundant(list)
+                // when calling this function the first time after tooManyClients error
+                // this will fail because self user is not in the database
+                // that is why in  clientDAO.insertClientsAndRemoveRedundant user id is inserted first
+                wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(list) }
             }.map {
                 // TODO: mapping directly from the api to the domain model is not ideal,
                 //  and the verification status is not correctly reflected
