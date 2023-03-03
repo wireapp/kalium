@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
@@ -48,6 +49,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -575,9 +577,24 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
-        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-    }
+    override suspend fun deleteConversation(conversationId: ConversationId) =
+        getConversationProtocolInfo(conversationId).flatMap {
+            when (it) {
+                is Conversation.ProtocolInfo.MLS ->
+                    mlsClientProvider.getMLSClient().flatMap {mlsClient ->
+                        wrapCryptoRequest {
+                            mlsClient.wipeConversation(it.groupId.toCrypto())
+                        }
+                    }.flatMap {
+                        wrapStorageRequest {
+                            conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                        }
+                    }
+                is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
+                    conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+                }
+            }
+        }
 
     override suspend fun getAssetMessages(
         conversationId: ConversationId,
