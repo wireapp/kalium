@@ -49,7 +49,7 @@ data class WebConversationContent(
     @SerialName("protocol") val protocol: String?,
     @SerialName("status") val status: Int?,
     @SerialName("team_id") val teamId: String?
-    )
+)
 
 @Serializable
 sealed class WebEventContent {
@@ -64,7 +64,7 @@ sealed class WebEventContent {
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("data") val members: WebGroupMembers,
-            val time: String,
+            @SerialName("time") val time: String
         ) : Conversation()
 
         @Serializable
@@ -74,8 +74,8 @@ sealed class WebEventContent {
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
+            @SerialName("time") val time: String,
+            @SerialName("id") val id: String,
             @SerialName("data") val data: WebTextData,
             @SerialName("reactions") val reactions: Map<String, String>?
         ) : Conversation()
@@ -87,8 +87,8 @@ sealed class WebEventContent {
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
+            @SerialName("time") val time: String,
+            @SerialName("id") val id: String,
             @SerialName("data") val data: WebAssetData,
             @SerialName("reactions") val reactions: Map<String, String>?
         ) : Conversation()
@@ -100,8 +100,8 @@ sealed class WebEventContent {
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String,
-            val time: String,
-            val id: String,
+            @SerialName("time") val time: String,
+            @SerialName("id") val id: String,
             @SerialName("data") val data: WebKnockData
         ) : Conversation()
     }
@@ -137,15 +137,15 @@ data class WebTextQuote(
 data class WebAssetData(
     @SerialName("content_length") val contentLength: Int?,
     @SerialName("content_type") val contentType: String?,
-    val domain: String?,
+    @SerialName("domain") val domain: String?,
     @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
-    val info: WebAssetInfo?,
-    val key: String?,
+    @SerialName("info") val info: WebAssetInfo?,
+    @SerialName("key") val key: String?,
     @SerialName("legal_hold_status") val legalHoldStatus: Int,
     @SerialName("otr_key") val otrKey: JsonObject?,
     @SerialName("sha256") val sha256: JsonObject?,
-    val status: String?,
-    val token: String?
+    @SerialName("status") val status: String?,
+    @SerialName("token") val token: String?
 )
 
 @Serializable
@@ -156,8 +156,8 @@ data class WebKnockData(
 
 @Serializable
 data class WebAssetInfo(
-    val height: Int?,
-    val name: String?,
-    val tag: String?,
-    val width: Int?
+    @SerialName("height") val height: Int?,
+    @SerialName("name") val name: String?,
+    @SerialName("tag") val tag: String?,
+    @SerialName("width") val width: Int?
 )

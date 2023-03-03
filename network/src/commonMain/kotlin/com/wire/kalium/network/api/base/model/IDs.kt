@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.base.model
 
-import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

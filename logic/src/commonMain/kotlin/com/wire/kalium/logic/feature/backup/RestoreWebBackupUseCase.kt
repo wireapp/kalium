@@ -61,7 +61,7 @@ interface RestoreWebBackupUseCase {
     suspend operator fun invoke(backupRootPath: Path, metadata: BackupMetadata): RestoreBackupResult
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "NestedBlockDepth")
 internal class RestoreWebBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val userId: UserId,
@@ -134,7 +134,7 @@ internal class RestoreWebBackupUseCaseImpl(
                         }
 
                         // send migrated messages in batches to not face any OOM errors
-                        if (migratedMessagesBatch.size == 1000) {
+                        if (migratedMessagesBatch.size == MESSAGES_BATCH_SIZE) {
                             persistMigratedMessages(migratedMessagesBatch, coroutineScope)
                             migratedMessagesBatch.clear()
                         }
@@ -150,5 +150,6 @@ internal class RestoreWebBackupUseCaseImpl(
 
     private companion object {
         const val TAG = "[RestoreWebBackupUseCase]"
+        private const val MESSAGES_BATCH_SIZE = 1000
     }
 }
