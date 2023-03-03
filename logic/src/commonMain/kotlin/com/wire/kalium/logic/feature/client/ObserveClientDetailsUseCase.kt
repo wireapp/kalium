@@ -37,14 +37,14 @@ interface ObserveClientDetailsUseCase {
      * @param clientId the id of the client to get the details for
      * @return the [GetClientDetailsResult] with the client details, otherwise a [CoreFailure]
      */
-    suspend fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult>
+    suspend operator fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult>
 }
 
 class ObserveClientDetailsUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider
 ) : ObserveClientDetailsUseCase {
-    override suspend fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult> =
+    override suspend operator fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult> =
         clientRepository.observeClientsByUserIdAndClientId(userId, clientId)
             .map {
                 it.fold(
