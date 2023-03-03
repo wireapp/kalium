@@ -40,7 +40,6 @@ import com.wire.kalium.logic.feature.backup.RestoreBackupResult.Failure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.extractCompressedFile
@@ -50,7 +49,6 @@ import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.serialization.JsonConvertException
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
@@ -259,6 +257,5 @@ internal class RestoreBackupUseCaseImpl(
         const val TAG = "[RestoreBackupUseCase]"
     }
 }
-
 
 private const val EXTRACTED_FILES_PATH = "extractedFiles"
