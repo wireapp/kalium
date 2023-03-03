@@ -214,7 +214,7 @@ internal class CallDataSource(
             protocol = conversation.conversation.protocol
         )
 
-        val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId.toString())
+        val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)
         val lastCallStatus = callDAO.getCallStatusByConversationId(conversationId = callEntity.conversationId)
 
         val isOneOnOneCall = callEntity.conversationType == ConversationEntity.Type.ONE_ON_ONE
@@ -280,7 +280,7 @@ internal class CallDataSource(
     private fun updateCallMetadata(conversationId: ConversationId, metadata: CallMetadata) {
         val callMetadataProfile = _callMetadataProfile.value
         val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-            this[conversationId.toString()] = metadata
+            this[conversationId] = metadata
         }
 
         _callMetadataProfile.value = callMetadataProfile.copy(
@@ -290,7 +290,6 @@ internal class CallDataSource(
 
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
         val callMetadataProfile = _callMetadataProfile.value
-//         val modifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
 
         // Update Call in Database
         wrapStorageRequest {
@@ -308,13 +307,13 @@ internal class CallDataSource(
             )
         }
 
-        callMetadataProfile.data[conversationId.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 val establishedTime = if (status == CallStatus.ESTABLISHED) DateTimeUtil.currentIsoDateTimeString()
                 else call.establishedTime
 
                 // Update Metadata
-                this[conversationId.toString()] = call.copy(establishedTime = establishedTime)
+                this[conversationId] = call.copy(establishedTime = establishedTime)
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
@@ -347,9 +346,9 @@ internal class CallDataSource(
 
     override fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId.toString()]?.let { callMetadata ->
+        callMetadataProfile.data[conversationId]?.let { callMetadata ->
             val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId.toString()] = callMetadata.copy(
+                this[conversationId] = callMetadata.copy(
                     isMuted = isMuted
                 )
             }
@@ -362,9 +361,9 @@ internal class CallDataSource(
 
     override fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId.toString()] = call.copy(
+                this[conversationId] = call.copy(
                     isCameraOn = isCameraOn
                 )
             }
@@ -377,7 +376,7 @@ internal class CallDataSource(
 
     override fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId]?.let { call ->
             if (call.participants != participants) {
                 callingLogger.i(
                     "updateCallParticipants() -" +
@@ -386,7 +385,7 @@ internal class CallDataSource(
                 )
 
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                    this[conversationId.toString()] = call.copy(
+                    this[conversationId] = call.copy(
                         participants = participants,
                         maxParticipants = max(call.maxParticipants, participants.size + 1)
                     )
@@ -398,7 +397,7 @@ internal class CallDataSource(
             }
         }
 
-        if (_callMetadataProfile.value[conversationId.toString()]?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
                     clearStaleParticipantTimeout(participant)
@@ -440,7 +439,7 @@ internal class CallDataSource(
     override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers) {
         val callMetadataProfile = _callMetadataProfile.value
 
-        callMetadataProfile.data[conversationId.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId]?.let { call ->
             callingLogger.i(
                 "updateActiveSpeakers() -" +
                         " conversationId: ${conversationId.value.obfuscateId()}" +
@@ -454,7 +453,7 @@ internal class CallDataSource(
             )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId.toString()] = call.copy(
+                this[conversationId] = call.copy(
                     participants = updatedParticipants,
                     maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
                 )
@@ -496,7 +495,7 @@ internal class CallDataSource(
 
                 callMapper.toCall(
                     callEntity = call,
-                    metadata = metadata.data[conversationId.toString()]
+                    metadata = metadata.data[conversationId]
                 )
             }
         }
