@@ -98,6 +98,7 @@ interface Calling : Library {
         ctx: Pointer?
     )
 
+    @Suppress("LongParameterList")
     fun wcall_recv_msg(
         inst: Handle,
         msg: ByteArray,
@@ -106,7 +107,8 @@ interface Calling : Library {
         msg_time: Uint32_t,
         convId: String,
         userId: String,
-        clientId: String
+        clientId: String,
+        convType: Int
     ): Int
 
     fun wcall_resp(

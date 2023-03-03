@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Accounts
@@ -69,7 +70,7 @@ actual class GlobalDatabaseProvider(
 
         database = GlobalDatabase(
             driver,
-            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter),
+            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter, EnumColumnAdapter()),
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,

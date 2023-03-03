@@ -44,7 +44,8 @@ INSERT OR IGNORE INTO Call SELECT
     CASE WHEN status != 'MISSED' THEN 'CLOSED' ELSE status END,
     caller_id,
     conversation_type,
-    created_at
+    created_at,
+    type
     FROM backup_db.Call;
 
 importMessageAssetContentTable:
