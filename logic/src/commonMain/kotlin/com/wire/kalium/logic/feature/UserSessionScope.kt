@@ -514,7 +514,8 @@ class UserSessionScope internal constructor(
             kaliumFileSystem,
             userId,
             persistMigratedMessage,
-            restartSlowSyncProcessForRecoveryUseCase
+            restartSlowSyncProcessForRecoveryUseCase,
+            userStorage.database.migrationDAO
         )
 
     val restoreBackup: RestoreBackupUseCase

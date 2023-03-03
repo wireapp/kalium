@@ -22,14 +22,46 @@ import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import kotlin.jvm.JvmInline
-
 
 @Serializable
-sealed class WebContent {
+class WebConversationContent(
+    @SerialName("last_read_timestamp") val lastReadTime: String,
+    @SerialName("id") val id: String
+)
+
+@Serializable
+data class WebConversation(
+    @SerialName("id") val id: String,
+    @SerialName("type") val type: Int,
+    @SerialName("name") val name: String?,
+    @SerialName("muted_state") val mutedState: Int?,
+    @SerialName("access_role") val accessRole: List<String>?,
+    @SerialName("access") val access: List<String>?,
+    @SerialName("archived_state") val archivedState: Boolean?,
+    @SerialName("archived_timestamp") val archivedTimestamp: Long?,
+    @SerialName("cleared_timestamp") val clearedTimestamp: Long?,
+    @SerialName("creator") val creator: String?,
+    @SerialName("domain") val domain: String?,
+    @SerialName("epoch") val epoch: Int?,
+    @SerialName("receipt_mode") val receiptMode: Int?,
+    @SerialName("is_guest") val isGuest: Boolean?,
+    @SerialName("is_managed") val isManaged: Boolean?,
+    @SerialName("last_event_timestamp") val lastEventTimestamp: Long?,
+    @SerialName("last_read_timestamp") val lastReadTimestamp: Long?,
+    @SerialName("last_server_timestamp") val lastServerTimestamp: Long?,
+    @SerialName("legal_hold_status") val legalHoldStatus: Int?,
+    @SerialName("muted_timestamp") val mutedTimestamp: Long?,
+    @SerialName("others") val others: List<String>?,
+    @SerialName("protocol") val protocol: String?,
+    @SerialName("status") val status: Int?,
+    @SerialName("team_id") val teamId: String?
+    )
+
+@Serializable
+sealed class WebEventContent {
 
     @Serializable
-    sealed class Conversation : WebContent() {
+    sealed class Conversation : WebEventContent() {
 
         @Serializable
         @SerialName("conversation.group-creation")
@@ -82,7 +114,7 @@ sealed class WebContent {
 
     @Serializable
     @SerialName("unknown")
-    object Unknown : WebContent()
+    object Unknown : WebEventContent()
 }
 
 @Serializable

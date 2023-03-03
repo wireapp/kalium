@@ -241,10 +241,7 @@ class RestoreBackupUseCaseTest {
         val databaseImporter = mock(classOf<DatabaseImporter>())
 
         @Mock
-        val persistMigratedMessagesUseCase = mock(classOf<PersistMigratedMessagesUseCase>())
-
-        @Mock
-        val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
+        val restoreWebBackupUseCase = mock(classOf<RestoreWebBackupUseCase>())
 
         @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
@@ -368,8 +365,7 @@ class RestoreBackupUseCaseTest {
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
             idMapper = idMapper,
-            persistMigratedMessages = persistMigratedMessagesUseCase,
-            restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase
+            restoreWebBackup = restoreWebBackupUseCase
         )
     }
 

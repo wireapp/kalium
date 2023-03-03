@@ -21,8 +21,8 @@ package com.wire.kalium.logic.data.web
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
-internal val webContentSerializationModule = SerializersModule {
-    polymorphic(WebContent::class) {
-        default { WebContent.Unknown.serializer() }
+internal val webEventContentSerializationModule = SerializersModule {
+    polymorphic(WebEventContent::class) {
+        default { WebEventContent.Unknown.serializer() }
     }
 }

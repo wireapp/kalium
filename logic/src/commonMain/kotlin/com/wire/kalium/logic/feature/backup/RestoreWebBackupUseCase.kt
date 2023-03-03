@@ -19,12 +19,18 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.event.toConversation
 import com.wire.kalium.logic.data.event.toMigratedMessage
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.web.KtxWebSerializer
-import com.wire.kalium.logic.data.web.WebContent
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_MESSAGES_FILE_NAME
+import com.wire.kalium.logic.data.web.WebConversation
+import com.wire.kalium.logic.data.web.WebEventContent
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_CONVERSATIONS_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_EVENTS_FILE_NAME
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
@@ -32,11 +38,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.decodeToSequence
 import okio.Path
@@ -60,7 +67,9 @@ internal class RestoreWebBackupUseCaseImpl(
     private val userId: UserId,
     private val persistMigratedMessages: PersistMigratedMessagesUseCase,
     private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val migrationDAO: MigrationDAO,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : RestoreWebBackupUseCase {
 
     override suspend operator fun invoke(backupRootPath: Path, metadata: BackupMetadata): RestoreBackupResult =
@@ -73,15 +82,45 @@ internal class RestoreWebBackupUseCaseImpl(
             }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
         }
 
-    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun importWebBackup(
         filePath: Path,
         coroutineScope: CoroutineScope
-    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> = with(kaliumFileSystem) {
-        listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_MESSAGES_FILE_NAME }?.let { path ->
+    ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
+        tryImportConversations(filePath)
+        return importMessages(filePath, coroutineScope)
+    }
+
+    private suspend fun tryImportConversations(filePath: Path) {
+        kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
+            kaliumFileSystem.source(path).buffer()
+                .use {
+                    val sequence = KtxWebSerializer.json.decodeToSequence<WebConversation>(
+                        it.inputStream(),
+                        DecodeSequenceMode.ARRAY_WRAPPED
+                    )
+                    val iterator = sequence.iterator()
+                    val migratedConversations = mutableListOf<Conversation>()
+                    while (iterator.hasNext()) {
+                        val webConversation = iterator.next()
+                        val migratedConversation = webConversation.toConversation(userId)
+                        if (migratedConversation != null) {
+                            migratedConversations.add(migratedConversation)
+                        }
+                    }
+                    if(migratedConversations.isNotEmpty()) {
+                        wrapStorageRequest {
+                            migrationDAO.insertConversation(migratedConversations.map(conversationMapper::fromMigrationModel))
+                        }
+                    }
+                }
+        }
+    }
+
+    private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = with(kaliumFileSystem) {
+        listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
             source(path).buffer()
                 .use {
-                    val sequence = KtxWebSerializer.json.decodeToSequence<WebContent>(
+                    val sequence = KtxWebSerializer.json.decodeToSequence<WebEventContent>(
                         it.inputStream(),
                         DecodeSequenceMode.ARRAY_WRAPPED
                     )
@@ -108,7 +147,7 @@ internal class RestoreWebBackupUseCaseImpl(
                     restartSlowSyncProcessForRecovery.invoke()
                     Either.Right(Unit)
                 }
-        } ?: Either.Left(BackupIOFailure("No valid db file found in the backup"))
+        } ?: Either.Left(BackupIOFailure("No valid json file found in the backup"))
     }
 
     private companion object {

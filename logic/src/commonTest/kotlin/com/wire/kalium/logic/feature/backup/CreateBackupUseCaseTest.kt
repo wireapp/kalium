@@ -26,9 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME_PREFIX
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
-import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.framework.TestUser.SELF
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -37,7 +35,6 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any

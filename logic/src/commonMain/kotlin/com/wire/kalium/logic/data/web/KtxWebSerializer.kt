@@ -36,6 +36,6 @@ object KtxWebSerializer {
         // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
         coerceInputValues = true
 
-        serializersModule += webContentSerializationModule
+        serializersModule += webEventContentSerializationModule
     }
 }
