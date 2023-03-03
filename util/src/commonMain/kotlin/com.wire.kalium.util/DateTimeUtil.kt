@@ -38,18 +38,18 @@ expect open class PlatformDateTimeUtil() {
     fun fromInstantToIsoDateTimeString(instant: Instant): String
 
     /**
-     * Parse current [kotlinx.datetime.Instant] into date-time string in ISO-8601 format with up to seconds precision.
-     * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
+     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    fun fromCurrentInstantToSimpleDateTimeString(): String
+    fun fromInstantToSimpleDateTimeString(instant: Instant): String
 }
 
 // TODO(qol): we need to think if it should return an either or should we catch the exception,
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
 object DateTimeUtil : PlatformDateTimeUtil() {
-    const val millisPattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
-    const val secondsPattern: String = "yyyy-MM-dd'T'HH:mm:ss"
-    const val regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d(([+-]\\d\\d:\\d\\d)|Z)?\$"
+    const val iso8601Pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+    const val simplePattern: String = "yyyy-MM-dd_HH:mm:ss"
+    const val iso8601Regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\dZ\$"
     internal const val MILLISECONDS_DIGITS = 3
 
     /**
@@ -88,9 +88,9 @@ object DateTimeUtil : PlatformDateTimeUtil() {
 
     /**
      * Return the current date-time as a simple string
-     * @return current date-time in simplified ISO-8601 format, i.e. until seconds precision (YYYY-MM-DDTHH:mm:ssZ)
+     * @return current date-time in simplified format, i.e. until seconds precision (YYYY-MM-DD_HH:mm:ss)
      */
-    fun currentSimpleDateTimeString(): String = fromCurrentInstantToSimpleDateTimeString()
+    fun currentSimpleDateTimeString(): String = fromInstantToSimpleDateTimeString(Clock.System.now())
 
     /**
      * Return the current date-time as [kotlinx.datetime.Instant].
