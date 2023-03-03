@@ -35,12 +35,12 @@ internal object ClientMapper {
         user_id: QualifiedIDEntity,
         id: String,
         device_type: DeviceTypeEntity?,
-        client_type: ClientTypeEntity?,
         is_valid: Boolean,
         is_verified: Boolean,
-        registration_time: Instant?,
+        client_type: ClientTypeEntity?,
+        registration_date: Instant?,
         label: String?,
-        name: String?,
+        model: String?,
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -48,9 +48,9 @@ internal object ClientMapper {
         clientType = client_type,
         isValid = is_valid,
         isVerified = is_verified,
-        registrationDate = registration_time,
+        registrationDate = registration_date,
         label = label,
-        model = name
+        model = model
     )
 }
 
