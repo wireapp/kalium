@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.utils
+package com.wire.kalium.util.serialization
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement

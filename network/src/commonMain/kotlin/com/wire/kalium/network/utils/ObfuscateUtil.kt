@@ -23,6 +23,7 @@ package com.wire.kalium.network.utils
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateUrlPath
+import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json

@@ -34,7 +34,7 @@ class CommitBundleEventReceiverImpl(
         when (event) {
             is Event.Conversation.MemberJoin -> memberJoinEventHandler.handle(event)
             is Event.Conversation.MemberLeave -> memberLeaveEventHandler.handle(event)
-            else -> kaliumLogger.w("Unexpected event received by commit bundle: $event")
+            else -> kaliumLogger.w("Unexpected event received by commit bundle: ${event.toLogString()}")
         }
     }
 }

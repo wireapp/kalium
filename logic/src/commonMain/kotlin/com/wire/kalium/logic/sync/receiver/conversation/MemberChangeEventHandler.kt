@@ -50,10 +50,10 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.fetchConversationIfUnknown(event.conversationId)
                     .run {
                         onSuccess {
-                            logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
+                            logger.v("Succeeded fetching conversation details on MemberChange Event: ${event.toLogString()}")
                         }
                         onFailure {
-                            logger.w("Failure fetching conversation details on MemberChange Event: $event")
+                            logger.w("Failure fetching conversation details on MemberChange Event: ${event.toLogString()}")
                         }
                         // Even if unable to fetch conversation details, at least attempt updating the member
                         conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
@@ -61,7 +61,7 @@ internal class MemberChangeEventHandlerImpl(
             }
 
             else -> {
-                logger.w("Ignoring 'conversation.member-update' event, not handled yet: $event")
+                logger.w("Ignoring 'conversation.member-update' event, not handled yet: ${event.toLogString()}")
             }
         }
     }
