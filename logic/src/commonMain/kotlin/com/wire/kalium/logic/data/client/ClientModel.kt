@@ -43,6 +43,7 @@ data class Client(
     val id: ClientId,
     val type: ClientType?,
     val registrationTime: Instant?, // yyyy-mm-ddThh:MM:ss.qqq
+    val isVerified: Boolean,
     val deviceType: DeviceType?,
     val label: String?,
     val model: String?

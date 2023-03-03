@@ -32,9 +32,10 @@ object TestClient {
         CLIENT_ID,
         ClientType.Permanent,
         Instant.DISTANT_PAST,
-        null,
+        deviceType = null,
         model = null,
-        label = "label"
+        label = "label",
+        isVerified = false
     )
 
     val SELF_USER_ID = UserId("self-user-id", "domain")

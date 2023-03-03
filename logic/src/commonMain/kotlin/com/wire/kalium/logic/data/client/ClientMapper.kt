@@ -50,19 +50,21 @@ class ClientMapper(
         label = clientConfig.deviceName(),
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
         type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
-        capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
+        capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel
     )
 
+    // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
     fun fromClientResponse(response: ClientResponse): Client = Client(
         id = ClientId(response.clientId),
         type = fromClientTypeDTO(response.type),
         registrationTime = Instant.parse(response.registrationTime),
         deviceType = fromDeviceTypeDTO(response.deviceType),
         label = response.label,
-        model = response.model
+        model = response.model,
+        isVerified = false
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -72,7 +74,8 @@ class ClientMapper(
             registrationTime = registrationDate,
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = label,
-            model = model
+            model = model,
+            isVerified = isVerified
         )
     }
 

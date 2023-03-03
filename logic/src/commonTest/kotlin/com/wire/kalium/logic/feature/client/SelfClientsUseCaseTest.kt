@@ -108,7 +108,8 @@ class SelfClientsUseCaseTest {
             registrationTime = Instant.parse("2022-01-01T10:52:02.671Z"),
             deviceType = DeviceType.Desktop,
             label = null,
-            model = "Mac ox"
+            model = "Mac ox",
+            isVerified = false
         )
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),

@@ -266,6 +266,7 @@ class ClientRepositoryTest {
                 deviceType = DeviceType.Desktop,
                 label = null,
                 model = "Mac ox",
+                isVerified = false
             ),
             Client(
                 id = PlainId(value = "client_id_2"),
@@ -274,6 +275,7 @@ class ClientRepositoryTest {
                 deviceType = DeviceType.Phone,
                 label = null,
                 model = "iphone 15",
+                isVerified = false
             ),
         )
 
