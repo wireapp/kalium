@@ -41,8 +41,8 @@ expect open class PlatformDateTimeUtil() {
 // TODO(qol): we need to think if it should return an either or should we catch the exception,
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
 object DateTimeUtil : PlatformDateTimeUtil() {
-    const val pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
-    const val regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d(([+-]\\d\\d:\\d\\d)|Z)?\$"
+    const val iso8601Pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+    const val iso8601Regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\dZ\$"
     internal const val MILLISECONDS_DIGITS = 3
 
     /**

@@ -31,7 +31,7 @@ import java.util.TimeZone
 
 actual open class PlatformDateTimeUtil actual constructor() {
 
-    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.pattern, Locale.getDefault()).apply {
+    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.iso8601Pattern, Locale.getDefault()).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 

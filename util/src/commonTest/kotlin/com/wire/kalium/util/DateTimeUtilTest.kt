@@ -32,7 +32,7 @@ class DateTimeUtilTest {
     private val isoDateTimeStringWith0Millis = "2022-12-20T17:30:00.000Z"
     private val isoDateTimeStringWith0MillisMinus1s = "2022-12-20T17:29:59.000Z"
     private val epochMillis = 1671557400000
-    private val regex = Regex(DateTimeUtil.regex)
+    private val regex = Regex(DateTimeUtil.iso8601Regex)
 
     @Test
     fun givenAValidIsoDateTimeString_whenMatchingRegex_thenShouldSucceed() {
@@ -46,6 +46,9 @@ class DateTimeUtilTest {
         assertTrue(!regex.matches("2022/12/20T17:30:00.000Z"))
         assertTrue(!regex.matches("2022-12-2017:30:00.000Z"))
         assertTrue(!regex.matches("2022-12-20T7:30:00Z"))
+        assertTrue(!regex.matches("2022-12-20T17:30:00.000+0100"))
+        assertTrue(!regex.matches("2022-12-20T17:30:00.000+01:00"))
+        assertTrue(!regex.matches("2022-12-20T17:30:00.000+01"))
     }
 
     @Test
