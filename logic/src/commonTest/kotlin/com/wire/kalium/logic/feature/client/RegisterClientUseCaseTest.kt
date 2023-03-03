@@ -120,7 +120,7 @@ class RegisterClientUseCaseTest {
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verify(arrangement.preKeyRepository)
             .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
@@ -159,6 +159,34 @@ class RegisterClientUseCaseTest {
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueToMissingAuthCode_whenRegistering_thenMissing2FAErrorShouldBeReturned() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuthenticationCode)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.Missing2FA>(result)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueToInvalidAuthCode_whenRegistering_thenInvalid2FAErrorShouldBeReturned() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidAuthenticationCode)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.Invalid2FA>(result)
     }
 
     @Test
@@ -279,7 +307,7 @@ class RegisterClientUseCaseTest {
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verify(arrangement.preKeyRepository)
             .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
@@ -470,6 +498,7 @@ class RegisterClientUseCaseTest {
                 .whenInvokedWith(eq(selfUserId))
                 .then { result }
         }
+
         fun arrange() = this to registerClient
     }
 }
