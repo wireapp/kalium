@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-fun interface ObserveSecurityClassificationLabelUseCase {
+interface ObserveSecurityClassificationLabelUseCase {
     /**
      * Operation that lets compute if a given conversation [conversationId] in terms of compromising security or not.
      * This will observe the conversation and its participants and will return a [Flow] of [SecurityClassificationType]
@@ -55,7 +55,6 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
                         participantDomain == selfUserId.domain || trustedDomains.contains(participantDomain)
                     }
                 }
-
             }.map { isClassified ->
                 when (isClassified) {
                     true -> SecurityClassificationType.CLASSIFIED

@@ -124,7 +124,8 @@ class CallMapperTest {
             id = TestCall.DATABASE_ID,
             status = CallStatus.ESTABLISHED,
             conversationType = Conversation.Type.ONE_ON_ONE,
-            callerId = TestCall.CALLER_ID
+            callerId = TestCall.CALLER_ID,
+            type = ConversationType.OneOnOne
         )
 
         // then

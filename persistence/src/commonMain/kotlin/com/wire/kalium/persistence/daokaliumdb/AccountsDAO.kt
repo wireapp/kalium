@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.daokaliumdb
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AccountsQueries
 import com.wire.kalium.persistence.CurrentAccountQueries
+import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.LogoutReason
@@ -46,7 +47,8 @@ data class FullAccountEntity(
     val info: AccountInfoEntity,
     val serverConfigId: String,
     val ssoId: SsoIdEntity?,
-    val persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
+    val persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity,
+    val managedBy: ManagedByEntity?
 )
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
@@ -74,12 +76,14 @@ internal object AccountMapper {
         tenant: String?,
         server_config_id: String,
         logout_reason: LogoutReason?,
-        isPersistentWebSocketEnabled: Boolean
+        isPersistentWebSocketEnabled: Boolean,
+        managedBy: ManagedByEntity?
     ): FullAccountEntity = FullAccountEntity(
         info = fromAccount(id, logout_reason),
         serverConfigId = server_config_id,
         ssoId = toSsoIdEntity(scim_external_id, subject, tenant),
-        persistentWebSocketStatusEntity = fromPersistentWebSocketStatus(id, isPersistentWebSocketEnabled)
+        persistentWebSocketStatusEntity = fromPersistentWebSocketStatus(id, isPersistentWebSocketEnabled),
+        managedBy = managedBy
     )
 
     fun toSsoIdEntity(
@@ -113,7 +117,7 @@ interface AccountsDAO {
     suspend fun currentAccount(): AccountInfoEntity?
     fun observerCurrentAccount(): Flow<AccountInfoEntity?>
     suspend fun setCurrentAccount(userIDEntity: UserIDEntity?)
-    suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?)
+    suspend fun updateSsoIdAndScimInfo(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, managedBy: ManagedByEntity?)
     suspend fun deleteAccount(userIDEntity: UserIDEntity)
     suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason)
     suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean)
@@ -121,6 +125,7 @@ interface AccountsDAO {
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
+    suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
 }
 
 @Suppress("TooManyFunctions")
@@ -132,7 +137,13 @@ internal class AccountsDAOImpl internal constructor(
 ) : AccountsDAO {
     override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = withContext(queriesContext) {
         queries.ssoId(userIDEntity).executeAsOneOrNull()
-            ?.let { mapper.toSsoIdEntity(scim_external_id = it.scim_external_id, subject = it.subject, tenant = it.tenant) }
+            ?.let {
+                mapper.toSsoIdEntity(
+                    scim_external_id = it.scim_external_id,
+                    subject = it.subject,
+                    tenant = it.tenant
+                )
+            }
     }
 
     override suspend fun insertOrReplace(
@@ -199,14 +210,19 @@ internal class AccountsDAOImpl internal constructor(
         currentAccountQueries.update(userIDEntity)
     }
 
-    override suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?) = withContext(queriesContext) {
-        queries.updateSsoId(
-            scimExternalId = ssoIdEntity?.scimExternalId,
-            subject = ssoIdEntity?.subject,
-            tenant = ssoIdEntity?.tenant,
-            userId = userIDEntity
-        )
-    }
+    override suspend fun updateSsoIdAndScimInfo(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, managedBy: ManagedByEntity?) =
+        withContext(queriesContext) {
+            queries.transaction {
+                queries.updateSsoId(
+                    scimExternalId = ssoIdEntity?.scimExternalId,
+                    subject = ssoIdEntity?.subject,
+                    tenant = ssoIdEntity?.tenant,
+                    userId = userIDEntity
+                )
+
+                queries.updateManagedBy(managedBy, userIDEntity)
+            }
+        }
 
     override suspend fun deleteAccount(userIDEntity: UserIDEntity) =
         withContext(queriesContext) {
@@ -230,6 +246,10 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
         queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus).asFlow().flowOn(queriesContext)
             .mapToList()
+
+    override suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity? = withContext(queriesContext) {
+        queries.managedBy(userIDEntity).executeAsOneOrNull()?.managed_by
+    }
 
     override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? = withContext(queriesContext) {
         queries.accountInfo(userIDEntity, mapper = mapper::fromAccount).executeAsOneOrNull()
