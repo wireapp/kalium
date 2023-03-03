@@ -48,10 +48,10 @@ internal class MemberJoinEventHandlerImpl(
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
-                    logger.v("Succeeded fetching conversation details on MemberJoin Event: $event")
+                    logger.v("Succeeded fetching conversation details on MemberJoin Event: ${event.toLogString()}")
                 }
                 onFailure {
-                    logger.w("Failure fetching conversation details on MemberJoin Event: $event")
+                    logger.w("Failure fetching conversation details on MemberJoin Event: ${event.toLogString()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt adding the members
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())

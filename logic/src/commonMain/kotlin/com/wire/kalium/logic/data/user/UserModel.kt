@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.utils.toJsonElement
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
