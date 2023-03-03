@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -130,12 +132,12 @@ internal class SendConfirmationUseCase internal constructor(
 
         val properties = mapOf(
             conversationIdKey to conversationId.toLogString(),
-            messageIdsKey to messageIds,
+            messageIdsKey to messageIds.map { it.obfuscateId() },
             statusKey to "ERROR",
             "errorInfo" to "$failure"
         )
 
-        val jsonLogString = Json.encodeToString(properties.toMap())
+        val jsonLogString = "${properties.toJsonElement()}"
         val logMessage = "$TAG: $jsonLogString"
 
         logger.e(logMessage)
@@ -145,10 +147,10 @@ internal class SendConfirmationUseCase internal constructor(
 
         val properties = mapOf(
             conversationIdKey to conversationId.toLogString(),
-            messageIdsKey to messageIds,
+            messageIdsKey to messageIds.map { it.obfuscateId() },
             statusKey to "CONFIRMED"
         )
-        val jsonLogString = Json.encodeToString(properties.toMap())
+        val jsonLogString = "${properties.toJsonElement()}"
         val logMessage = "$TAG: $jsonLogString"
 
         logger.i("$logMessage")
