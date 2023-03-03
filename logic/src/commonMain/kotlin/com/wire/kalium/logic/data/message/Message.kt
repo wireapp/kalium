@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -78,7 +79,7 @@ sealed interface Message {
         @Suppress("LongMethod")
         fun toLogString(): String {
             val typeKey = "type"
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.Text -> mutableMapOf(
                     typeKey to "text"
                 )
@@ -124,13 +125,13 @@ sealed interface Message {
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to editStatus.toLogString(),
+                "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation"
             )
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toMap().toJsonElement()}"
         }
     }
 
@@ -295,7 +296,11 @@ sealed interface Message {
             }
 
         fun toLogString(): String {
-            val properties: MutableMap<String, String> = when (this) {
+            val properties = toLogMap()
+            return Json.encodeToString(properties)
+        }
+
+        fun toLogMap(): Map<String, String> = when (this) {
                 is NotEdited -> mutableMapOf(
                     "value" to "NOT_EDITED"
                 )
@@ -304,8 +309,6 @@ sealed interface Message {
                     "time" to this.lastTimeStamp
                 )
             }
-            return Json.encodeToString(properties.toMap())
-        }
     }
 
     enum class UploadStatus {
