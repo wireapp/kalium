@@ -42,6 +42,6 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
      * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String {
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
         simpleIsoDateTimeFormatter.format(instant.toJavaInstant())
 }
