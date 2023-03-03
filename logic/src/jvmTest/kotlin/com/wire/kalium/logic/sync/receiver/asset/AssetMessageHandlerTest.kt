@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
+import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -39,10 +41,11 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetMessageHandlerTest {
@@ -50,7 +53,7 @@ class AssetMessageHandlerTest {
     @Test
     fun givenAValidNonRestrictedNewGenericAssetMessage_whenHandlingIt_isCorrectlyProcessedAndIsVisible() = runTest {
         // Given
-        val assetMessage = TEST_ASSET_MESSAGE
+        val assetMessage = COMPLETE_ASSET_MESSAGE
         val assetMessageContent = assetMessage.content as MessageContent.Asset
         val isFileSharingEnabled = true
         val (arrangement, assetMessageHandler) = Arrangement()
@@ -60,9 +63,10 @@ class AssetMessageHandlerTest {
             .arrange()
 
         // When
-        assetMessageHandler.handle(assetMessage, assetMessageContent)
+        assetMessageHandler.handle(assetMessage)
 
         // Then
+        assertTrue(assetMessageContent.value.hasValidRemoteData())
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
@@ -80,8 +84,7 @@ class AssetMessageHandlerTest {
     @Test
     fun givenAValidPreviewNewGenericAssetMessage_whenHandlingIt_isCorrectlyProcessedAndIsNotVisible() = runTest {
         // Given
-        val assetMessage = TEST_ASSET_MESSAGE.copy(content = PREVIEW_ASSET_CONTENT)
-        val assetMessageContent = assetMessage.content as MessageContent.Asset
+        val assetMessage = PREVIEW_ASSET_MESSAGE
         val isFileSharingEnabled = true
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
@@ -90,7 +93,7 @@ class AssetMessageHandlerTest {
             .arrange()
 
         // When
-        assetMessageHandler.handle(assetMessage, assetMessageContent)
+        assetMessageHandler.handle(assetMessage)
 
         // Then
         verify(arrangement.persistMessage)
@@ -110,7 +113,7 @@ class AssetMessageHandlerTest {
     @Test
     fun givenAValidPreviewNewImageAssetMessage_whenHandlingIt_isCorrectlyProcessedAndItIsVisible() = runTest {
         // Given
-        val assetMessage = TEST_ASSET_MESSAGE.copy(
+        val assetMessage = COMPLETE_ASSET_MESSAGE.copy(
             content = PREVIEW_ASSET_CONTENT.copy(
                 value = PREVIEW_ASSET_CONTENT.value.copy(
                     name = "some-image.jpg",
@@ -119,7 +122,6 @@ class AssetMessageHandlerTest {
                 )
             )
         )
-        val assetMessageContent = assetMessage.content as MessageContent.Asset
         val isFileSharingEnabled = true
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
@@ -128,7 +130,7 @@ class AssetMessageHandlerTest {
             .arrange()
 
         // When
-        assetMessageHandler.handle(assetMessage, assetMessageContent)
+        assetMessageHandler.handle(assetMessage)
 
         // Then
         verify(arrangement.persistMessage)
@@ -142,6 +144,113 @@ class AssetMessageHandlerTest {
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(eq(assetMessage.conversationId), eq(assetMessage.id))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidPreviewAssetMessageStoredAndItsAssetUpdate_whenHandlingTheUpdate_itIsCorrectlyProcessedAndVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = true
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.id == updateAssetMessage.id
+                        && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
+                        && it.visibility == Message.Visibility.VISIBLE
+            })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidPreviewAssetMessageStored_whenHandlingTheUpdateWithWrongEncryptionKeys_itIsProcessedButNoVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateBrokenKeysAssetMessage = COMPLETE_ASSET_MESSAGE.copy(
+            content = COMPLETE_ASSET_CONTENT.copy(
+                value = COMPLETE_ASSET_CONTENT.value.copy(
+                    remoteData = COMPLETE_ASSET_CONTENT.value.remoteData.copy(otrKey = byteArrayOf())
+                )
+            )
+        )
+        val isFileSharingEnabled = true
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateBrokenKeysAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateBrokenKeysAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertFalse((updateBrokenKeysAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.id == updateBrokenKeysAssetMessage.id
+                        && it.conversationId.toString() == updateBrokenKeysAssetMessage.conversationId.toString()
+                        && it.visibility == Message.Visibility.HIDDEN
+            })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidPreviewAssetMessageStored_whenHandlingTheUpdateWithImpostorSenderId_itIsProcessedButNoVisible() = runTest {
+        // Given
+        val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val updateInvalidSenderIdAssetMessage = COMPLETE_ASSET_MESSAGE.copy(
+            senderUserId = UserId("some-impostor-id", "some.domain.com")
+        )
+        val isFileSharingEnabled = true
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(previewAssetMessage)
+            .withSuccessfulPersistMessageUseCase(updateInvalidSenderIdAssetMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateInvalidSenderIdAssetMessage)
+
+        // Then
+        assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
+        assertTrue((updateInvalidSenderIdAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.id == updateInvalidSenderIdAssetMessage.id
+                        && it.conversationId.toString() == updateInvalidSenderIdAssetMessage.conversationId.toString()
+                        && it.visibility == Message.Visibility.HIDDEN
+            })
+            .wasNotInvoked()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
             .wasInvoked(exactly = once)
     }
 
@@ -190,7 +299,7 @@ class AssetMessageHandlerTest {
     }
 
     private companion object {
-        val ASSET_CONTENT = MessageContent.Asset(
+        val COMPLETE_ASSET_CONTENT = MessageContent.Asset(
             AssetContent(
                 sizeInBytes = 100,
                 name = "some-asset.zip",
@@ -228,15 +337,19 @@ class AssetMessageHandlerTest {
             )
 
         )
-        val TEST_ASSET_MESSAGE = Message.Regular(
-            id = "uid",
-            content = ASSET_CONTENT,
+        val COMPLETE_ASSET_MESSAGE = Message.Regular(
+            id = "uid-complete",
+            content = COMPLETE_ASSET_CONTENT,
             conversationId = ConversationId("some-value", "some-domain.com"),
-            date = "1970-01-01T00:00:00.000Z",
+            date = "1970-01-01T00:00:01.000Z",
             senderUserId = UserId("some-sender-value", "some-sender-domain.com"),
             senderClientId = ClientId("some-client-value"),
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
+        )
+        val PREVIEW_ASSET_MESSAGE = COMPLETE_ASSET_MESSAGE.copy(
+            content = PREVIEW_ASSET_CONTENT,
+            date = "1970-01-01T00:00:00.000Z",
         )
     }
 }
