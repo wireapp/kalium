@@ -77,7 +77,7 @@ sealed interface Message {
             }
         }
 
-        fun isDeletionScheduledInThePast(): Boolean {
+        fun isDeletionStartedInThePast(): Boolean {
             return selfDeletionStartDate != null
         }
 

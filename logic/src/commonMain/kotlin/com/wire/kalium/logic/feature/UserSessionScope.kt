@@ -159,7 +159,6 @@ import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsU
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCase
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
-import com.wire.kalium.logic.feature.message.ObserveOngoingSelfDeletionMessagesUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -1127,10 +1126,6 @@ class UserSessionScope internal constructor(
         ephemeralMessageDeletionHandler = selfDeletingMessageManager
     )
 
-    val observeOngoingSelfDeletionMessagesUseCase =
-        ObserveOngoingSelfDeletionMessagesUseCase(
-            ephemeralMessageDeletionHandler = selfDeletingMessageManager
-        )
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val calls: CallsScope
