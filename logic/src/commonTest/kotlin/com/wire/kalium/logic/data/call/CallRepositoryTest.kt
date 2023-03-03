@@ -625,7 +625,7 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateCallStatusById(Arrangement.conversationId.toString(), CallStatus.ESTABLISHED)
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
 
         // then
         verify(arrangement.callDAO)
@@ -641,7 +641,7 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         val (arrangement, callRepository) = Arrangement().arrange()
 
-        callRepository.updateCallStatusById(Arrangement.randomConversationIdString, CallStatus.INCOMING)
+        callRepository.updateCallStatusById(Arrangement.randomConversationId, CallStatus.INCOMING)
 
         verify(arrangement.callDAO)
             .suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
@@ -653,7 +653,7 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
 
-        callRepository.updateIsMutedById(Arrangement.randomConversationIdString, false)
+        callRepository.updateIsMutedById(Arrangement.randomConversationId, false)
 
         assertFalse {
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
@@ -676,7 +676,7 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateIsMutedById(Arrangement.conversationId.toString(), expectedValue)
+        callRepository.updateIsMutedById(Arrangement.conversationId, expectedValue)
 
         // then
         assertEquals(
@@ -688,7 +688,7 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        callRepository.updateIsCameraOnById(Arrangement.randomConversationIdString, false)
+        callRepository.updateIsCameraOnById(Arrangement.randomConversationId, false)
 
         assertFalse {
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
@@ -711,7 +711,7 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateIsCameraOnById(Arrangement.conversationId.toString(), expectedValue)
+        callRepository.updateIsCameraOnById(Arrangement.conversationId, expectedValue)
 
         // then
         assertEquals(
@@ -724,7 +724,7 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateCallParticipants(
-            Arrangement.randomConversationIdString,
+            Arrangement.randomConversationId,
             emptyList()
         )
 
@@ -763,7 +763,7 @@ class CallRepositoryTest {
 
         // when
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             participantsList
         )
 
@@ -779,7 +779,7 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateParticipantsActiveSpeaker(
-            Arrangement.randomConversationIdString,
+            Arrangement.randomConversationId,
             CallActiveSpeakers(emptyList())
         )
 
@@ -827,12 +827,12 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             participantsList
         )
 
         // when
-        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId.toString(), activeSpeakers)
+        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId, activeSpeakers)
 
         // then
         val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]
@@ -1313,7 +1313,7 @@ class CallRepositoryTest {
             )
         )
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                 hasEstablishedAudio = false
@@ -1349,7 +1349,7 @@ class CallRepositoryTest {
             )
         )
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                     hasEstablishedAudio = false
@@ -1364,7 +1364,7 @@ class CallRepositoryTest {
         yield()
 
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                     hasEstablishedAudio = true

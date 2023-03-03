@@ -109,11 +109,11 @@ interface CallRepository {
         isMuted: Boolean,
         isCameraOn: Boolean
     )
-    suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
-    fun updateIsMutedById(conversationId: String, isMuted: Boolean)
-    fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
-    fun updateCallParticipants(conversationId: String, participants: List<Participant>)
-    fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
+    suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus)
+    fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
+    fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
+    fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>)
+    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
@@ -241,7 +241,7 @@ internal class CallDataSource(
                 callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
                 // Update database
                 updateCallStatusById(
-                    conversationIdString = conversationId.toString(),
+                    conversationId = conversationId,
                     status = callNewStatus
                 )
             }
@@ -288,33 +288,33 @@ internal class CallDataSource(
         )
     }
 
-    override suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus) {
+    override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
         val callMetadataProfile = _callMetadataProfile.value
-        val modifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
+//         val modifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
 
         // Update Call in Database
         wrapStorageRequest {
             callDAO.updateLastCallStatusByConversationId(
                 status = callMapper.toCallEntityStatus(callStatus = status),
                 conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                    conversationId = modifiedConversationId
+                    conversationId = conversationId
                 )
             )
             callingLogger.i(
                 "[CallRepository][UpdateCallStatusById] ->" +
-                        " ConversationId: [${modifiedConversationId.value.obfuscateId()}" +
-                        "@${modifiedConversationId.domain.obfuscateDomain()}]" +
+                        " ConversationId: [${conversationId.value.obfuscateId()}" +
+                        "@${conversationId.domain.obfuscateDomain()}]" +
                         " " + "| status: [$status]"
             )
         }
 
-        callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 val establishedTime = if (status == CallStatus.ESTABLISHED) DateTimeUtil.currentIsoDateTimeString()
                 else call.establishedTime
 
                 // Update Metadata
-                this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
+                this[conversationId.toString()] = call.copy(establishedTime = establishedTime)
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
@@ -326,7 +326,7 @@ internal class CallDataSource(
     override suspend fun persistMissedCall(conversationId: ConversationId) {
         callingLogger.i(
             "[CallRepository] -> Persisting Missed Call for conversation : conversationId: " +
-                    "${conversationId.toLogString()}"
+                    conversationId.toLogString()
         )
         val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
         callDAO.getCallerIdByConversationId(conversationId = qualifiedIDEntity)?.let { callerId ->
@@ -345,11 +345,11 @@ internal class CallDataSource(
         } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")
     }
 
-    override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
+    override fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { callMetadata ->
+        callMetadataProfile.data[conversationId.toString()]?.let { callMetadata ->
             val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = callMetadata.copy(
+                this[conversationId.toString()] = callMetadata.copy(
                     isMuted = isMuted
                 )
             }
@@ -360,11 +360,11 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
+    override fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { call ->
+        callMetadataProfile.data[conversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = call.copy(
+                this[conversationId.toString()] = call.copy(
                     isCameraOn = isCameraOn
                 )
             }
@@ -375,19 +375,18 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
+    override fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>) {
         val callMetadataProfile = _callMetadataProfile.value
-        val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
-        callMetadataProfile.data[conversationId]?.let { call ->
+        callMetadataProfile.data[conversationId.toString()]?.let { call ->
             if (call.participants != participants) {
                 callingLogger.i(
                     "updateCallParticipants() -" +
-                            " conversationId: ${conversationIdToLog.toLogString()}" +
+                            " conversationId: ${conversationId.toLogString()}" +
                             " with size of: ${participants.size}"
                 )
 
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                    this[conversationId] = call.copy(
+                    this[conversationId.toString()] = call.copy(
                         participants = participants,
                         maxParticipants = max(call.maxParticipants, participants.size + 1)
                     )
@@ -399,12 +398,12 @@ internal class CallDataSource(
             }
         }
 
-        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (_callMetadataProfile.value[conversationId.toString()]?.protocol is Conversation.ProtocolInfo.MLS) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
                     clearStaleParticipantTimeout(participant)
                 } else {
-                    removeStaleParticipantAfterTimeout(participant, conversationIdToLog)
+                    removeStaleParticipantAfterTimeout(participant, conversationId)
                 }
             }
         }
@@ -438,15 +437,14 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers) {
+    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers) {
         val callMetadataProfile = _callMetadataProfile.value
-        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
-        callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
+        callMetadataProfile.data[conversationId.toString()]?.let { call ->
             callingLogger.i(
                 "updateActiveSpeakers() -" +
-                        " conversationId: ${conversationIdWithDomain.value.obfuscateId()}" +
-                        "@${conversationIdWithDomain.domain.obfuscateDomain()}" +
+                        " conversationId: ${conversationId.value.obfuscateId()}" +
+                        "@${conversationId.domain.obfuscateDomain()}" +
                         "with size of: ${activeSpeakers.activeSpeakers.size}"
             )
 
@@ -456,7 +454,7 @@ internal class CallDataSource(
             )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationIdWithDomain.toString()] = call.copy(
+                this[conversationId.toString()] = call.copy(
                     participants = updatedParticipants,
                     maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
                 )
@@ -520,7 +518,7 @@ internal class CallDataSource(
     ): Either<CoreFailure, Unit> {
         callingLogger.i(
             "Joining MLS conference for conversation = " +
-                    "${conversationId.toLogString()}"
+                    conversationId.toLogString()
         )
 
         return joinSubconversation(conversationId, CALL_SUBCONVERSATION_ID).onSuccess {
@@ -537,7 +535,7 @@ internal class CallDataSource(
     override suspend fun leaveMlsConference(conversationId: ConversationId) {
         callingLogger.i(
             "Leaving MLS conference for conversation = " +
-                    "${conversationId.toLogString()}"
+                    conversationId.toLogString()
         )
 
         // Cancels flow observing epoch changes

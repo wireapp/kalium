@@ -44,7 +44,7 @@ class OnEstablishedCall(
 
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationIdWithDomain.toString(),
+                conversationIdWithDomain,
                 CallStatus.ESTABLISHED
             )
         }
