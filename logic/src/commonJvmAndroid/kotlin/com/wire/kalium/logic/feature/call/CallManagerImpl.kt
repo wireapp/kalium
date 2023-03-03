@@ -192,7 +192,7 @@ class CallManagerImpl internal constructor(
         message: Message.Signaling,
         content: MessageContent.Calling,
     ) = withCalling {
-        callingLogger.i("$TAG: { \"message\" : ${message.toLogString()}}")
+        callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
         val currTime = System.currentTimeMillis()
