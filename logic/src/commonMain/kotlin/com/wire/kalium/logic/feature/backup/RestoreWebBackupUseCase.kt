@@ -21,12 +21,12 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
-import com.wire.kalium.logic.data.event.toConversation
-import com.wire.kalium.logic.data.event.toMigratedMessage
+import com.wire.kalium.logic.data.web.toConversation
+import com.wire.kalium.logic.data.web.toMigratedMessage
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.web.KtxWebSerializer
-import com.wire.kalium.logic.data.web.WebConversation
+import com.wire.kalium.logic.data.web.WebConversationContent
 import com.wire.kalium.logic.data.web.WebEventContent
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_CONVERSATIONS_FILE_NAME
@@ -90,11 +90,11 @@ internal class RestoreWebBackupUseCaseImpl(
         return importMessages(filePath, coroutineScope)
     }
 
-    private suspend fun tryImportConversations(filePath: Path) {
+    private suspend fun tryImportConversations(filePath: Path) =
         kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
                 .use {
-                    val sequence = KtxWebSerializer.json.decodeToSequence<WebConversation>(
+                    val sequence = KtxWebSerializer.json.decodeToSequence<WebConversationContent>(
                         it.inputStream(),
                         DecodeSequenceMode.ARRAY_WRAPPED
                     )
@@ -107,18 +107,17 @@ internal class RestoreWebBackupUseCaseImpl(
                             migratedConversations.add(migratedConversation)
                         }
                     }
-                    if(migratedConversations.isNotEmpty()) {
+                    if (migratedConversations.isNotEmpty()) {
                         wrapStorageRequest {
                             migrationDAO.insertConversation(migratedConversations.map(conversationMapper::fromMigrationModel))
                         }
                     }
                 }
         }
-    }
 
-    private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = with(kaliumFileSystem) {
-        listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
-            source(path).buffer()
+    private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = kaliumFileSystem.listDirectories(filePath)
+        .firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
+            kaliumFileSystem.source(path).buffer()
                 .use {
                     val sequence = KtxWebSerializer.json.decodeToSequence<WebEventContent>(
                         it.inputStream(),
@@ -148,7 +147,6 @@ internal class RestoreWebBackupUseCaseImpl(
                     Either.Right(Unit)
                 }
         } ?: Either.Left(BackupIOFailure("No valid json file found in the backup"))
-    }
 
     private companion object {
         const val TAG = "[RestoreWebBackupUseCase]"

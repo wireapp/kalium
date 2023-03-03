@@ -15,7 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.event
+
+@file:Suppress("MagicNumber")
+
+package com.wire.kalium.logic.data.web
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -28,8 +31,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.web.WebConversation
-import com.wire.kalium.logic.data.web.WebEventContent
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
@@ -96,7 +97,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
 private fun toQualifiedId(remoteId: String, domain: String?, selfUserId: UserId): QualifiedID =
     QualifiedID(remoteId, domain ?: selfUserId.domain)
 
-fun WebConversation.toConversation(selfUserId: UserId): Conversation? {
+fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
     return mapConversationType(type)?.let {
         val lastEventTime: String =
             if (lastEventTimestamp == null || lastEventTimestamp == 0L) {

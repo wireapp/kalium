@@ -24,13 +24,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
-class WebConversationContent(
-    @SerialName("last_read_timestamp") val lastReadTime: String,
-    @SerialName("id") val id: String
-)
-
-@Serializable
-data class WebConversation(
+data class WebConversationContent(
     @SerialName("id") val id: String,
     @SerialName("type") val type: Int,
     @SerialName("name") val name: String?,
@@ -119,11 +113,10 @@ sealed class WebEventContent {
 
 @Serializable
 data class WebGroupMembers(
-    val allTeamMembers: Boolean,
-    val name: String,
-    val userIds: List<UserId>
+    @SerialName("allTeamMembers") val allTeamMembers: Boolean,
+    @SerialName("name") val name: String,
+    @SerialName("userIds") val userIds: List<UserId>
 )
-
 
 @Serializable
 data class WebTextData(
