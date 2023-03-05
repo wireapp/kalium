@@ -50,6 +50,7 @@ sealed class MessageEntity(
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
+        val expirationData: ExpirationData? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(
@@ -61,21 +62,6 @@ sealed class MessageEntity(
         status = status,
         visibility = visibility,
         isSelfMessage = isSelfMessage
-    )
-
-    data class Ephemeral(
-        val expireAfterMillis: Long,
-        val selfDeletionStartDate: Long?,
-        val ephemeralMessage: Regular
-    ) : MessageEntity(
-        id = ephemeralMessage.id,
-        content = ephemeralMessage.content,
-        conversationId = ephemeralMessage.conversationId,
-        date = ephemeralMessage.date,
-        senderUserId = ephemeralMessage.senderUserId,
-        status = ephemeralMessage.status,
-        visibility = ephemeralMessage.visibility,
-        isSelfMessage = ephemeralMessage.isSelfMessage
     )
 
     data class System(
@@ -138,6 +124,8 @@ sealed class MessageEntity(
             }
         }
     }
+
+    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?)
 
     enum class UploadStatus {
         /**

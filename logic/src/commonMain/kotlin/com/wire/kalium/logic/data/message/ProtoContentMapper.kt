@@ -87,6 +87,7 @@ class ProtoContentMapperImpl(
                     readableContent.status
                 )
             )
+
             is MessageContent.LastRead -> packLastRead(readableContent)
             is MessageContent.Cleared -> packCleared(readableContent)
             is MessageContent.Reaction -> packReaction(readableContent)
@@ -96,6 +97,7 @@ class ProtoContentMapperImpl(
                 throw IllegalArgumentException(
                     "Unexpected message content type: $readableContent"
                 )
+
             is MessageContent.TextEdited -> TODO("Message type not yet supported")
         }
 
@@ -120,7 +122,7 @@ class ProtoContentMapperImpl(
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
                 else -> false
             }
-            val expiresAfterMillis : Long? = when(val content = genericMessage.content){
+            val expiresAfterMillis: Long? = when (val content = genericMessage.content) {
                 is GenericMessage.Content.Ephemeral -> content.value.expireAfterMillis
                 else -> null
             }
@@ -148,6 +150,7 @@ class ProtoContentMapperImpl(
                     protoContent.value
                 )
             )
+
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> unpackCalling(protoContent)
@@ -355,6 +358,7 @@ class ProtoContentMapperImpl(
         )
     }
 
+
     private fun unpackEphemeral(
         protoContent: GenericMessage.Content.Ephemeral
     ): MessageContent.FromProto {
@@ -370,6 +374,8 @@ class ProtoContentMapperImpl(
                 )
                 unpackText(genericMessageTextContent)
             }
+
+            // TODO: Mateusz : for now we ignore anything else then Text
             else -> {
                 MessageContent.Ignored
             }

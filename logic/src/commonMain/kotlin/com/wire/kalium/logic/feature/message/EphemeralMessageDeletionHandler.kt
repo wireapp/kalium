@@ -25,6 +25,8 @@ interface EphemeralMessageDeletionHandler {
     fun enqueuePendingSelfDeletionMessages()
 }
 
+
+// TODO:Mateusz: implement failure logic
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -46,13 +48,15 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                enqueueSelfDeletion(message = message)
+                if(message is Message.Regular) enqueueSelfDeletion(message = message)
             }
         }
     }
 
-    private suspend fun enqueueSelfDeletion(message: Message) {
-        require(message is Message.Ephemeral)
+    private suspend fun enqueueSelfDeletion(message: Message.Regular) {
+        if(message.isEphemeral){
+
+        }
 
         if (!message.isDeletionStartedInThePast()) {
             messageRepository.markSelfDeletionStartDate(

@@ -168,7 +168,7 @@ interface MessageRepository {
     suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
         messageUuid: String,
-        deletionStartDate: Long
+        deletionStartDate: Instant
     ): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
@@ -435,7 +435,7 @@ class MessageDataSource(
     override suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
         messageUuid: String,
-        deletionStartDate: Long
+        deletionStartDate: Instant
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)

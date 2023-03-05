@@ -120,7 +120,9 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation
+                    expectsReadConfirmation = content.expectsReadConfirmation,
+                    expirationStatus = content.expiresAfterMillis?.let { Message.ExpirationStatus.Expiratable(it) }
+                        ?: Message.ExpirationStatus.NotExpiratable
                 )
                 processMessage(message, content.expiresAfterMillis)
             }

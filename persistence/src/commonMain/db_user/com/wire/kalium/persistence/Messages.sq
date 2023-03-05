@@ -19,7 +19,7 @@ CREATE TABLE Message (
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
-      self_deletion_start_date INTEGER DEFAULT(NULL),
+      self_deletion_start_date INTEGER AS Instant DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),

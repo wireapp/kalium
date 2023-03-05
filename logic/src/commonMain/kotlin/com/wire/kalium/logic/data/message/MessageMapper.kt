@@ -78,6 +78,12 @@ class MessageMapperImpl(
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
                 },
+                expirationData = message.expirationData?.run {
+                    MessageEntity.ExpirationData(
+                        expireAfterMillis,
+                        selfDeletionStartDate
+                    )
+                },
                 visibility = visibility,
                 senderName = message.senderUserName,
                 isSelfMessage = message.isSelfMessage,
@@ -94,32 +100,6 @@ class MessageMapperImpl(
                 visibility = visibility,
                 senderName = message.senderUserName,
             )
-
-            is Message.Ephemeral -> {
-                with(message.ephemeralMessage) {
-                    MessageEntity.Ephemeral(
-                        expireAfterMillis = message.expireAfterMillis,
-                        selfDeletionStartDate = message.selfDeletionStartDate,
-                        ephemeralMessage = MessageEntity.Regular(
-                            id = id,
-                            content = toMessageEntityContent(content),
-                            conversationId = conversationId.toDao(),
-                            date = date.toInstant(),
-                            senderUserId = senderUserId.toDao(),
-                            senderClientId = senderClientId.value,
-                            status = status,
-                            editStatus = when (editStatus) {
-                                is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-                                is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(editStatus.lastTimeStamp.toInstant())
-                            },
-                            visibility = visibility,
-                            senderName = senderUserName,
-                            isSelfMessage = isSelfMessage,
-                            expectsReadConfirmation = expectsReadConfirmation
-                        )
-                    )
-                }
-            }
         }
     }
 
@@ -162,31 +142,6 @@ class MessageMapperImpl(
                 visibility = message.visibility.toModel(),
                 senderUserName = message.senderName,
             )
-
-            is MessageEntity.Ephemeral -> with(message.ephemeralMessage) {
-                Message.Ephemeral(
-                    expireAfterMillis = message.expireAfterMillis,
-                    selfDeletionStartDate = message.selfDeletionStartDate,
-                    ephemeralMessage = Message.Regular(
-                        id = id,
-                        content = content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
-                        conversationId = conversationId.toModel(),
-                        date = date.toIsoDateTimeString(),
-                        senderUserId = senderUserId.toModel(),
-                        senderClientId = ClientId(senderClientId),
-                        status = status,
-                        editStatus = when (val editStatus = editStatus) {
-                            MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
-                        },
-                        visibility = visibility.toModel(),
-                        reactions = Message.Reactions(reactions.totalReactions, reactions.selfUserReactions),
-                        senderUserName = senderName,
-                        isSelfMessage = isSelfMessage,
-                        expectsReadConfirmation = expectsReadConfirmation
-                    )
-                )
-            }
         }
     }
 

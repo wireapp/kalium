@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -61,42 +62,6 @@ sealed interface Message {
         val visibility: Visibility
     }
 
-    data class Ephemeral(
-        val expireAfterMillis: Long,
-        val selfDeletionStartDate: Long?,
-        val ephemeralMessage: Regular
-    ) : Standalone {
-
-        fun timeLeftForDeletion(): Long {
-            return if (selfDeletionStartDate == null) {
-                expireAfterMillis
-            } else {
-                val timeAlreadyElapsed = Clock.System.now().toEpochMilliseconds() - selfDeletionStartDate
-
-                expireAfterMillis - timeAlreadyElapsed
-            }
-        }
-
-        fun isDeletionStartedInThePast(): Boolean {
-            return selfDeletionStartDate != null
-        }
-
-        override val id: String
-            get() = ephemeralMessage.id
-        override val content: MessageContent.Regular
-            get() = ephemeralMessage.content
-        override val conversationId: ConversationId
-            get() = ephemeralMessage.conversationId
-        override val date: String
-            get() = ephemeralMessage.date
-        override val senderUserId: UserId
-            get() = ephemeralMessage.senderUserId
-        override val status: Status
-            get() = ephemeralMessage.status
-        override val visibility: Visibility
-            get() = ephemeralMessage.visibility
-    }
-
     data class Regular(
         override val id: String,
         override val content: MessageContent.Regular,
@@ -109,9 +74,14 @@ sealed interface Message {
         override val isSelfMessage: Boolean = false,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
+        val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
+
+        val isEphemeral = expirationData != null
+
+
         @Suppress("LongMethod")
         override fun toString(): String {
             val typeKey = "type"
@@ -327,6 +297,8 @@ sealed interface Message {
         object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()
     }
+
+    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?)
 
     enum class UploadStatus {
         /**

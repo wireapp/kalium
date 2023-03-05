@@ -343,7 +343,7 @@ class MessageDAOImpl(
         }
     }
 
-    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Long) {
+    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant) {
         return withContext(coroutineContext) {
             queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
         }

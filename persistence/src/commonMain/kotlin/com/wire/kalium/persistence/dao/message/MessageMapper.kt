@@ -233,10 +233,10 @@ object MessageMapper {
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionDate: Long?
+        selfDeletionDate: Instant?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
-            val regularMessage = MessageEntity.Regular(
+            MessageEntity.Regular(
                 content = content,
                 id = id,
                 conversationId = conversationId,
@@ -245,6 +245,7 @@ object MessageMapper {
                 senderClientId = senderClientId!!,
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
+                expirationData = if (expireAfterMillis != null) MessageEntity.ExpirationData(expireAfterMillis, selfDeletionDate) else null,
                 visibility = visibility,
                 reactions = ReactionsEntity(
                     totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
@@ -254,12 +255,6 @@ object MessageMapper {
                 isSelfMessage = isSelfMessage,
                 expectsReadConfirmation = expectsReadConfirmation
             )
-
-            if (expireAfterMillis != null) {
-                MessageEntity.Ephemeral(expireAfterMillis, selfDeletionDate, regularMessage)
-            } else {
-                regularMessage
-            }
         }
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -292,7 +287,7 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionDate: Long?,
+        selfDeletionDate: Instant?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -469,3 +464,6 @@ object MessageMapper {
             serializer.decodeFromString(it)
         } ?: emptyList()
 }
+
+
+

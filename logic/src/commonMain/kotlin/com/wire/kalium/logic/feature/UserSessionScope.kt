@@ -1116,7 +1116,6 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
-
     private val selfDeletingMessageManager = EphemeralMessageDeletionHandlerImpl(
         userSessionCoroutineScope = this,
         messageRepository = messageRepository

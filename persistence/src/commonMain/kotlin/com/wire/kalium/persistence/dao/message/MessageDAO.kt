@@ -123,7 +123,7 @@ interface MessageDAO {
 
     suspend fun getEphemeralMessages(): List<MessageEntity>
 
-    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Long)
+    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
 
     val platformExtensions: MessageExtensions
 }
