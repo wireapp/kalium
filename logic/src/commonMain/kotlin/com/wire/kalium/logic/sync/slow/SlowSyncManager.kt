@@ -57,6 +57,7 @@ import kotlin.time.Duration.Companion.seconds
  * SlowSync in case some [Event] is lost.
  * @see IncrementalSyncManager
  */
+@Suppress("LongParameterList")
 internal class SlowSyncManager(
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider,
     private val slowSyncRepository: SlowSyncRepository,
@@ -70,7 +71,6 @@ internal class SlowSyncManager(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
-
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
         onCancellation = {

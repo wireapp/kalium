@@ -28,7 +28,7 @@ class ExponentialDurationHelperImpl(
     private val initialDuration: Duration,
     private val maxDuration: Duration,
     private val factor: Double = 2.0,
-): ExponentialDurationHelper {
+) : ExponentialDurationHelper {
     private var currentDuration = initialDuration
 
     override fun reset() {

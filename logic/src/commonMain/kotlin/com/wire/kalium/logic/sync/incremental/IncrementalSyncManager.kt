@@ -68,6 +68,7 @@ import kotlin.time.Duration.Companion.seconds
  * @see Event
  * @see SlowSyncManager
  */
+@Suppress("LongParameterList")
 internal class IncrementalSyncManager(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncWorker: IncrementalSyncWorker,
