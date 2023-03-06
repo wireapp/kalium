@@ -20,6 +20,7 @@ package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
@@ -44,6 +45,22 @@ object TestNetworkException {
 
     val invalidCredentials = KaliumException.InvalidRequestError(
         ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
+    )
+
+    val missingAuthenticationCode = KaliumException.InvalidRequestError(
+        ErrorResponse(
+            code = 403,
+            message = "missing authentication code",
+            label = AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE.responseLabel
+        )
+    )
+
+    val invalidAuthenticationCode = KaliumException.InvalidRequestError(
+        ErrorResponse(
+            code = 403,
+            message = "invalid authentication code",
+            label = AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE.responseLabel
+        )
     )
 
     val invalidHandle = KaliumException.InvalidRequestError(

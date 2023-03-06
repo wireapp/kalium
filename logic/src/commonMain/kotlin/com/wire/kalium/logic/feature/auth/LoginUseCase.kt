@@ -27,7 +27,9 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.authenticationCodeFailure
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
@@ -41,7 +43,26 @@ sealed class AuthenticationResult {
 
     sealed class Failure : AuthenticationResult() {
         object SocketError : Failure()
-        object InvalidCredentials : Failure()
+        sealed class InvalidCredentials : Failure() {
+            /**
+             * The team has enabled 2FA but the user has not entered it yet
+             */
+            object Missing2FA : InvalidCredentials()
+
+            /**
+             * The user has entered an invalid 2FA code, or the 2FA code has expired
+             */
+            object Invalid2FA : InvalidCredentials()
+
+            /**
+             * The user has entered an invalid email/handle or password combination
+             */
+            object InvalidPasswordIdentityCombination : InvalidCredentials()
+        }
+
+        /**
+         * The user has entered a text that isn't considered a valid email or handle
+         */
         object InvalidUserIdentifier : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
@@ -101,12 +122,25 @@ internal class LoginUseCaseImpl internal constructor(
     }
 
     private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {
-        return if (error.kaliumException is KaliumException.InvalidRequestError &&
-            (error.kaliumException.isInvalidCredentials() || error.kaliumException.isBadRequest())
-        ) {
-            AuthenticationResult.Failure.InvalidCredentials
-        } else {
-            AuthenticationResult.Failure.Generic(error)
+        fun genericError() = AuthenticationResult.Failure.Generic(error)
+
+        val kaliumException = error.kaliumException
+
+        return when {
+            kaliumException !is KaliumException.InvalidRequestError -> genericError()
+            kaliumException.isInvalidCredentials() || kaliumException.isBadRequest() -> {
+                AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination
+            }
+
+            else -> when (kaliumException.authenticationCodeFailure) {
+                AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
+                    AuthenticationResult.Failure.InvalidCredentials.Missing2FA
+
+                AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE ->
+                    AuthenticationResult.Failure.InvalidCredentials.Invalid2FA
+
+                else -> genericError()
+            }
         }
     }
 }
