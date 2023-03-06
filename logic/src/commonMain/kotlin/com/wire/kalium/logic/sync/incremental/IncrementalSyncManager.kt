@@ -146,7 +146,10 @@ internal class IncrementalSyncManager(
             .collect {
                 val newState = when (it) {
                     EventSource.PENDING -> IncrementalSyncStatus.FetchingPendingEvents
-                    EventSource.LIVE -> IncrementalSyncStatus.Live
+                    EventSource.LIVE -> {
+                        exponentialDurationHelper.reset()
+                        IncrementalSyncStatus.Live
+                    }
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
