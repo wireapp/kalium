@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.network.NetworkState
 import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -54,6 +55,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IncrementalSyncManagerTest {
@@ -263,6 +266,41 @@ class IncrementalSyncManagerTest {
                 .wasInvoked(exactly = twice)
         }
 
+    @Test
+    fun givenBothSyncsAreCompleted_whenWorkerEmitsSources_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+        val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
+
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(sourceFlow.consumeAsFlow())
+            .withKeepAliveConnectionPolicy()
+            .arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        sourceFlow.send(EventSource.LIVE)
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::reset)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSlowSyncIsCompleted_whenRecovers_thenShouldCalculateNextExponentialDelay() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(flowThatFailsOnFirstTime())
+            .withDisconnectConnectionPolicy()
+            .withRecoveringFromFailure()
+            .withNextExponentialDuration(10.seconds)
+            .arrange()
+
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::next)
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
@@ -280,6 +318,10 @@ class IncrementalSyncManagerTest {
         @Mock
         val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
 
+        @Mock
+        val exponentialDurationHelper: ExponentialDurationHelper =
+            configure(mock(classOf<ExponentialDurationHelper>())) { stubsUnitByDefault = true }
+
         private val incrementalSyncManager by lazy {
             IncrementalSyncManager(
                 slowSyncRepository = slowSyncRepository,
@@ -288,11 +330,13 @@ class IncrementalSyncManagerTest {
                 incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
                 networkStateObserver = networkStateObserver,
                 kaliumDispatcher = TestKaliumDispatcher,
+                exponentialDurationHelper = exponentialDurationHelper,
             )
         }
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
+            withNextExponentialDuration(10.seconds)
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
@@ -335,6 +379,13 @@ class IncrementalSyncManagerTest {
                 .function(networkStateObserver::observeNetworkState)
                 .whenInvoked()
                 .thenReturn(networkStateFlow)
+        }
+
+        fun withNextExponentialDuration(duration: Duration) = apply {
+            given(exponentialDurationHelper)
+                .function(exponentialDurationHelper::next)
+                .whenInvoked()
+                .thenReturn(duration)
         }
 
         fun arrange() = this to incrementalSyncManager
