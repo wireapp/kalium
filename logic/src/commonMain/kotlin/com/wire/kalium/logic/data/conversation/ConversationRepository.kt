@@ -581,7 +581,7 @@ internal class ConversationDataSource internal constructor(
         getConversationProtocolInfo(conversationId).flatMap {
             when (it) {
                 is Conversation.ProtocolInfo.MLS ->
-                    mlsClientProvider.getMLSClient().flatMap {mlsClient ->
+                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         wrapCryptoRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
                         }
