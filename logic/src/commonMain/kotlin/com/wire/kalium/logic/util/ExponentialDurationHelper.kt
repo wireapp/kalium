@@ -19,18 +19,23 @@ package com.wire.kalium.logic.util
 
 import kotlin.time.Duration
 
-class ExponentialDurationHelper(
+interface ExponentialDurationHelper {
+    fun reset()
+    fun next(): Duration
+}
+
+class ExponentialDurationHelperImpl(
     private val initialDuration: Duration,
     private val maxDuration: Duration,
     private val factor: Double = 2.0,
-) {
+): ExponentialDurationHelper {
     private var currentDuration = initialDuration
 
-    fun reset() {
+    override fun reset() {
         currentDuration = initialDuration
     }
 
-    fun next(): Duration = currentDuration.also {
+    override fun next(): Duration = currentDuration.also {
         currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
     }
 }

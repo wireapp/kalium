@@ -28,6 +28,7 @@ import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
+import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -62,13 +63,14 @@ internal class SlowSyncManager(
     private val slowSyncWorker: SlowSyncWorker,
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler,
     private val networkStateObserver: NetworkStateObserver,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
-    private val exponentialDurationHelper = ExponentialDurationHelper(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
+
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
         onCancellation = {
