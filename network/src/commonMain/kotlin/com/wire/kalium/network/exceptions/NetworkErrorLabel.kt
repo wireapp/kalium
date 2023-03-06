@@ -52,4 +52,10 @@ internal object NetworkErrorLabel {
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"
     }
+
+}
+
+enum class AuthenticationCodeFailure(val responseLabel: String) {
+    MISSING_AUTHENTICATION_CODE("code-authentication-required"),
+    INVALID_OR_EXPIRED_AUTHENTICATION_CODE("code-authentication-failed");
 }
