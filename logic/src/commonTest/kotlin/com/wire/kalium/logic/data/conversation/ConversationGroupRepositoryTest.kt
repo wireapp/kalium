@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
@@ -81,7 +82,6 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
-
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
@@ -113,7 +113,6 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
-
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
             .withSelfTeamId(Either.Right(null))
@@ -184,7 +183,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPISucceedsWithChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedChanged()
             .withSuccessfulHandleMemberJoinEvent()
@@ -203,7 +202,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPISucceedsWithoutChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedUnchanged()
             .arrange()
@@ -221,7 +220,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withAddMemberAPIFailed()
             .arrange()
 
@@ -238,7 +237,7 @@ class ConversationGroupRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(MLS_PROTOCOL_INFO))
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
@@ -262,7 +261,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPISucceedsWithChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulHandleMemberLeaveEvent()
             .arrange()
@@ -280,7 +279,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPISucceedsWithoutChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedUnchanged()
             .arrange()
 
@@ -297,7 +296,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPIFailed_whenRemovingMemberFromConversation_thenShouldFail() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPIFailed()
             .arrange()
 
@@ -314,7 +313,7 @@ class ConversationGroupRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(MLS_PROTOCOL_INFO))
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulLeaveMLSGroup()
@@ -342,7 +341,7 @@ class ConversationGroupRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(MLS_PROTOCOL_INFO))
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulRemoveMemberFromMLSGroup()
@@ -372,7 +371,7 @@ class ConversationGroupRepositoryTest {
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -394,7 +393,6 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(any())
             .wasInvoked(exactly = once)
-
     }
 
     @Test
@@ -494,7 +492,6 @@ class ConversationGroupRepositoryTest {
             .wasNotInvoked()
     }
 
-
     @Test
     fun givenASuccessApiCall_whenTryingToRevokeGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
@@ -557,7 +554,6 @@ class ConversationGroupRepositoryTest {
         assertEquals(LINK, result.first())
     }
 
-
     private class Arrangement {
 
         @Mock
@@ -584,9 +580,13 @@ class ConversationGroupRepositoryTest {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
+        @Mock
+        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
+
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
+                joinExistingMLSConversation,
                 memberJoinEventHandler,
                 memberLeaveEventHandler,
                 conversationDAO,
@@ -669,6 +669,13 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(result)
         }
 
+        fun withProtocolInfoById(result: ConversationEntity.ProtocolInfo) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationProtocolInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
         fun withAddMemberAPISucceedChanged() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::addMember)
@@ -704,7 +711,6 @@ class ConversationGroupRepositoryTest {
                         KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                     )
                 )
-
         }
 
         fun withDeleteMemberAPISucceedChanged() = apply {
@@ -742,7 +748,6 @@ class ConversationGroupRepositoryTest {
                         KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                     )
                 )
-
         }
 
         fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
@@ -825,7 +830,6 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Unit)
         }
 
-
         fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::revokeGuestRoomLink)
@@ -902,6 +906,5 @@ class ConversationGroupRepositoryTest {
             mlsCipherSuiteTag = null,
             receiptMode = ReceiptMode.DISABLED
         )
-        private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
     }
 }
