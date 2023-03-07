@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -366,7 +367,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenCodeAndKey_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
+    fun givenProteusConversation_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
         val (code, key, uri) = Triple("code", "key", null)
 
         val (arrangement, conversationGroupRepository) = Arrangement()
@@ -396,7 +397,49 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenCodeAndKey_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+    fun givenMlsConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
+        val (code, key, uri) = Triple("code", "key", null)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
+            )
+            .withSuccessfulHandleMemberJoinEvent()
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.joinExistingMLSConversation)
+            .suspendFunction(arrangement.joinExistingMLSConversation::invoke)
+            .with(eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(eq(GroupID(MLS_PROTOCOL_INFO.groupId)), eq(listOf(TestUser.SELF.id)))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
         val (code, key, uri) = Triple("code", "key", null)
 
         val (arrangement, conversationGroupRepository) = Arrangement()
@@ -653,6 +696,13 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationApi::joinConversation)
                 .whenInvokedWith(eq(code), eq(key), eq(uri))
                 .thenReturn(result)
+        }
+
+        fun withJoinExistingMlsConversationSucceeds() = apply {
+            given(joinExistingMLSConversation)
+                .suspendFunction(joinExistingMLSConversation::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withConversationDetailsById(conversation: Conversation) = apply {
