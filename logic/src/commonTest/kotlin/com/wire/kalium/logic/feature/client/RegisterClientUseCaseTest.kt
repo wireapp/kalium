@@ -69,7 +69,13 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        registerClient(
+            RegisterClientUseCase.RegisterClientParam(
+                password = TEST_PASSWORD,
+                capabilities = TEST_CAPABILITIES,
+                secondFactorVerificationCode = SECOND_FACTOR_CODE
+            )
+        )
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::registerClient)
@@ -350,6 +356,7 @@ class RegisterClientUseCaseTest {
 
         val PRE_KEYS = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
         val LAST_KEY = PreKeyCrypto(id = 99, encodedData = "99")
+        const val SECOND_FACTOR_CODE = "123456"
         val REGISTER_PARAMETERS = RegisterClientParam(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
@@ -359,7 +366,8 @@ class RegisterClientUseCaseTest {
             label = null,
             model = null,
             clientType = null,
-            cookieLabel = "cookieLabel"
+            cookieLabel = "cookieLabel",
+            secondFactorVerificationCode = SECOND_FACTOR_CODE
         )
         val CLIENT = TestClient.CLIENT
 

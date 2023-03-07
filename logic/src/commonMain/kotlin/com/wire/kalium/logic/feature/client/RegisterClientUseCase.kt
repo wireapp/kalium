@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -75,6 +76,12 @@ sealed class RegisterClientResult {
 /**
  * This use case is responsible for registering the client.
  * The client will be registered on the backend and the local storage.
+ *
+ * If fails due to missing or invalid 2FA code, use
+ * [RequestSecondFactorVerificationCodeUseCase] to request a new code
+ * and then call this method again with the new code.
+ *
+ * @see RequestSecondFactorVerificationCodeUseCase
  */
 interface RegisterClientUseCase {
     suspend operator fun invoke(
@@ -94,6 +101,7 @@ interface RegisterClientUseCase {
         val capabilities: List<ClientCapability>?,
         val clientType: ClientType? = null,
         val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
+        val secondFactorVerificationCode: String? = null,
     )
 
     companion object {
@@ -115,31 +123,32 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
-    override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
-        with(registerClientParam) {
-            sessionRepository.cookieLabel(selfUserId)
-                .flatMap { cookieLabel ->
-                    generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
-                }.fold({
-                    RegisterClientResult.Failure.Generic(it)
-                }, { registerClientParam ->
-                    clientRepository.registerClient(registerClientParam)
-                        .flatMap { registeredClient ->
-                            if (isAllowedToRegisterMLSClient()) {
-                                createMLSClient(registeredClient)
-                            } else {
-                                Either.Right(registeredClient)
-                            }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
-                        }.flatMap { (client, otrLastKeyId) ->
-                            otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
-                            Either.Right(client)
-                        }.fold({ failure ->
-                            mapFailure(failure)
-                        }, { client ->
-                            RegisterClientResult.Success(client)
-                        })
-                })
-        }
+    override suspend operator fun invoke(
+        registerClientParam: RegisterClientUseCase.RegisterClientParam
+    ): RegisterClientResult = with(registerClientParam) {
+        sessionRepository.cookieLabel(selfUserId)
+            .flatMap { cookieLabel ->
+                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel, secondFactorVerificationCode)
+            }.fold({
+                RegisterClientResult.Failure.Generic(it)
+            }, { registerClientParam ->
+                clientRepository.registerClient(registerClientParam)
+                    .flatMap { registeredClient ->
+                        if (isAllowedToRegisterMLSClient()) {
+                            createMLSClient(registeredClient)
+                        } else {
+                            Either.Right(registeredClient)
+                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                    }.flatMap { (client, otrLastKeyId) ->
+                        otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
+                        Either.Right(client)
+                    }.fold({ failure ->
+                        mapFailure(failure)
+                    }, { client ->
+                        RegisterClientResult.Success(client)
+                    })
+            })
+    }
 
     private fun mapFailure(
         failure: CoreFailure,
@@ -182,7 +191,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
         password: String?,
         capabilities: List<ClientCapability>?,
         clientType: ClientType? = null,
-        cookieLabel: String?
+        cookieLabel: String?,
+        secondFactorVerificationCode: String? = null,
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
             Either.Right(
@@ -195,7 +205,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
                     label = null,
                     model = null,
                     clientType = clientType,
-                    cookieLabel = cookieLabel
+                    cookieLabel = cookieLabel,
+                    secondFactorVerificationCode = secondFactorVerificationCode,
                 )
             )
         }
