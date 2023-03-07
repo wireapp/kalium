@@ -36,7 +36,7 @@ class MuteCallUseCase internal constructor(
      */
     suspend operator fun invoke(conversationId: ConversationId) {
         callRepository.updateIsMutedById(
-            conversationId = conversationId.toString(),
+            conversationId = conversationId,
             isMuted = true
         )
         val activeCall = callRepository.establishedCallsFlow().first().find {
