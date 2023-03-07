@@ -29,6 +29,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -73,7 +74,7 @@ class LoginUseCaseTest {
 
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -105,16 +106,15 @@ class LoginUseCaseTest {
 
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
     @Test
     fun givenStoreSessionIsTrue_andEverythingElseSucceeds_whenLoggingInUsingEmail_thenStoreTheSessionAndReturnSuccess() = runTest {
-
         val (arrangement, loginUseCase) = Arrangement().arrange()
 
-        val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)
 
         assertEquals(
             loginUserCaseResult,
@@ -127,19 +127,18 @@ class LoginUseCaseTest {
         )
             .wasNotInvoked()
         verify(arrangement.loginRepository).coroutine {
-            loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
+            loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT, TEST_2FA_CODE)
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository).suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any()).wasNotInvoked()
+            .with(any(), any(), any(), any(), any()).wasNotInvoked()
     }
 
     @Test
     fun givenStoreSessionIsTrue_andEverythingElseSucceeds_whenLoggingInUsingUserHandle_thenStoreTheSessionAndReturnSuccess() = runTest {
-
         val (arrangement, loginUseCase) = Arrangement().arrange()
 
         // when
-        val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, true, TEST_LABEL)
+        val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, true, TEST_LABEL, TEST_2FA_CODE)
 
         // then
         assertEquals(
@@ -154,10 +153,10 @@ class LoginUseCaseTest {
             .invocation { invoke(TEST_HANDLE) }
             .wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
-            .coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, true) }
+            .coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, true, TEST_2FA_CODE) }
             .wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
-            .suspendFunction(arrangement.loginRepository::loginWithEmail).with(any(), any(), any(), any())
+            .suspendFunction(arrangement.loginRepository::loginWithEmail).with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -220,7 +219,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
 
         // user handle
@@ -241,7 +240,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -272,7 +271,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
 
         // user handle
@@ -293,7 +292,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -320,7 +319,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
 
         // user handle
@@ -335,7 +334,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -362,7 +361,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithHandle)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
 
         // user handle
@@ -377,7 +376,7 @@ class LoginUseCaseTest {
         }.wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -416,7 +415,7 @@ class LoginUseCaseTest {
 
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -467,14 +466,14 @@ class LoginUseCaseTest {
         fun withLoginUsingEmailResulting(result: Either<NetworkFailure, Pair<AuthTokens, SsoId?>>) = apply {
             given(loginRepository)
                 .suspendFunction(loginRepository::loginWithEmail)
-                .whenInvokedWith(any(), any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any(), anything())
                 .thenReturn(result)
         }
 
         fun withLoginUsingHandleResulting(result: Either<NetworkFailure, Pair<AuthTokens, SsoId?>>) = apply {
             given(loginRepository)
                 .suspendFunction(loginRepository::loginWithHandle)
-                .whenInvokedWith(any(), any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any(), anything())
                 .thenReturn(result)
         }
 
@@ -493,6 +492,7 @@ class LoginUseCaseTest {
         const val TEST_HANDLE = "cool_user"
         const val TEST_PASSWORD = "123456"
         const val TEST_LABEL = "cookie_label"
+        const val TEST_2FA_CODE = "someCool2FA-Code"
 
         // TODO: Remove random value from tests
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
