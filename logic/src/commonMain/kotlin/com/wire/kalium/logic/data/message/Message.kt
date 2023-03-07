@@ -44,6 +44,8 @@ sealed interface Message {
         val senderUserName: String? // TODO we can get it from entity but this will need a lot of changes in use cases,
         val isSelfMessage: Boolean
         val senderClientId: ClientId
+
+        fun toLogString(): String
     }
 
     /**
@@ -77,7 +79,7 @@ sealed interface Message {
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
-        fun toLogString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
             val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.Text -> mutableMapOf(
@@ -146,10 +148,10 @@ sealed interface Message {
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean = false,
     ) : Sendable {
-        fun toLogString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
 
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.TextEdited -> mutableMapOf(
                     typeKey to "textEdit"
                 )
@@ -193,7 +195,7 @@ sealed interface Message {
 
                 is MessageContent.Receipt -> mutableMapOf(
                     typeKey to "receipt",
-                    "content" to "$content",
+                    "content" to content.toLogMap(),
                 )
 
                 MessageContent.Ignored -> mutableMapOf(
@@ -212,7 +214,7 @@ sealed interface Message {
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toJsonElement()}"
         }
 
     }
