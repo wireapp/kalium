@@ -31,7 +31,8 @@ data class RegisterClientParam(
     val capabilities: List<ClientCapability>?,
     val clientType: ClientType?,
     val model: String?,
-    val cookieLabel: String?
+    val cookieLabel: String?,
+    val secondFactorVerificationCode: String? = null,
 )
 
 data class DeleteClientParam(

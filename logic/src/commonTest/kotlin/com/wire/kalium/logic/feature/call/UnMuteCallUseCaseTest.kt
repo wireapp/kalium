@@ -74,7 +74,7 @@ class UnMuteCallUseCaseTest {
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
-            .with(eq(conversationId.toString()), eq(isMuted))
+            .with(eq(conversationId), eq(isMuted))
             .wasInvoked(once)
 
         verify(callManager)
@@ -95,7 +95,7 @@ class UnMuteCallUseCaseTest {
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
-            .with(eq(conversationId.toString()), eq(isMuted))
+            .with(eq(conversationId), eq(isMuted))
             .wasInvoked(once)
 
         verify(callManager)

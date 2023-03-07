@@ -139,20 +139,22 @@ internal class MessageSenderImpl internal constructor(
     }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
-            attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
-                val serverDate = messageRemoteTime.toInstant()
-                val localDate = message.date.toInstant()
-                val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                messageRepository.promoteMessageToSentUpdatingServerTime(
-                    processedMessage.conversationId,
-                    processedMessage.id,
-                    serverDate,
-                    millis
-                )
-                Unit
+        messageSendingInterceptor
+            .prepareMessage(message)
+            .flatMap { processedMessage ->
+                attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
+                    val serverDate = messageRemoteTime.toInstant()
+                    val localDate = message.date.toInstant()
+                    val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    messageRepository.promoteMessageToSentUpdatingServerTime(
+                        processedMessage.conversationId,
+                        processedMessage.id,
+                        serverDate,
+                        millis
+                    )
+                    Unit
+                }
             }
-        }
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
@@ -160,18 +162,20 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation
     ): Either<CoreFailure, String> {
-        return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
-            when (protocolInfo) {
-                is Conversation.ProtocolInfo.MLS -> {
-                    attemptToSendWithMLS(protocolInfo.groupId, message)
-                }
+        return conversationRepository
+            .getConversationProtocolInfo(message.conversationId)
+            .flatMap { protocolInfo ->
+                when (protocolInfo) {
+                    is Conversation.ProtocolInfo.MLS -> {
+                        attemptToSendWithMLS(protocolInfo.groupId, message)
+                    }
 
-                is Conversation.ProtocolInfo.Proteus -> {
-                    // TODO(messaging): make this thread safe (per user)
-                    attemptToSendWithProteus(message, messageTarget)
+                    is Conversation.ProtocolInfo.Proteus -> {
+                        // TODO(messaging): make this thread safe (per user)
+                        attemptToSendWithProteus(message, messageTarget)
+                    }
                 }
             }
-        }
     }
 
     private suspend fun attemptToSendWithProteus(
@@ -184,13 +188,18 @@ internal class MessageSenderImpl internal constructor(
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
         }
 
-        return target.flatMap { recipients ->
-            sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
-        }.flatMap { recipients ->
-            messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                trySendingProteusEnvelope(envelope, message, messageTarget)
+        return target
+            .flatMap { recipients ->
+                sessionEstablisher
+                    .prepareRecipientsForNewOutgoingMessage(recipients)
+                    .map { recipients }
+            }.flatMap { recipients ->
+                messageEnvelopeCreator
+                    .createOutgoingEnvelope(recipients, message)
+                    .flatMap { envelope ->
+                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                    }
             }
-        }
     }
 
     /**
@@ -226,15 +235,34 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
-        messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({
-            when (it) {
-                is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                    attemptToSend(message, messageTarget)
-                }
+        messageRepository
+            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .fold({
+                when (it) {
 
-                else -> Either.Left(it)
-            }
-        }, {
-            Either.Right(it)
-        })
+                    is ProteusSendMessageFailure -> {
+                        logger.w("Proteus Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        messageSendFailureHandler
+                            .handleClientsHaveChangedFailure(it)
+                            .flatMap {
+                                logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
+                                attemptToSend(message, messageTarget)
+                            }
+                            .onFailure { failure ->
+                                val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +
+                                        " , " +
+                                        "\"errorInfo\" : \"${failure}\"}"
+                                logger.e(logLine)
+                            }
+                    }
+
+                    else -> {
+                        logger.e("Message Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        Either.Left(it)
+                    }
+                }
+            }, {
+                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
+                Either.Right(it)
+            })
 }

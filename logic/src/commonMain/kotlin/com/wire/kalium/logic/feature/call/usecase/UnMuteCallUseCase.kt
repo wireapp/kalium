@@ -36,7 +36,7 @@ class UnMuteCallUseCase(
      */
     suspend operator fun invoke(conversationId: ConversationId) {
         callRepository.updateIsMutedById(
-            conversationId = conversationId.toString(),
+            conversationId = conversationId,
             isMuted = false
         )
         val activeCall = callRepository.establishedCallsFlow().first().find {
