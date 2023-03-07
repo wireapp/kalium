@@ -68,7 +68,7 @@ class ClientRemoteRepositoryTest {
 
 
     @Test
-    fun whenOtherUsersClientsSuccess_thenTheSuccessIsReturned() = runTest {
+    fun givenOtherUsersClientsSuccess_whenFetchingOtherUserClients_thenTheSuccessIsReturned() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
         val userIdDto = UserIdDTO("123", "wire.com")
