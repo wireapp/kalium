@@ -32,4 +32,11 @@ actual open class PlatformDateTimeUtil actual constructor() {
      */
     actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
         instant.toString() // TODO:"Implement own JS method"
+
+    /**
+     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
+     */
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
+        instant.toString() // TODO:"Implement own JS method"
 }

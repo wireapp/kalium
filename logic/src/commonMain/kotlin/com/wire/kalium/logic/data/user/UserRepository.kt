@@ -120,7 +120,7 @@ internal class UserDataSource internal constructor(
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
             } else {
-                updateSelfUserSsoId(userDTO)
+                updateSelfUserProviderAccountInfo(userDTO)
                     .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.insertUser(userEntity) }
@@ -131,9 +131,8 @@ internal class UserDataSource internal constructor(
             }
         }
 
-    private suspend fun updateSelfUserSsoId(userDTO: UserDTO): Either<StorageFailure, Unit> {
-        return sessionRepository.updateSsoId(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID))
-    }
+    private suspend fun updateSelfUserProviderAccountInfo(userDTO: UserDTO): Either<StorageFailure, Unit> =
+        sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -192,7 +191,7 @@ internal class UserDataSource internal constructor(
                             otherUserDomain = userProfileDTO.id.domain,
                             selfUserTeamId = selfUser?.teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser?.id?.domain,
+                            selfUserDomain = selfUserId.domain,
                             isService = userProfileDTO.service != null
                         )
                     )
@@ -299,18 +298,21 @@ internal class UserDataSource internal constructor(
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
-        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.map { userProfile ->
-            val selfUser = getSelfUser()
-            publicUserMapper.fromUserDetailResponseWithUsertype(
-                userDetailResponse = userProfile,
-                userType = userTypeMapper.fromTeamAndDomain(
-                    otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = selfUser?.teamId?.value,
-                    otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUser?.id?.domain,
-                    isService = userProfile.service != null
+        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
+            getSelfUser()?.teamId.let { selfTeamId ->
+                Either.Right(
+                    publicUserMapper.fromUserDetailResponseWithUsertype(
+                        userDetailResponse = userProfileDTO,
+                        userType = userTypeMapper.fromTeamAndDomain(
+                            otherUserDomain = userProfileDTO.id.domain,
+                            selfUserTeamId = selfTeamId?.value,
+                            otherUserTeamId = userProfileDTO.teamId,
+                            selfUserDomain = selfUserId.domain,
+                            isService = userProfileDTO.service != null
+                        )
+                    )
                 )
-            )
+            }
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {

@@ -105,6 +105,14 @@ enum class UserTypeEntity {
     NONE;
 }
 
+/**
+ * This is used to indicate if the self user (account) is managed by SCIM or Wire
+ * If the user is managed by other than [WIRE], then is a read only account.
+ */
+enum class ManagedByEntity {
+    WIRE, SCIM
+}
+
 internal typealias UserAssetIdEntity = QualifiedIDEntity
 
 @Suppress("TooManyFunctions")

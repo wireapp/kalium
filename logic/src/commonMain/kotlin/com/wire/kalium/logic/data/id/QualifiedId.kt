@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
@@ -31,12 +33,13 @@ data class QualifiedID(
     @SerialName("domain")
     val domain: String
 ) {
-    companion object {
-        // TODO: this may be problematic for premiss backends
-        const val WIRE_PRODUCTION_DOMAIN = "wire.com"
-    }
-
     override fun toString(): String = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
+
+    fun toLogString(): String = if (domain.isEmpty()) {
+        value.obfuscateId()
+    } else {
+        "${value.obfuscateId()}$VALUE_DOMAIN_SEPARATOR${domain.obfuscateDomain()}"
+    }
 
     fun toPlainID(): PlainId = PlainId(value)
 

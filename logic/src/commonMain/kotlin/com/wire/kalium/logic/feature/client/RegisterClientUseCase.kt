@@ -36,7 +36,9 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.authenticationCodeFailure
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
@@ -47,7 +49,23 @@ sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
 
     sealed class Failure : RegisterClientResult() {
-        object InvalidCredentials : Failure()
+        sealed class InvalidCredentials : Failure() {
+            /**
+             * The team has enabled 2FA but has not provided a 2FA code.
+             */
+            object Missing2FA : InvalidCredentials()
+
+            /**
+             * The team has enabled 2FA but the user has provided an invalid or expired 2FA code.
+             */
+            object Invalid2FA : InvalidCredentials()
+
+            /**
+             * The password is invalid.
+             */
+            object InvalidPassword : InvalidCredentials()
+        }
+
         object TooManyClients : Failure()
         object PasswordAuthRequired : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
@@ -99,39 +117,57 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
         with(registerClientParam) {
-              sessionRepository.cookieLabel(selfUserId)
-                  .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
-            }.fold({
-                RegisterClientResult.Failure.Generic(it)
-            }, { registerClientParam ->
-                clientRepository.registerClient(registerClientParam)
-                    .flatMap { registeredClient ->
-                        if (isAllowedToRegisterMLSClient()) {
-                            createMLSClient(registeredClient)
-                        } else {
-                            Either.Right(registeredClient)
-                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
-                    }.flatMap { (client, otrLastKeyId) ->
-                        otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
-                        Either.Right(client)
-                    }.fold({ failure ->
-                        if (failure is NetworkFailure.ServerMiscommunication &&
-                            failure.kaliumException is KaliumException.InvalidRequestError
-                        )
-                            when {
-                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
-                                failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
-                                failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
-                                else -> RegisterClientResult.Failure.Generic(failure)
-                            }
-                        else RegisterClientResult.Failure.Generic(failure)
-                    }, { client ->
-                        RegisterClientResult.Success(client)
-                    })
-            })
+            sessionRepository.cookieLabel(selfUserId)
+                .flatMap { cookieLabel ->
+                    generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
+                }.fold({
+                    RegisterClientResult.Failure.Generic(it)
+                }, { registerClientParam ->
+                    clientRepository.registerClient(registerClientParam)
+                        .flatMap { registeredClient ->
+                            if (isAllowedToRegisterMLSClient()) {
+                                createMLSClient(registeredClient)
+                            } else {
+                                Either.Right(registeredClient)
+                            }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                        }.flatMap { (client, otrLastKeyId) ->
+                            otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
+                            Either.Right(client)
+                        }.fold({ failure ->
+                            mapFailure(failure)
+                        }, { client ->
+                            RegisterClientResult.Success(client)
+                        })
+                })
         }
+
+    private fun mapFailure(
+        failure: CoreFailure,
+    ): RegisterClientResult = if (failure is NetworkFailure.ServerMiscommunication &&
+        failure.kaliumException is KaliumException.InvalidRequestError
+    ) {
+        val kaliumException = failure.kaliumException
+        val authCodeFailure = kaliumException.authenticationCodeFailure
+        when {
+            kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+            kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+            kaliumException.isInvalidCredentials() ->
+                RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
+
+            kaliumException.isBadRequest() ->
+                RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
+
+            authCodeFailure != null -> when (authCodeFailure) {
+                AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
+                    RegisterClientResult.Failure.InvalidCredentials.Missing2FA
+
+                AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE ->
+                    RegisterClientResult.Failure.InvalidCredentials.Invalid2FA
+            }
+
+            else -> RegisterClientResult.Failure.Generic(failure)
+        }
+    } else RegisterClientResult.Failure.Generic(failure)
 
     // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we
     // can remove registerMLSClient() and supply the MLS public key in registerClient().

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.network.NetworkState
 import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -38,9 +39,12 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -54,8 +58,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SlowSyncManagerTest {
 
     @Test
@@ -305,6 +312,35 @@ class SlowSyncManagerTest {
         assertFalse(isCollected)
     }
 
+    @Test
+    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withSlowSyncWorkerReturning(emptyFlow())
+            .arrange()
+
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::reset)
+            .wasInvoked(exactly = once)
+    }
+    @Test
+    fun givenCriteriaAreMet_whenRecovers_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
+            .withRecoveringFromFailure()
+            .withNextExponentialDuration(10.seconds)
+            .arrange()
+
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::next)
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -322,9 +358,14 @@ class SlowSyncManagerTest {
         @Mock
         val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
 
+        @Mock
+        val exponentialDurationHelper: ExponentialDurationHelper =
+            configure(mock(classOf<ExponentialDurationHelper>())) { stubsUnitByDefault = true }
+
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
-            withNetworkState(flowOf(NetworkState.ConnectedWithInternet))
+            withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
+            withNextExponentialDuration(10.seconds)
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
@@ -357,20 +398,28 @@ class SlowSyncManagerTest {
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
         }
 
-        fun withNetworkState(networkStateFlow: Flow<NetworkState>) = apply {
+        fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
             given(networkStateObserver)
                 .function(networkStateObserver::observeNetworkState)
                 .whenInvoked()
                 .thenReturn(networkStateFlow)
         }
 
+        fun withNextExponentialDuration(duration: Duration) = apply {
+            given(exponentialDurationHelper)
+                .function(exponentialDurationHelper::next)
+                .whenInvoked()
+                .thenReturn(duration)
+        }
+
         private val slowSyncManager = SlowSyncManager(
-            slowSyncCriteriaProvider,
-            slowSyncRepository,
-            slowSyncWorker,
-            slowSyncRecoveryHandler,
-            networkStateObserver,
-            TestKaliumDispatcher
+            slowSyncCriteriaProvider = slowSyncCriteriaProvider,
+            slowSyncRepository = slowSyncRepository,
+            slowSyncWorker = slowSyncWorker,
+            slowSyncRecoveryHandler = slowSyncRecoveryHandler,
+            networkStateObserver = networkStateObserver,
+            kaliumDispatcher = TestKaliumDispatcher,
+            exponentialDurationHelper = exponentialDurationHelper,
         )
 
         fun arrange() = this to slowSyncManager
