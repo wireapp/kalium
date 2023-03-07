@@ -48,7 +48,7 @@ import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 class ClientRemoteRepositoryTest {
 
     @Test
-    fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
+    fun givenValidParams_whenRegisteringPushToken_thenShouldSucceed() = runTest {
 
         val (arrangement, clientRemoteRepository) = Arrangement()
             .withRegisterToken(NetworkResponse.Success(Unit, mapOf(), 200))
