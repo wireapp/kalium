@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -137,18 +138,17 @@ internal class ConversationGroupRepositoryImpl(
         userIdList: List<UserId>,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            .flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus ->
+                        addMembersToCloudAndStorage(userIdList, conversationId)
 
-            when (conversation.protocol) {
-                is Conversation.ProtocolInfo.Proteus ->
-                    addMembersToCloudAndStorage(userIdList, conversationId)
-
-                is Conversation.ProtocolInfo.MLS -> {
-                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                    }
                 }
             }
-        } ?: Either.Left(StorageFailure.DataNotFound)
 
     private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapApiRequest {
@@ -169,25 +169,24 @@ internal class ConversationGroupRepositoryImpl(
         userId: UserId,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            .flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus ->
+                        deleteMemberFromCloudAndStorage(userId, conversationId)
 
-            when (conversation.protocol) {
-                is Conversation.ProtocolInfo.Proteus ->
-                    deleteMemberFromCloudAndStorage(userId, conversationId)
-
-                is Conversation.ProtocolInfo.MLS -> {
-                    if (userId == selfUserId) {
-                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                            mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        if (userId == selfUserId) {
+                            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                                mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+                            }
+                        } else {
+                            // when removing a member from an MLS group, don't need to call the api
+                            mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
                         }
-                    } else {
-                        // when removing a member from an MLS group, don't need to call the api
-                        mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
                     }
                 }
             }
-        } ?: Either.Left(StorageFailure.DataNotFound)
 
     override suspend fun joinViaInviteCode(
         code: String,
