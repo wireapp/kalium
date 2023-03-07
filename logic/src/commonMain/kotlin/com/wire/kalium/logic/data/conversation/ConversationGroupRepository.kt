@@ -26,9 +26,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -67,6 +69,7 @@ interface ConversationGroupRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
     private val conversationDAO: ConversationDAO,
@@ -194,7 +197,24 @@ internal class ConversationGroupRepositoryImpl(
         conversationApi.joinConversation(code, key, uri)
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
+            val conversationId = response.event.qualifiedConversation.toModel()
+
             memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+                .flatMap {
+                    wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+                        .flatMap {
+                            when (it) {
+                                is ConversationEntity.ProtocolInfo.Proteus ->
+                                    Either.Right(Unit)
+
+                                is ConversationEntity.ProtocolInfo.MLS -> {
+                                    joinExistingMLSConversation(conversationId).flatMap {
+                                        addMembers(listOf(selfUserId), conversationId)
+                                    }
+                                }
+                            }
+                        }
+                }
         }
     }
 
