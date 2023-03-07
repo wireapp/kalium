@@ -35,7 +35,8 @@ data class RegisterClientRequest(
     @SerialName("label") val label: String?,
     @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>?,
     @SerialName("model") val model: String?,
-    @SerialName("cookie") val cookieLabel: String?
+    @SerialName("cookie") val cookieLabel: String?,
+    @SerialName("verification_code") val secondFactorVerificationCode: String? = null,
 )
 
 @Serializable

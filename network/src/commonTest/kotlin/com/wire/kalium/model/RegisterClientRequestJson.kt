@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
@@ -35,6 +36,9 @@ object RegisterClientRequestJson {
 
     private val jsonProvider = { serializable: RegisterClientRequest ->
         buildJsonObject {
+            // FIXME: Data is being created without being added to the json object
+            //        Doing "key" to "value" does not add the key to the json object.
+            //        We need to call put("key", "value") instead.
             putJsonArray("prekeys") {
                 serializable.preKeys.forEach {
                     addJsonObject {
@@ -60,6 +64,9 @@ object RegisterClientRequestJson {
                     }
                 }
             }
+            serializable.secondFactorVerificationCode?.let {
+                put("verification_code", it)
+            }
         }.toString()
     }
 
@@ -73,7 +80,8 @@ object RegisterClientRequestJson {
             lastKey = PreKeyDTO(999, "last_prekey"),
             capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = "model",
-            cookieLabel = "cookie label"
+            cookieLabel = "cookie label",
+            secondFactorVerificationCode = "123456"
         ),
         jsonProvider
     )

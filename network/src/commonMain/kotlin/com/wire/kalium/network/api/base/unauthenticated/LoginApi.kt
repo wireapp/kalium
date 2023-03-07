@@ -45,7 +45,7 @@ interface LoginApi {
             override val verificationCode: String? = null,
         ) : LoginParam(password, label, verificationCode)
 
-        data class LoginWithHandel(
+        data class LoginWithHandle(
             val handle: String,
             override val password: String,
             override val label: String?,

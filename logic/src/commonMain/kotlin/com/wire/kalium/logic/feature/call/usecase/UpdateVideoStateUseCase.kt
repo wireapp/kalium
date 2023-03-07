@@ -41,7 +41,7 @@ class UpdateVideoStateUseCase(
         videoState: VideoState
     ) {
         if (videoState != VideoState.PAUSED)
-            callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
+            callRepository.updateIsCameraOnById(conversationId, videoState == VideoState.STARTED)
 
         // updateVideoState should be called only when the call is established
         callRepository.establishedCallsFlow().first().find { call ->

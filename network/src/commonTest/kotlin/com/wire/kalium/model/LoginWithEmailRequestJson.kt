@@ -30,7 +30,7 @@ object LoginWithEmailRequestJson {
             "label" to serializable.label
             when (serializable) {
                 is LoginApi.LoginParam.LoginWithEmail -> "email" to serializable.email
-                is LoginApi.LoginParam.LoginWithHandel -> "handle" to serializable.handle
+                is LoginApi.LoginParam.LoginWithHandle -> "handle" to serializable.handle
             }
         }.toString()
     }
@@ -43,8 +43,8 @@ object LoginWithEmailRequestJson {
         ), jsonProvider
     )
 
-    val validLoginWithHandel = ValidJsonProvider(
-        LoginApi.LoginParam.LoginWithHandel(
+    val validLoginWithHandle = ValidJsonProvider(
+        LoginApi.LoginParam.LoginWithHandle(
             handle = "cool_user_name",
             label = "label",
             password = "password",

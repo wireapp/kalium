@@ -44,10 +44,10 @@ class EndCallUseCase(
         persistMissedCallIfNeeded(conversationId)
 
         callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
-        callRepository.updateCallStatusById(conversationId.toString(), CallStatus.CLOSED_INTERNALLY)
+        callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
 
         callManager.value.endCall(conversationId)
-        callRepository.updateIsCameraOnById(conversationId.toString(), false)
+        callRepository.updateIsCameraOnById(conversationId, false)
     }
 
     private suspend fun persistMissedCallIfNeeded(conversationId: ConversationId) {

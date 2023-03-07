@@ -25,6 +25,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
@@ -71,14 +72,21 @@ sealed class AuthenticationResult {
 interface LoginUseCase {
     /**
      * Login with user credentials and return the session
-     * Be noticed that session won't be stored locally, to store it
+     * Be noticed that session won't be stored locally, to store it use [AddAuthenticatedUserUseCase].
+     *
+     * If fails due to missing or invalid 2FA code, use
+     * [RequestSecondFactorVerificationCodeUseCase] to request a new code
+     * and then call this method again with the new code.
+     *
      * @see AddAuthenticatedUserUseCase
+     * @see RequestSecondFactorVerificationCodeUseCase
      */
     suspend operator fun invoke(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
-        cookieLabel: String? = uuid4().toString()
+        cookieLabel: String? = uuid4().toString(),
+        secondFactorVerificationCode: String? = null,
     ): AuthenticationResult
 }
 
@@ -87,24 +95,37 @@ internal class LoginUseCaseImpl internal constructor(
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
     private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
+    private val proxyCredentials: ProxyCredentials?,
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
-        cookieLabel: String?
+        cookieLabel: String?,
+        secondFactorVerificationCode: String?,
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
         return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
-                loginRepository.loginWithEmail(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
+                loginRepository.loginWithEmail(
+                    email = cleanUserIdentifier,
+                    password = password,
+                    label = cookieLabel,
+                    shouldPersistClient = shouldPersistClient,
+                    secondFactorVerificationCode = secondFactorVerificationCode,
+                )
             }
 
             validateUserHandleUseCase(cleanUserIdentifier).isValidAllowingDots -> {
-                loginRepository.loginWithHandle(cleanUserIdentifier, password, cookieLabel, shouldPersistClient)
+                loginRepository.loginWithHandle(
+                    handle = cleanUserIdentifier,
+                    password = password,
+                    label = cookieLabel,
+                    shouldPersistClient = shouldPersistClient,
+                    secondFactorVerificationCode = secondFactorVerificationCode,
+                )
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
