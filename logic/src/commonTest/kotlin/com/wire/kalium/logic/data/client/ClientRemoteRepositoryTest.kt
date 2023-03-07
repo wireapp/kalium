@@ -91,7 +91,7 @@ class ClientRemoteRepositoryTest {
     }
 
     @Test
-    fun whenOtherUsersClientsError_thenTheErrorIsPropagated() = runTest {
+    fun givenOtherUsersClientsError_whenFetchingOtherUserClients_thenTheErrorIsPropagated() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
         val notFound = TestNetworkException.noTeam
