@@ -49,13 +49,14 @@ internal open class LoginApiV0 internal constructor(
         @SerialName("email") val email: String? = null,
         @SerialName("handle") val handle: String? = null,
         @SerialName("password") val password: String,
-        @SerialName("label") val label: String?
+        @SerialName("label") val label: String?,
+        @SerialName("verification_code") val verificationCode: String? = null,
     )
 
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
         return when (this) {
             is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(email = email, password = password, label = label)
-            is LoginApi.LoginParam.LoginWithHandel -> LoginRequest(handle = handle, password = password, label = label)
+            is LoginApi.LoginParam.LoginWithHandle -> LoginRequest(handle = handle, password = password, label = label)
         }
     }
 

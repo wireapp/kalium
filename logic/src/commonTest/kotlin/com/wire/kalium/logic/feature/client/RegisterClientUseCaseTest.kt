@@ -69,7 +69,13 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        registerClient(
+            RegisterClientUseCase.RegisterClientParam(
+                password = TEST_PASSWORD,
+                capabilities = TEST_CAPABILITIES,
+                secondFactorVerificationCode = SECOND_FACTOR_CODE
+            )
+        )
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::registerClient)
@@ -120,7 +126,7 @@ class RegisterClientUseCaseTest {
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verify(arrangement.preKeyRepository)
             .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
@@ -159,6 +165,34 @@ class RegisterClientUseCaseTest {
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueToMissingAuthCode_whenRegistering_thenMissing2FAErrorShouldBeReturned() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuthenticationCode)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.Missing2FA>(result)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueToInvalidAuthCode_whenRegistering_thenInvalid2FAErrorShouldBeReturned() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidAuthenticationCode)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.Invalid2FA>(result)
     }
 
     @Test
@@ -279,7 +313,7 @@ class RegisterClientUseCaseTest {
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+        assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verify(arrangement.preKeyRepository)
             .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
@@ -322,6 +356,7 @@ class RegisterClientUseCaseTest {
 
         val PRE_KEYS = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
         val LAST_KEY = PreKeyCrypto(id = 99, encodedData = "99")
+        const val SECOND_FACTOR_CODE = "123456"
         val REGISTER_PARAMETERS = RegisterClientParam(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
@@ -331,7 +366,8 @@ class RegisterClientUseCaseTest {
             label = null,
             model = null,
             clientType = null,
-            cookieLabel = "cookieLabel"
+            cookieLabel = "cookieLabel",
+            secondFactorVerificationCode = SECOND_FACTOR_CODE
         )
         val CLIENT = TestClient.CLIENT
 
@@ -470,6 +506,7 @@ class RegisterClientUseCaseTest {
                 .whenInvokedWith(eq(selfUserId))
                 .then { result }
         }
+
         fun arrange() = this to registerClient
     }
 }
