@@ -80,22 +80,26 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         wipeTokenAndMetadata()
                     }
                 }
-
-                LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
+                LogoutReason.SESSION_EXPIRED -> {
                     if (kaliumConfigs.wipeOnCookieInvalid) {
                         wipeAllData()
                     } else {
-                        clientRepository.clearCurrentClientId()
-                        // After logout we need to mark the Firebase token as invalid
-                        // locally so that we can register a new one on the next login.
-                        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+                        clearCurrentClientIdAndFirebaseTokenFlag()
                     }
                 }
+                LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
 
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
         }
+    }
+
+    private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {
+        clientRepository.clearCurrentClientId()
+        // After logout we need to mark the Firebase token as invalid
+        // locally so that we can register a new one on the next login.
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 
     private suspend fun wipeAllData() {
