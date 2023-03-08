@@ -35,6 +35,8 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.client.GetSelfUserUseCaseProvider
+import com.wire.kalium.logic.feature.client.GetSelfUserUseCaseProviderImpl
 import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
@@ -153,6 +155,9 @@ class GlobalKaliumScope internal constructor(
             userSessionScopeProvider.value
         )
 
+    private val getSelfUserUseCaseProvider: GetSelfUserUseCaseProvider
+        get() = GetSelfUserUseCaseProviderImpl(userSessionScopeProvider.value)
+
     val observeNewClientsUseCase: ObserveNewClientsUseCase
-        get() = ObserveNewClientsUseCaseImpl(sessionRepository, userSessionScopeProvider.value, NewClientManagerImpl)
+        get() = ObserveNewClientsUseCaseImpl(sessionRepository, getSelfUserUseCaseProvider, NewClientManagerImpl)
 }

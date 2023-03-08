@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
@@ -42,7 +43,7 @@ interface ObserveNewClientsUseCase {
 
 class ObserveNewClientsUseCaseImpl(
     private val sessionRepository: SessionRepository,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val getSelfProvider: GetSelfUserUseCaseProvider,
     private val newClientManager: NewClientManager
 ) : ObserveNewClientsUseCase {
 
@@ -51,13 +52,22 @@ class ObserveNewClientsUseCaseImpl(
             sessionRepository.currentSession()
                 .map { currentAccInfo ->
                     if (currentAccInfo.userId == userId) flowOf(NewClientResult.InCurrentAccount(newClient))
-                    else userSessionScopeProvider.get(userId)?.let {
-                        it.users
-                            .getSelfUser()
+                    else getSelfProvider.get(userId)?.let { getSelfUser ->
+                        getSelfUser()
                             .map { selfUser -> NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle) }
-                    } ?: flowOf()
+                    } ?: flowOf(NewClientResult.Error)
                 }.getOrElse(flowOf(NewClientResult.Error))
         }
+}
+
+/** this interface needed to be able to test [ObserveNewClientsUseCaseImpl] */
+interface GetSelfUserUseCaseProvider {
+    fun get(userId: UserId): GetSelfUserUseCase?
+}
+
+class GetSelfUserUseCaseProviderImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : GetSelfUserUseCaseProvider {
+    override fun get(userId: UserId): GetSelfUserUseCase? = userSessionScopeProvider.get(userId)?.users?.getSelfUser
+
 }
 
 sealed class NewClientResult {
