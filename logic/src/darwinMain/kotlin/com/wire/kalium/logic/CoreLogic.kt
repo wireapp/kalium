@@ -50,6 +50,7 @@ actual class CoreLogic(
     override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
+            authenticationScopeProvider,
             rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
