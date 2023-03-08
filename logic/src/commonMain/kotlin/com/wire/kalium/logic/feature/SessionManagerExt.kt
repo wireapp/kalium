@@ -15,17 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature
 
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.session.SessionManager
 
-class AuthenticatedDataSourceSet(
-    val authenticatedRootDir: String,
-    val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
-    val authenticationScope: AuthenticationScope,
-    val proteusClientProvider: ProteusClientProvider,
-    val userSessionWorkScheduler: UserSessionWorkScheduler
-)
+internal fun SessionManager.getProxyCredentials(): ProxyCredentials? =
+    MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(proxyCredentials())
+
+internal fun SessionManager.getServerConfig() =
+    MapperProvider.serverConfigMapper().fromDTO(serverConfig())
