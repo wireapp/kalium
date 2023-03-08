@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
@@ -114,6 +115,58 @@ class LogoutUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.clearClientDataUseCase)
+            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+        verify(arrangement.clearUserDataUseCase)
+            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRemovedClientOrDeletedAccount_whenLoggingOutWithWipeOnDeviceRemovalEnabled_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.REMOVED_CLIENT
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withKaliumConfigs { it.copy(wipeOnDeviceRemoval = true) }
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.clearClientDataUseCase)
+            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+        verify(arrangement.clearUserDataUseCase)
+            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSessionExpired_whenLoggingOutWithWipeOnInvalidCookieEnabled_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.SESSION_EXPIRED
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withKaliumConfigs { it.copy(wipeOnCookieInvalid = true) }
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -219,9 +272,12 @@ class LogoutUseCaseTest {
         @Mock
         val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
 
+        var kaliumConfigs = KaliumConfigs()
+
         val globalTestScope = TestScope()
 
-        private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
+        private val logoutUseCase
+            get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             clientRepository,
@@ -232,7 +288,8 @@ class LogoutUseCaseTest {
             userSessionScopeProvider,
             pushTokenRepository,
             globalTestScope,
-            userSessionWorkScheduler
+            userSessionWorkScheduler,
+            kaliumConfigs
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
@@ -304,6 +361,10 @@ class LogoutUseCaseTest {
                 .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
+            this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 
         fun arrange() = this to logoutUseCase

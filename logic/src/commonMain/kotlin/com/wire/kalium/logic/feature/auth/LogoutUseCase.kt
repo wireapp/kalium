@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -56,6 +57,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val pushTokenRepository: PushTokenRepository,
     private val globalCoroutineScope: CoroutineScope,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
+    private val kaliumConfigs: KaliumConfigs
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -70,36 +72,49 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
 
             when (reason) {
-                LogoutReason.SELF_HARD_LOGOUT -> {
-                    // we put this delay here to avoid a race condition when
-                    // receiving web socket events at the exact time of logging put
-                    delay(CLEAR_DATA_DELAY)
-                    clearClientDataUseCase()
-                    clearUserDataUseCase() // this clears also current client id
-                }
-
+                LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
                 LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
-                    // receiving web socket events at the exact time of logging put
-                    clearClientDataUseCase()
-                    logoutRepository.clearClientRelatedLocalMetadata()
-                    clientRepository.clearCurrentClientId()
-                    clientRepository.clearHasRegisteredMLSClient()
-                    // After logout we need to mark the Firebase token as invalid
-                    // locally so that we can register a new one on the next login.
-                    pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+                    if (kaliumConfigs.wipeOnDeviceRemoval) {
+                        wipeAllData()
+                    } else {
+                        wipeTokenAndMetadata()
+                    }
                 }
 
                 LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
-                    clientRepository.clearCurrentClientId()
-                    // After logout we need to mark the Firebase token as invalid
-                    // locally so that we can register a new one on the next login.
-                    pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+                    if (kaliumConfigs.wipeOnCookieInvalid) {
+                        wipeAllData()
+                    } else {
+                        clientRepository.clearCurrentClientId()
+                        // After logout we need to mark the Firebase token as invalid
+                        // locally so that we can register a new one on the next login.
+                        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+                    }
                 }
             }
 
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
         }
+    }
+
+    private suspend fun wipeAllData() {
+        // we put this delay here to avoid a race condition when
+        // receiving web socket events at the exact time of logging put
+        delay(CLEAR_DATA_DELAY)
+        clearClientDataUseCase()
+        clearUserDataUseCase() // this clears also current client id
+    }
+
+    private suspend fun wipeTokenAndMetadata() {
+        // receiving web socket events at the exact time of logging put
+        clearClientDataUseCase()
+        logoutRepository.clearClientRelatedLocalMetadata()
+        clientRepository.clearCurrentClientId()
+        clientRepository.clearHasRegisteredMLSClient()
+        // After logout we need to mark the Firebase token as invalid
+        // locally so that we can register a new one on the next login.
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 
     companion object {
