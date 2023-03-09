@@ -34,14 +34,14 @@ import kotlinx.coroutines.flow.map
  * returns [NewClientResult] which may be:
  * [NewClientResult.InCurrentAccount] if new Client appears for the user that is currently used.
  * [NewClientResult.InOtherAccount] if new Client appears for the user that is logged in on device, but not currently used.
- * [NewClientResult.Error] in case of error,
- * in most cases it means that the user for which new Client appeared is no longer logged it on the device.
+ * [NewClientResult.Error] in case of error, in most cases it means that the user for which new Client appeared
+ * is no longer logged it on the device.
  */
 interface ObserveNewClientsUseCase {
     suspend operator fun invoke(): Flow<NewClientResult>
 }
 
-class ObserveNewClientsUseCaseImpl(
+class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val getSelfProvider: GetSelfUserUseCaseProvider,
     private val newClientManager: NewClientManager
@@ -67,7 +67,6 @@ interface GetSelfUserUseCaseProvider {
 
 class GetSelfUserUseCaseProviderImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : GetSelfUserUseCaseProvider {
     override fun get(userId: UserId): GetSelfUserUseCase? = userSessionScopeProvider.get(userId)?.users?.getSelfUser
-
 }
 
 sealed class NewClientResult {

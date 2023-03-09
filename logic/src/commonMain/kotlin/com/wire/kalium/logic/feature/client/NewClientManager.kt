@@ -26,24 +26,38 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 
-object NewClientManagerImpl : NewClientManager {
+/**
+ * This singleton allow us to have a bridge between [com.wire.kalium.logic.sync.receiver.UserEventReceiver]
+ * and [com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase],
+ * so we can observe [Event.User.NewClient] without saving it into the DB.
+ */
+internal object NewClientManagerImpl : NewClientManager {
 
     private val mapper by lazy { MapperProvider.clientMapper() }
 
     private val newClients =
         Channel<Pair<Client, UserId>>(capacity = Channel.CONFLATED) { emptyFlow<Pair<Client, UserId>>() }
 
+    /**
+     * Observes all the new Clients for the users logged in on device.
+     * @return Flow of Pair, where [Pair.first] is [Client] that was registered
+     * and [Pair.second] is [UserId] of the user for which that Client was registered.
+     */
     override suspend fun observeNewClients(): Flow<Pair<Client, UserId>> {
         return newClients.consumeAsFlow()
     }
 
+    /**
+     * Send a new event into [newClients] Channel to inform that the new Client was registered.
+     * Use this method in [com.wire.kalium.logic.sync.receiver.UserEventReceiver] or where ever [Event.User.NewClient] come into.
+     */
     override suspend fun scheduleNewClientEvent(newClientEvent: Event.User.NewClient, userId: UserId) {
         newClients.send(mapper.fromNewClientEvent(newClientEvent) to userId)
     }
 
 }
 
-interface NewClientManager {
+internal interface NewClientManager {
     suspend fun observeNewClients(): Flow<Pair<Client, UserId>>
     suspend fun scheduleNewClientEvent(newClientEvent: Event.User.NewClient, userId: UserId)
 }
