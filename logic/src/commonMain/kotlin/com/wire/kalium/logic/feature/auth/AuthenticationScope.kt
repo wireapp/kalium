@@ -26,12 +26,15 @@ import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
+import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import io.ktor.util.collections.ConcurrentMap
@@ -72,6 +75,9 @@ class AuthenticationScope(
     private val ssoLoginRepository: SSOLoginRepository
         get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
+    private val secondFactorVerificationRepository: SecondFactorVerificationRepository
+        get() = SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
+
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
@@ -86,6 +92,8 @@ class AuthenticationScope(
             serverConfig,
             proxyCredentials
         )
+    val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
+        get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
     val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     val ssoLoginScope: SSOLoginScope

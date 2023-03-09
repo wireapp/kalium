@@ -15,27 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.util
+package com.wire.kalium.logic.data.auth.verification
 
-import kotlin.time.Duration
-
-interface ExponentialDurationHelper {
-    fun reset()
-    fun next(): Duration
-}
-
-class ExponentialDurationHelperImpl(
-    private val initialDuration: Duration,
-    private val maxDuration: Duration,
-    private val factor: Double = 2.0,
-) : ExponentialDurationHelper {
-    private var currentDuration = initialDuration
-
-    override fun reset() {
-        currentDuration = initialDuration
-    }
-
-    override fun next(): Duration = currentDuration.also {
-        currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
-    }
+/**
+ * Actions that might require a second factor verification code.
+ */
+enum class VerifiableAction {
+    LOGIN_OR_CLIENT_REGISTRATION,
+    CREATE_SCIM_TOKEN,
+    DELETE_TEAM
 }

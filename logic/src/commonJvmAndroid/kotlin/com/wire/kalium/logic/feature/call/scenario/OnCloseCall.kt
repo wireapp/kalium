@@ -26,6 +26,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
@@ -53,18 +54,17 @@ class OnCloseCall(
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
-        val federatedId = conversationIdWithDomain.toString()
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationIdString = federatedId,
+                conversationId = conversationIdWithDomain,
                 status = callStatus
             )
 
-            if (shouldPersistMissedCall(federatedId, callStatus)) {
+            if (shouldPersistMissedCall(conversationIdWithDomain, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
-            if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+            if (callRepository.getCallMetadataProfile().get(conversationIdWithDomain)?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
 
@@ -72,7 +72,7 @@ class OnCloseCall(
         }
     }
 
-    private fun shouldPersistMissedCall(conversationId: String, callStatus: CallStatus): Boolean {
+    private fun shouldPersistMissedCall(conversationId: ConversationId, callStatus: CallStatus): Boolean {
         if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {

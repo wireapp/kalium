@@ -15,27 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.util
+package com.wire.kalium.logic.feature
 
-import kotlin.time.Duration
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.functional.Either
 
-interface ExponentialDurationHelper {
-    fun reset()
-    fun next(): Duration
+fun interface CurrentClientIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 
-class ExponentialDurationHelperImpl(
-    private val initialDuration: Duration,
-    private val maxDuration: Duration,
-    private val factor: Double = 2.0,
-) : ExponentialDurationHelper {
-    private var currentDuration = initialDuration
-
-    override fun reset() {
-        currentDuration = initialDuration
-    }
-
-    override fun next(): Duration = currentDuration.also {
-        currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
-    }
+fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }

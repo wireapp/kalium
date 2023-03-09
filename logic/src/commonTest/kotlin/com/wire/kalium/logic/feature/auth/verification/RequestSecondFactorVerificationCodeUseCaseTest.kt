@@ -1,0 +1,83 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.feature.auth.verification
+
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
+import com.wire.kalium.logic.data.auth.verification.VerifiableAction
+import com.wire.kalium.logic.functional.Either
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+
+class RequestSecondFactorVerificationCodeUseCaseTest {
+
+    @Test
+    fun givenRepositorySucceeds_whenRequesting2FACode_thenShouldPropagateSuccess() = runTest {
+        val (_, requestSecondFactorVerificationCodeUseCase) = Arrangement()
+            .withRepositoryReturning(Either.Right(Unit))
+            .arrange()
+
+        val result = requestSecondFactorVerificationCodeUseCase(
+            email = "email",
+            verifiableAction = VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
+        )
+
+        assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Success>(result)
+    }
+
+    @Test
+    fun givenRepositoryFails_whenRequesting2FACode_thenShouldPropagateFailure() = runTest {
+        val networkFailure = NetworkFailure.NoNetworkConnection(null)
+        val (_, requestSecondFactorVerificationCodeUseCase) = Arrangement()
+            .withRepositoryReturning(Either.Left(networkFailure))
+            .arrange()
+
+        val result = requestSecondFactorVerificationCodeUseCase(
+            email = "email",
+            verifiableAction = VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
+        )
+
+        assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure>(result)
+        assertEquals(networkFailure, result.cause)
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val secondFactorVerificationRepository = mock(classOf<SecondFactorVerificationRepository>())
+
+        fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
+            given(secondFactorVerificationRepository)
+                .suspendFunction(secondFactorVerificationRepository::requestVerificationCode)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun arrange() = this to RequestSecondFactorVerificationCodeUseCase(
+            secondFactorVerificationRepository = secondFactorVerificationRepository
+        )
+
+    }
+}
