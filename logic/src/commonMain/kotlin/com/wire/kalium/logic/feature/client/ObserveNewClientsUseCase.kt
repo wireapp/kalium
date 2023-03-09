@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -48,15 +49,17 @@ class ObserveNewClientsUseCaseImpl internal constructor(
 ) : ObserveNewClientsUseCase {
 
     override suspend operator fun invoke(): Flow<NewClientResult> = newClientManager.observeNewClients()
-        .flatMapLatest { (newClient, userId) ->
+        .map { (newClient, userId) ->
             sessionRepository.currentSession()
                 .map { currentAccInfo ->
-                    if (currentAccInfo.userId == userId) flowOf(NewClientResult.InCurrentAccount(newClient))
+                    if (currentAccInfo.userId == userId) NewClientResult.InCurrentAccount(newClient)
                     else getSelfProvider.get(userId)?.let { getSelfUser ->
                         getSelfUser()
                             .map { selfUser -> NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle) }
-                    } ?: flowOf(NewClientResult.Error)
-                }.getOrElse(flowOf(NewClientResult.Error))
+                            .firstOrNull()
+                    } ?: NewClientResult.Error
+                }
+                .getOrElse(NewClientResult.Error)
         }
 }
 
@@ -76,6 +79,6 @@ sealed class NewClientResult {
         val newClient: Client,
         val userId: UserId,
         val userName: String?,
-        val userHandler: String?
+        val userHandle: String?
     ) : NewClientResult()
 }
