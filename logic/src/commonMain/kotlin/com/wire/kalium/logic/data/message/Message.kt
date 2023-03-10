@@ -27,6 +27,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 sealed interface Message {
@@ -78,8 +79,6 @@ sealed interface Message {
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
-
-        val isEphemeralMessage = expirationData != null
 
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -297,20 +296,27 @@ sealed interface Message {
         data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
-    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?) {
-        fun isDeletionStartedInThePast(): Boolean {
-            return selfDeletionStartDate != null
+    data class ExpirationData(val expireAfter: Duration, val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted) {
+
+        sealed class SelfDeletionStatus {
+            object NotStarted : SelfDeletionStatus()
+
+            data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+        }
+
+        fun hasDeletionStartedInThePast(): Boolean {
+            return selfDeletionStatus != null
         }
 
         // time left for deletion it can be a negative value if the time difference between the self deletion start date and
         // now is greater then expire after millis
-        fun timeLeftForDeletion(): Long {
-            return if (!isDeletionStartedInThePast()) {
-                expireAfterMillis
+        fun timeLeftForDeletion(): Duration {
+            return if (!hasDeletionStartedInThePast()) {
+                expireAfter
             } else {
-                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStartDate!!
+                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus!!
 
-                expireAfterMillis - timeElapsedSinceSelfDeletionStartDate.inWholeMilliseconds
+                expireAfter - timeElapsedSinceSelfDeletionStartDate
             }
         }
     }

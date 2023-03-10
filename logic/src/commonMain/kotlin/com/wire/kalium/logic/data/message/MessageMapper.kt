@@ -80,8 +80,8 @@ class MessageMapperImpl(
                 },
                 expirationData = message.expirationData?.run {
                     MessageEntity.ExpirationData(
-                        expireAfterMillis,
-                        selfDeletionStartDate
+                        expireAfter,
+                        selfDeletionStatus
                     )
                 },
                 visibility = visibility,

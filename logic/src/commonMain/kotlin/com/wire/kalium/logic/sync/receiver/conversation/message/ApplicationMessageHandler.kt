@@ -45,6 +45,8 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal interface ApplicationMessageHandler {
 
@@ -121,20 +123,24 @@ internal class ApplicationMessageHandlerImpl(
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
                     expectsReadConfirmation = content.expectsReadConfirmation,
-                    expirationStatus = content.expiresAfterMillis?.let { Message.ExpirationStatus.Expiratable(it) }
-                        ?: Message.ExpirationStatus.NotExpiratable
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processMessage(message, content.expiresAfterMillis)
             }
 
             is MessageContent.Signaling -> {
                 val signalingMessage = Message.Signaling(
-                    content.messageUid,
-                    protoContent,
-                    conversationId,
-                    timestampIso,
-                    senderUserId,
-                    senderClientId,
+                    id = content.messageUid,
+                    content = protoContent,
+                    conversationId = conversationId,
+                    date = timestampIso,
+                    senderUserId = senderUserId,
+                    senderClientId = senderClientId,
                     status = Message.Status.SENT
                 )
                 processSignaling(signalingMessage)
@@ -198,29 +204,21 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    private suspend fun processMessage(message: Message.Regular, expireAfterMillis: Long? = null) {
+    private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : $message }")
 
         when (val content = message.content) {
             // Persist Messages - > lists
-            is MessageContent.Text -> persistRegularMessage(adjustTextMessageWithQoutedReference(message, content), expireAfterMillis)
-            is MessageContent.FailedDecryption -> persistRegularMessage(message, expireAfterMillis)
-            is MessageContent.Knock -> persistRegularMessage(message, expireAfterMillis)
+            is MessageContent.Text -> persistMessage(adjustTextMessageWithQoutedReference(message, content))
+            is MessageContent.FailedDecryption -> persistMessage(message)
+            is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message, content)
             is MessageContent.RestrictedAsset -> TODO()
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: $message")
-                persistRegularMessage(message, expireAfterMillis)
+                persistMessage(message)
             }
 
-        }
-    }
-
-    private suspend fun persistRegularMessage(message: Message.Regular, expireAfterMillis: Long? = null) {
-        if (expireAfterMillis != null) {
-            persistMessage(Message.Ephemeral(expireAfterMillis, null, message))
-        } else {
-            persistMessage(message)
         }
     }
 
