@@ -423,13 +423,13 @@ class ConversationRepositoryTest {
 
         conversationRepository.updateAccessInfo(
             conversationID = ConversationId(conversationIdDTO.value, conversationIdDTO.domain),
-            access = listOf(
+            access = setOf(
                 Conversation.Access.INVITE,
                 Conversation.Access.CODE,
                 Conversation.Access.PRIVATE,
                 Conversation.Access.LINK
             ),
-            accessRole = listOf(
+            accessRole = setOf(
                 Conversation.AccessRole.TEAM_MEMBER,
                 Conversation.AccessRole.NON_TEAM_MEMBER,
                 Conversation.AccessRole.SERVICE,

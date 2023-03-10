@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -50,6 +48,71 @@ data class Conversation(
     val creatorId: String?,
     val receiptMode: ReceiptMode,
 ) {
+
+    companion object {
+        /**
+         * A set of default [AccessRole] valid for Group Conversations
+         * for both personal and team users.
+         *
+         * @see [AccessRole]
+         */
+        val defaultGroupAccessRoles = setOf(AccessRole.TEAM_MEMBER, AccessRole.NON_TEAM_MEMBER)
+
+        /**
+         * A set of default [Access] modes valid for Group Conversations
+         * for both personal and team users.
+         *
+         * @see [Access]
+         */
+        val defaultGroupAccess = setOf(Access.INVITE)
+
+        /**
+         * Returns a sensible set of [AccessRole] given a combination of
+         * flags
+         *
+         * @see [AccessRole]
+         */
+        fun accessRolesFor(
+            guestAllowed: Boolean,
+            servicesAllowed: Boolean,
+            nonTeamMembersAllowed: Boolean
+        ): Set<AccessRole> =
+            defaultGroupAccessRoles.toMutableSet().apply {
+                if (servicesAllowed) {
+                    add(AccessRole.SERVICE)
+                } else {
+                    remove(AccessRole.SERVICE)
+                }
+
+                if (guestAllowed) {
+                    add(AccessRole.GUEST)
+                } else {
+                    remove(AccessRole.GUEST)
+                }
+
+                if (nonTeamMembersAllowed) {
+                    add(AccessRole.NON_TEAM_MEMBER)
+                } else {
+                    remove(AccessRole.NON_TEAM_MEMBER)
+                }
+            }.toSet()
+
+        /**
+         * Returns a sensible set of [Access] given a combination of
+         * flags
+         *
+         * @see [Access]
+         */
+        fun accessFor(
+            guestsAllowed: Boolean,
+        ): Set<Access> =
+            defaultGroupAccess.toMutableSet().apply {
+                if (guestsAllowed) {
+                    add(Access.CODE)
+                }
+            }.toSet()
+
+    }
 
     fun isTeamGroup(): Boolean = (teamId != null)
 
@@ -149,7 +212,7 @@ data class Conversation(
         }
 
         fun toMap(): Map<String, String> = mapOf(
-            "id" to "${id.value.obfuscateId()}@${id.domain.obfuscateDomain()}",
+            "id" to id.toLogString(),
             "role" to "$role"
         )
     }
