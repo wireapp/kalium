@@ -92,7 +92,6 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
             clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
-                clientsQueries.insertUserId(userId)
                 clientsList.forEach { client -> insert(client) }
                 clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
             }

@@ -181,18 +181,6 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUserNotInserted_whenClientsAndRemoveRedundant_thenSuccess() = runTest {
-        clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient1))
-        // this supposes to remove insertedClient1
-        clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient2))
-
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
-
-        assertEquals(2, result.size)
-        assertEquals(listOf(client, client2), result)
-    }
-
-    @Test
     fun whenInsertingANewClient_thenIsMustBeMarkedAsValid() = runTest {
         val user = user
         userDAO.insertUser(user)
