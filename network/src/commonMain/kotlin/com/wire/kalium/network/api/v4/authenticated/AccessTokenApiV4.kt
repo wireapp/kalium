@@ -16,12 +16,12 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v3.authenticated
+package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
+import com.wire.kalium.network.api.v3.authenticated.AccessTokenApiV3
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -31,9 +31,9 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 
-internal open class AccessTokenApiV3 internal constructor(
+internal class AccessTokenApiV4 internal constructor(
     private val httpClient: HttpClient
-) : AccessTokenApiV2(httpClient) {
+) : AccessTokenApiV3(httpClient) {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
         wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post(PATH_ACCESS) {
