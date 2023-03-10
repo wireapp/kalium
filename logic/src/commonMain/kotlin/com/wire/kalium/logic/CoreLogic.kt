@@ -53,7 +53,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    private val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
+    protected val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider, authenticationScopeProvider)

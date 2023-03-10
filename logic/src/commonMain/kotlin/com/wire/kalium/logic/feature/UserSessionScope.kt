@@ -945,7 +945,8 @@ class UserSessionScope internal constructor(
             userId,
             isAllowedToRegisterMLSClient,
             clientIdProvider,
-            userStorage,
+            userRepository,
+            authenticatedDataSourceSet.authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository
         )
     val conversations: ConversationScope
