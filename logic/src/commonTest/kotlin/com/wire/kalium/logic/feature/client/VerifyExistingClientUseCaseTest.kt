@@ -33,6 +33,7 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -43,7 +44,7 @@ class VerifyExistingClientUseCaseTest {
     @Test
     fun givenRegisteredClientId_whenInvoking_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_PAST, false, null, null,"label")
         val (_, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf(client)))
             .arrange()

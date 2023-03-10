@@ -554,6 +554,8 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
+            userId,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val sessionEstablisher: SessionEstablisher

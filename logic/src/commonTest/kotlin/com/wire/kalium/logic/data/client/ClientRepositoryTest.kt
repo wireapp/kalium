@@ -22,19 +22,17 @@ import app.cash.turbine.test
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ClientConfig
-import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -43,6 +41,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
@@ -54,9 +53,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -66,61 +66,35 @@ import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 @ExperimentalCoroutinesApi
 class ClientRepositoryTest {
 
-    @Mock
-    val clientApi = mock(classOf<ClientApi>())
-
-    @Mock
-    private val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
-
-    @Mock
-    private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
-        stubsUnitByDefault = true
-    }
-
-    @Mock
-    private val clientDAO = mock(classOf<ClientDAO>())
-
-    @Mock
-    private val userMapper = mock(classOf<UserMapper>())
-
-    private lateinit var clientRepository: ClientRepository
-
-    @BeforeTest
-    fun setup() {
-        clientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
-    }
-
     @Test
     fun givenSuccess_whenRegisteringMLSClient_thenSetHasRegisteredMLSClient() = runTest {
-        given(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerMLSClient)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
+        val (arrangement, clientRepository) = Arrangement()
+            .withRegisterMLSClient(Either.Right(Unit))
+            .arrange()
 
         clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY)
 
-        verify(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerMLSClient)
+        verify(arrangement.clientRemoteRepository)
+            .suspendFunction(arrangement.clientRemoteRepository::registerMLSClient)
             .with(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
             .wasInvoked(once)
 
-        verify(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::setHasRegisteredMLSClient)
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::setHasRegisteredMLSClient)
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenClientParams_whenRegisteringClient_thenParamsShouldBePassedCorrectly() = runTest {
-        given(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerClient)
-            .whenInvokedWith(any())
-            .then { Either.Right(CLIENT_RESULT) }
+
+        val (arrangement, clientRepository) = Arrangement()
+            .withRegisterClient(Either.Right(CLIENT_RESULT))
+            .arrange()
 
         clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
-        verify(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerClient)
+        verify(arrangement.clientRemoteRepository)
+            .suspendFunction(arrangement.clientRemoteRepository::registerClient)
             .with(eq(REGISTER_CLIENT_PARAMS))
             .wasInvoked(once)
     }
@@ -128,10 +102,10 @@ class ClientRepositoryTest {
     @Test
     fun givingRemoteDataSourceFails_whenRegisteringClient_thenTheFailureShouldBePropagated() = runTest {
         val failure = Either.Left(TEST_FAILURE)
-        given(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerClient)
-            .whenInvokedWith(any())
-            .then { failure }
+
+        val (_, clientRepository) = Arrangement()
+            .withRegisterClient(failure)
+            .arrange()
 
         val result = clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
@@ -143,10 +117,10 @@ class ClientRepositoryTest {
     @Test
     fun givenRemoteDataSourceSucceed_whenRegisteringClient_thenTheSuccessShouldBePropagated() = runTest {
         val clientResult = Either.Right(CLIENT_RESULT)
-        given(clientRemoteRepository)
-            .suspendFunction(clientRemoteRepository::registerClient)
-            .whenInvokedWith(any())
-            .then { clientResult }
+
+        val (_, clientRepository) = Arrangement()
+            .withRegisterClient(clientResult)
+            .arrange()
 
         val result = clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
@@ -159,20 +133,24 @@ class ClientRepositoryTest {
     fun givenAClientId_whenPersistingClientId_thenTheStorageShouldBeCalledWithRightParameter() = runTest {
         val clientId = CLIENT_ID
 
+        val (arrangement, clientRepository) = Arrangement()
+            .arrange()
+
         clientRepository.persistClientId(clientId)
 
-        verify(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::setRegisteredClientId)
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::setRegisteredClientId)
             .with(eq(clientRepository))
     }
 
+    @OptIn(DelicateKaliumApi::class)
     @Test
     fun givenAClientIdIsStored_whenGettingRegisteredClientId_thenTheStoredValueShouldBeReturned() = runTest {
         val clientId = CLIENT_ID
-        given(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
-            .whenInvoked()
-            .then { clientId.value }
+
+        val (_, clientRepository) = Arrangement()
+            .witGgetRegisteredClientId(clientId.value)
+            .arrange()
 
         val result = clientRepository.currentClientId()
 
@@ -181,12 +159,13 @@ class ClientRepositoryTest {
         }
     }
 
+    @OptIn(DelicateKaliumApi::class)
     @Test
     fun givenNoClientIdIsStored_whenGettingRegisteredClientId_thenShouldFailWithMissingRegistration() = runTest {
-        given(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
-            .whenInvoked()
-            .then { null }
+
+        val (_, clientRepository) = Arrangement()
+            .witGgetRegisteredClientId(null)
+            .arrange()
 
         val result = clientRepository.currentClientId()
 
@@ -199,65 +178,32 @@ class ClientRepositoryTest {
     fun givenAClientId_whenPersistingRetainedClientId_thenTheStorageShouldBeCalledWithRightParameter() = runTest {
         val clientId = CLIENT_ID
 
+        val (arrangement, clientRepository) = Arrangement()
+            .arrange()
+
         clientRepository.persistRetainedClientId(clientId)
 
-        verify(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::setRetainedClientId)
+        verify(arrangement.clientRegistrationStorage)
+            .suspendFunction(arrangement.clientRegistrationStorage::setRetainedClientId)
             .with(eq(clientRepository))
     }
 
-    // clientInfo
-    @Test
-    fun givenClientId_whenGettingClientInformationSuccess_thenTheSuccessIsReturned() = runTest {
-        val clientId = CLIENT_ID
-        val expected = Either.Right(CLIENT_RESULT)
-        given(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.fetchClientInfo(clientId) }
-            .then { expected }
-
-        val actual = clientRepository.clientInfo(clientId)
-
-        actual.shouldSucceed { expected.value }
-        verify(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.fetchClientInfo(clientId) }
-            .wasInvoked(exactly = once)
-    }
-
-    // clientInfo
-    @Test
-    fun givenClientId_whenGettingClientInformationFail_thenTheErrorIsPropagated() = runTest {
-        val clientId = CLIENT_ID
-        val expected = Either.Left(TEST_FAILURE)
-        given(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.fetchClientInfo(clientId) }
-            .then { expected }
-
-        val actual = clientRepository.clientInfo(clientId)
-
-        actual.shouldFail { expected.value }
-
-        verify(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.fetchClientInfo(clientId) }
-            .wasInvoked(exactly = once)
-    }
-
-    // delete client
     @Test
     fun givenClientIdAndAPassword_whenGettingDeletingClientFail_thenTheErrorIsPropagated() = runTest {
         val param = DeleteClientParam("password", CLIENT_ID)
 
         val expected = Either.Left(TEST_FAILURE)
 
-        given(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.deleteClient(param) }
-            .then { expected }
+        val (arrangement, clientRepository) = Arrangement()
+            .withDeleteClientReportedly(expected)
+            .arrange()
 
         val actual = clientRepository.deleteClient(param)
 
         actual.shouldFail { expected.value }
 
-        verify(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.deleteClient(param) }
+        verify(arrangement.clientRemoteRepository)
+            .coroutine { arrangement.clientRemoteRepository.deleteClient(param) }
             .wasInvoked(exactly = once)
     }
 
@@ -265,17 +211,15 @@ class ClientRepositoryTest {
     fun givenClientIdAndAPassword_whenGettingDeletingClientSuccess_thenTheSuccessIsPropagated() = runTest {
         val param = DeleteClientParam("password", CLIENT_ID)
 
-        val expected = Either.Right(Unit)
-
-        given(clientRemoteRepository)
-            .coroutine { clientRemoteRepository.deleteClient(param) }
-            .then { expected }
+        val (arrangement, clientRepository) = Arrangement()
+            .withDeleteClientReportedly(Either.Right(Unit))
+            .arrange()
 
         val actual = clientRepository.deleteClient(param)
 
-        actual.shouldSucceed { expected.value }
+        actual.shouldSucceed()
 
-        verify(clientRemoteRepository)
+        verify(arrangement.clientRemoteRepository)
             .coroutine { clientRepository.deleteClient(param) }
             .wasInvoked(exactly = once)
     }
@@ -283,95 +227,90 @@ class ClientRepositoryTest {
     // selfListOfClients
     @Test
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
-        val expected = Either.Right(
+        val result = NetworkResponse.Success(
             listOf(
-                Client(
-                    id = PlainId(value = "client_id_1"),
-                    type = ClientType.Permanent,
-                    registrationTime = "31.08.1966",
-                    location = null,
-                    deviceType = DeviceType.Desktop,
+                ClientResponse(
+                    clientId = "client_id_1",
+                    type = ClientTypeDTO.Permanent,
+                    registrationTime = "1969-05-12T10:52:02.671Z",
+                    deviceType = DeviceTypeDTO.Desktop,
                     label = null,
-                    cookie = null,
-                    capabilities = null,
                     model = "Mac ox",
-                    mlsPublicKeys = emptyMap()
-                ),
-                Client(
-                    id = PlainId(value = "client_id_1"),
-                    type = ClientType.Permanent,
-                    registrationTime = "01.06.2022",
-                    location = null,
-                    deviceType = DeviceType.Phone,
-                    label = null,
-                    cookie = null,
                     capabilities = null,
-                    model = "iphone 15",
-                    mlsPublicKeys = emptyMap()
+                    mlsPublicKeys = null,
+                    cookie = null,
+                    location = null
                 ),
-            )
+                ClientResponse(
+                    clientId = "client_id_2",
+                    type = ClientTypeDTO.Permanent,
+                    registrationTime = "2021-05-12T10:52:02.671Z",
+                    deviceType = DeviceTypeDTO.Phone,
+                    label = null,
+                    model = "iphone 15",
+                    capabilities = null,
+                    mlsPublicKeys = null,
+                    cookie = null,
+                    location = null
+                )
+            ),
+            mapOf(),
+            200
         )
 
-        given(clientRemoteRepository)
-            .coroutine { clientRepository.selfListOfClients() }
-            .then { expected }
+        val expected = listOf(
+            Client(
+                id = PlainId(value = "client_id_1"),
+                type = ClientType.Permanent,
+                registrationTime = Instant.parse("1969-05-12T10:52:02.671Z"),
+                deviceType = DeviceType.Desktop,
+                label = null,
+                model = "Mac ox",
+                isVerified = false
+            ),
+            Client(
+                id = PlainId(value = "client_id_2"),
+                type = ClientType.Permanent,
+                registrationTime = Instant.parse("2021-05-12T10:52:02.671Z"),
+                deviceType = DeviceType.Phone,
+                label = null,
+                model = "iphone 15",
+                isVerified = false
+            ),
+        )
 
-        val actual = clientRepository.selfListOfClients()
-        actual.shouldSucceed { expected.value }
-        verify(clientRemoteRepository)
-            .coroutine { clientRepository.selfListOfClients() }
-            .wasInvoked(exactly = once)
+        val (_, clientRepository) = Arrangement()
+            .withFetchSelfUserClient(result)
+            .arrange()
+
+        clientRepository.selfListOfClients().shouldSucceed {
+            assertEquals(expected, it)
+        }
     }
 
     @Test
     fun whenSelfListOfClientsIsFail_thenTheErrorIsPropagated() = runTest {
-        val expected: Either.Left<NetworkFailure> = Either.Left(TEST_FAILURE)
+        val expected: NetworkResponse.Error = NetworkResponse.Error(TEST_FAILURE.kaliumException)
 
-        given(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.then { expected }
+        val (_, clientRepository) = Arrangement()
+            .withFetchSelfUserClient(expected)
+            .arrange()
 
-        val actual = clientRepository.selfListOfClients()
-        actual.shouldFail { expected.value }
-        verify(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.wasInvoked(exactly = once)
+        clientRepository.selfListOfClients().shouldFail {
+            assertIs<NetworkFailure.ServerMiscommunication>(it)
+            assertEquals(expected.kException, it.kaliumException)
+        }
     }
 
-    @Test
-    fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
-        given(clientRemoteRepository).coroutine {
-            registerToken(pushTokenRequestBody)
-        }
-            .then { Either.Right(Unit) }
-
-        given(clientApi)
-            .suspendFunction(clientApi::registerToken)
-            .whenInvokedWith(any())
-            .thenReturn(
-                NetworkResponse.Success(
-                    Unit,
-                    mapOf(),
-                    201
-                )
-            )
-
-        val actual = clientRemoteRepository.registerToken(pushTokenRequestBody)
-
-        actual.shouldSucceed {
-            assertEquals(Unit, it)
-        }
-
-        verify(clientRemoteRepository).suspendFunction(clientRemoteRepository::registerToken)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
 
     @Test
     fun givenClientStorageUpdatesTheClientId_whenObservingClientId_thenUpdatesShouldBePropagated() = runTest {
         // Given
         val values = listOf("first", "second")
 
-        given(clientRegistrationStorage)
-            .suspendFunction(clientRegistrationStorage::observeRegisteredClientId)
-            .whenInvoked()
-            .thenReturn(values.asFlow())
+        val (_, clientRepository) = Arrangement()
+            .withObserveRegisteredClientId(values.asFlow())
+            .arrange()
 
         // When
         clientRepository.observeCurrentClientId().test {
@@ -384,82 +323,8 @@ class ClientRepositoryTest {
         }
     }
 
-    @Test
-    fun whenOtherUsersClientsSuccess_thenTheSuccessIsReturned() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val userIdDto = UserIdDTO("123", "wire.com")
-        val otherUsersClients = listOf(
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
-        )
-
-        val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
-        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(mapOf(userIdDto to otherUsersClients)).arrange()
-
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
-
-        // Then
-        result.shouldSucceed { expectedSuccess.value }
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun whenOtherUsersClientsError_thenTheErrorIsPropagated() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val notFound = TestNetworkException.noTeam
-        val (arrangement, clientRepository) = Arrangement()
-            .withErrorResponse(notFound).arrange()
-
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
-
-        // Then
-        result.shouldFail { Either.Left(notFound).value }
-
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    private class Arrangement {
-
-        @Mock
-        val clientApi: ClientApi = mock(classOf<ClientApi>())
-
-        @Mock
-        val clientConfigImpl: ClientConfig = mock(classOf<ClientConfig>())
-
-        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
-
-        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>): Arrangement {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
-                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
-                }
-            return this
-        }
-
-        fun withErrorResponse(kaliumException: KaliumException): Arrangement {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers)
-                .whenInvokedWith(any())
-                .then {
-                    NetworkResponse.Error(
-                        kaliumException
-                    )
-                }
-            return this
-        }
-
-        fun arrange() = this to clientRepository
-    }
-
     private companion object {
+        val selfUserId = UserId("self-user-id", "domain")
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
             "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null, cookieLabel = "cookieLabel"
         )
@@ -477,5 +342,87 @@ class ClientRepositoryTest {
             senderId = "7239",
             client = "cliId", token = "7239", transport = "GCM"
         )
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val clientApi = mock(classOf<ClientApi>())
+
+        @Mock
+        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+
+        @Mock
+        val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
+            stubsUnitByDefault = true
+        }
+
+        @Mock
+        private val clientDAO = mock(classOf<ClientDAO>())
+
+        var clientRepository: ClientRepository =
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
+
+        fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
+            given(clientRegistrationStorage)
+                .suspendFunction(clientRegistrationStorage::observeRegisteredClientId)
+                .whenInvoked()
+                .thenReturn(values)
+        }
+
+        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientResponse>>) = apply {
+            given(clientApi)
+                .suspendFunction(clientApi::fetchSelfUserClient)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
+            given(clientApi)
+                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
+                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
+                }
+        }
+
+        fun withErrorResponse(kaliumException: KaliumException) = apply {
+            given(clientApi)
+                .suspendFunction(clientApi::listClientsOfUsers)
+                .whenInvokedWith(any())
+                .then {
+                    NetworkResponse.Error(
+                        kaliumException
+                    )
+                }
+        }
+
+        fun withDeleteClientReportedly(resultL: Either<NetworkFailure, Unit>) = apply {
+            given(clientRemoteRepository)
+                .suspendFunction(clientRemoteRepository::deleteClient)
+                .whenInvokedWith(any())
+                .thenReturn(resultL)
+        }
+
+        fun witGgetRegisteredClientId(result: String?) = apply {
+            given(clientRegistrationStorage)
+                .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
+            given(clientRemoteRepository)
+                .suspendFunction(clientRemoteRepository::registerClient)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withRegisterMLSClient(result: Either<NetworkFailure, Unit>) = apply {
+            given(clientRemoteRepository)
+                .suspendFunction(clientRemoteRepository::registerMLSClient)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun arrange() = this to clientRepository
     }
 }
