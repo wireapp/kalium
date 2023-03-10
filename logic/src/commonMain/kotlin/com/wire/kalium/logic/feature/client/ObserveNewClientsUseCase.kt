@@ -26,8 +26,6 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
