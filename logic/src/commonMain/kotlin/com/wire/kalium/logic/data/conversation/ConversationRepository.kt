@@ -149,8 +149,8 @@ interface ConversationRepository {
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
-        access: List<Conversation.Access>,
-        accessRole: List<Conversation.AccessRole>
+        access: Set<Conversation.Access>,
+        accessRole: Set<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
 
     suspend fun updateConversationMemberRole(
@@ -472,8 +472,8 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateAccessInfo(
         conversationID: ConversationId,
-        access: List<Conversation.Access>,
-        accessRole: List<Conversation.AccessRole>
+        access: Set<Conversation.Access>,
+        accessRole: Set<Conversation.AccessRole>
     ): Either<CoreFailure, Unit> =
         UpdateConversationAccessRequest(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
