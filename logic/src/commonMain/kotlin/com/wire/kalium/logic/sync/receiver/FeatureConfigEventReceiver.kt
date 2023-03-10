@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -40,7 +41,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         handleFeatureConfigEvent(event)
     }
 
-    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+    @Suppress("LongMethod")
+    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {
@@ -63,29 +65,60 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                         )
                     }
                 }
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
             is Event.FeatureConfig.MLSUpdated -> {
                 val mlsEnabled = event.model.status == Status.ENABLED
                 val selfUserIsWhitelisted = event.model.allowedUsers.contains(selfUserId.toPlainID())
                 userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> {
                 val classifiedDomainsEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
             is Event.FeatureConfig.ConferenceCallingUpdated -> {
                 val conferenceCallingEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
             is Event.FeatureConfig.GuestRoomLinkUpdated -> {
                 handleGuestRoomLinkFeatureConfig(event.model.status)
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
-            is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
+            is Event.FeatureConfig.UnknownFeatureUpdated -> {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "info" to "Ignoring unknown feature config update"
+                )
+                kaliumLogger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
+            }
         }
     }
 

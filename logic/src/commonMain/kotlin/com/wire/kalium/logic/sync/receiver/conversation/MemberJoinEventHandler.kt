@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberJoinEventHandler {
     suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
@@ -48,10 +49,17 @@ internal class MemberJoinEventHandlerImpl(
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
-                    logger.v("Succeeded fetching conversation details on MemberJoin Event: ${event.toLogString()}")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap()
+                    )
+                    logger.v("Success fetching conversation details on MemberJoin Event: ${logMap.toJsonElement()}")
                 }
                 onFailure {
-                    logger.w("Failure fetching conversation details on MemberJoin Event: ${event.toLogString()}")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                        "errorInfo" to "$it"
+                    )
+                    logger.w("Failure fetching conversation details on MemberJoin Event: ${logMap.toJsonElement()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt adding the members
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
@@ -67,6 +75,16 @@ internal class MemberJoinEventHandlerImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
 
-            }.onFailure { logger.e("failure on member join event: $it") }
+            }.onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
 }

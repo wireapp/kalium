@@ -20,6 +20,10 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
 
@@ -29,15 +33,27 @@ class UserPropertiesEventReceiverImpl internal constructor(
 
     override suspend fun onEvent(event: Event.UserProperty) {
         when (event) {
-            is Event.UserProperty.ReadReceiptModeSet -> handleReadReceiptMode(event)
+            is Event.UserProperty.ReadReceiptModeSet -> {
+                handleReadReceiptMode(event)
+            }
         }
     }
 
     private fun handleReadReceiptMode(event: Event.UserProperty.ReadReceiptModeSet) {
-        userConfigRepository.setReadReceiptsStatus(event.value)
-    }
-
-    private companion object {
-        const val TAG = "UserPropertiesEventReceiver"
+        userConfigRepository
+            .setReadReceiptsStatus(event.value)
+            .onSuccess {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
+            }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
     }
 }

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.coroutines.flow.firstOrNull
 
 interface DeletedConversationEventHandler {
@@ -45,15 +46,26 @@ internal class DeletedConversationEventHandlerImpl(
         if (conversation != null) {
             conversationRepository.deleteConversation(event.conversationId)
                 .onFailure { coreFailure ->
-                    logger.e("Error deleting the contents of a conversation $coreFailure")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                        "errorInfo" to "$coreFailure"
+                    )
+                    logger.e("Error Handling Event: ${logMap.toJsonElement()}")
                 }.onSuccess {
                     val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
                     val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                     ephemeralNotificationsManager.scheduleNotification(dataNotification)
-                    logger.d("Deleted the conversation ${event.conversationId}")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                    )
+                    logger.i("Success Handling Event: ${logMap.toJsonElement()}")
                 }
         } else {
-            logger.d("Skipping conversation delete event already handled")
+            val logMap = mapOf(
+                "event" to event.toLogMap(),
+                "info" to "Conversation delete event already handled?. Conversation is null."
+            )
+            logger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
         }
     }
 }

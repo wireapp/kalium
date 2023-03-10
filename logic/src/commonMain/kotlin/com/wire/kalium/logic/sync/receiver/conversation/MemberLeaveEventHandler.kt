@@ -35,6 +35,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
@@ -65,8 +66,18 @@ internal class MemberLeaveEventHandlerImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
-            .onFailure { logger.e("failure on member leave event: $it") }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
 
     private suspend fun deleteMembers(
         userIDList: List<UserId>,

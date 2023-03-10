@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.coroutines.flow.first
 
 interface TeamEventReceiver : EventReceiver<Event.Team>
@@ -57,7 +58,19 @@ internal class TeamEventReceiverImpl(
             teamId = event.teamId,
             userId = event.memberId,
         )
-            .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+            .onSuccess {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
+            }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
 
     private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) {
         val userId = UserId(event.memberId, selfUserId.domain)
@@ -68,25 +81,50 @@ internal class TeamEventReceiverImpl(
             .onSuccess {
                 val knownUser = userRepository.getKnownUser(userId).first()
                 if (knownUser?.name != null) {
-                    val conversationIds = conversationRepository.getConversationIdsByUserId(userId)
-                    conversationIds.onSuccess {
-                        it.forEach { conversationId ->
-                            val message = Message.System(
-                                id = uuid4().toString(), // We generate a random uuid for this new system message
-                                content = MessageContent.TeamMemberRemoved(knownUser.name),
-                                conversationId = conversationId,
-                                date = event.timestampIso,
-                                senderUserId = userId,
-                                status = Message.Status.SENT,
-                                visibility = Message.Visibility.VISIBLE
+                    conversationRepository.getConversationIdsByUserId(userId)
+                        .onSuccess {
+                            it.forEach { conversationId ->
+                                val message = Message.System(
+                                    id = uuid4().toString(), // We generate a random uuid for this new system message
+                                    content = MessageContent.TeamMemberRemoved(knownUser.name),
+                                    conversationId = conversationId,
+                                    date = event.timestampIso,
+                                    senderUserId = userId,
+                                    status = Message.Status.SENT,
+                                    visibility = Message.Visibility.VISIBLE
+                                )
+                                persistMessage(message)
+                            }
+
+                            val logMap = mapOf(
+                                "event" to event.toLogMap(),
                             )
-                            persistMessage(message)
+                            kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                        }.onFailure {
+                            val logMap = mapOf(
+                                "event" to event.toLogMap(),
+                                "errorInfo" to "$it"
+                            )
+                            kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
                         }
-                    }
+                } else {
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                        "info" to "User or User name is null"
+                    )
+                    kaliumLogger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
                 }
             }
-            .onSuccess { conversationRepository.deleteUserFromConversations(userId) }
-            .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+            .onSuccess {
+                conversationRepository.deleteUserFromConversations(userId)
+            }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
     }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =
@@ -95,7 +133,19 @@ internal class TeamEventReceiverImpl(
             userId = event.memberId,
             permissionCode = event.permissionCode,
         )
-            .onFailure { kaliumLogger.e("$TAG - failure on member update event: $it") }
+            .onSuccess {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
+            }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
 
     private suspend fun handleUpdate(event: Event.Team.Update) =
         teamRepository.updateTeam(
@@ -105,9 +155,17 @@ internal class TeamEventReceiverImpl(
                 icon = event.icon
             )
         )
-            .onFailure { kaliumLogger.e("$TAG - failure on team update event: $it") }
-
-    private companion object {
-        const val TAG = "TeamEventReceiver"
-    }
+            .onSuccess {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                kaliumLogger.i("Success Handling Event: ${logMap.toJsonElement()}")
+            }
+            .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }
 }

@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode as NetworkReceiptMode
 
 interface NewConversationEventHandler {
@@ -63,6 +64,10 @@ internal class NewConversationEventHandlerImpl(
                 .toSet())
         }
         .onSuccess {
+            val logMap = mutableMapOf<String, Any?>(
+                "event" to event.toLogMap(),
+            )
+
             if (event.conversation.type == ConversationResponse.Type.GROUP && isSelfATeamMember()) {
                 val message = Message.System(
                     uuid4().toString(),
@@ -76,7 +81,18 @@ internal class NewConversationEventHandlerImpl(
                     Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
+
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+            } else {
+                logMap["info"] = "Conversation either not group or self not a team member"
+                logger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
             }
         }
-        .onFailure { logger.e("failure on new conversation event: $it") }
+        .onFailure {
+            val logMap = mapOf(
+                "event" to event.toLogMap(),
+                "errorInfo" to "$it"
+            )
+            logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+        }
 }

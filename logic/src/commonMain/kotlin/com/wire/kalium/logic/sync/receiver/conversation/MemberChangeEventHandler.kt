@@ -25,6 +25,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberChangeEventHandler {
     suspend fun handle(event: Event.Conversation.MemberChanged)
@@ -43,6 +44,10 @@ internal class MemberChangeEventHandlerImpl(
                     event.mutedConversationStatus,
                     DateTimeUtil.currentInstant().toEpochMilliseconds()
                 )
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
@@ -50,18 +55,40 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.fetchConversationIfUnknown(event.conversationId)
                     .run {
                         onSuccess {
-                            logger.v("Succeeded fetching conversation details on MemberChange Event: ${event.toLogString()}")
+                            val logMap = mapOf(
+                                "event" to event.toLogMap(),
+                            )
+                            logger.v("Succeeded fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
                         }
                         onFailure {
-                            logger.w("Failure fetching conversation details on MemberChange Event: ${event.toLogString()}")
+                            val logMap = mapOf(
+                                "event" to event.toLogMap(),
+                                "errorInfo" to "$it"
+                            )
+                            logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
                         }
                         // Even if unable to fetch conversation details, at least attempt updating the member
                         conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
-                    }.onFailure { logger.e("failure on member update event: $it") }
+                    }.onFailure {
+                        val logMap = mapOf(
+                            "event" to event.toLogMap(),
+                            "errorInfo" to "$it"
+                        )
+                        logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+                    }.onSuccess {
+                        val logMap = mapOf(
+                            "event" to event.toLogMap(),
+                        )
+                        logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                    }
             }
 
             else -> {
-                logger.w("Ignoring 'conversation.member-update' event, not handled yet: ${event.toLogString()}")
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "info" to "Ignoring 'conversation.member-update' event, not handled yet"
+                )
+                logger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
             }
         }
     }

@@ -34,6 +34,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface ReceiptModeUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
@@ -63,12 +64,17 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
-                logger.d("[ReceiptModeUpdateEventHandler][Success] - Receipt Mode: [${event.receiptMode}]")
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
             .onFailure { coreFailure ->
-                logger.d("[ReceiptModeUpdateEventHandler][Error] - Receipt Mode: [${event.receiptMode}] " +
-                        "| Conversation: [${event.conversationId.toLogString()}] " +
-                        "| CoreFailure: [$coreFailure]")
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$coreFailure"
+                )
+                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
             }
     }
 

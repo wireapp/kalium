@@ -30,6 +30,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)
@@ -44,7 +45,6 @@ internal class RenamedConversationEventHandlerImpl(
     override suspend fun handle(event: Event.Conversation.RenamedConversation) {
         updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
             .onSuccess {
-                logger.d("The Conversation was renamed: ${event.conversationId.toLogString()}")
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
@@ -54,9 +54,17 @@ internal class RenamedConversationEventHandlerImpl(
                     status = Message.Status.SENT,
                 )
                 persistMessage(message)
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                )
+                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
             }
             .onFailure { coreFailure ->
-                logger.e("Error renaming the conversation [${event.conversationId.toLogString()}] $coreFailure")
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$coreFailure"
+                )
+                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
             }
     }
 
