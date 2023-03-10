@@ -24,6 +24,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.functional.fold
@@ -96,6 +97,7 @@ internal class LoginUseCaseImpl internal constructor(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
+    private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
@@ -106,9 +108,10 @@ internal class LoginUseCaseImpl internal constructor(
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
-
+        var isEmail = false
         return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
+                isEmail = true
                 loginRepository.loginWithEmail(
                     email = cleanUserIdentifier,
                     password = password,
@@ -133,16 +136,23 @@ internal class LoginUseCaseImpl internal constructor(
             .fold({
                 when (it) {
                     is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
-                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
+                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
                     is NetworkFailure.NoNetworkConnection, NetworkFailure.FederatedBackendFailure ->
                         AuthenticationResult.Failure.Generic(it)
                 }
             }, {
+                if (isEmail && secondFactorVerificationCode != null) {
+                    secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, secondFactorVerificationCode)
+                }
                 it
             })
     }
 
-    private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {
+    private suspend fun handleServerMiscommunication(
+        error: NetworkFailure.ServerMiscommunication,
+        isEmail: Boolean,
+        userIdentifier: String,
+    ): AuthenticationResult.Failure {
         fun genericError() = AuthenticationResult.Failure.Generic(error)
 
         val kaliumException = error.kaliumException
@@ -157,8 +167,12 @@ internal class LoginUseCaseImpl internal constructor(
                 AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
                     AuthenticationResult.Failure.InvalidCredentials.Missing2FA
 
-                AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE ->
+                AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE -> {
+                    if (isEmail) {
+                        secondFactorVerificationRepository.clearStoredVerificationCode(userIdentifier)
+                    }
                     AuthenticationResult.Failure.InvalidCredentials.Invalid2FA
+                }
 
                 else -> genericError()
             }

@@ -37,6 +37,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class SecondFactorVerificationRepositoryTest {
 
@@ -87,6 +88,47 @@ class SecondFactorVerificationRepositoryTest {
             .suspendFunction(arrangement.verificationCodeApi::sendVerificationCode)
             .with(eq(EMAIL), any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStoredVerificationCodeForEmail_whenGettingVerificationCode_thenShouldReturnStoredCode() = runTest {
+        val (_, secondFactorVerificationRepository) = Arrangement().arrange()
+
+        val verificationCode = "111"
+
+        secondFactorVerificationRepository.storeVerificationCode(EMAIL, verificationCode)
+
+        val result = secondFactorVerificationRepository.getStoredVerificationCode(EMAIL)
+
+        assertEquals(verificationCode, result)
+    }
+
+    @Test
+    fun givenStoredVerificationCodeForEmail_whenGettingVerificationCodeForAnotherEmail_thenShouldReturnNull() = runTest {
+        val (_, secondFactorVerificationRepository) = Arrangement().arrange()
+
+        val verificationCode = "111"
+
+        secondFactorVerificationRepository.storeVerificationCode(EMAIL, verificationCode)
+
+        val result = secondFactorVerificationRepository.getStoredVerificationCode("SomeOtherEmail@example.org")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenClearedTheStoredVerificationCodeForEmail_whenGettingVerificationCodeForAnotherEmail_thenShouldReturnNull() = runTest {
+        val (_, secondFactorVerificationRepository) = Arrangement().arrange()
+
+        val verificationCode = "111"
+
+        secondFactorVerificationRepository.storeVerificationCode(EMAIL, verificationCode)
+
+        secondFactorVerificationRepository.clearStoredVerificationCode(EMAIL)
+
+        val result = secondFactorVerificationRepository.getStoredVerificationCode(EMAIL)
+
+        assertNull(result)
     }
 
     private class Arrangement {
