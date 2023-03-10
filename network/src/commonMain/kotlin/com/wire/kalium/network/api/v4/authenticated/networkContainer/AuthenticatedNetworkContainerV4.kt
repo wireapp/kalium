@@ -38,7 +38,6 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
 import com.wire.kalium.network.api.v4.authenticated.AssetApiV4
@@ -87,7 +86,7 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV4(networkClient)
 
-    override val conversationApi: ConversationApi get() = ConversationApiV4(networkClient, ApiModelMapperImpl())
+    override val conversationApi: ConversationApi get() = ConversationApiV4(networkClient)
 
     override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV4(networkClient)
 

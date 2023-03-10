@@ -16,14 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v2
+package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-import com.wire.kalium.network.api.v2.authenticated.MLSMessageApiV2
+import com.wire.kalium.network.api.v4.authenticated.MLSMessageApiV4
 import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -34,7 +35,25 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class MLSMessageApiV2Test : ApiTest {
+class MLSMessageApiV4Test : ApiTest {
+
+    @Test
+    fun givenMessage_whenSendingCommitBundle_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
+                statusCode = HttpStatusCode.Created,
+                assertion =
+                {
+                    assertPost()
+                    assertContentType(ContentType.Application.XProtoBuf)
+                    assertPathEqual(PATH_COMMIT_BUNDLES)
+                }
+            )
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
+            val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+            assertTrue(response.isSuccessful())
+        }
 
     @Test
     fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =
@@ -49,7 +68,7 @@ class MLSMessageApiV2Test : ApiTest {
                     assertPathEqual(PATH_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV2(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
             val response = mlsMessageApi.sendMessage(MESSAGE)
             assertTrue(response.isSuccessful())
         }
@@ -67,7 +86,7 @@ class MLSMessageApiV2Test : ApiTest {
                     assertPathEqual(PATH_WELCOME_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV2(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
             val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
             assertTrue(response.isSuccessful())
         }
@@ -83,9 +102,10 @@ class MLSMessageApiV2Test : ApiTest {
     private companion object {
         const val PATH_MESSAGE = "/mls/messages"
         const val PATH_WELCOME_MESSAGE = "/mls/welcome"
+        const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
+
         val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
         val WELCOME_MESSAGE = MLSMessageApi.WelcomeMessage("WelcomeMessage".encodeToByteArray())
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
-
 }

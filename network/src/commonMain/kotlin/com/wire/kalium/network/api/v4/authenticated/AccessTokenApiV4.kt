@@ -18,46 +18,9 @@
 
 package com.wire.kalium.network.api.v4.authenticated
 
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.v3.authenticated.AccessTokenApiV3
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.http.HttpHeaders
 
 internal class AccessTokenApiV4 internal constructor(
     private val httpClient: HttpClient
-) : AccessTokenApiV3(httpClient) {
-    override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
-        wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post(PATH_ACCESS) {
-                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
-                parameter(CLIENT_ID_QUERY_KEY, clientId)
-            }
-        }.flatMap { accessTokenResponse ->
-            accessTokenResponse.cookies[RefreshTokenProperties.COOKIE_NAME].let { newRefreshToken ->
-                newRefreshToken?.let {
-                    NetworkResponse.Success(
-                        Pair(accessTokenResponse.value, RefreshTokenDTO(newRefreshToken)),
-                        accessTokenResponse.headers,
-                        accessTokenResponse.httpCode
-                    )
-                } ?: run {
-                    NetworkResponse.Success(
-                        Pair(accessTokenResponse.value, null), accessTokenResponse.headers, accessTokenResponse.httpCode
-                    )
-                }
-            }
-        }
-
-    private companion object {
-        const val PATH_ACCESS = "access"
-        const val CLIENT_ID_QUERY_KEY = "client_id"
-    }
-}
+) : AccessTokenApiV3(httpClient)

@@ -19,8 +19,23 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.v3.authenticated.MLSPublicKeyApiV3
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 
 internal open class MLSPublicKeyApiV4 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : MLSPublicKeyApiV3(authenticatedNetworkClient)
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : MLSPublicKeyApiV3() {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
+    override suspend fun getMLSPublicKeys(): NetworkResponse<MLSPublicKeysDTO> =
+        wrapKaliumResponse { httpClient.get("$PATH_MLS/$PATH_PUBLIC_KEYS") }
+
+    private companion object {
+        const val PATH_PUBLIC_KEYS = "public-keys"
+        const val PATH_MLS = "mls"
+    }
+}
