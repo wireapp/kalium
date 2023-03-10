@@ -48,31 +48,34 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
 
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                if(message is Message.Regular) enqueueSelfDeletion(message = message)
+                if (message is Message.Regular) enqueueSelfDeletion(message = message)
             }
         }
     }
 
     private suspend fun enqueueSelfDeletion(message: Message.Regular) {
-        if(message.isEphemeral){
+        if (message.isEphemeralMessage) {
+            val expirationData = message.expirationData!!
 
+            with(expirationData) {
+                if (!isDeletionStartedInThePast()) {
+                    messageRepository.markSelfDeletionStartDate(
+                        conversationId = message.conversationId,
+                        messageUuid = message.id,
+                        deletionStartDate = Clock.System.now()
+                    )
+                }
+
+                delay(timeLeftForDeletion())
+            }
+
+            onGoingSelfDeletionMessagesMutex.withLock {
+                onGoingSelfDeletionMessages - message.conversationId to message.id
+            }
+
+            messageRepository.deleteMessage(message.id, message.conversationId)
         }
 
-        if (!message.isDeletionStartedInThePast()) {
-            messageRepository.markSelfDeletionStartDate(
-                conversationId = message.conversationId,
-                messageUuid = message.id,
-                deletionStartDate = Clock.System.now().toEpochMilliseconds()
-            )
-        }
-
-        delay(message.timeLeftForDeletion())
-
-        onGoingSelfDeletionMessagesMutex.withLock {
-            onGoingSelfDeletionMessages - message.conversationId to message.id
-        }
-
-        messageRepository.deleteMessage(message.id, message.conversationId)
     }
 
     override fun enqueuePendingSelfDeletionMessages() {
@@ -80,8 +83,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
             messageRepository.getEphemeralMessages()
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
-                        require(ephemeralMessage is Message.Ephemeral)
-
                         launch {
                             enqueueSelfDeletion(message = ephemeralMessage)
                         }

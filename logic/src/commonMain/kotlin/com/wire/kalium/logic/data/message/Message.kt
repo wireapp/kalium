@@ -79,8 +79,7 @@ sealed interface Message {
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
 
-        val isEphemeral = expirationData != null
-
+        val isEphemeralMessage = expirationData != null
 
         @Suppress("LongMethod")
         override fun toString(): String {
@@ -298,7 +297,23 @@ sealed interface Message {
         data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
-    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?)
+    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?) {
+        fun isDeletionStartedInThePast(): Boolean {
+            return selfDeletionStartDate != null
+        }
+
+        // time left for deletion it can be a negative value if the time difference between the self deletion start date and
+        // now is greater then expire after millis
+        fun timeLeftForDeletion(): Long {
+            return if (!isDeletionStartedInThePast()) {
+                expireAfterMillis
+            } else {
+                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStartDate!!
+
+                expireAfterMillis - timeElapsedSinceSelfDeletionStartDate.inWholeMilliseconds
+            }
+        }
+    }
 
     enum class UploadStatus {
         /**
