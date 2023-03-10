@@ -8,10 +8,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -80,7 +77,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     override fun enqueuePendingSelfDeletionMessages() {
         launch {
-            messageRepository.getEphemeralMessages()
+            messageRepository.getEphemeralMessagesMarkedForDeletion()
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
                         launch {

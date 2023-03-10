@@ -164,7 +164,7 @@ interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
-    suspend fun getEphemeralMessages(): Either<CoreFailure, List<Message.Regular>>
+    suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message.Regular>>
     suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
         messageUuid: String,
@@ -428,8 +428,8 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getEphemeralMessages(): Either<CoreFailure, List<Message.Regular>> = wrapStorageRequest {
-        messageDAO.getEphemeralMessages().map(messageMapper::fromEntityToMessage)
+    override suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message.Regular>> = wrapStorageRequest {
+        messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
     }
 
     override suspend fun markSelfDeletionStartDate(

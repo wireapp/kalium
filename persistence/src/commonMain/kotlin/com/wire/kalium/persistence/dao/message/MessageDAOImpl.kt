@@ -337,9 +337,9 @@ class MessageDAOImpl(
         )
     }
 
-    override suspend fun getEphemeralMessages(): List<MessageEntity> {
+    override suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectAllEphemeralMessagesMarkedForDeletion(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 

@@ -603,9 +603,10 @@ SET creation_date = creation_date + :delivery_duration
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
 
-selectAllEphemeralMessages:
+selectAllEphemeralMessagesMarkedForDeletion:
 SELECT * FROM MessageDetailsView
-WHERE expireAfterMillis NOT NULL;
+WHERE expireAfterMillis NOT NULL
+AND selfDeletionStartDate NOT NULL;
 
 markSelfDeletionStartDate:
 UPDATE Message
