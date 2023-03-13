@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository.Companion.BUFFER_SIZE
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -32,6 +34,11 @@ internal interface IncrementalSyncRepository {
      * - Has a replay size of 1, so the latest
      * value is always immediately available for new observers.
      * - Doesn't emit repeated values.
+     * - It has a limited buffer of size [BUFFER_SIZE]
+     * that will drop the oldest values if the buffer is full
+     * to prevent emissions from being suspended due to slow
+     * collectors.
+     * @see [BufferOverflow]
      */
     val incrementalSyncState: Flow<IncrementalSyncStatus>
 
@@ -40,16 +47,28 @@ internal interface IncrementalSyncRepository {
      * - Has a replay size of 1, so the latest
      * value is always immediately available for new observers.
      * - Doesn't emit repeated values.
+     * - It has a limited buffer of size [BUFFER_SIZE]
+     * that will drop the oldest values if the buffer is full
+     * to prevent emissions from being suspended due to slow
+     * collectors.
+     * @see [BufferOverflow]
      */
     val connectionPolicyState: Flow<ConnectionPolicy>
     suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus)
     suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
+
+
+    companion object {
+        // The same default buffer size used by Coroutines channels
+        const val BUFFER_SIZE = 64
+    }
 }
 
 internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     private val _syncState = MutableSharedFlow<IncrementalSyncStatus>(
         replay = 1,
-        extraBufferCapacity = BUFFER_SIZE
+        extraBufferCapacity = BUFFER_SIZE,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
     override val incrementalSyncState = _syncState
@@ -58,7 +77,8 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
 
     private val _connectionPolicy = MutableSharedFlow<ConnectionPolicy>(
         replay = 1,
-        extraBufferCapacity = BUFFER_SIZE
+        extraBufferCapacity = BUFFER_SIZE,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
     override val connectionPolicyState = _connectionPolicy
@@ -80,8 +100,4 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
         _connectionPolicy.emit(connectionPolicy)
     }
 
-    private companion object {
-        // The same default buffer size used by Coroutines channels
-        const val BUFFER_SIZE = 64
-    }
 }
