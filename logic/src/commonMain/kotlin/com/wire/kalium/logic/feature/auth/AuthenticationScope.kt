@@ -75,8 +75,8 @@ class AuthenticationScope(
     private val ssoLoginRepository: SSOLoginRepository
         get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
-    private val secondFactorVerificationRepository: SecondFactorVerificationRepository
-        get() = SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
+    internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
+        SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
 
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -90,7 +90,8 @@ class AuthenticationScope(
             validateEmailUseCase,
             validateUserHandleUseCase,
             serverConfig,
-            proxyCredentials
+            proxyCredentials,
+            secondFactorVerificationRepository
         )
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
