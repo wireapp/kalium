@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -40,7 +42,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         handleFeatureConfigEvent(event)
     }
 
-    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+    @Suppress("LongMethod")
+    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {
@@ -63,29 +66,66 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                         )
                     }
                 }
+
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
             is Event.FeatureConfig.MLSUpdated -> {
                 val mlsEnabled = event.model.status == Status.ENABLED
                 val selfUserIsWhitelisted = event.model.allowedUsers.contains(selfUserId.toPlainID())
                 userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> {
                 val classifiedDomainsEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
+
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
             is Event.FeatureConfig.ConferenceCallingUpdated -> {
                 val conferenceCallingEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
+
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
             is Event.FeatureConfig.GuestRoomLinkUpdated -> {
                 handleGuestRoomLinkFeatureConfig(event.model.status)
+
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
-            is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
+            is Event.FeatureConfig.UnknownFeatureUpdated -> {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event,
+                        Pair("info", "Ignoring unknown feature config update")
+                    )
+            }
         }
     }
 

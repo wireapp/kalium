@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -63,12 +65,19 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
-                logger.d("[ReceiptModeUpdateEventHandler][Success] - Receipt Mode: [${event.receiptMode}]")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
             .onFailure { coreFailure ->
-                logger.d("[ReceiptModeUpdateEventHandler][Error] - Receipt Mode: [${event.receiptMode}] " +
-                        "| Conversation: [${event.conversationId.toLogString()}] " +
-                        "| CoreFailure: [$coreFailure]")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$coreFailure")
+                    )
             }
     }
 

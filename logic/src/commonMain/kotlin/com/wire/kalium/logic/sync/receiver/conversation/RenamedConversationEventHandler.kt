@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
@@ -44,7 +46,6 @@ internal class RenamedConversationEventHandlerImpl(
     override suspend fun handle(event: Event.Conversation.RenamedConversation) {
         updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
             .onSuccess {
-                logger.d("The Conversation was renamed: ${event.conversationId.toLogString()}")
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
@@ -54,13 +55,28 @@ internal class RenamedConversationEventHandlerImpl(
                     status = Message.Status.SENT,
                 )
                 persistMessage(message)
+                logger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
             .onFailure { coreFailure ->
-                logger.e("Error renaming the conversation [${event.conversationId.toLogString()}] $coreFailure")
+                logger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$coreFailure")
+                    )
             }
     }
 
-    private suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
-        wrapStorageRequest { conversationDAO.updateConversationName(conversationId.toDao(), conversationName, timestamp) }
-
+    private suspend fun updateConversationName(
+        conversationId: ConversationId,
+        conversationName: String,
+        timestamp: String
+    ) =
+        wrapStorageRequest {
+            conversationDAO.updateConversationName(conversationId.toDao(), conversationName, timestamp)
+        }
 }
