@@ -36,7 +36,7 @@ class ObserveSelfUserWithTeamUseCaseTest {
     private val arrangement = Arrangement()
 
     @Test
-    fun testIfValidDataIsPassedForward_0() = runTest {
+    fun whenUserHasNoTeam_thenValidDataIsPassedForward() = runTest {
         val expected = TestUser.SELF to null
         val (_, useCase) = arrangement
             .withSelfUserWithTeam(expected)
@@ -49,7 +49,7 @@ class ObserveSelfUserWithTeamUseCaseTest {
     }
 
     @Test
-    fun testIfValidDataIsPassedForward_1() = runTest {
+    fun whenUserHasTeam_thenValidDataIsPassedForward() = runTest {
         val expected = TestUser.SELF to TestTeam.TEAM
         val (_, useCase) = arrangement
             .withSelfUserWithTeam(expected)
