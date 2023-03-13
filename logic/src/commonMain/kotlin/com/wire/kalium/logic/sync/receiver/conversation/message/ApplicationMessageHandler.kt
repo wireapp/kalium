@@ -130,7 +130,7 @@ internal class ApplicationMessageHandlerImpl(
                         )
                     }
                 )
-                processMessage(message, content.expiresAfterMillis)
+                processMessage(message)
             }
 
             is MessageContent.Signaling -> {

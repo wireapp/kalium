@@ -40,6 +40,8 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -78,11 +80,13 @@ class MessageMapperImpl(
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
                 },
-                expirationData = message.expirationData?.run {
-                    MessageEntity.ExpirationData(
-                        expireAfter,
-                        selfDeletionStatus
-                    )
+                expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
+                selfDeletionStartDate = message.expirationData?.let {
+                    if (it.selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.Started) {
+                        it.selfDeletionStatus.selfDeletionStartDate
+                    } else {
+                        null
+                    }
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,

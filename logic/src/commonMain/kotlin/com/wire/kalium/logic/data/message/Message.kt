@@ -304,19 +304,15 @@ sealed interface Message {
             data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
         }
 
-        fun hasDeletionStartedInThePast(): Boolean {
-            return selfDeletionStatus != null
-        }
-
         // time left for deletion it can be a negative value if the time difference between the self deletion start date and
         // now is greater then expire after millis
         fun timeLeftForDeletion(): Duration {
-            return if (!hasDeletionStartedInThePast()) {
-                expireAfter
-            } else {
-                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus!!
+            return if (selfDeletionStatus is SelfDeletionStatus.Started) {
+                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
 
                 expireAfter - timeElapsedSinceSelfDeletionStartDate
+            } else {
+                expireAfter
             }
         }
     }

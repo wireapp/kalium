@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 sealed class MessageEntity(
@@ -50,7 +51,8 @@ sealed class MessageEntity(
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val expirationData: ExpirationData? = null,
+        val expireAfterMs: Long? = null,
+        val selfDeletionStartDate: Instant? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false
     ) : MessageEntity(
@@ -124,8 +126,6 @@ sealed class MessageEntity(
             }
         }
     }
-
-    data class ExpirationData(val expireAfterMillis: Long, val selfDeletionStartDate: Instant?)
 
     enum class UploadStatus {
         /**

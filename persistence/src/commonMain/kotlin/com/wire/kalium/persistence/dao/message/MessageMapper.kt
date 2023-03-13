@@ -233,7 +233,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionDate: Instant?
+        selfDeletionStartDate: Instant?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -245,7 +245,8 @@ object MessageMapper {
                 senderClientId = senderClientId!!,
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
-                expirationData = if (expireAfterMillis != null) MessageEntity.ExpirationData(expireAfterMillis, selfDeletionDate) else null,
+                expireAfterMs = expireAfterMillis,
+                selfDeletionStartDate = selfDeletionStartDate,
                 visibility = visibility,
                 reactions = ReactionsEntity(
                     totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),

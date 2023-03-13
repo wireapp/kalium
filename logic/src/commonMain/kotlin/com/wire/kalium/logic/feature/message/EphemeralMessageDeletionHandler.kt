@@ -51,11 +51,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     private suspend fun enqueueSelfDeletion(message: Message.Regular) {
-        message.expirationData?.let {
-            val expirationData = message.expirationData
-
+        message.expirationData?.let { expirationData ->
             with(expirationData) {
-                if (!hasDeletionStartedInThePast()) {
+                if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
                     messageRepository.markSelfDeletionStartDate(
                         conversationId = message.conversationId,
                         messageUuid = message.id,
@@ -80,7 +78,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
                         launch {
-                            enqueueSelfDeletion(message = ephemeralMessage)
+                            if (ephemeralMessage is Message.Regular) {
+                                enqueueSelfDeletion(message = ephemeralMessage)
+                            }
                         }
                     }
                 }
