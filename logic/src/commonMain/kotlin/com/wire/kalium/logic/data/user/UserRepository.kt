@@ -222,11 +222,12 @@ internal class UserDataSource internal constructor(
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
             // If the self user is not in the database, proactively fetch it.
             if (it == null) {
-                kaliumLogger.w("Observing self user before it's inserted into the DB. Triggering a fetch.")
+                val logPrefix = "Observing self user before insertion"
+                kaliumLogger.w("$logPrefix: Triggering a fetch.")
                 fetchSelfUser().fold({ failure ->
-                    kaliumLogger.e("Fetching of self user failed, caused by $failure")
+                    kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
                 }, {
-                    kaliumLogger.i("Fetching of self user succeeded")
+                    kaliumLogger.i("$logPrefix: Succeeded")
                 })
             }
         }.filterNotNull().flatMapMerge { encodedValue ->
