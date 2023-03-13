@@ -129,8 +129,34 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenRemovedClientOrDeletedAccount_whenLoggingOutWithWipeOnDeviceRemovalEnabled_thenExecuteAllRequiredActions() = runTest {
+    fun givenRemovedClient_whenLoggingOutWithWipeOnDeviceRemovalEnabled_thenExecuteAllRequiredActions() = runTest {
         val reason = LogoutReason.REMOVED_CLIENT
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withKaliumConfigs { it.copy(wipeOnDeviceRemoval = true) }
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.clearClientDataUseCase)
+            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+        verify(arrangement.clearUserDataUseCase)
+            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenDeletedAccount_whenLoggingOutWithWipeOnDeviceRemovalEnabled_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.DELETED_ACCOUNT
         val (arrangement, logoutUseCase) = Arrangement()
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
