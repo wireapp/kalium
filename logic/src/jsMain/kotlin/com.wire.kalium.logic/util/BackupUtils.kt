@@ -15,3 +15,6 @@ actual fun checkIfCompressedFileContainsFileTypes(
     expectedFileExtensions: List<String>
 ): Either<CoreFailure, Map<String, Boolean>> =
     TODO("Implement own JS decompression method")
+
+actual inline fun <reified T> decodeSequence(bufferedSource: BufferedSource) : Sequence<T> =
+    TODO("Implement own JS decodeSequence method")

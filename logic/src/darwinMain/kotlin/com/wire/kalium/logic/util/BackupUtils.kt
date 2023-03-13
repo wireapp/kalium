@@ -21,6 +21,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.functional.Either
+import okio.BufferedSource
 import okio.Source
 import okio.Sink
 import okio.Path
@@ -35,3 +36,6 @@ actual fun checkIfCompressedFileContainsFileTypes(
     expectedFileExtensions: List<String>
 ): Either<CoreFailure, Map<String, Boolean>> =
     TODO("Implement own iOS decompression method")
+
+actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource) : Sequence<T> =
+    TODO("Implement own iOS decodeSequence method")

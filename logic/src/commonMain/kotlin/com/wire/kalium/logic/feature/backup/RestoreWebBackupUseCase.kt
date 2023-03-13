@@ -21,13 +21,12 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
-import com.wire.kalium.logic.data.web.toConversation
-import com.wire.kalium.logic.data.web.toMigratedMessage
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.logic.data.web.WebConversationContent
 import com.wire.kalium.logic.data.web.WebEventContent
+import com.wire.kalium.logic.data.web.toConversation
+import com.wire.kalium.logic.data.web.toMigratedMessage
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_CONVERSATIONS_FILE_NAME
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_WEB_EVENTS_FILE_NAME
@@ -38,14 +37,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.util.decodeBufferSequence
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.DecodeSequenceMode
-import kotlinx.serialization.json.decodeToSequence
 import okio.Path
 import okio.buffer
 import okio.use
@@ -94,10 +92,7 @@ internal class RestoreWebBackupUseCaseImpl(
         kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
                 .use {
-                    val sequence = KtxWebSerializer.json.decodeToSequence<WebConversationContent>(
-                        it.inputStream(),
-                        DecodeSequenceMode.ARRAY_WRAPPED
-                    )
+                    val sequence = decodeBufferSequence<WebConversationContent>(it)
                     val iterator = sequence.iterator()
                     val migratedConversations = mutableListOf<Conversation>()
                     while (iterator.hasNext()) {
@@ -119,10 +114,7 @@ internal class RestoreWebBackupUseCaseImpl(
         .firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
                 .use {
-                    val sequence = KtxWebSerializer.json.decodeToSequence<WebEventContent>(
-                        it.inputStream(),
-                        DecodeSequenceMode.ARRAY_WRAPPED
-                    )
+                    val sequence = decodeBufferSequence<WebEventContent>(it)
                     val iterator = sequence.iterator()
 
                     val migratedMessagesBatch = mutableListOf<MigratedMessage>()
