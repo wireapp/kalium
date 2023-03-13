@@ -117,7 +117,7 @@ internal class LoginUseCaseImpl internal constructor(
                     password = password,
                     label = cookieLabel,
                     shouldPersistClient = shouldPersistClient,
-                    secondFactorVerificationCode = secondFactorVerificationCode,
+                    secondFactorVerificationCode = secondFactorVerificationCode?.trim()?.takeIf { it.isNotBlank() }
                 )
             }
 
