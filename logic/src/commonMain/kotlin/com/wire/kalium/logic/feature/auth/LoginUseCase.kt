@@ -108,16 +108,16 @@ internal class LoginUseCaseImpl internal constructor(
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
-        var isEmail = false
+        val isEmail = validateEmailUseCase(cleanUserIdentifier)
+        val clean2FACode = secondFactorVerificationCode?.trim()?.takeIf { it.isNotBlank() }
         return when {
-            validateEmailUseCase(cleanUserIdentifier) -> {
-                isEmail = true
+            isEmail -> {
                 loginRepository.loginWithEmail(
                     email = cleanUserIdentifier,
                     password = password,
                     label = cookieLabel,
                     shouldPersistClient = shouldPersistClient,
-                    secondFactorVerificationCode = secondFactorVerificationCode?.trim()?.takeIf { it.isNotBlank() }
+                    secondFactorVerificationCode = clean2FACode
                 )
             }
 
@@ -141,8 +141,8 @@ internal class LoginUseCaseImpl internal constructor(
                         AuthenticationResult.Failure.Generic(it)
                 }
             }, {
-                if (isEmail && secondFactorVerificationCode != null) {
-                    secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, secondFactorVerificationCode)
+                if (isEmail && clean2FACode != null) {
+                    secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
                 }
                 it
             })
