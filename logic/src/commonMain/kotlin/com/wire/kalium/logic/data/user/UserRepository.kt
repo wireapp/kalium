@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -76,6 +77,7 @@ internal interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
+    suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -226,6 +228,16 @@ internal class UserDataSource internal constructor(
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromDaoModelToSelfUser)
+        }
+    }
+
+    @OptIn(FlowPreview::class)
+    override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
+        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
+            userDAO.getUserWithTeamByQualifiedID(selfUserID)
+                .filterNotNull()
+                .map(userMapper::fromDaoModelToSelfUserWithTeam)
         }
     }
 

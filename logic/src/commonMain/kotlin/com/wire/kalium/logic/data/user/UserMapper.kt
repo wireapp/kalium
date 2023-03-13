@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -43,6 +44,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserEntityWithTeam
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
@@ -56,6 +58,7 @@ interface UserMapper {
 
     fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToSelfUserWithTeam(userEntity: UserEntityWithTeam): Pair<SelfUser, Team?>
     fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity
 
     /**
@@ -149,6 +152,27 @@ internal class UserMapperImpl(
             completeAssetId?.toModel(),
             availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
         )
+    }
+
+    override fun fromDaoModelToSelfUserWithTeam(userEntity: UserEntityWithTeam) = with(userEntity) {
+        val user = SelfUser(
+            id.toModel(),
+            name,
+            handle,
+            email,
+            phone,
+            accentId,
+            team?.let { TeamId(it) },
+            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewAssetId?.toModel(),
+            completeAssetId?.toModel(),
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+        )
+
+        val team = if (team != null && teamName != null && teamIcon != null) {
+            Team(team!!, teamName!!, teamIcon!!)
+        } else null
+        user to team
     }
 
     override fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity = with(selfUser) {

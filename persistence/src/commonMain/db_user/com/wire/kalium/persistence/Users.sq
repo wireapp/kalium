@@ -99,6 +99,9 @@ SELECT * FROM User WHERE qualified_id IN ?;
 selectMinimizedByQualifiedId:
 SELECT qualified_id, name, complete_asset_id, user_type FROM User WHERE qualified_id IN ?;
 
+selectWithTeamByQualifiedId:
+SELECT * FROM User LEFT JOIN Team ON User.team == Team.id WHERE User.qualified_id IN ?;
+
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
 WHERE (name LIKE ('%' || :searchQuery || '%')

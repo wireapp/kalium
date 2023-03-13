@@ -53,6 +53,43 @@ class UserMapper {
         )
     }
 
+    fun toUserAndTeamPairModel(
+        qualified_id: QualifiedIDEntity,
+        name: String?,
+        handle: String?,
+        email: String?,
+        phone: String?,
+        accent_id: Int,
+        team: String?,
+        connection_status: ConnectionEntity.State,
+        preview_asset_id: QualifiedIDEntity?,
+        complete_asset_id: QualifiedIDEntity?,
+        user_availability_status: UserAvailabilityStatusEntity,
+        user_type: UserTypeEntity,
+        bot_service: BotEntity?,
+        deleted: Boolean,
+        id: String?,
+        name_: String?,
+        icon: String?,
+    ): UserEntityWithTeam = UserEntityWithTeam(
+        id = qualified_id,
+        name = name,
+        handle = handle,
+        email = email,
+        phone = phone,
+        accentId = accent_id,
+        team = team,
+        connectionStatus = connection_status,
+        previewAssetId = preview_asset_id,
+        completeAssetId = complete_asset_id,
+        availabilityStatus = user_availability_status,
+        userType = user_type,
+        botService = bot_service,
+        deleted = deleted,
+        teamName = name_,
+        teamIcon = icon
+    )
+
     fun toModelMinimized(
         userId: QualifiedIDEntity,
         name: String?,
@@ -242,6 +279,11 @@ class UserDAOImpl internal constructor(
             .map { it?.let { mapper.toModel(it) } }
             .shareIn(databaseScope, Lazily, 1)
     }
+
+    override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntityWithTeam?> =
+        userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
+            .asFlow()
+            .mapToOneOrNull()
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
         userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->

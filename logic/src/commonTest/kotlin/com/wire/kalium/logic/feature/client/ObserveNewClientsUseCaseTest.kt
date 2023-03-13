@@ -21,15 +21,15 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AccountInfo
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -45,7 +45,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientAndCurrentSessionError_thenNewClientErrorResult() = runTest {
         val (_, observeNewClients) = Arrangement()
-            .withSelfUser(TestUser.SELF)
+            .withoutValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Left(StorageFailure.DataNotFound))
             .withNewClientManager(TestClient.CLIENT to TestUser.USER_ID)
             .arrange()
@@ -58,12 +58,11 @@ class ObserveNewClientsUseCaseTest {
 
 
     @Test
-    fun givenNewClientForOtherUser_whenGetSelfUserError_thenNewClientErrorResult() = runTest {
+    fun givenNewClientForOtherUser_whenNoSuchUserInValidAccs_thenNewClientErrorResult() = runTest {
         val (_, observeNewClients) = Arrangement()
-            .withSelfUser(TestUser.SELF.copy(id = TestUser.OTHER_USER_ID))
+            .withoutValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientManager(TestClient.CLIENT to TestUser.OTHER_USER_ID)
-            .withoutSelfUserUseCase()
             .arrange()
 
         observeNewClients().test {
@@ -75,7 +74,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientForCurrentUser_thenNewClientInCurrentUserResult() = runTest {
         val (arrangement, observeNewClients) = Arrangement()
-            .withSelfUser(TestUser.SELF)
+            .withoutValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientManager(TestClient.CLIENT to TestUser.USER_ID)
             .arrange()
@@ -83,8 +82,8 @@ class ObserveNewClientsUseCaseTest {
         observeNewClients().test {
             assertEquals(NewClientResult.InCurrentAccount(TestClient.CLIENT), awaitItem())
 
-            verify(arrangement.getSelfUserUseCase)
-                .suspendFunction(arrangement.getSelfUserUseCase::invoke)
+            verify(arrangement.observeValidAccounts)
+                .suspendFunction(arrangement.observeValidAccounts::invoke)
                 .wasNotInvoked()
 
             awaitComplete()
@@ -94,7 +93,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientForOtherUser_thenNewClientInOtherUserResult() = runTest {
         val (arrangement, observeNewClients) = Arrangement()
-            .withSelfUser(TestUser.SELF.copy(id = TestUser.OTHER_USER_ID))
+            .withoutValidAccounts(listOf(TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientManager(TestClient.CLIENT to TestUser.OTHER_USER_ID)
             .arrange()
@@ -109,8 +108,8 @@ class ObserveNewClientsUseCaseTest {
                 ), awaitItem()
             )
 
-            verify(arrangement.getSelfUserUseCase)
-                .suspendFunction(arrangement.getSelfUserUseCase::invoke)
+            verify(arrangement.observeValidAccounts)
+                .suspendFunction(arrangement.observeValidAccounts::invoke)
                 .wasInvoked()
 
             awaitComplete()
@@ -123,33 +122,23 @@ class ObserveNewClientsUseCaseTest {
 
     private class Arrangement {
         @Mock
-        private val getSelfUserUseCaseProvider = mock(GetSelfUserUseCaseProvider::class)
+        val observeValidAccounts = mock(ObserveValidAccountsUseCase::class)
 
         @Mock
         val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val getSelfUserUseCase = mock(GetSelfUserUseCase::class)
-
-        @Mock
         val newClientManager = mock(NewClientManager::class)
 
         init {
-            given(getSelfUserUseCaseProvider)
-                .function(getSelfUserUseCaseProvider::get)
-                .whenInvokedWith(any())
-                .thenReturn(getSelfUserUseCase)
+            given(observeValidAccounts)
+                .suspendFunction(observeValidAccounts::invoke)
+                .whenInvoked()
+                .thenReturn(flowOf(listOf()))
         }
 
         private var observeNewClientsUseCase: ObserveNewClientsUseCase =
-            ObserveNewClientsUseCaseImpl(sessionRepository, getSelfUserUseCaseProvider, newClientManager)
-
-        fun withSelfUser(result: SelfUser) = apply {
-            given(getSelfUserUseCase)
-                .suspendFunction(getSelfUserUseCase::invoke)
-                .whenInvoked()
-                .then { flowOf(result) }
-        }
+            ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, newClientManager)
 
         suspend fun withCurrentSession(result: Either<StorageFailure, AccountInfo>) = apply {
             given(sessionRepository)
@@ -164,11 +153,11 @@ class ObserveNewClientsUseCaseTest {
                 .then { flowOf(result) }
         }
 
-        fun withoutSelfUserUseCase() = apply {
-            given(getSelfUserUseCaseProvider)
-                .function(getSelfUserUseCaseProvider::get)
-                .whenInvokedWith(any())
-                .thenReturn(null)
+        fun withoutValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
+            given(observeValidAccounts)
+                .suspendFunction(observeValidAccounts::invoke)
+                .whenInvoked()
+                .thenReturn(flowOf(result))
         }
 
         fun arrange() = this to observeNewClientsUseCase

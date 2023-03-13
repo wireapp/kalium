@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.Flow
@@ -42,7 +43,7 @@ interface ObserveNewClientsUseCase {
 
 class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
-    private val getSelfProvider: GetSelfUserUseCaseProvider,
+    private val observeValidAccounts: ObserveValidAccountsUseCase,
     private val newClientManager: NewClientManager
 ) : ObserveNewClientsUseCase {
 
@@ -51,23 +52,14 @@ class ObserveNewClientsUseCaseImpl internal constructor(
             sessionRepository.currentSession()
                 .map { currentAccInfo ->
                     if (currentAccInfo.userId == userId) NewClientResult.InCurrentAccount(newClient)
-                    else getSelfProvider.get(userId)?.let { getSelfUser ->
-                        getSelfUser()
-                            .map { selfUser -> NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle) }
-                            .firstOrNull()
-                    } ?: NewClientResult.Error
+                    else observeValidAccounts().firstOrNull()
+                        ?.firstOrNull { (selfUser, _) -> selfUser.id == userId }
+                        ?.let { (selfUser, _) ->
+                            NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle)
+                        } ?: NewClientResult.Error
                 }
                 .getOrElse(NewClientResult.Error)
         }
-}
-
-/** this interface needed to be able to test [ObserveNewClientsUseCaseImpl] */
-interface GetSelfUserUseCaseProvider {
-    fun get(userId: UserId): GetSelfUserUseCase?
-}
-
-class GetSelfUserUseCaseProviderImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : GetSelfUserUseCaseProvider {
-    override fun get(userId: UserId): GetSelfUserUseCase? = userSessionScopeProvider.get(userId)?.users?.getSelfUser
 }
 
 sealed class NewClientResult {
