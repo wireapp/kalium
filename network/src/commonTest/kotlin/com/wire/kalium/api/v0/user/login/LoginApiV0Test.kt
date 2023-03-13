@@ -31,9 +31,12 @@ import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -53,6 +56,8 @@ class LoginApiV0Test : ApiTest {
                 assertQueryExist(QUERY_PERSIST)
                 assertHttps()
                 assertJson()
+                val verificationCode = this.body.toJsonElement().jsonObject["verification_code"]?.jsonPrimitive?.content
+                assertEquals(LOGIN_WITH_EMAIL_REQUEST.serializableData.verificationCode, verificationCode)
             },
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
