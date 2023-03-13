@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
@@ -94,6 +95,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -421,13 +423,13 @@ class ConversationRepositoryTest {
 
         conversationRepository.updateAccessInfo(
             conversationID = ConversationId(conversationIdDTO.value, conversationIdDTO.domain),
-            access = listOf(
+            access = setOf(
                 Conversation.Access.INVITE,
                 Conversation.Access.CODE,
                 Conversation.Access.PRIVATE,
                 Conversation.Access.LINK
             ),
-            accessRole = listOf(
+            accessRole = setOf(
                 Conversation.AccessRole.TEAM_MEMBER,
                 Conversation.AccessRole.NON_TEAM_MEMBER,
                 Conversation.AccessRole.SERVICE,
@@ -506,13 +508,38 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
-        val (arrange, conversationRepository) = Arrangement().withSuccessfulConversationDeletion().arrange()
+    fun givenProteusConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetConversationProtocolInfoReturns(PROTEUS_PROTOCOL_INFO)
+            .withSuccessfulConversationDeletion()
+            .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
 
         conversationRepository.deleteConversation(conversationId).shouldSucceed()
 
-        with(arrange) {
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
+                .with(eq(conversationId.toDao()))
+                .wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenMlsConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetConversationProtocolInfoReturns(MLS_PROTOCOL_INFO)
+            .withSuccessfulConversationDeletion()
+            .arrange()
+        val conversationId = ConversationId("conv_id", "conv_domain")
+
+        conversationRepository.deleteConversation(conversationId).shouldSucceed()
+
+        with(arrangement) {
+            verify(mlsClient)
+                .function(mlsClient::wipeConversation)
+                .with(eq(GROUP_ID.toCrypto()))
+                .wasInvoked(once)
             verify(conversationDAO)
                 .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
                 .with(eq(conversationId.toDao()))
@@ -986,6 +1013,13 @@ class ConversationRepositoryTest {
                 .thenReturn(Unit)
         }
 
+        fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationProtocolInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
         fun withApiUpdateConversationMemberRoleReturns(response: NetworkResponse<Unit>) = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::updateConversationMemberRole)
@@ -1148,19 +1182,16 @@ class ConversationRepositoryTest {
         )
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
-
-        val TEST_MESSAGE_PREVIEW_ENTITY =
-            MessagePreviewEntity(
-                id = "uid",
-                content = MessagePreviewEntityContent.Text("senderName", "body"),
-                conversationId = TEST_QUALIFIED_ID_ENTITY,
-                date = "date",
-                isSelfMessage = false,
-                visibility = MessageEntity.Visibility.VISIBLE,
-                senderUserId = TestUser.ENTITY_ID
-            )
-
         val OTHER_USER_ID = UserId("otherValue", "domain")
+
+        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
+        val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
+            RAW_GROUP_ID,
+            ConversationEntity.GroupState.ESTABLISHED,
+            0UL,
+            Clock.System.now(),
+            ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
 
         private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(
             EventContentDTO.Conversation.ConversationRenameDTO(

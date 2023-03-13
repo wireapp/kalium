@@ -61,7 +61,7 @@ class RejectCallUseCaseTest {
 
         given(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(CallStatus.REJECTED))
+            .whenInvokedWith(eq(conversationId), eq(CallStatus.REJECTED))
             .thenDoNothing()
 
         rejectCallUseCase.invoke(conversationId)
@@ -73,7 +73,7 @@ class RejectCallUseCaseTest {
 
         verify(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId.toString()), eq(CallStatus.REJECTED))
+            .with(eq(conversationId), eq(CallStatus.REJECTED))
             .wasInvoked(once)
     }
 

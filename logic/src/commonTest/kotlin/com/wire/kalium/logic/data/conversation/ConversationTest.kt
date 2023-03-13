@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.framework.TestConversation
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -59,5 +60,93 @@ class ConversationTest {
     fun givenConversationWithNoServiceAccessRole_thenIsNonTeamMemberAllowedIsFalse() {
         val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.TEAM_MEMBER))
         assertFalse(conversation.isServicesAllowed())
+    }
+
+    @Test
+    fun givenACombinationOfFlags_thenTheSetOfAccessRolesIsCorrect() {
+
+        var accessRoles = Conversation.accessRolesFor(guestAllowed = false, servicesAllowed = false, nonTeamMembersAllowed = false)
+        assertEquals(setOf(Conversation.AccessRole.TEAM_MEMBER), accessRoles)
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = true, servicesAllowed = false, nonTeamMembersAllowed = false)
+        assertEquals(
+            setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.GUEST),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = true, servicesAllowed = true, nonTeamMembersAllowed = false)
+        assertEquals(
+            setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.GUEST, Conversation.AccessRole.SERVICE),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = true, servicesAllowed = true, nonTeamMembersAllowed = true)
+        assertEquals(
+            setOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.GUEST,
+                Conversation.AccessRole.SERVICE,
+                Conversation.AccessRole.NON_TEAM_MEMBER
+            ),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = false, servicesAllowed = true, nonTeamMembersAllowed = false)
+        assertEquals(
+            setOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE,
+            ),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = false, servicesAllowed = true, nonTeamMembersAllowed = true)
+        assertEquals(
+            setOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE,
+                Conversation.AccessRole.NON_TEAM_MEMBER
+            ),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = false, servicesAllowed = false, nonTeamMembersAllowed = true)
+        assertEquals(
+            setOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.NON_TEAM_MEMBER
+            ),
+            accessRoles
+        )
+
+        accessRoles = Conversation.accessRolesFor(guestAllowed = true, servicesAllowed = false, nonTeamMembersAllowed = true)
+        assertEquals(
+            setOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.NON_TEAM_MEMBER,
+                Conversation.AccessRole.GUEST
+                ),
+            accessRoles
+        )
+    }
+
+    @Test
+    fun givenACombinationOfFlags_thenTheSetOfAccessIsCorrect() {
+        var access = Conversation.accessFor(false)
+        assertEquals(
+            setOf(
+                Conversation.Access.INVITE,
+            ),
+            access
+        )
+
+        access = Conversation.accessFor(true)
+        assertEquals(
+            setOf(
+                Conversation.Access.INVITE,
+                Conversation.Access.CODE,
+                ),
+            access
+        )
     }
 }

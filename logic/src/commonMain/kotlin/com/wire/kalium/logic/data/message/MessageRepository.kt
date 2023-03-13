@@ -327,7 +327,11 @@ class MessageDataSource(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
-                    recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
+                    recipientMap,
+                    true,
+                    MessagePriority.HIGH,
+                    false,
+                    envelope.dataBlob?.data,
                     messageOption
                 ),
                 conversationId.toApi(),

@@ -80,6 +80,7 @@ actual class CoreLogic(
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
+            authenticationScopeProvider,
             rootPathsProvider,
             appContext,
             getGlobalScope(),

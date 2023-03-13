@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -198,7 +199,13 @@ sealed class MessageContent {
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
-    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling()
+    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling() {
+        fun toLogMap(): Map<String, Any> = mapOf(
+            "type" to "$type",
+            "messageIds" to messageIds.map { it.obfuscateId() }
+        )
+
+    }
 
     data class NewConversationReceiptMode(
         val receiptMode: Boolean

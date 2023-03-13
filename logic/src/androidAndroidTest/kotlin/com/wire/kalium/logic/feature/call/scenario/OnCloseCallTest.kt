@@ -75,7 +75,7 @@ class OnCloseCallTest {
             .function(callRepository::getCallMetadataProfile)
             .whenInvoked()
             .thenReturn(
-                CallMetadataProfile(mapOf(conversationIdString to callMetadata))
+                CallMetadataProfile(mapOf(conversationId to callMetadata))
             )
         // when
         onCloseCall.onClosedCall(
@@ -91,7 +91,7 @@ class OnCloseCallTest {
         // then
         verify(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationIdString), eq(CallStatus.STILL_ONGOING))
+            .with(eq(conversationId), eq(CallStatus.STILL_ONGOING))
             .wasInvoked(once)
     }
 
@@ -103,7 +103,7 @@ class OnCloseCallTest {
             .function(callRepository::getCallMetadataProfile)
             .whenInvoked()
             .thenReturn(
-                CallMetadataProfile(mapOf(conversationIdString to callMetadata))
+                CallMetadataProfile(mapOf(conversationId to callMetadata))
             )
 
 
@@ -121,7 +121,7 @@ class OnCloseCallTest {
         // then
         verify(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationIdString), eq(CallStatus.MISSED))
+            .with(eq(conversationId), eq(CallStatus.MISSED))
             .wasInvoked(once)
 
         verify(callRepository)
@@ -136,7 +136,7 @@ class OnCloseCallTest {
             .function(callRepository::getCallMetadataProfile)
             .whenInvoked()
             .thenReturn(
-                CallMetadataProfile(mapOf(conversationIdString to callMetadata))
+                CallMetadataProfile(mapOf(conversationId to callMetadata))
             )
 
         onCloseCall.onClosedCall(
@@ -151,7 +151,7 @@ class OnCloseCallTest {
 
         verify(callRepository)
             .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationIdString), eq(CallStatus.CLOSED))
+            .with(eq(conversationId), eq(CallStatus.CLOSED))
             .wasInvoked(once)
 
         verify(callRepository)

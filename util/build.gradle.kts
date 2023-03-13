@@ -31,6 +31,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(libs.ktxSerialization)
                 // coroutines
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)

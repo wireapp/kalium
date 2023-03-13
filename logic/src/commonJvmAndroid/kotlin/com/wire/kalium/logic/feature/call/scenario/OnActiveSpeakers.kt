@@ -37,7 +37,7 @@ class OnActiveSpeakers(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         callRepository.updateParticipantsActiveSpeaker(
-            conversationId = conversationIdWithDomain.toString(),
+            conversationId = conversationIdWithDomain,
             activeSpeakers = callActiveSpeakers
         )
     }

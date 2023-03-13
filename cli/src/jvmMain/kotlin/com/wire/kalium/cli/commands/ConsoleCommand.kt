@@ -29,7 +29,6 @@ import com.sun.net.httpserver.HttpServer
 import com.wire.kalium.cli.getConversations
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.cli.selectConversation
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.Dispatchers
@@ -143,17 +142,9 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
         val currentConversation = context.currentConversation ?: return -1
-        val isProteusConversation = currentConversation.protocol is Conversation.ProtocolInfo.Proteus
-
-        val convType = when (currentConversation.type) {
-            Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
-            Conversation.Type.GROUP -> if (isProteusConversation) ConversationType.Conference else ConversationType.ConferenceMls
-            else -> ConversationType.Unknown
-        }
 
         userSession.calls.startCall.invoke(
-            conversationId = currentConversation.id,
-            conversationType = convType
+            conversationId = currentConversation.id
         )
 
         return 0

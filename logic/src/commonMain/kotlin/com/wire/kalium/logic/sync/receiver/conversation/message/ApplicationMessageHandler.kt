@@ -205,17 +205,17 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun processMessage(message: Message.Regular) {
-        logger.i(message = "Message received: { \"message\" : $message }")
+        logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
 
         when (val content = message.content) {
             // Persist Messages - > lists
             is MessageContent.Text -> persistMessage(adjustTextMessageWithQoutedReference(message, content))
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
-            is MessageContent.Asset -> assetMessageHandler.handle(message, content)
+            is MessageContent.Asset -> assetMessageHandler.handle(message)
             is MessageContent.RestrictedAsset -> TODO()
             is MessageContent.Unknown -> {
-                logger.i(message = "Unknown Message received: $message")
+                logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
 
@@ -306,6 +306,6 @@ internal class ApplicationMessageHandlerImpl(
     }
 }
 
-fun AssetContent.hasValidRemoteData() = this.remoteData.let {
-    it.assetId.isNotEmpty() && it.sha256.isNotEmpty() && it.otrKey.isNotEmpty()
-}
+fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+
+fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()

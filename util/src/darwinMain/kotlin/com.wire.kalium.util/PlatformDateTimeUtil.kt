@@ -18,7 +18,6 @@
 
 package com.wire.kalium.util
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 actual open class PlatformDateTimeUtil actual constructor() {
@@ -35,9 +34,9 @@ actual open class PlatformDateTimeUtil actual constructor() {
         instant.toString() // TODO:"Implement own iOS method"
 
     /**
-     * Parse current [kotlinx.datetime.Instant] into date-time string in ISO-8601 format with up to seconds precision.
-     * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
+     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    actual fun fromCurrentInstantToSimpleDateTimeString(): String =
-        Clock.System.now().toString() // TODO:"Implement own iOS method"
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
+        instant.toString() // TODO:"Implement own iOS method"
 }
