@@ -54,25 +54,6 @@ data class UserEntity(
     val deleted: Boolean
 )
 
-data class UserEntityWithTeam(
-    val id: QualifiedIDEntity,
-    val name: String?,
-    val handle: String?,
-    val email: String?,
-    val phone: String?,
-    val accentId: Int,
-    val team: String?,
-    val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
-    val previewAssetId: UserAssetIdEntity?,
-    val completeAssetId: UserAssetIdEntity?,
-    val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeEntity,
-    val botService: BotEntity?,
-    val deleted: Boolean,
-    val teamName: String?,
-    val teamIcon: String?
-)
-
 data class UserEntityMinimized(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -183,7 +164,7 @@ interface UserDAO {
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
-    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntityWithTeam?>
+    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(

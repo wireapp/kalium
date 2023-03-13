@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
+import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -110,6 +111,7 @@ internal class UserDataSource internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
@@ -237,7 +239,9 @@ internal class UserDataSource internal constructor(
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserWithTeamByQualifiedID(selfUserID)
                 .filterNotNull()
-                .map(userMapper::fromDaoModelToSelfUserWithTeam)
+                .map { (user, team) ->
+                    userMapper.fromDaoModelToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+                }
         }
     }
 

@@ -58,7 +58,6 @@ interface UserMapper {
 
     fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
-    fun fromDaoModelToSelfUserWithTeam(userEntity: UserEntityWithTeam): Pair<SelfUser, Team?>
     fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity
 
     /**
@@ -152,27 +151,6 @@ internal class UserMapperImpl(
             completeAssetId?.toModel(),
             availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
         )
-    }
-
-    override fun fromDaoModelToSelfUserWithTeam(userEntity: UserEntityWithTeam) = with(userEntity) {
-        val user = SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
-        )
-
-        val team = if (team != null && teamName != null && teamIcon != null) {
-            Team(team!!, teamName!!, teamIcon!!)
-        } else null
-        user to team
     }
 
     override fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity = with(selfUser) {

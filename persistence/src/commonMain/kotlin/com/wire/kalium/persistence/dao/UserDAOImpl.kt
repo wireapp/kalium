@@ -71,25 +71,31 @@ class UserMapper {
         deleted: Boolean,
         id: String?,
         teamName: String?,
-        icon: String?,
-    ): UserEntityWithTeam = UserEntityWithTeam(
-        id = qualifiedId,
-        name = name,
-        handle = handle,
-        email = email,
-        phone = phone,
-        accentId = accentId,
-        team = team,
-        connectionStatus = connectionStatus,
-        previewAssetId = previewAssetId,
-        completeAssetId = completeAssetId,
-        availabilityStatus = userAvailabilityStatus,
-        userType = userType,
-        botService = botService,
-        deleted = deleted,
-        teamName = teamName,
-        teamIcon = icon
-    )
+        teamIcon: String?,
+    ): Pair<UserEntity, TeamEntity?> {
+        val userEntity = UserEntity(
+            id = qualifiedId,
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = team,
+            connectionStatus = connectionStatus,
+            previewAssetId = previewAssetId,
+            completeAssetId = completeAssetId,
+            availabilityStatus = userAvailabilityStatus,
+            userType = userType,
+            botService = botService,
+            deleted = deleted
+        )
+
+        val teamEntity = if (team != null && teamName != null && teamIcon != null) {
+            TeamEntity(team, teamName, teamIcon)
+        } else null
+
+        return userEntity to teamEntity
+    }
 
     fun toModelMinimized(
         userId: QualifiedIDEntity,
@@ -281,7 +287,7 @@ class UserDAOImpl internal constructor(
             .shareIn(databaseScope, Lazily, 1)
     }
 
-    override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntityWithTeam?> =
+    override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
             .asFlow()
             .mapToOneOrNull()
