@@ -25,11 +25,10 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 
 /**
  * Allows observing of [SyncState].
- * A value is always available immediately for new observers, so calling [Flow.first] is safe.
+ * A value is always available immediately for new observers.
  * Assumes that old SyncStates are not relevant anymore, so the available [Flow]
  * has a limited buffer size and will drop the oldest values as there's no point
  * in waiting for slow collectors.

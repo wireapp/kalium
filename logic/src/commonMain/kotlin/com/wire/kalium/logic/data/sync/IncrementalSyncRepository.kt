@@ -57,7 +57,6 @@ internal interface IncrementalSyncRepository {
     suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus)
     suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
 
-
     companion object {
         // The same default buffer size used by Coroutines channels
         const val BUFFER_SIZE = 64
