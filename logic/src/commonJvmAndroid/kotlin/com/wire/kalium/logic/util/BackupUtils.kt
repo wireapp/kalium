@@ -108,8 +108,8 @@ actual fun checkIfCompressedFileContainsFileTypes(
     }
 
 @OptIn(ExperimentalSerializationApi::class)
-actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource) : Sequence<T> {
-     return KtxWebSerializer.json.decodeToSequence(
+actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> {
+    return KtxWebSerializer.json.decodeToSequence(
         bufferedSource.inputStream(),
         DecodeSequenceMode.ARRAY_WRAPPED
     )

@@ -28,8 +28,10 @@ import okio.Path
 
 actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> =
     TODO("Implement own iOS compression method")
+
 actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Long> =
     TODO("Implement own iOS compression method")
+
 actual fun checkIfCompressedFileContainsFileTypes(
     compressedFilePath: Path,
     fileSystem: KaliumFileSystem,
@@ -37,5 +39,5 @@ actual fun checkIfCompressedFileContainsFileTypes(
 ): Either<CoreFailure, Map<String, Boolean>> =
     TODO("Implement own iOS decompression method")
 
-actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource) : Sequence<T> =
+actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> =
     TODO("Implement own iOS decodeSequence method")

@@ -116,9 +116,6 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
-import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
-import com.wire.kalium.logic.feature.backup.RestoreWebBackupUseCase
-import com.wire.kalium.logic.feature.backup.RestoreWebBackupUseCaseImpl
 import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
@@ -169,8 +166,6 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
-import com.wire.kalium.logic.feature.message.SessionEstablisher
-import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
