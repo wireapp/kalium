@@ -19,8 +19,9 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.util.serialization.toJsonElement
 
 /**
  * Handles incoming events from remote.
@@ -51,21 +53,35 @@ internal class EventProcessorImpl(
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
 ) : EventProcessor {
 
-    private val logger by lazy { kaliumLogger.withFeatureId(EVENT_RECEIVER) }
+    private val logger by lazy {
+        kaliumLogger.withFeatureId(EVENT_RECEIVER)
+    }
 
     override suspend fun processEvent(event: Event) {
-        logger.i("Processing event ${event.id.obfuscateId()}")
         when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event)
             is Event.User -> userEventReceiver.onEvent(event)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-            is Event.Unknown -> logger.i("Unhandled event id=${event.id.obfuscateId()}")
+            is Event.Unknown -> {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event
+                    )
+            }
             is Event.Team -> teamEventReceiver.onEvent(event)
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
         }
-        logger.i("Updating lastProcessedEventId ${event.id.obfuscateId()}")
+
+        val logMap = mapOf<String, Any>(
+            "event" to event.toLogMap()
+        )
+
         if (event.shouldUpdateLastProcessedEventId()) {
             eventRepository.updateLastProcessedEventId(event.id)
+            logger.i("Updated lastProcessedEventId: ${logMap.toJsonElement()}")
+        } else {
+            logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
         }
     }
 }
