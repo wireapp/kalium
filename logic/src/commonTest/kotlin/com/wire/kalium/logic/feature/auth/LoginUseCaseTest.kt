@@ -22,6 +22,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.auth.verification.FakeSecondFactorVerificationRepository
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -40,6 +42,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginUseCaseTest {
@@ -162,7 +165,6 @@ class LoginUseCaseTest {
 
     @Test
     fun givenStoreSessionIsFalse_andEverythingElseSucceeds_whenLoggingIn_thenReturnSuccess() = runTest {
-
         val (_, loginUseCase) = Arrangement().arrange()
 
         val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, false, TEST_LABEL)
@@ -171,6 +173,38 @@ class LoginUseCaseTest {
             loginUserCaseResult,
             AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
+    }
+
+    @Test
+    fun givenEverythingSucceeds_whenLoggingInUsingEmail_thenShouldStoreTheUsed2FACode() = runTest {
+        val (arrangement, loginUseCase) = Arrangement().arrange()
+
+        loginUseCase(TEST_EMAIL, TEST_PASSWORD, false, TEST_LABEL, TEST_2FA_CODE)
+
+        val storedCode = arrangement.secondFactorVerificationRepository.getStoredVerificationCode(TEST_EMAIL)
+        assertEquals(TEST_2FA_CODE, storedCode)
+    }
+
+    @Test
+    fun givenLoginFails_whenLoggingInUsingEmail_thenShouldNotStoreTheUsed2FACode() = runTest {
+        val (arrangement, loginUseCase) = Arrangement()
+            .withLoginUsingEmailResulting(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            .arrange()
+
+        loginUseCase(TEST_EMAIL, TEST_PASSWORD, false, TEST_LABEL, TEST_2FA_CODE)
+
+        val storedCode = arrangement.secondFactorVerificationRepository.getStoredVerificationCode(TEST_EMAIL)
+        assertNull(storedCode)
+    }
+
+    @Test
+    fun givenEverythingSucceeds_whenLoggingInUsingUsername_thenShouldNotStoreTheUsed2FACode() = runTest {
+        val (arrangement, loginUseCase) = Arrangement().arrange()
+
+        loginUseCase(TEST_HANDLE, TEST_PASSWORD, false, TEST_LABEL, TEST_2FA_CODE)
+
+        val storedCode = arrangement.secondFactorVerificationRepository.getStoredVerificationCode(TEST_EMAIL)
+        assertNull(storedCode)
     }
 
     @Test
@@ -430,6 +464,8 @@ class LoginUseCaseTest {
         @Mock
         val validateUserHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
 
+        val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
+
         init {
             withEmailValidationSucceeding(true, TEST_EMAIL)
             withEmailValidationSucceeding(false, TEST_HANDLE)
@@ -482,7 +518,8 @@ class LoginUseCaseTest {
             validateEmailUseCase,
             validateUserHandleUseCase,
             TEST_SERVER_CONFIG,
-            PROXY_CREDENTIALS
+            PROXY_CREDENTIALS,
+            secondFactorVerificationRepository
         )
 
     }

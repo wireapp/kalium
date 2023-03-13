@@ -25,6 +25,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.auth.verification.FakeSecondFactorVerificationRepository
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -34,8 +36,10 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
@@ -47,6 +51,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -55,6 +60,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -90,6 +96,89 @@ class RegisterClientUseCaseTest {
         verify(arrangement.preKeyRepository)
             .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStored2FACode_whenRegisteringWithout2FACode_thenTheRepositoryShouldBeCalledWithTheStored2FA() = runTest {
+        val stored2FACode = "SomeStored2FACode"
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
+
+        registerClient(
+            RegisterClientUseCase.RegisterClientParam(
+                password = TEST_PASSWORD,
+                capabilities = TEST_CAPABILITIES,
+                secondFactorVerificationCode = null
+            )
+        )
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::registerClient)
+            .with(
+                matching {
+                    it.secondFactorVerificationCode == stored2FACode
+                }
+            )
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenStored2FACode_whenRegisteringWith2FACode_thenTheRepositoryShouldBeCalledWithThePassed2FA() = runTest {
+        val stored2FACode = "SomeStored2FACode"
+        val passed2FACode = "123456"
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(TEST_FAILURE))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
+
+        registerClient(
+            RegisterClientUseCase.RegisterClientParam(
+                password = TEST_PASSWORD,
+                capabilities = TEST_CAPABILITIES,
+                secondFactorVerificationCode = passed2FACode
+            )
+        )
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::registerClient)
+            .with(
+                matching {
+                    it.secondFactorVerificationCode == passed2FACode
+                }
+            )
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenStored2FACode_whenRegisteringFailsDueToInvalid2FA_thenTheStored2FAIsCleared() = runTest {
+        val stored2FACode = "SomeStored2FACode"
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidAuthenticationCode)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(failure))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .arrange()
+
+        arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
+
+        registerClient(
+            RegisterClientUseCase.RegisterClientParam(
+                password = TEST_PASSWORD,
+                capabilities = TEST_CAPABILITIES,
+                secondFactorVerificationCode = null
+            )
+        )
+
+        val storedResult = arrangement.secondFactorVerificationRepository.getStoredVerificationCode(SELF_USER_EMAIL)
+        assertNull(storedResult)
     }
 
     @Test
@@ -350,13 +439,16 @@ class RegisterClientUseCaseTest {
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
         const val TEST_PASSWORD = "password"
+        const val SECOND_FACTOR_CODE = "123456"
+        const val SELF_USER_EMAIL = "user@example.org"
+        val SELF_USER = TestUser.SELF.copy(email = SELF_USER_EMAIL)
+        val SELF_USER_ID = SELF_USER.id
         val TEST_CAPABILITIES: List<ClientCapability> = listOf(
             ClientCapability.LegalHoldImplicitConsent
         )
 
         val PRE_KEYS = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
         val LAST_KEY = PreKeyCrypto(id = 99, encodedData = "99")
-        const val SECOND_FACTOR_CODE = "123456"
         val REGISTER_PARAMETERS = RegisterClientParam(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
@@ -402,7 +494,10 @@ class RegisterClientUseCaseTest {
         @Mock
         val sessionRepository = mock(classOf<SessionRepository>())
 
-        val selfUserId = UserId("selfUserId", "selfDomain")
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
+        val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
             isAllowedToRegisterMLSClient,
@@ -412,10 +507,13 @@ class RegisterClientUseCaseTest {
             keyPackageLimitsProvider,
             mlsClientProvider,
             sessionRepository,
-            selfUserId
+            SELF_USER_ID,
+            userRepository,
+            secondFactorVerificationRepository
         )
 
         init {
+            withSelfUser(SELF_USER)
             given(keyPackageLimitsProvider)
                 .function(keyPackageLimitsProvider::refillAmount)
                 .whenInvoked()
@@ -435,6 +533,13 @@ class RegisterClientUseCaseTest {
                 .suspendFunction(isAllowedToRegisterMLSClient::invoke)
                 .whenInvoked()
                 .thenReturn(true)
+        }
+
+        fun withSelfUser(selfUser: SelfUser) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::getSelfUser)
+                .whenInvoked()
+                .thenReturn(selfUser)
         }
 
         fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
@@ -503,7 +608,7 @@ class RegisterClientUseCaseTest {
         fun withSelfCookieLabel(result: Either<StorageFailure, String?>) = apply {
             given(sessionRepository)
                 .suspendFunction(sessionRepository::cookieLabel)
-                .whenInvokedWith(eq(selfUserId))
+                .whenInvokedWith(eq(SELF_USER_ID))
                 .then { result }
         }
 
