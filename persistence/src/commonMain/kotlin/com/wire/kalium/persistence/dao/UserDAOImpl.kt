@@ -53,6 +53,7 @@ class UserMapper {
         )
     }
 
+    @Suppress("LongParameterList")
     fun toUserAndTeamPairModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
