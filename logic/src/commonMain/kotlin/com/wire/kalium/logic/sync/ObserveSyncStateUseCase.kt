@@ -26,6 +26,14 @@ import com.wire.kalium.logic.data.sync.SyncState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
+/**
+ * Allows observing of [SyncState].
+ * A value is always available immediately for new observers.
+ * Assumes that old SyncStates are not relevant anymore, so the available [Flow]
+ * has a limited buffer size and will drop the oldest values as there's no point
+ * in waiting for slow collectors.
+ * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
+ */
 class ObserveSyncStateUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository

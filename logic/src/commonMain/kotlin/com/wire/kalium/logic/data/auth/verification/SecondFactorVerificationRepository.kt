@@ -21,6 +21,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import io.ktor.util.collections.ConcurrentMap
 
 interface SecondFactorVerificationRepository {
 
@@ -29,11 +30,39 @@ interface SecondFactorVerificationRepository {
         verifiableAction: VerifiableAction,
     ): Either<NetworkFailure, Unit>
 
+    /**
+     * Stores the verification code in the local storage for the given email address.
+     */
+    fun storeVerificationCode(
+        email: String,
+        verificationCode: String
+    )
+
+    /**
+     * @return the stored verification code for the given email address, or null if there is no stored code.
+     * @see storeVerificationCode
+     */
+    fun getStoredVerificationCode(
+        email: String
+    ): String?
+
+    /**
+     * Clears the stored verification code for the given email address.
+     * @see storeVerificationCode
+     * @see getStoredVerificationCode
+     */
+    suspend fun clearStoredVerificationCode(
+        email: String
+    )
 }
+
+private typealias Email = String
 
 internal class SecondFactorVerificationRepositoryImpl(
     private val verificationCodeApi: VerificationCodeApi
 ) : SecondFactorVerificationRepository {
+
+    private val verificationCodeStorage = ConcurrentMap<Email, String>()
 
     override suspend fun requestVerificationCode(
         email: String,
@@ -47,4 +76,15 @@ internal class SecondFactorVerificationRepositoryImpl(
         verificationCodeApi.sendVerificationCode(email, action)
     }
 
+    override fun storeVerificationCode(email: String, verificationCode: String) {
+        verificationCodeStorage[email] = verificationCode
+    }
+
+    override fun getStoredVerificationCode(email: String): String? {
+        return verificationCodeStorage[email]
+    }
+
+    override suspend fun clearStoredVerificationCode(email: String) {
+        verificationCodeStorage.remove(email)
+    }
 }
