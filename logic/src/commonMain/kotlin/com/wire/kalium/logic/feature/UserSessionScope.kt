@@ -410,6 +410,7 @@ class UserSessionScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
+            joinExistingMLSConversationUseCase,
             memberJoinHandler,
             memberLeaveHandler,
             userStorage.database.conversationDAO,
@@ -948,7 +949,8 @@ class UserSessionScope internal constructor(
             userId,
             isAllowedToRegisterMLSClient,
             clientIdProvider,
-            userStorage,
+            userRepository,
+            authenticatedDataSourceSet.authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository
         )
     val conversations: ConversationScope
@@ -1049,7 +1051,8 @@ class UserSessionScope internal constructor(
             userSessionScopeProvider,
             pushTokenRepository,
             globalScope,
-            authenticatedDataSourceSet.userSessionWorkScheduler
+            authenticatedDataSourceSet.userSessionWorkScheduler,
+            kaliumConfigs
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)
