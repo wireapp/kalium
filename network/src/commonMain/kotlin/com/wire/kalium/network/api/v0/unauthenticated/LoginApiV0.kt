@@ -55,8 +55,18 @@ internal open class LoginApiV0 internal constructor(
 
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
         return when (this) {
-            is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(email = email, password = password, label = label)
-            is LoginApi.LoginParam.LoginWithHandle -> LoginRequest(handle = handle, password = password, label = label)
+            is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(
+                email = email,
+                password = password,
+                label = label,
+                verificationCode = verificationCode
+            )
+            is LoginApi.LoginParam.LoginWithHandle -> LoginRequest(
+                handle = handle,
+                password = password,
+                label = label,
+                verificationCode = verificationCode
+            )
         }
     }
 
