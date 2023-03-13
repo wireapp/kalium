@@ -21,6 +21,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
@@ -35,7 +37,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberLeaveEventHandler {
     suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
@@ -66,17 +67,19 @@ internal class MemberLeaveEventHandlerImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                )
-                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
             .onFailure {
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "errorInfo" to "$it"
-                )
-                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
             }
 
     private suspend fun deleteMembers(

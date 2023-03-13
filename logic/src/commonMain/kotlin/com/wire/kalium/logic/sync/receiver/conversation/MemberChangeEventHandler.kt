@@ -21,6 +21,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -44,10 +46,11 @@ internal class MemberChangeEventHandlerImpl(
                     event.mutedConversationStatus,
                     DateTimeUtil.currentInstant().toEpochMilliseconds()
                 )
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                )
-                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
@@ -76,19 +79,21 @@ internal class MemberChangeEventHandlerImpl(
                         )
                         logger.e("Error Handling Event: ${logMap.toJsonElement()}")
                     }.onSuccess {
-                        val logMap = mapOf(
-                            "event" to event.toLogMap(),
-                        )
-                        logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                        kaliumLogger
+                            .logEventProcessing(
+                                EventLoggingStatus.SUCCESS,
+                                event
+                            )
                     }
             }
 
             else -> {
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "info" to "Ignoring 'conversation.member-update' event, not handled yet"
-                )
-                logger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event,
+                        Pair("info", "Ignoring 'conversation.member-update' event, not handled yet")
+                    )
             }
         }
     }

@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -34,7 +36,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.serialization.toJsonElement
 
 interface ReceiptModeUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
@@ -64,17 +65,19 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                )
-                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
             .onFailure { coreFailure ->
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "errorInfo" to "$coreFailure"
-                )
-                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$coreFailure")
+                    )
             }
     }
 

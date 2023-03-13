@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
@@ -39,7 +41,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode as NetworkReceiptMode
 
 interface NewConversationEventHandler {
@@ -64,10 +65,6 @@ internal class NewConversationEventHandlerImpl(
                 .toSet())
         }
         .onSuccess {
-            val logMap = mutableMapOf<String, Any?>(
-                "event" to event.toLogMap(),
-            )
-
             if (event.conversation.type == ConversationResponse.Type.GROUP && isSelfATeamMember()) {
                 val message = Message.System(
                     uuid4().toString(),
@@ -81,18 +78,26 @@ internal class NewConversationEventHandlerImpl(
                     Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
-
-                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             } else {
-                logMap["info"] = "Conversation either not group or self not a team member"
-                logger.w("Skipping Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event,
+                        Pair("info", "Conversation either not group or self not a team member.")
+                    )
             }
         }
         .onFailure {
-            val logMap = mapOf(
-                "event" to event.toLogMap(),
-                "errorInfo" to "$it"
-            )
-            logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            kaliumLogger
+                .logEventProcessing(
+                    EventLoggingStatus.FAILURE,
+                    event,
+                    Pair("errorInfo", "$it")
+                )
         }
 }

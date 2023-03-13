@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -75,16 +77,17 @@ internal class MemberJoinEventHandlerImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                )
-                logger.i("Success Handling Event: ${logMap.toJsonElement()}")
-
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }.onFailure {
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "errorInfo" to "$it"
-                )
-                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
             }
 }
