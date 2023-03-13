@@ -58,13 +58,13 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -218,10 +218,18 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
     }
 
-    @OptIn(FlowPreview::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
-        // TODO: handle storage error
-        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
+            // If the self user is not in the database, proactively fetch it.
+            if (it == null) {
+                kaliumLogger.w("Observing self user before it's inserted into the DB. Triggering a fetch.")
+                fetchSelfUser().fold({ failure ->
+                    kaliumLogger.e("Fetching of self user failed, caused by $failure")
+                }, {
+                    kaliumLogger.i("Fetching of self user succeeded")
+                })
+            }
+        }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
