@@ -58,6 +58,7 @@ enum class ClientTypeEntity {
     LegalHold;
 }
 
+@Suppress("TooManyFunctions")
 interface ClientDAO {
     suspend fun insertClient(client: InsertClientParam)
     suspend fun insertClients(clients: List<InsertClientParam>)
