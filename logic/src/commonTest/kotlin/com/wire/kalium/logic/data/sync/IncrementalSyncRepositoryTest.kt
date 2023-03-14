@@ -26,6 +26,9 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
@@ -33,10 +36,14 @@ import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 class IncrementalSyncRepositoryTest {
 
@@ -197,4 +204,57 @@ class IncrementalSyncRepositoryTest {
         assertEquals(initialValue, state)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
+        val updateCount = 10_000
+        withContext(Dispatchers.Default) {
+            val slowCollectionJob = launch {
+                incrementalSyncRepository.incrementalSyncState.collect {
+                    delay(1.days)
+                }
+            }
+            val updateStateJob = launch {
+                repeat(updateCount) {
+                    incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+                }
+            }
+            withTimeout(10.seconds) {
+                // The update job shouldn't take more than a few milliseconds.
+                // If it ever waits for more than 10 seconds, something is definitely wrong,
+                // and it's probably blocked by the slow collection, which is the whole point of this test NOT happen.
+                // So we fail the test if it takes too long (10 seconds).
+                updateStateJob.join()
+            }
+            // Cancel the slow collector as we already know we're able to emit all updates without being blocked.
+            slowCollectionJob.cancel()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenASlowPolicyCollector_whenPolicyIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
+        val updateCount = 10_000
+        withContext(Dispatchers.Default) {
+            val slowCollectionJob = launch {
+                incrementalSyncRepository.connectionPolicyState.collect {
+                    delay(1.days)
+                }
+            }
+            val updatePolicyJob = launch {
+                repeat(updateCount) {
+                    incrementalSyncRepository.setConnectionPolicy(ConnectionPolicy.KEEP_ALIVE)
+                }
+            }
+            withTimeout(10.seconds) {
+                // The update job shouldn't take more than a few milliseconds.
+                // If it ever waits for more than 10 seconds, something is definitely wrong,
+                // and it's probably blocked by the slow collection, which is the whole point of this test NOT happen.
+                // So we fail the test if it takes too long (10 seconds).
+                updatePolicyJob.join()
+            }
+            // Cancel the slow collector as we already know we're able to emit all updates without being blocked.
+            slowCollectionJob.cancel()
+        }
+    }
 }
