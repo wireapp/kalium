@@ -18,6 +18,8 @@
 
 package com.wire.kalium.network.api.base.authenticated.notification.user
 
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import kotlinx.serialization.SerialName
@@ -28,8 +30,8 @@ data class NewClientEventData(
     @SerialName("id") val id: String,
     @SerialName("time") val registrationTime: String,
     @SerialName("model") val model: String?,
-    @SerialName("type") val deviceType: String,
-    @SerialName("class") val deviceClass: String,
+    @SerialName("type") val clientType: ClientTypeDTO,
+    @SerialName("class") val deviceType: DeviceTypeDTO,
     @SerialName("label") val label: String?
 )
 
