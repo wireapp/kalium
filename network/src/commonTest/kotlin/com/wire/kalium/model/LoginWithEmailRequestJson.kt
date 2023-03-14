@@ -40,6 +40,7 @@ object LoginWithEmailRequestJson {
             email = "user@email.de",
             label = "label",
             password = "password",
+            verificationCode = "verificationCode"
         ), jsonProvider
     )
 
