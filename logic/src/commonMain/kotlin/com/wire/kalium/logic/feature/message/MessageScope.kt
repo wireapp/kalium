@@ -146,6 +146,15 @@ class MessageScope internal constructor(
             userPropertyRepository
         )
 
+    val sendEditTextMessage: SendEditTextMessageUseCase
+        get() = SendEditTextMessageUseCase(
+            messageRepository,
+            selfUserId,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender
+        )
+
     val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 
