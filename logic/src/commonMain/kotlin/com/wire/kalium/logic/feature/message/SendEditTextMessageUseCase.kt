@@ -42,9 +42,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 @Suppress("LongParameterList")
+
 /**
- * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
- * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
+ * Edits a text message
+ *
+ * @sample samples.logic.MessageUseCases.sendingEditBasicTextMessage
  */
 class SendEditTextMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
@@ -55,6 +57,15 @@ class SendEditTextMessageUseCase internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
+    /**
+     * Operation to edit a text message.
+     *
+     * @param conversationId the id of the conversation the message belongs to
+     * @param originalMessageId the id of the message to edit
+     * @param text the edited content of the message
+     * @param mentions the edited mentions in the message
+     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         originalMessageId: String,

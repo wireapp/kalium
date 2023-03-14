@@ -56,7 +56,7 @@ object MessageUseCases {
         )
     }
 
-    suspend fun sendEditBasicTextMessage(
+    suspend fun sendingEditBasicTextMessage(
         editTextMessageUseCase: SendEditTextMessageUseCase,
         conversationId: ConversationId,
         originalMessageId: String,
