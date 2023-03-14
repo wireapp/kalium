@@ -51,24 +51,26 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     private suspend fun enqueueSelfDeletion(message: Message.Regular) {
-        message.expirationData?.let { expirationData ->
-            with(expirationData) {
-                if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-                    messageRepository.markSelfDeletionStartDate(
-                        conversationId = message.conversationId,
-                        messageUuid = message.id,
-                        deletionStartDate = Clock.System.now()
-                    )
+        launch {
+            message.expirationData?.let { expirationData ->
+                with(expirationData) {
+                    if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
+                        messageRepository.markSelfDeletionStartDate(
+                            conversationId = message.conversationId,
+                            messageUuid = message.id,
+                            deletionStartDate = Clock.System.now()
+                        )
+                    }
+
+                    delay(timeLeftForDeletion())
                 }
 
-                delay(timeLeftForDeletion())
-            }
+                onGoingSelfDeletionMessagesMutex.withLock {
+                    onGoingSelfDeletionMessages - message.conversationId to message.id
+                }
 
-            onGoingSelfDeletionMessagesMutex.withLock {
-                onGoingSelfDeletionMessages - message.conversationId to message.id
+                messageRepository.deleteMessage(message.id, message.conversationId)
             }
-
-            messageRepository.deleteMessage(message.id, message.conversationId)
         }
     }
 
@@ -77,10 +79,8 @@ internal class EphemeralMessageDeletionHandlerImpl(
             messageRepository.getEphemeralMessagesMarkedForDeletion()
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
-                        launch {
-                            if (ephemeralMessage is Message.Regular) {
-                                enqueueSelfDeletion(message = ephemeralMessage)
-                            }
+                        if (ephemeralMessage is Message.Regular) {
+                            startSelfDeletion(ephemeralMessage.conversationId, ephemeralMessage.id)
                         }
                     }
                 }
