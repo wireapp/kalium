@@ -10,7 +10,7 @@ interface EnqueueMessageSelfDeletionUseCase {
 }
 
 internal class EnqueueMessageSelfDeletionUseCaseImpl(
-    private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler,
+    private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler
 ) : EnqueueMessageSelfDeletionUseCase {
     override operator fun invoke(conversationId: ConversationId, messageId: String) {
         ephemeralMessageDeletionHandler.startSelfDeletion(
