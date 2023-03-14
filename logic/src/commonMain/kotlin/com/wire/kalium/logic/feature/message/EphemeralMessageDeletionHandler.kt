@@ -37,13 +37,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private val onGoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
-            onGoingSelfDeletionMessagesMutex.withLock {
-                val isSelfDeletionOutgoing = onGoingSelfDeletionMessages[conversationId to messageId] != null
-                if (isSelfDeletionOutgoing) return@launch
-
-                onGoingSelfDeletionMessages[conversationId to messageId] = Unit
-            }
-
             messageRepository.getMessageById(conversationId, messageId).map { message ->
                 if (message is Message.Regular) enqueueSelfDeletion(message = message)
             }
@@ -52,6 +45,13 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     private suspend fun enqueueSelfDeletion(message: Message.Regular) {
         launch {
+            onGoingSelfDeletionMessagesMutex.withLock {
+                val isSelfDeletionOutgoing = onGoingSelfDeletionMessages[message.conversationId to message.id] != null
+                if (isSelfDeletionOutgoing) return@launch
+
+                onGoingSelfDeletionMessages[message.conversationId to message.id] = Unit
+            }
+
             message.expirationData?.let { expirationData ->
                 with(expirationData) {
                     if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
@@ -80,7 +80,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
                         if (ephemeralMessage is Message.Regular) {
-                            startSelfDeletion(ephemeralMessage.conversationId, ephemeralMessage.id)
+                            enqueueSelfDeletion(ephemeralMessage)
                         }
                     }
                 }
