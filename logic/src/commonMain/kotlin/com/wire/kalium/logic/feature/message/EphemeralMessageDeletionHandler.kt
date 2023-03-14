@@ -15,7 +15,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
-
 interface EphemeralMessageDeletionHandler {
 
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)

@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 sealed class MessageEntity(
