@@ -1094,7 +1094,7 @@ class UserSessionScope internal constructor(
         messageRepository = messageRepository
     )
 
-    val enqueueMessageSelfDeletionUseCase : EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+    val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = selfDeletingMessageManager
     )
 
