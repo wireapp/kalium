@@ -82,10 +82,9 @@ class MessageMapperImpl(
                 },
                 expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
                 selfDeletionStartDate = message.expirationData?.let {
-                    if (it.selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.Started) {
-                        it.selfDeletionStatus.selfDeletionStartDate
-                    } else {
-                        null
+                    when (val status = it.selfDeletionStatus) {
+                        is Message.ExpirationData.SelfDeletionStatus.Started -> status.selfDeletionStartDate
+                        is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
                     }
                 },
                 visibility = visibility,
@@ -128,6 +127,13 @@ class MessageMapperImpl(
                     editStatus = when (val editStatus = message.editStatus) {
                         MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
                         is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+                    },
+                    expirationData = message.expireAfterMs?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = message.selfDeletionStartDate
+                                ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                                ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
                     },
                     visibility = message.visibility.toModel(),
                     reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
