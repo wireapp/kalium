@@ -40,7 +40,10 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -55,6 +58,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -62,6 +66,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @ExperimentalCoroutinesApi
 class ClientRepositoryTest {
@@ -302,7 +307,6 @@ class ClientRepositoryTest {
         }
     }
 
-
     @Test
     fun givenClientStorageUpdatesTheClientId_whenObservingClientId_thenUpdatesShouldBePropagated() = runTest {
         // Given
@@ -318,6 +322,51 @@ class ClientRepositoryTest {
             // Then
             values.forEach {
                 assertEquals(ClientId(it), awaitItem())
+            }
+            cancelAndConsumeRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenUserId_whenObservingClientsList_thenDAOisCalled() = runTest {
+        // Given
+        val userId = UserIDEntity("user-id", "domain")
+        val clientsList = listOf(
+            ClientEntity(
+                id = "client-id",
+                clientType = ClientTypeEntity.Permanent,
+                registrationDate = null,
+                deviceType = DeviceTypeEntity.Desktop,
+                label = null,
+                model = null,
+                isVerified = false,
+                isValid = true,
+                userId = userId,
+            )
+        )
+
+        val expected = listOf(
+            Client(
+                id = ClientId("client-id"),
+                type = ClientType.Permanent,
+                registrationTime = null,
+                deviceType = DeviceType.Desktop,
+                label = null,
+                model = null,
+                isVerified = false
+            )
+        )
+
+        val (_, clientRepository) = Arrangement()
+            .withObserveClientsList(clientsList)
+            .arrange()
+
+        // When
+        clientRepository.observeClientsByUserId(UserId("user-id", "domain")).test {
+            awaitItem().also {
+                it.shouldSucceed {
+                    assertEquals(expected, it)
+                }
             }
             cancelAndConsumeRemainingEvents()
         }
@@ -385,6 +434,13 @@ class ClientRepositoryTest {
                 .suspendFunction(clientApi::fetchSelfUserClient)
                 .whenInvoked()
                 .thenReturn(result)
+        }
+
+        fun withObserveClientsList(result: List<ClientEntity>) = apply {
+            given(clientDAO)
+                .suspendFunction(clientDAO::observeClientsByUserId)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(result))
         }
 
         fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {

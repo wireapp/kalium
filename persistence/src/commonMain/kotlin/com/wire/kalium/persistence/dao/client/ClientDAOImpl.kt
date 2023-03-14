@@ -128,6 +128,13 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
     }
 
+    override suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> = withContext(queriesContext) {
+        clientsQueries.selectAllClientsByUserId(qualifiedID, mapper = mapper::fromClient)
+            .asFlow()
+            .flowOn(queriesContext)
+            .mapToList()
+    }
+
     override suspend fun getClientsOfUsersByQualifiedIDs(
         ids: List<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {

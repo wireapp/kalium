@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.client
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -240,6 +241,23 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, false)
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
+    @Test
+    fun givenUserId_whenANewClientIsAdded_thennewListIsEmited() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+
+        clientDAO.observeClientsByUserId(user.id).test {
+            awaitItem().also { result -> assertEquals(emptyList(), result) }
+
+            clientDAO.insertClient(insertedClient)
+            awaitItem().also { result -> assertEquals(listOf(client), result) }
+
+            clientDAO.insertClient(insertedClient1)
+            awaitItem().also { result -> assertEquals(listOf(client, client1), result) }
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private companion object {
