@@ -33,7 +33,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
         get() = kaliumDispatcher.default
 
     private val onGoingSelfDeletionMessagesMutex = Mutex()
-
     private val onGoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
