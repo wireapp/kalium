@@ -21,7 +21,7 @@ interface EphemeralMessageDeletionHandler {
     fun enqueuePendingSelfDeletionMessages()
 }
 
-// TODO:Mateusz: implement failure logic
+// TODO:Mateusz: implement failure logic (needs to be discussed with a team)
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
