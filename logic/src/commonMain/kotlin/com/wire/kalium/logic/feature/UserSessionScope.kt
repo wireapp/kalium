@@ -158,6 +158,7 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
@@ -1095,7 +1096,7 @@ class UserSessionScope internal constructor(
         messageRepository = messageRepository
     )
 
-    val enqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCase(
+    val enqueueMessageSelfDeletionUseCase : EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = selfDeletingMessageManager
     )
 
