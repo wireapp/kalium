@@ -358,7 +358,6 @@ class ProtoContentMapperImpl(
         )
     }
 
-
     private fun unpackEphemeral(
         protoContent: GenericMessage.Content.Ephemeral
     ): MessageContent.FromProto {
