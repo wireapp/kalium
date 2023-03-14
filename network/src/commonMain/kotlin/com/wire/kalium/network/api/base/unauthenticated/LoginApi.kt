@@ -25,19 +25,37 @@ import com.wire.kalium.network.utils.NetworkResponse
 interface LoginApi {
     sealed class LoginParam(
         open val password: String,
-        open val label: String?
+        open val label: String?,
+        /**
+         * Two-factor authentication code received in the user's email.
+         * Optional as it may or may not be required depending on team settings.
+         * @see VerificationCodeApi
+         */
+        open val verificationCode: String?
     ) {
         data class LoginWithEmail(
             val email: String,
             override val password: String,
-            override val label: String?
-        ) : LoginParam(password, label)
+            override val label: String?,
+            /**
+             * Two-factor authentication code received in the user's email.
+             * Optional as it may or may not be required depending on team settings.
+             * @see VerificationCodeApi
+             */
+            override val verificationCode: String? = null,
+        ) : LoginParam(password, label, verificationCode)
 
-        data class LoginWithHandel(
+        data class LoginWithHandle(
             val handle: String,
             override val password: String,
-            override val label: String?
-        ) : LoginParam(password, label)
+            override val label: String?,
+            /**
+             * Two-factor authentication code received in the user's email.
+             * Optional as it may or may not be required depending on team settings.
+             * @see VerificationCodeApi
+             */
+            override val verificationCode: String? = null,
+        ) : LoginParam(password, label, verificationCode)
     }
 
     suspend fun login(

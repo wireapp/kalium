@@ -34,14 +34,16 @@ internal interface LoginRepository {
         email: String,
         password: String,
         label: String?,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        secondFactorVerificationCode: String? = null,
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         label: String?,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        secondFactorVerificationCode: String? = null,
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
@@ -55,17 +57,25 @@ internal class LoginRepositoryImpl internal constructor(
         email: String,
         password: String,
         label: String?,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        secondFactorVerificationCode: String?,
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithEmail(email, password, label), shouldPersistClient)
+        login(
+            LoginApi.LoginParam.LoginWithEmail(email, password, label, secondFactorVerificationCode),
+            shouldPersistClient
+        )
 
     override suspend fun loginWithHandle(
         handle: String,
         password: String,
         label: String?,
-        shouldPersistClient: Boolean
+        shouldPersistClient: Boolean,
+        secondFactorVerificationCode: String?,
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
-        login(LoginApi.LoginParam.LoginWithHandel(handle, password, label), shouldPersistClient)
+        login(
+            LoginApi.LoginParam.LoginWithHandle(handle, password, label, secondFactorVerificationCode),
+            shouldPersistClient
+        )
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,

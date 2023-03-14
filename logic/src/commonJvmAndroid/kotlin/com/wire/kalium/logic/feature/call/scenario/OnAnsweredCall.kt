@@ -39,7 +39,7 @@ class OnAnsweredCall(
 
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationIdString = conversationIdWithDomain.toString(),
+                conversationId = conversationIdWithDomain,
                 status = CallStatus.ANSWERED
             )
         }

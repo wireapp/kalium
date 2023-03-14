@@ -86,14 +86,14 @@ class UpdateVideoStateUseCaseTest {
             }
         given(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
+            .whenInvokedWith(eq(conversationId), eq(isCameraOn))
             .thenDoNothing()
 
         updateVideoStateUseCase(conversationId, videoState)
 
         verify(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId.toString()), eq(isCameraOn))
+            .with(eq(conversationId), eq(isCameraOn))
             .wasInvoked(once)
 
         verify(callManager)
@@ -112,14 +112,14 @@ class UpdateVideoStateUseCaseTest {
             }
         given(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
+            .whenInvokedWith(eq(conversationId), eq(isCameraOn))
             .thenDoNothing()
 
         updateVideoStateUseCase(conversationId, videoState)
 
         verify(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId.toString()), eq(isCameraOn))
+            .with(eq(conversationId), eq(isCameraOn))
             .wasInvoked(once)
 
         verify(callManager)

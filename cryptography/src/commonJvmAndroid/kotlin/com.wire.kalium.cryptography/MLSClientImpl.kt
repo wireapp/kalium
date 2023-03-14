@@ -46,10 +46,12 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 
     override fun clientIsExistingGroupUser(conversationId: ConversationId, clientId: ClientId, existingClients: List<ClientId>): Boolean {
-        val userId = toClientID(clientId)?.userId ?: return false
-        return existingClients.find {
-            toClientID(it)?.userId == userId
-        } != null
+        // TODO disabled until we have subconversation support in CC
+//         val userId = toClientID(clientId)?.userId ?: return false
+//         return existingClients.find {
+//             toClientID(it)?.userId == userId
+//         } != null
+        return true
     }
 
     override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {

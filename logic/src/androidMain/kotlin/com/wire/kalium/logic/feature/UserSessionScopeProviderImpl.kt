@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
+    private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val rootPathsProvider: RootPathsProvider,
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
@@ -76,6 +78,10 @@ internal actual class UserSessionScopeProviderImpl(
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
             networkContainer,
+            authenticationScopeProvider.provide(
+                sessionManager.getServerConfig(),
+                sessionManager.getProxyCredentials()
+            ),
             proteusClientProvider,
             userSessionWorkScheduler
         )

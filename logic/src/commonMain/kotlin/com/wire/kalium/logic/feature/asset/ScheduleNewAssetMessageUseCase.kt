@@ -204,9 +204,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         message: Message,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
-        }
+        messageSender.sendPendingMessage(conversationId, message.id)
 
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(

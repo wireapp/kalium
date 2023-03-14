@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
@@ -66,7 +67,8 @@ actual class GlobalDatabaseProvider(
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
-                logout_reasonAdapter = LogoutReasonAdapter
+                logout_reasonAdapter = LogoutReasonAdapter,
+                managed_byAdapter = EnumColumnAdapter()
             ),
             CurrentAccountAdapter = CurrentAccount.Adapter(
                 user_idAdapter = QualifiedIDAdapter

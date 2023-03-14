@@ -325,8 +325,18 @@ class ClientRepositoryTest {
 
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
+        const val SECOND_FACTOR_CODE = "123456"
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
-            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null, cookieLabel = "cookieLabel"
+            password = "pass",
+            preKeys = listOf(),
+            lastKey = PreKeyCrypto(2, "2"),
+            deviceType = null,
+            label = null,
+            capabilities = listOf(),
+            clientType = null,
+            model = null,
+            cookieLabel = "cookieLabel",
+            secondFactorVerificationCode = SECOND_FACTOR_CODE,
         )
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val CLIENT_ID = TestClient.CLIENT_ID

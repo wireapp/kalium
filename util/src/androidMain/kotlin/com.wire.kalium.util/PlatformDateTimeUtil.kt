@@ -32,11 +32,11 @@ import java.util.TimeZone
 
 actual open class PlatformDateTimeUtil actual constructor() {
 
-    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.millisPattern, Locale.getDefault()).apply {
+    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.iso8601Pattern, Locale.getDefault()).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
-    private val secondsDateTimeFormat = SimpleDateFormat(DateTimeUtil.secondsPattern, Locale.getDefault())
+    private val secondsDateTimeFormat = SimpleDateFormat(DateTimeUtil.simplePattern, Locale.getDefault())
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
@@ -56,10 +56,10 @@ actual open class PlatformDateTimeUtil actual constructor() {
             isoDateTimeFormat.format(Date(instant.toEpochMilliseconds()))
 
     /**
-     * Parse current [kotlinx.datetime.Instant] into date-time string in ISO-8601 format with up to seconds precision.
-     * @returndate in ISO-8601 format (YYYY-MM-DDTHH:mm:ssZ)
+     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    actual fun fromCurrentInstantToSimpleDateTimeString(): String {
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             secondsDateTimeFormat.format(System.currentTimeMillis())
         else

@@ -53,7 +53,8 @@ class ClientMapper(
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
-        cookieLabel = param.cookieLabel
+        cookieLabel = param.cookieLabel,
+        secondFactorVerificationCode = param.secondFactorVerificationCode,
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information

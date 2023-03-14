@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
@@ -41,7 +40,6 @@ class StartCallUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
-        conversationType: ConversationType,
         isAudioCbr: Boolean = false
     ) = syncManager.waitUntilLiveOrFailure().fold({
         Result.SyncFailure
@@ -49,7 +47,6 @@ class StartCallUseCase internal constructor(
         callManager.value.startCall(
             conversationId = conversationId,
             callType = callType,
-            conversationType = conversationType,
             isAudioCbr = isAudioCbr
         )
         Result.Success

@@ -21,6 +21,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
@@ -45,15 +47,29 @@ internal class DeletedConversationEventHandlerImpl(
         if (conversation != null) {
             conversationRepository.deleteConversation(event.conversationId)
                 .onFailure { coreFailure ->
-                    logger.e("Error deleting the contents of a conversation $coreFailure")
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.FAILURE,
+                            event,
+                            Pair("errorInfo", "$coreFailure")
+                        )
                 }.onSuccess {
                     val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
                     val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                     ephemeralNotificationsManager.scheduleNotification(dataNotification)
-                    logger.d("Deleted the conversation ${event.conversationId}")
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SUCCESS,
+                            event
+                        )
                 }
         } else {
-            logger.d("Skipping conversation delete event already handled")
+            kaliumLogger
+                .logEventProcessing(
+                    EventLoggingStatus.SKIPPED,
+                    event,
+                    Pair("info", "Conversation delete event already handled?. Conversation is null.")
+                )
         }
     }
 }

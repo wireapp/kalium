@@ -34,7 +34,6 @@ import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageNewConversationReceiptModeContent
-import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
@@ -55,7 +54,8 @@ internal object TableMapper {
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        conversation_typeAdapter = EnumColumnAdapter()
+        conversation_typeAdapter = EnumColumnAdapter(),
+        typeAdapter = EnumColumnAdapter()
     )
     val clientAdapter = Client.Adapter(
         user_idAdapter = QualifiedIDAdapter,
@@ -162,11 +162,5 @@ internal object TableMapper {
     )
     val messageConversationReceiptModeChangedContentAdapter = MessageConversationReceiptModeChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
-    )
-
-    val messageRecipientFailureAdapter = MessageRecipientFailure.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        recipient_failure_listAdapter = QualifiedIDListAdapter(),
-        recipient_failure_typeAdapter = EnumColumnAdapter()
     )
 }
