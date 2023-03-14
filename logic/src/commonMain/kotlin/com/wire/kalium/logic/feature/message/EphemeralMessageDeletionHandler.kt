@@ -78,9 +78,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             messageRepository.getEphemeralMessagesMarkedForDeletion()
                 .onSuccess { ephemeralMessages ->
                     ephemeralMessages.forEach { ephemeralMessage ->
-                        if (ephemeralMessage is Message.Regular) {
-                            enqueueSelfDeletion(ephemeralMessage)
-                        }
+                        if (ephemeralMessage is Message.Regular) enqueueSelfDeletion(ephemeralMessage)
                     }
                 }
         }
