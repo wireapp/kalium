@@ -63,6 +63,7 @@ interface ClientDAO {
     suspend fun insertClients(clients: List<InsertClientParam>)
     suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client>
+    suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUsersByQualifiedIDs(ids: List<QualifiedIDEntity>): Map<QualifiedIDEntity, List<Client>>
     suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)

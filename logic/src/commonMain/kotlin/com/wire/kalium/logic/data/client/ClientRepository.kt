@@ -69,6 +69,8 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
+
     suspend fun updateClientVerificationStatus(
         userId: UserId,
         clientId: ClientId,
@@ -196,6 +198,11 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
+
+    override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =
+        clientDAO.observeClientsByUserId(userId.toDao())
+            .map { it.map { clientMapper.fromClientEntity(it) } }
+            .wrapStorageRequest()
 
     override suspend fun updateClientVerificationStatus(
         userId: UserId,

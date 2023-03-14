@@ -99,8 +99,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             clientRemoteRepository,
             clientRepository
         )
-    val getOtherUserClients: GetOtherUserClientsUseCase
-        get() = GetOtherUserClientsUseCaseImpl(
+    val getOtherUserClients: ObserveClientsByUserIdUseCase
+        get() = ObserveClientsByUserIdUseCase(
             clientRepository
         )
 
