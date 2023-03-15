@@ -135,7 +135,7 @@ data class WebTextQuote(
 
 @Serializable
 data class WebAssetData(
-    @SerialName("content_length") val contentLength: Int?,
+    @SerialName("content_length") val contentLength: Long?,
     @SerialName("content_type") val contentType: String?,
     @SerialName("domain") val domain: String?,
     @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
@@ -145,13 +145,14 @@ data class WebAssetData(
     @SerialName("otr_key") val otrKey: JsonObject?,
     @SerialName("sha256") val sha256: JsonObject?,
     @SerialName("status") val status: String?,
-    @SerialName("token") val token: String?
+    @SerialName("token") val token: String?,
+    @SerialName("meta") val meta: WebAssetMeta?
 )
 
 @Serializable
 data class WebKnockData(
     @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
-    @SerialName("legal_hold_status") val legalHoldStatus: Int,
+    @SerialName("legal_hold_status") val legalHoldStatus: Int
 )
 
 @Serializable
@@ -160,4 +161,10 @@ data class WebAssetInfo(
     @SerialName("name") val name: String?,
     @SerialName("tag") val tag: String?,
     @SerialName("width") val width: Int?
+)
+
+@Serializable
+data class WebAssetMeta(
+    @SerialName("duration") val duration: Long?,
+    @SerialName("loudness") val loudness: JsonObject?
 )

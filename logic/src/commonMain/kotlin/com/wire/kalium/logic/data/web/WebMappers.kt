@@ -57,7 +57,8 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                 null
             )
         }
-        is WebEventContent.Conversation.AssetMessage ->
+        is WebEventContent.Conversation.AssetMessage -> {
+            val mimeType = data.contentType ?: ""
             MigratedMessage(
                 conversationId = qualifiedConversation,
                 senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
@@ -68,9 +69,9 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     id,
                     MessageContent.Asset(
                         AssetContent(
-                            sizeInBytes = data.contentLength?.toLong() ?: 0,
+                            sizeInBytes = data.contentLength?: 0,
                             name = data.info?.name,
-                            mimeType = data.contentType ?: "",
+                            mimeType = mimeType,
                             remoteData = AssetContent.RemoteData(
                                 otrKey = data.otrKey?.toString()?.toByteArray() ?: ByteArray(0),
                                 sha256 = data.sha256?.toString()?.toByteArray() ?: ByteArray(0),
@@ -79,9 +80,25 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                                 assetDomain = data.domain,
                                 encryptionAlgorithm = null
                             ),
+                            metadata = when {
+                                mimeType.contains("image/") -> AssetContent.AssetMetadata.Image(
+                                    width = data.info!!.width!!,
+                                    height = data.info.height!!
+                                )
+                                mimeType.contains("video/") -> AssetContent.AssetMetadata.Video(
+                                    width = null,
+                                    height = null,
+                                    durationMs = null
+                                )
+                                mimeType.contains("audio/") -> AssetContent.AssetMetadata.Audio(
+                                    durationMs = data.meta?.duration,
+                                    normalizedLoudness = data.meta?.loudness?.toString()?.toByteArray() ?: ByteArray(0)
+                                )
+                                else -> null
+                            },
                             uploadStatus = Message.UploadStatus.NOT_UPLOADED,
                             downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
-                        )
+                        ),
                     ),
                     data.expectsReadConfirmation
                 ),
@@ -90,6 +107,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                 null,
                 null
             )
+        }
         else -> null // TODO handle other cases
     }
 }

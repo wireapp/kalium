@@ -44,6 +44,8 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.MissingFieldException
 import okio.Path
 import okio.buffer
 import okio.use
@@ -88,6 +90,7 @@ internal class RestoreWebBackupUseCaseImpl(
         return importMessages(filePath, coroutineScope)
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun tryImportConversations(filePath: Path) =
         kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
@@ -96,10 +99,14 @@ internal class RestoreWebBackupUseCaseImpl(
                     val iterator = sequence.iterator()
                     val migratedConversations = mutableListOf<Conversation>()
                     while (iterator.hasNext()) {
-                        val webConversation = iterator.next()
-                        val migratedConversation = webConversation.toConversation(userId)
-                        if (migratedConversation != null) {
-                            migratedConversations.add(migratedConversation)
+                        try {
+                            val webConversation = iterator.next()
+                            val migratedConversation = webConversation.toConversation(userId)
+                            if (migratedConversation != null) {
+                                migratedConversations.add(migratedConversation)
+                            }
+                        } catch (exception: MissingFieldException) {
+                            kaliumLogger.e("$TAG ${exception.message}")
                         }
                     }
                     if (migratedConversations.isNotEmpty()) {
@@ -110,6 +117,7 @@ internal class RestoreWebBackupUseCaseImpl(
                 }
         }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = kaliumFileSystem.listDirectories(filePath)
         .firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
@@ -119,10 +127,14 @@ internal class RestoreWebBackupUseCaseImpl(
 
                     val migratedMessagesBatch = mutableListOf<MigratedMessage>()
                     while (iterator.hasNext()) {
-                        val webContent = iterator.next()
-                        val migratedMessage = webContent.toMigratedMessage(userId.domain)
-                        if (migratedMessage != null) {
-                            migratedMessagesBatch.add(migratedMessage)
+                        try {
+                            val webContent = iterator.next()
+                            val migratedMessage = webContent.toMigratedMessage(userId.domain)
+                            if (migratedMessage != null) {
+                                migratedMessagesBatch.add(migratedMessage)
+                            }
+                        } catch (exception: MissingFieldException) {
+                            kaliumLogger.e("$TAG ${exception.message}")
                         }
 
                         // send migrated messages in batches to not face any OOM errors
