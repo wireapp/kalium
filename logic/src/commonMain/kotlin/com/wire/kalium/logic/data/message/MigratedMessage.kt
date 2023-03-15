@@ -28,6 +28,7 @@ data class MigratedMessage(
     val senderClientId: ClientId,
     val timestamp: Long,
     val content: String,
+    val unencryptedProto: ProtoContent?,
     val encryptedProto: ByteArray?,
     val assetName: String?,
     val assetSize: Int?,
