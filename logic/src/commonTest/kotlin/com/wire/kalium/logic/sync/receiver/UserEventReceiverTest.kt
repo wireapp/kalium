@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.client.NewClientManager
+import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -128,6 +130,20 @@ class UserEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenNewClientEvent_NewClientManagerInvoked() = runTest {
+        val event = TestEvent.newClient()
+        val (arrangement, eventReceiver) = Arrangement()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.newClientManager)
+            .suspendFunction(arrangement.newClientManager::scheduleNewClientEvent)
+            .with(any(), eq(SELF_USER_ID))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
@@ -144,7 +160,11 @@ class UserEventReceiverTest {
         @Mock
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
+        @Mock
+        val newClientManager = mock(classOf<NewClientManager>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
+            newClientManager,
             connectionRepository,
             conversationRepository,
             userRepository,

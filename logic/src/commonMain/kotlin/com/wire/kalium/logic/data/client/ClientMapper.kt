@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -79,6 +80,16 @@ class ClientMapper(
             isVerified = isVerified
         )
     }
+
+    fun fromNewClientEvent(event: Event.User.NewClient): Client = Client(
+        id = event.clientId,
+        type = fromClientTypeDTO(event.clientType),
+        registrationTime = Instant.parse(event.registrationTime),
+        deviceType = fromDeviceTypeDTO(event.deviceType),
+        label = event.label,
+        model = event.model,
+        isVerified = false
+    )
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
         simpleClientResponse.map {

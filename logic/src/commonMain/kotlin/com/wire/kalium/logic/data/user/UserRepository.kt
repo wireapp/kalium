@@ -33,6 +33,8 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.team.Team
+import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -58,6 +60,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -76,6 +79,7 @@ internal interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
+    suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -108,6 +112,7 @@ internal class UserDataSource internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
@@ -235,6 +240,18 @@ internal class UserDataSource internal constructor(
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromDaoModelToSelfUser)
+        }
+    }
+
+    @OptIn(FlowPreview::class)
+    override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
+        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
+            userDAO.getUserWithTeamByQualifiedID(selfUserID)
+                .filterNotNull()
+                .map { (user, team) ->
+                    userMapper.fromDaoModelToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+                }
         }
     }
 
