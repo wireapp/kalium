@@ -56,7 +56,7 @@ class LoginUseCaseTest {
             .withEmailValidationSucceeding(true, cleanEmail)
             .arrange()
 
-        val loginUserCaseResult = loginUseCase(dirtyEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        val loginUserCaseResult = loginUseCase(dirtyEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)
 
         assertEquals(
             loginUserCaseResult,
@@ -72,7 +72,7 @@ class LoginUseCaseTest {
             .wasNotInvoked()
 
         verify(arrangement.loginRepository)
-            .coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT) }
+            .coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT, TEST_2FA_CODE) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.loginRepository)
@@ -90,7 +90,7 @@ class LoginUseCaseTest {
             .withHandleValidationReturning(ValidateUserHandleResult.Valid(cleanHandle), dirtyHandle)
             .arrange()
 
-        val loginUserCaseResult = loginUseCase(dirtyHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+        val loginUserCaseResult = loginUseCase(dirtyHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)
 
         assertEquals(
             loginUserCaseResult,
@@ -104,7 +104,7 @@ class LoginUseCaseTest {
             .invocation { invoke(cleanHandle) }
             .wasInvoked(exactly = once)
         verify(arrangement.loginRepository)
-            .coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT) }
+            .coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT, TEST_2FA_CODE) }
             .wasInvoked(exactly = once)
 
         verify(arrangement.loginRepository)
