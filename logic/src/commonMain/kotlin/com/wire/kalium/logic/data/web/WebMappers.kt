@@ -35,6 +35,7 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
 
+@Suppress("LongMethod", "ComplexMethod")
 fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
     return when (this) {
         is WebEventContent.Conversation.TextMessage -> {
@@ -69,7 +70,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     id,
                     MessageContent.Asset(
                         AssetContent(
-                            sizeInBytes = data.contentLength?: 0,
+                            sizeInBytes = data.contentLength ?: 0,
                             name = data.info?.name,
                             mimeType = mimeType,
                             remoteData = AssetContent.RemoteData(
