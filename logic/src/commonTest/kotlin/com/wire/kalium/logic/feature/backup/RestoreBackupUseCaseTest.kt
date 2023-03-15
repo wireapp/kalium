@@ -123,7 +123,7 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
+        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup)
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
@@ -239,6 +239,9 @@ class RestoreBackupUseCaseTest {
         val databaseImporter = mock(classOf<DatabaseImporter>())
 
         @Mock
+        val restoreWebBackupUseCase = mock(classOf<RestoreWebBackupUseCase>())
+
+        @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -258,7 +261,7 @@ class RestoreBackupUseCaseTest {
                     BackupCoder.version,
                     userId.toString(),
                     creationTime,
-                    clientId,
+                    clientId
                 )
             )
             fakeFileSystem.sink(metadataFilePath).buffer().use {
@@ -355,7 +358,8 @@ class RestoreBackupUseCaseTest {
             userId = selfUserId,
             userRepository = userRepository,
             currentClientIdProvider = currentClientIdProvider,
-            idMapper = idMapper
+            idMapper = idMapper,
+            restoreWebBackup = restoreWebBackupUseCase
         )
     }
 

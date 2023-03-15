@@ -33,6 +33,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.serialization.toJsonElement
@@ -75,11 +77,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         ) : Conversation(id, transient, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                    typeKey to "Conversation.AccessUpdate",
-                    idKey to id.obfuscateId(),
-                    conversationIdKey to conversationId.toLogString(),
-                    "qualifiedFrom" to qualifiedFrom.toLogString()
-                )
+                typeKey to "Conversation.AccessUpdate",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "qualifiedFrom" to qualifiedFrom.toLogString()
+            )
         }
 
         data class NewMessage(
@@ -118,7 +120,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
-                timestampIsoKey to timestampIso)
+                timestampIsoKey to timestampIso
+            )
         }
 
         data class NewConversation(
@@ -507,6 +510,27 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 timestampIsoKey to timestampIso
             )
         }
+
+        data class NewClient(
+            override val transient: Boolean,
+            override val id: String,
+            val clientId: ClientId,
+            val registrationTime: String,
+            val model: String?,
+            val clientType: ClientTypeDTO,
+            val deviceType: DeviceTypeDTO,
+            val label: String?
+        ) : User(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                "id" to id.obfuscateId(),
+                "clientId" to clientId.value.obfuscateId(),
+                "registrationTime" to registrationTime,
+                "model" to (model ?: ""),
+                "clientType" to clientType,
+                "deviceType" to deviceType,
+                "label" to (label ?: "")
+            )
+        }
     }
 
     sealed class UserProperty(
@@ -557,6 +581,8 @@ internal fun KaliumLogger.logEventProcessing(
         EventLoggingStatus.SUCCESS -> i("Success handling event: $logJson")
         EventLoggingStatus.FAILURE -> e("Failure handling event: $logJson")
         EventLoggingStatus.SKIPPED -> w("Skipped handling event: $logJson")
-        else -> { w("Unknown outcome of event handling: $logJson") }
+        else -> {
+            w("Unknown outcome of event handling: $logJson")
+        }
     }
 }

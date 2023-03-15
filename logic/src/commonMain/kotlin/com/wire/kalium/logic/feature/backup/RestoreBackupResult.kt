@@ -15,28 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.backup
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+sealed class RestoreBackupResult {
+    data class Failure(val failure: BackupRestoreFailure) : RestoreBackupResult()
+    object Success : RestoreBackupResult()
 
-@Serializable
-data class BackupMetadata(
-    @SerialName("platform")
-    val platform: String,
-    @SerialName("version")
-    val version: String,
-    @SerialName("user_id")
-    val userId: String,
-    @SerialName("creation_time")
-    val creationTime: String,
-    @SerialName("client_id")
-    val clientId: String?
-) {
-    override fun toString(): String = Json.encodeToString(this)
+    sealed class BackupRestoreFailure(open val cause: String) {
+        object InvalidPassword : BackupRestoreFailure("The provided password is invalid")
+        object InvalidUserId : BackupRestoreFailure("User id in the backup file does not match the current user id")
+        data class IncompatibleBackup(override val cause: String) : BackupRestoreFailure(cause)
+        data class BackupIOFailure(override val cause: String) : BackupRestoreFailure(cause)
+        data class DecryptionFailure(override val cause: String) : BackupRestoreFailure(cause)
+    }
 }
-
-fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"
