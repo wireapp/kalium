@@ -251,7 +251,7 @@ internal class MessageSenderImpl internal constructor(
                             .handleClientsHaveChangedFailure(it)
                             .flatMap {
                                 logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
-                                attemptToSend(message, messageTarget)
+                                attemptToSendWithProteus(message, messageTarget)
                             }
                             .onFailure { failure ->
                                 val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +
