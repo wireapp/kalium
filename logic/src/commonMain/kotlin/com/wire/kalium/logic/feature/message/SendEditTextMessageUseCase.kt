@@ -95,18 +95,19 @@ class SendEditTextMessageUseCase internal constructor(
             messageRepository.updateTextMessage(
                 conversationId = message.conversationId,
                 messageContent = content,
-                newMessageId = message.id,
+                newMessageId = generatedMessageUuid,
                 editTimeStamp = message.date
             ).flatMap {
                     messageRepository.updateMessageStatus(
                         messageStatus = MessageEntity.Status.PENDING,
                         conversationId = message.conversationId,
-                        messageUuid = message.id
+                        messageUuid = generatedMessageUuid
                     )
                 }.map { message }
         }.flatMap { message ->
             messageSender.sendMessage(message)
         }.onFailure {
+            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, generatedMessageUuid)
             if (it is CoreFailure.Unknown) {
                 kaliumLogger.e("There was an unknown error trying to send the edit message $it", it.rootCause)
                 it.rootCause?.printStackTrace()
