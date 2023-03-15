@@ -29,10 +29,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
@@ -263,11 +261,7 @@ class RestoreBackupUseCaseTest {
                     BackupCoder.version,
                     userId.toString(),
                     creationTime,
-                    clientId,
-                    null,
-                    null,
-                    null,
-                    null
+                    clientId
                 )
             )
             fakeFileSystem.sink(metadataFilePath).buffer().use {

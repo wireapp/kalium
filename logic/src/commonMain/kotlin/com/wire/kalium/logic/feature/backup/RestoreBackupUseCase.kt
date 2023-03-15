@@ -99,7 +99,7 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun importUnencryptedBackup(
         extractedBackupRootPath: Path,
         metadata: BackupMetadata,
-    ): Either<Failure, Unit> = checkIsValidAuthor(metadata)
+    ): Either<Failure, Unit> = isValidBackupAuthor(metadata)
         .flatMap { metaData ->
             if (metaData.isWebBackup()) {
                 return when (val webBackup = restoreWebBackup(extractedBackupRootPath, metaData)) {
@@ -206,10 +206,6 @@ internal class RestoreBackupUseCaseImpl(
                 Either.Right(encryptedFilePath)
             }
         }
-
-    private fun checkIsValidAuthor(metadata: BackupMetadata): Either<Failure, BackupMetadata> {
-        return isValidBackupAuthor(metadata)
-    }
 
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
         extractCompressedFile(inputSource, extractedBackupRootPath, kaliumFileSystem)

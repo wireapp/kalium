@@ -181,7 +181,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.member-update")
         data class MemberUpdateDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("from") val from: String,
             @SerialName("data") val roleChange: ConversationRoleChange

@@ -152,11 +152,7 @@ internal class CreateBackupUseCaseImpl(
             BackupCoder.version,
             userId.toString(),
             creationTime,
-            clientId,
-            null,
-            null,
-            null,
-            null
+            clientId
         )
         val metadataJson = Json.encodeToString(metadata)
 

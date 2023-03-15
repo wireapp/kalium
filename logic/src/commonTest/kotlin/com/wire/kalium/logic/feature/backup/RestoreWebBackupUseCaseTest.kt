@@ -19,15 +19,12 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.IgnoreIOS
-import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.dao.MigrationDAO
-import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -211,11 +208,7 @@ class RestoreWebBackupUseCaseTest {
             "19",
             currentTestUserId.toString(),
             "2023-03-25T14:17:27.364Z",
-            clientId,
-            null,
-            null,
-            null,
-            null
+            clientId
         )
         const val JSON_WEB_EVENTS = """[
   {

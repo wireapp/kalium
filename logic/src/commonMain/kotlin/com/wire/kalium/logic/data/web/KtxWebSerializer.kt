@@ -24,18 +24,20 @@ import kotlinx.serialization.modules.plus
 
 @OptIn(ExperimentalSerializationApi::class)
 object KtxWebSerializer {
-    val json = Json {
-        isLenient = true
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        // explicitNulls, defines whether null property
-        // values should be included in the serialized JSON string.
-        explicitNulls = false
+    val json by lazy {
+        Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+            // explicitNulls, defines whether null property
+            // values should be included in the serialized JSON string.
+            explicitNulls = false
 
-        // If API returns null or unknown values for Enums, we can use default constructor parameter to override it
-        // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
-        coerceInputValues = true
+            // If API returns null or unknown values for Enums, we can use default constructor parameter to override it
+            // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
+            coerceInputValues = true
 
-        serializersModule += webEventContentSerializationModule
+            serializersModule += webEventContentSerializationModule
+        }
     }
 }
