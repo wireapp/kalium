@@ -105,7 +105,6 @@ class SendEditTextMessageUseCase internal constructor(
                     )
                 }.map { message }
         }.flatMap { message ->
-//             messageSender.sendPendingMessage(conversationId, generatedMessageUuid) TODO: keep only one
             messageSender.sendMessage(message)
         }.onFailure {
             if (it is CoreFailure.Unknown) {

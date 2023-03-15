@@ -281,7 +281,7 @@ class ProtoContentMapperImpl(
             MessageEdit(
                 replacingMessageId = readableContent.editMessageId,
                 content = MessageEdit.Content.Text( // TODO: for now we do not implement Composite
-                    Text( // TODO: should we also add the quote field to the edit message content?
+                    Text(
                         content = readableContent.newContent,
                         mentions = mentions,
                     )
