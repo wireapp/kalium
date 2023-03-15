@@ -139,7 +139,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
                         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -234,7 +234,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false
                     )
                 )
@@ -258,7 +258,7 @@ class CallRepositoryTest {
 
         assertEquals(
             true,
-            callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]?.isMuted
+            callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isMuted
         )
     }
 
@@ -303,7 +303,7 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -335,7 +335,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false
                     )
                 )
@@ -358,7 +358,7 @@ class CallRepositoryTest {
             .wasInvoked(exactly = Times(0))
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -410,7 +410,7 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -456,7 +456,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false
                     )
                 )
@@ -485,7 +485,7 @@ class CallRepositoryTest {
 
         assertEquals(
             true,
-            callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]?.isMuted
+            callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isMuted
         )
     }
 
@@ -521,7 +521,7 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -540,7 +540,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false
                     )
                 )
@@ -568,7 +568,7 @@ class CallRepositoryTest {
             .wasNotInvoked()
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -604,7 +604,7 @@ class CallRepositoryTest {
             .wasInvoked(exactly = once)
 
         assertTrue(
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId.toString())
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
         )
     }
 
@@ -617,7 +617,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false
                     )
                 )
@@ -625,7 +625,7 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateCallStatusById(Arrangement.conversationId.toString(), CallStatus.ESTABLISHED)
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
 
         // then
         verify(arrangement.callDAO)
@@ -641,7 +641,7 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         val (arrangement, callRepository) = Arrangement().arrange()
 
-        callRepository.updateCallStatusById(Arrangement.randomConversationIdString, CallStatus.INCOMING)
+        callRepository.updateCallStatusById(Arrangement.randomConversationId, CallStatus.INCOMING)
 
         verify(arrangement.callDAO)
             .suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
@@ -653,10 +653,10 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
 
-        callRepository.updateIsMutedById(Arrangement.randomConversationIdString, false)
+        callRepository.updateIsMutedById(Arrangement.randomConversationId, false)
 
         assertFalse {
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationId)
         }
     }
 
@@ -668,7 +668,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = true
                     )
                 )
@@ -676,22 +676,22 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateIsMutedById(Arrangement.conversationId.toString(), expectedValue)
+        callRepository.updateIsMutedById(Arrangement.conversationId, expectedValue)
 
         // then
         assertEquals(
             expectedValue,
-            callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]?.isMuted
+            callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isMuted
         )
     }
 
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        callRepository.updateIsCameraOnById(Arrangement.randomConversationIdString, false)
+        callRepository.updateIsCameraOnById(Arrangement.randomConversationId, false)
 
         assertFalse {
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationId)
         }
     }
 
@@ -703,7 +703,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isCameraOn = true
                     )
                 )
@@ -711,12 +711,12 @@ class CallRepositoryTest {
         )
 
         // when
-        callRepository.updateIsCameraOnById(Arrangement.conversationId.toString(), expectedValue)
+        callRepository.updateIsCameraOnById(Arrangement.conversationId, expectedValue)
 
         // then
         assertEquals(
             expectedValue,
-            callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]?.isCameraOn
+            callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isCameraOn
         )
     }
 
@@ -724,12 +724,12 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateCallParticipants(
-            Arrangement.randomConversationIdString,
+            Arrangement.randomConversationId,
             emptyList()
         )
 
         assertFalse {
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationId)
         }
     }
 
@@ -753,7 +753,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         participants = emptyList(),
                         maxParticipants = 0
                     )
@@ -763,12 +763,12 @@ class CallRepositoryTest {
 
         // when
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             participantsList
         )
 
         // then
-        val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]
+        val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId]
         assertEquals(
             participantsList,
             metadata?.participants
@@ -779,12 +779,12 @@ class CallRepositoryTest {
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateParticipantsActiveSpeaker(
-            Arrangement.randomConversationIdString,
+            Arrangement.randomConversationId,
             CallActiveSpeakers(emptyList())
         )
 
         assertFalse {
-            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationIdString)
+            callRepository.getCallMetadataProfile().data.containsKey(Arrangement.randomConversationId)
         }
     }
 
@@ -808,7 +808,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         participants = emptyList(),
                         maxParticipants = 0
                     )
@@ -827,15 +827,15 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             participantsList
         )
 
         // when
-        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId.toString(), activeSpeakers)
+        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId, activeSpeakers)
 
         // then
-        val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId.toString()]
+        val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId]
         assertEquals(
             expectedParticipantsList,
             metadata?.participants
@@ -866,7 +866,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
                         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -906,7 +906,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
                         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -951,7 +951,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
                         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -1015,8 +1015,8 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to metadata,
-                    Arrangement.randomConversationId.toString() to metadata.copy(
+                    Arrangement.conversationId to metadata,
+                    Arrangement.randomConversationId to metadata.copy(
                         conversationName = "CLOSED CALL"
                     )
                 )
@@ -1068,7 +1068,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         isMuted = false,
                         conversationName = "ONE_ON_ONE Name",
                         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -1305,7 +1305,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         protocol = Arrangement.mlsProtocolInfo,
                         maxParticipants = 0
                     )
@@ -1313,7 +1313,7 @@ class CallRepositoryTest {
             )
         )
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                 hasEstablishedAudio = false
@@ -1341,7 +1341,7 @@ class CallRepositoryTest {
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
-                    Arrangement.conversationId.toString() to createCallMetadata().copy(
+                    Arrangement.conversationId to createCallMetadata().copy(
                         protocol = Arrangement.mlsProtocolInfo,
                         maxParticipants = 0
                     )
@@ -1349,7 +1349,7 @@ class CallRepositoryTest {
             )
         )
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                     hasEstablishedAudio = false
@@ -1364,7 +1364,7 @@ class CallRepositoryTest {
         yield()
 
         callRepository.updateCallParticipants(
-            Arrangement.conversationId.toString(),
+            Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
                     hasEstablishedAudio = true
@@ -1629,8 +1629,7 @@ class CallRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-
-            fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
+        fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::observeEpochChanges)
                 .whenInvoked()
@@ -1688,7 +1687,6 @@ class CallRepositoryTest {
 
         companion object {
             const val CALL_CONFIG_API_RESPONSE = "{'call':'success','config':'dummy_config'}"
-            const val randomConversationIdString = "random@domain"
             val randomConversationId = ConversationId("value", "domain")
 
             val groupId = GroupID("groupid")

@@ -225,18 +225,20 @@ class CallManagerImpl internal constructor(
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
-        conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
         callingLogger.d(
             "$TAG -> starting call for conversation = " +
                     "${conversationId.toLogString()}.."
         )
-        val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
         val isCameraOn = callType == CallType.VIDEO
+        val type = conversationRepository.getConversationById(conversationId)?.let {
+            callMapper.fromConversationToConversationType(it)
+        } ?: ConversationType.Unknown
+
         callRepository.createCall(
             conversationId = conversationId,
-            type = conversationType,
+            type = type,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
@@ -245,11 +247,11 @@ class CallManagerImpl internal constructor(
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            val avsConversationType = callMapper.toConversationTypeCalling(type)
             // TODO: Handle response. Possible failure?
             wcall_start(
                 deferredHandle.await(),
-                federatedId,
+                federatedIdMapper.parseToFederatedId(conversationId),
                 avsCallType.avsValue,
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
@@ -261,7 +263,7 @@ class CallManagerImpl internal constructor(
             )
         }
 
-        if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (callRepository.getCallMetadataProfile().get(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
             callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
@@ -269,8 +271,6 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun answerCall(conversationId: ConversationId) {
-        val federatedId = federatedIdMapper.parseToFederatedId(conversationId)
-
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
@@ -278,7 +278,7 @@ class CallManagerImpl internal constructor(
             )
             wcall_answer(
                 inst = deferredHandle.await(),
-                conversationId = federatedId,
+                conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                 callType = CallTypeCalling.AUDIO.avsValue,
                 cbrEnabled = false
             )
@@ -288,7 +288,7 @@ class CallManagerImpl internal constructor(
             )
         }
 
-        if (callRepository.getCallMetadataProfile().get(federatedId)?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (callRepository.getCallMetadataProfile().get(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
             callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }

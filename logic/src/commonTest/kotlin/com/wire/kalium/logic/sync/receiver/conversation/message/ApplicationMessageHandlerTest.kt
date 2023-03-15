@@ -49,9 +49,11 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ApplicationMessageHandlerTest {
 
     @Test
@@ -180,7 +182,5 @@ class ApplicationMessageHandlerTest {
         }
 
         fun arrange() = this to applicationMessageHandler
-
     }
-
 }

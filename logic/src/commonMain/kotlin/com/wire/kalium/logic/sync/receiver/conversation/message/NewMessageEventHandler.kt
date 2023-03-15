@@ -23,10 +23,13 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage)
@@ -44,10 +47,18 @@ internal class NewMessageEventHandlerImpl(
     override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage) {
         proteusMessageUnpacker.unpackProteusMessage(event)
             .onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it",
+                    "protocol" to "Proteus"
+                )
+
                 if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
-                    logger.i("Ignoring duplicate message")
+                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
                     return
                 }
+
+                logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
 
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
@@ -64,12 +75,26 @@ internal class NewMessageEventHandlerImpl(
                 )
             }.onSuccess {
                 handleSuccessfulResult(it)
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
     }
 
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) {
         mlsMessageUnpacker.unpackMlsMessage(event)
             .onFailure {
+
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it",
+                    "protocol" to "MLS"
+                )
+
+                logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
+
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,
@@ -83,6 +108,11 @@ internal class NewMessageEventHandlerImpl(
                 )
             }.onSuccess {
                 handleSuccessfulResult(it)
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
             }
     }
 

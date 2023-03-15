@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -43,6 +44,8 @@ sealed interface Message {
         val senderUserName: String? // TODO we can get it from entity but this will need a lot of changes in use cases,
         val isSelfMessage: Boolean
         val senderClientId: ClientId
+
+        fun toLogString(): String
     }
 
     /**
@@ -77,9 +80,9 @@ sealed interface Message {
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
-        fun toLogString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.Text -> mutableMapOf(
                     typeKey to "text"
                 )
@@ -125,14 +128,14 @@ sealed interface Message {
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to editStatus.toLogString(),
+                "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation",
                 "deliveryStatus" to "$deliveryStatus"
             )
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toMap().toJsonElement()}"
         }
     }
 
@@ -147,10 +150,10 @@ sealed interface Message {
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean = false,
     ) : Sendable {
-        fun toLogString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
 
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.TextEdited -> mutableMapOf(
                     typeKey to "textEdit"
                 )
@@ -194,7 +197,7 @@ sealed interface Message {
 
                 is MessageContent.Receipt -> mutableMapOf(
                     typeKey to "receipt",
-                    "content" to "$content",
+                    "content" to content.toLogMap(),
                 )
 
                 MessageContent.Ignored -> mutableMapOf(
@@ -213,7 +216,7 @@ sealed interface Message {
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toJsonElement()}"
         }
 
     }
@@ -256,9 +259,11 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+
                 is MessageContent.NewConversationReceiptMode -> mutableMapOf(
                     typeKey to "newConversationReceiptMode"
                 )
+
                 is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
                     typeKey to "conversationReceiptModeChanged"
                 )
@@ -292,21 +297,24 @@ sealed interface Message {
         data class Edited(val lastTimeStamp: String) : EditStatus()
 
         override fun toString(): String = when (this) {
-                is NotEdited -> "NOT_EDITED"
-                is Edited -> "EDITED_$lastTimeStamp"
-            }
+            is NotEdited -> "NOT_EDITED"
+            is Edited -> "EDITED_$lastTimeStamp"
+        }
 
         fun toLogString(): String {
-            val properties: MutableMap<String, String> = when (this) {
-                is NotEdited -> mutableMapOf(
-                    "value" to "NOT_EDITED"
-                )
-                is Edited -> mutableMapOf(
-                    "value" to "EDITED",
-                    "time" to this.lastTimeStamp
-                )
-            }
-            return Json.encodeToString(properties.toMap())
+            val properties = toLogMap()
+            return Json.encodeToString(properties)
+        }
+
+        fun toLogMap(): Map<String, String> = when (this) {
+            is NotEdited -> mutableMapOf(
+                "value" to "NOT_EDITED"
+            )
+
+            is Edited -> mutableMapOf(
+                "value" to "EDITED",
+                "time" to this.lastTimeStamp
+            )
         }
     }
 

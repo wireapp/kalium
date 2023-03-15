@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.backup
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class BackupMetadata(
@@ -38,3 +38,5 @@ data class BackupMetadata(
 ) {
     override fun toString(): String = Json.encodeToString(this)
 }
+
+fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"

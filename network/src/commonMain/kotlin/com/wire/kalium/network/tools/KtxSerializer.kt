@@ -24,7 +24,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.plus
 
 @OptIn(ExperimentalSerializationApi::class)
-internal object KtxSerializer {
+object KtxSerializer {
     val json = Json {
         isLenient = true
         ignoreUnknownKeys = true

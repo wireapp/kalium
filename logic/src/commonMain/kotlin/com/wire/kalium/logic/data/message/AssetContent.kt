@@ -32,18 +32,13 @@ data class AssetContent(
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
 
-    private val isValidAsset =
-        when (metadata) {
-            // in some cases back-end returns no width and height
-            // in that case we do not want to show the asset
-            // and mark it as invalid
-            is AssetMetadata.Image -> metadata.width > 0 && metadata.height > 0
-            is AssetMetadata.Audio -> true
-            is AssetMetadata.Video -> true
-            null -> false
-        }
+    private val hasValidImageMetadata = when (metadata) {
+        is AssetMetadata.Image -> metadata.width > 0 && metadata.height > 0
+        else -> false
+    }
 
-    val shouldBeDisplayed = !isPreviewMessage && isValidAsset
+    // We should not display Preview Assets (assets w/o valid encryption keys sent by Mac/Web clients) unless they include image metadata
+    val shouldBeDisplayed = !isPreviewMessage || hasValidImageMetadata
 
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()
