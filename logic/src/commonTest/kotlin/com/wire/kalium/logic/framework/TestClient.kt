@@ -35,7 +35,8 @@ object TestClient {
         deviceType = null,
         model = null,
         label = "label",
-        isVerified = false
+        isVerified = false,
+        isValid = true
     )
 
     val SELF_USER_ID = UserId("self-user-id", "domain")

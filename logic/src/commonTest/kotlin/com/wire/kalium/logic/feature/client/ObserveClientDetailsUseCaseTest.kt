@@ -102,7 +102,8 @@ class ObserveClientDetailsUseCaseTest {
             deviceType = DeviceType.Desktop,
             label = null,
             model = "Mac ox",
-            isVerified = false
+            isVerified = false,
+            isValid = true
         )
         val CLIENT_RESULT = CLIENT.copy(id = PlainId(value = "client_id_1"))
     }

@@ -55,7 +55,8 @@ class ObserveClientsByUserIdUseCaseTest {
                 deviceType = DeviceType.Desktop,
                 label = null,
                 model = "Mac ox",
-                isVerified = false
+                isVerified = false,
+                isValid = true
             ),
             Client(
                 id = ClientId("2222"),
@@ -64,7 +65,8 @@ class ObserveClientsByUserIdUseCaseTest {
                 deviceType = DeviceType.Phone,
                 label = null,
                 model = "Mac ox",
-                isVerified = false
+                isVerified = false,
+                isValid = true
             )
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()

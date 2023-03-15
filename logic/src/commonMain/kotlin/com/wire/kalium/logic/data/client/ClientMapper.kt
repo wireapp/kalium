@@ -66,7 +66,8 @@ class ClientMapper(
         deviceType = fromDeviceTypeDTO(response.deviceType),
         label = response.label,
         model = response.model,
-        isVerified = false
+        isVerified = false,
+        isValid = true
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -77,7 +78,8 @@ class ClientMapper(
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = label,
             model = model,
-            isVerified = isVerified
+            isVerified = isVerified,
+            isValid = isValid
         )
     }
 
@@ -88,7 +90,8 @@ class ClientMapper(
         deviceType = fromDeviceTypeDTO(event.deviceType),
         label = event.label,
         model = event.model,
-        isVerified = false
+        isVerified = false,
+        isValid = true
     )
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
