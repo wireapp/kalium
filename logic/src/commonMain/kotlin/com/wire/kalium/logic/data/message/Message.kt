@@ -300,9 +300,9 @@ sealed interface Message {
         data class Edited(val lastTimeStamp: String) : EditStatus()
 
         override fun toString(): String = when (this) {
-                is NotEdited -> "NOT_EDITED"
-                is Edited -> "EDITED_$lastTimeStamp"
-            }
+            is NotEdited -> "NOT_EDITED"
+            is Edited -> "EDITED_$lastTimeStamp"
+        }
 
         fun toLogString(): String {
             val properties = toLogMap()
@@ -310,14 +310,15 @@ sealed interface Message {
         }
 
         fun toLogMap(): Map<String, String> = when (this) {
-                is NotEdited -> mutableMapOf(
-                    "value" to "NOT_EDITED"
-                )
-                is Edited -> mutableMapOf(
-                    "value" to "EDITED",
-                    "time" to this.lastTimeStamp
-                )
-            }
+            is NotEdited -> mutableMapOf(
+                "value" to "NOT_EDITED"
+            )
+
+            is Edited -> mutableMapOf(
+                "value" to "EDITED",
+                "time" to this.lastTimeStamp
+            )
+        }
     }
 
     data class ExpirationData(val expireAfter: Duration, val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted) {
@@ -328,13 +329,19 @@ sealed interface Message {
             data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
         }
 
-        // time left for deletion it can be a negative value if the time difference between the self deletion start date and
-        // now is greater then expire after millis
         fun timeLeftForDeletion(): Duration {
             return if (selfDeletionStatus is SelfDeletionStatus.Started) {
                 val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
 
-                expireAfter - timeElapsedSinceSelfDeletionStartDate
+                // time left for deletion it can be a negative value if the time difference between the self deletion start date and
+                // now is greater then expire after millis, we normalize it to 0 seconds
+                val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
+
+                if (timeLeft.isNegative()) {
+                    Duration.ZERO
+                } else {
+                    timeLeft
+                }
             } else {
                 expireAfter
             }
