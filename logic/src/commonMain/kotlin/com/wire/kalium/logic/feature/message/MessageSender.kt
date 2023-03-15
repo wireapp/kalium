@@ -193,6 +193,7 @@ internal class MessageSenderImpl internal constructor(
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
                     .map { recipients }
+                // TODO(federation) filter clients with failed to get prekeys and add persist in db
             }.fold({
                 // TODO(federation) if (it is NetworkFailure.FederatedBackendError)
                 // TODO(federation) handle federated failure to filter clients and add to QualifiedMessageOption.IgnoreSome
