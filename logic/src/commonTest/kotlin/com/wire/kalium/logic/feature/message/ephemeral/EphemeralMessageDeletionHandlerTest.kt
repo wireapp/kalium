@@ -10,6 +10,7 @@ import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -168,18 +169,180 @@ class EphemeralMessageDeletionHandlerTest {
     @Test
     fun givenMultipleRegularMessageWithSameExpiration_whenEnqueuedForDeletionAndTimeElapsed_thenTheMessagesShouldBeDeleted() =
         runTest(testDispatcher.default) {
-            val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
-                .withMessageRepositoryReturningMessage(
-                    message = TestMessage.TEXT_MESSAGE.copy(
-                        expirationData = Message.ExpirationData(
-                            expireAfter = 1.seconds,
-                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                        )
+            // given
+            val pendingMessagesToDelete = listOf(
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "1",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ),
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "2",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ),
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "3",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ), TestMessage.TEXT_MESSAGE.copy(
+                    id = "4",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                     )
                 )
+            )
+
+            val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
+                .withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
                 .withDeletingMessage()
                 .arrange()
+
+            // when
+            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+
+            advanceTimeBy(1001)
+            // then
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(pendingMessagesToDelete.size))
+
+        }
+
+    @Test
+    fun givenMultipleRegularMessageWithDifferentExpiration_whenEnqueuedForDeletionAndTimeElapsed_thenTheMessagesPastTheTimeShouldBeDeleted() =
+        runTest(testDispatcher.default) {
+            // given
+            val pendingMessagesToDelete = listOf(
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "1",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ),
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "2",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 2.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ),
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "3",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 3.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ), TestMessage.TEXT_MESSAGE.copy(
+                    id = "4",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 4.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                )
+            )
+
+            val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
+                .withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
+                .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withDeletingMessage()
+                .arrange()
+
+            // when
+            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+
+            // then
+            advanceTimeBy(1001)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(1))
+
+            advanceTimeBy(1001)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(1))
+
+            advanceTimeBy(1001)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(1))
+
+            advanceTimeBy(1001)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(1))
+        }
+
+    @Test
+    fun givenMultipleRegularMessageWithDifferentExpiration_whenEnqueuedWithTimeAdvancing_thenDeleteThosePastTheExpiration() =
+        runTest(testDispatcher.default) {
+            // given
+            val pendingMessagesToDeletePastTheTime = listOf(
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "1",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ), TestMessage.TEXT_MESSAGE.copy(
+                    id = "2",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 1.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                )
+            )
+
+            val pendingMessagesToDeleteBeforeTime = listOf(
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "3",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 2.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                ),
+                TestMessage.TEXT_MESSAGE.copy(
+                    id = "4",
+                    expirationData = Message.ExpirationData(
+                        expireAfter = 2.seconds,
+                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                )
+            )
+
+            val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
+                .withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDeletePastTheTime + pendingMessagesToDeleteBeforeTime)
+                .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withDeletingMessage()
+                .arrange()
+            // when
+            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+
+            advanceTimeBy(1500)
+            // then
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::deleteMessage)
+                .with(any(), any())
+                .wasInvoked(Times(pendingMessagesToDeletePastTheTime.size))
+
         }
 
 }
@@ -189,9 +352,7 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
     @Mock
     val messageRepository = mock(classOf<MessageRepository>())
 
-    fun withMessageRepositoryReturningMessage(
-        message: Message
-    ): Arrangement {
+    fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
         given(messageRepository)
             .suspendFunction(messageRepository::getMessageById)
             .whenInvokedWith(any(), any())
@@ -199,20 +360,6 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
 
         return this
     }
-
-    fun withMessageRepositoryReturningSpecificMessage(
-        messageId: String,
-        conversatinId: ConversationId,
-        message: Message
-    ): Arrangement {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getMessageById)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Right(message) }
-
-        return this
-    }
-
 
     fun withMessageRepositoryMarkingSelfDeletionStartDate(): Arrangement {
         given(messageRepository)
@@ -228,6 +375,15 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
             .suspendFunction(messageRepository::deleteMessage)
             .whenInvokedWith(any(), any())
             .then { _, _ -> Either.Right(Unit) }
+
+        return this
+    }
+
+    fun withMessageRepositoryReturningPendingEphemeralMessages(messages: List<Message>): Arrangement {
+        given(messageRepository)
+            .suspendFunction(messageRepository::getEphemeralMessagesMarkedForDeletion)
+            .whenInvoked()
+            .then { Either.Right(messages) }
 
         return this
     }
