@@ -113,8 +113,7 @@ internal object MapperProvider {
     fun receiptsMapper(): ReceiptsMapper = ReceiptsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
-        selfUserId = selfUserId,
-        idMapper = idMapper()
+        selfUserId = selfUserId
     )
 
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())

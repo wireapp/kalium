@@ -36,7 +36,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -51,7 +50,7 @@ interface PersistMigratedMessagesUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-internal class PersistMigratedMessagesUseCaseImpl @OptIn(ExperimentalCoroutinesApi::class) constructor(
+internal class PersistMigratedMessagesUseCaseImpl(
     private val selfUserId: UserId,
     private val migrationDAO: MigrationDAO,
     private val coroutineContext: CoroutineDispatcher = KaliumDispatcherImpl.default.limitedParallelism(2),
