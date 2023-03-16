@@ -109,7 +109,8 @@ class SelfClientsUseCaseTest {
             deviceType = DeviceType.Desktop,
             label = null,
             model = "Mac ox",
-            isVerified = false
+            isVerified = false,
+            isValid = true
         )
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),

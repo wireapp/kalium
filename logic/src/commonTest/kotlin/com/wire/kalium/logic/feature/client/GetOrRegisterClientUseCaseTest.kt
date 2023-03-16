@@ -48,7 +48,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenValidClientIsRetained_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, false, null, "label", null)
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
@@ -77,7 +77,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenInvalidClientIsRetained_whenRegisteringAClient_thenClearDataAndRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, false, null, "label", null)
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
@@ -111,7 +111,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenClientNotRetained_whenRegisteringAClient_thenRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, false, null, "label", null)
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
