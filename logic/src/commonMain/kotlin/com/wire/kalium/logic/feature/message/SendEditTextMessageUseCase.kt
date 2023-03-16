@@ -106,6 +106,8 @@ class SendEditTextMessageUseCase internal constructor(
                 }.map { message }
         }.flatMap { message ->
             messageSender.sendMessage(message)
+        }.flatMap {
+            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
         }.onFailure {
             messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, generatedMessageUuid)
             if (it is CoreFailure.Unknown) {
