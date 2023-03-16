@@ -45,6 +45,8 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal interface ApplicationMessageHandler {
 
@@ -120,19 +122,25 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation
+                    expectsReadConfirmation = content.expectsReadConfirmation,
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processMessage(message)
             }
 
             is MessageContent.Signaling -> {
                 val signalingMessage = Message.Signaling(
-                    content.messageUid,
-                    protoContent,
-                    conversationId,
-                    timestampIso,
-                    senderUserId,
-                    senderClientId,
+                    id = content.messageUid,
+                    content = protoContent,
+                    conversationId = conversationId,
+                    date = timestampIso,
+                    senderUserId = senderUserId,
+                    senderClientId = senderClientId,
                     status = Message.Status.SENT
                 )
                 processSignaling(signalingMessage)
@@ -201,42 +209,33 @@ internal class ApplicationMessageHandlerImpl(
 
         when (val content = message.content) {
             // Persist Messages - > lists
-            is MessageContent.Text -> handleTextMessage(message, content)
-
-            is MessageContent.FailedDecryption -> {
-                persistMessage(message)
-            }
-
-            is MessageContent.Knock -> handleKnock(message)
+            is MessageContent.Text -> persistMessage(adjustTextMessageWithQoutedReference(message, content))
+            is MessageContent.FailedDecryption -> persistMessage(message)
+            is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-
+            is MessageContent.RestrictedAsset -> TODO()
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
 
-            is MessageContent.RestrictedAsset -> TODO()
         }
     }
 
-    private suspend fun handleKnock(message: Message.Regular) {
-        persistMessage(message)
-    }
-
-    private suspend fun handleTextMessage(
+    private suspend fun adjustTextMessageWithQoutedReference(
         message: Message.Regular,
         messageContent: MessageContent.Text
-    ) {
+    ): Message.Regular {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
             verifyMessageQuote(quotedReference, message)
         } else {
             messageContent.quotedMessageReference
         }
-        val adjustedMessage = message.copy(
+
+        return message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage)
     }
 
     private suspend fun verifyMessageQuote(

@@ -161,6 +161,9 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.EnqueueMessageSelfDeletionUseCaseImpl
+import com.wire.kalium.logic.feature.message.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
@@ -1107,6 +1110,15 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
+    private val selfDeletingMessageManager = EphemeralMessageDeletionHandlerImpl(
+        userSessionCoroutineScope = this,
+        messageRepository = messageRepository
+    )
+
+    val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+        ephemeralMessageDeletionHandler = selfDeletingMessageManager
+    )
+
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val calls: CallsScope
@@ -1171,6 +1183,9 @@ class UserSessionScope internal constructor(
 
         launch {
             conversationsRecoveryManager.invoke()
+        }
+        launch {
+            selfDeletingMessageManager.enqueuePendingSelfDeletionMessages()
         }
     }
 
