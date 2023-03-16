@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -98,16 +97,16 @@ class SendEditTextMessageUseCase internal constructor(
                 newMessageId = generatedMessageUuid,
                 editTimeStamp = message.date
             ).flatMap {
-                    messageRepository.updateMessageStatus(
-                        messageStatus = MessageEntity.Status.PENDING,
-                        conversationId = message.conversationId,
-                        messageUuid = generatedMessageUuid
-                    )
-                }.map { message }
-        }.flatMap { message ->
-            messageSender.sendMessage(message)
-        }.flatMap {
-            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
+                messageRepository.updateMessageStatus(
+                    messageStatus = MessageEntity.Status.PENDING,
+                    conversationId = message.conversationId,
+                    messageUuid = generatedMessageUuid
+                )
+            }.flatMap {
+                messageSender.sendMessage(message)
+            }.flatMap {
+                messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
+            }
         }.onFailure {
             messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, generatedMessageUuid)
             if (it is CoreFailure.Unknown) {
