@@ -15,6 +15,7 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
@@ -22,11 +23,12 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class EphemeralMessageDeletionHandlerTest {
 
+    private val testDispatcher = TestKaliumDispatcher
 
     @Test
-    fun givenRegularMessage_whenEnqueueingForFirstTime_thenSelfDeletionShouldBeMarked() = runTest {
+    fun givenRegularMessage_whenEnqueueingForFirstTime_thenSelfDeletionShouldBeMarked() = runTest(testDispatcher.default) {
         // given
-        val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this)
+        val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
             .withMessageRepositoryReturningMessage(
                 message = TestMessage.TEXT_MESSAGE.copy(
                     expirationData = Message.ExpirationData(
@@ -44,23 +46,23 @@ class EphemeralMessageDeletionHandlerTest {
             messageId = "someId"
         )
 
+        advanceUntilIdle()
+
         // then
-        verify(arrangement)
+        verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(any(), any(), any())
             .wasInvoked(exactly = Times(1))
 
-        verify(arrangement)
+        verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(any(), any())
             .wasInvoked(exactly = Times(1))
-
     }
-
 
 }
 
-private class Arrangement(private val coroutineScope: CoroutineScope) {
+private class Arrangement(private val coroutineScope: CoroutineScope, private val dispatcher: TestKaliumDispatcher) {
 
     @Mock
     val messageRepository = mock(classOf<MessageRepository>())
@@ -83,6 +85,6 @@ private class Arrangement(private val coroutineScope: CoroutineScope) {
         return this
     }
 
-    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(messageRepository, TestKaliumDispatcher, coroutineScope)
+    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(messageRepository, dispatcher, coroutineScope)
 
 }
