@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
