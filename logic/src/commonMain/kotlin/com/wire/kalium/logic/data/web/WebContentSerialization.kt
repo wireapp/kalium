@@ -16,27 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.backup
+package com.wire.kalium.logic.data.web
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 
-@Serializable
-data class BackupMetadata(
-    @SerialName("platform")
-    val platform: String,
-    @SerialName("version")
-    val version: String,
-    @SerialName("user_id")
-    val userId: String,
-    @SerialName("creation_time")
-    val creationTime: String,
-    @SerialName("client_id")
-    val clientId: String?
-) {
-    override fun toString(): String = Json.encodeToString(this)
+internal val webEventContentSerializationModule = SerializersModule {
+    polymorphic(WebEventContent::class) {
+        default { WebEventContent.Unknown.serializer() }
+    }
 }
-
-fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"
