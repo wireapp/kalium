@@ -62,16 +62,20 @@ internal class PersistMigratedMessagesUseCaseImpl(
     override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
         val protoMessages: ConcurrentMap<MigratedMessage, ProtoContent> = ConcurrentMap()
 
-        messages.filter { it.encryptedProto != null }.map { migratedMessage ->
+        messages.filter { it.encryptedProto != null || it.unencryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {
-                (try {
-                    protoContentMapper.decodeFromProtobuf(
-                        PlainMessageBlob(migratedMessage.encryptedProto!!)
-                    )
-                } catch (e: Exception) {
-                    null
-                })?.let {
-                    protoMessages[migratedMessage] = it
+                if (migratedMessage.unencryptedProto != null) {
+                    protoMessages[migratedMessage] = migratedMessage.unencryptedProto
+                } else {
+                    (try {
+                        protoContentMapper.decodeFromProtobuf(
+                            PlainMessageBlob(migratedMessage.encryptedProto!!)
+                        )
+                    } catch (e: Exception) {
+                        null
+                    })?.let {
+                        protoMessages[migratedMessage] = it
+                    }
                 }
             }
         }.joinAll()

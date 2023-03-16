@@ -26,12 +26,16 @@ object BackupConstants {
     const val BACKUP_ENCRYPTED_EXTENSION = "cc20"
     const val BACKUP_DB_EXTENSION = "db"
     const val BACKUP_METADATA_EXTENSION = "json"
+    const val BACKUP_WEB_EXTENSION = "desktop_wbu"
+    const val BACKUP_WEB_EVENTS_FILE_NAME = "events.json"
+    const val BACKUP_WEB_CONVERSATIONS_FILE_NAME = "conversations.json"
 
     fun createBackupFileName(userHandle: String?, timestampIso: String) = "$BACKUP_FILE_NAME_PREFIX-$userHandle-$timestampIso.zip"
 
     val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,
         BACKUP_DB_EXTENSION,
-        BACKUP_METADATA_EXTENSION
+        BACKUP_METADATA_EXTENSION,
+        BACKUP_WEB_EXTENSION
     )
 }

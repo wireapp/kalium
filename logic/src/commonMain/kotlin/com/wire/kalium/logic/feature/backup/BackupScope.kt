@@ -22,15 +22,20 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
+import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
+@Suppress("LongParameterList")
 class BackupScope internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userStorage: UserStorage,
+    private val persistMigratedMessages: PersistMigratedMessagesUseCase,
+    private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     val globalPreferences: GlobalPrefProvider,
 ) {
     val create: CreateBackupUseCase
@@ -46,12 +51,23 @@ class BackupScope internal constructor(
     val verify: VerifyBackupUseCase
         get() = VerifyBackupUseCaseImpl(kaliumFileSystem)
 
+    private val restoreWeb: RestoreWebBackupUseCase
+        get() = RestoreWebBackupUseCaseImpl(
+            kaliumFileSystem,
+            userId,
+            persistMigratedMessages,
+            restartSlowSyncProcessForRecovery,
+            userStorage.database.migrationDAO
+        )
+
     val restore: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
             userId,
             userRepository,
-            clientIdProvider
+            clientIdProvider,
+            restoreWeb
         )
+
 }

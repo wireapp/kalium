@@ -48,10 +48,7 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
         sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
             val flowsOfSelfUsers = accountList.map { accountInfo ->
                 userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
-                    combine(
-                        it.users.getSelfUser(),
-                        it.team.getSelfTeamUseCase()
-                    ) { selfUser, team -> selfUser to team }
+                    it.users.getSelfUserWithTeam()
                 }
             }
             combine(flowsOfSelfUsers) { it.asList() }

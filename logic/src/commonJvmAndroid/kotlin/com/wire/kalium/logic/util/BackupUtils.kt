@@ -21,8 +21,13 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.logic.functional.Either
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.DecodeSequenceMode
+import kotlinx.serialization.json.decodeToSequence
 import okio.Buffer
+import okio.BufferedSource
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
@@ -101,6 +106,14 @@ actual fun checkIfCompressedFileContainsFileTypes(
     } catch (e: Exception) {
         Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
     }
+
+@OptIn(ExperimentalSerializationApi::class)
+actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> {
+    return KtxWebSerializer.json.decodeToSequence(
+        bufferedSource.inputStream(),
+        DecodeSequenceMode.ARRAY_WRAPPED
+    )
+}
 
 @Suppress("TooGenericExceptionThrown")
 private fun readCompressedEntry(
