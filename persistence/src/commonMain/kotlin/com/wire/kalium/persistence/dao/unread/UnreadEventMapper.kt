@@ -23,15 +23,16 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 object UnreadEventMapper {
 
     fun toUnreadEntity(
-        conversation_id: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
         type: UnreadEventTypeEntity,
     ): UnreadEventEntity {
         return UnreadEventEntity(
             type = type,
-            conversationId = conversation_id,
+            conversationId = conversationId,
         )
     }
 
+    @Suppress("LongParameterList")
     fun toConversationUnreadEntity(
         conversationId: QualifiedIDEntity,
         knocksCount: Long?,

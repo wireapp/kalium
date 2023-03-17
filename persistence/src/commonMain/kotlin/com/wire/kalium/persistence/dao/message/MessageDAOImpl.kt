@@ -41,7 +41,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val notificationQueries: NotificationQueries,

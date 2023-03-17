@@ -25,6 +25,7 @@ data class UnreadEventEntity(
     val conversationId: ConversationIDEntity
 )
 
+// if some field name will change, remember to change it in UnreadEvents.sq
 enum class UnreadEventTypeEntity {
     KNOCK,
     MISSED_CALL,
