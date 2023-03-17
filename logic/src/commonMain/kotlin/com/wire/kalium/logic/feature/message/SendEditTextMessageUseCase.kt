@@ -70,7 +70,7 @@ class SendEditTextMessageUseCase internal constructor(
         originalMessageId: String,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        editedMessageId: String =  uuid4().toString()
+        editedMessageId: String = uuid4().toString()
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
