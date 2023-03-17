@@ -74,7 +74,7 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
-import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
@@ -558,13 +558,16 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.GROUP,
         )
 
-        val unreadEventEntity = UnreadEventEntity("messageId", UnreadEventTypeEntity.MESSAGE, conversationIdEntity)
+        val unreadMessagesCount = 5
+        val conversationUnreadEventEntity = ConversationUnreadEventEntity(
+            conversationIdEntity,
+            mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
+        )
 
-        val unreadEventTypes = mapOf(conversationIdEntity to (1..5).map { unreadEventEntity.copy(id = "message$it") })
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadEvents(unreadEventTypes)
+            .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
             .arrange()
 
         // when
@@ -638,14 +641,17 @@ class ConversationRepositoryTest {
             id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
             otherUserId = QualifiedIDEntity("otherUser", "domain")
         )
+
         val unreadMessagesCount = 5
+        val conversationUnreadEventEntity = ConversationUnreadEventEntity(
+            conversationIdEntity,
+            mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
+        )
 
-
-        val unreadMessages = mapOf(conversationIdEntity to unreadMessagesCount)
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf())
-            .withUnreadMessageCounter(unreadMessages)
+            .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
             .arrange()
 
         // when
@@ -965,11 +971,11 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withUnreadEvents(events: Map<ConversationIDEntity, List<UnreadEventEntity>>) = apply {
+        fun withConversationUnreadEvents(unreadEvents: List<ConversationUnreadEventEntity>) = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::observeUnreadEvents)
+                .suspendFunction(messageDAO::observeConversationsUnreadEvents)
                 .whenInvoked()
-                .thenReturn(flowOf(events))
+                .thenReturn(flowOf(unreadEvents))
         }
 
         fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {

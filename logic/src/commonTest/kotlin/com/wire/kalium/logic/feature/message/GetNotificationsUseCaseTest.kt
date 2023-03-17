@@ -414,7 +414,8 @@ class GetNotificationsUseCaseTest {
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
                 editStatus = Message.EditStatus.NotEdited,
-                visibility = visibility
+                visibility = visibility,
+                isSelfMessage = false
             )
 
         private fun entityAssetMessage(
@@ -447,7 +448,8 @@ class GetNotificationsUseCaseTest {
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                isSelfMessage = false
             )
 
         private fun entityServerMessage(

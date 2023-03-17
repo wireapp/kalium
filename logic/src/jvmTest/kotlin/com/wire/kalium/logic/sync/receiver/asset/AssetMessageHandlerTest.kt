@@ -345,7 +345,8 @@ class AssetMessageHandlerTest {
             senderUserId = UserId("some-sender-value", "some-sender-domain.com"),
             senderClientId = ClientId("some-client-value"),
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
+            editStatus = Message.EditStatus.NotEdited,
+            isSelfMessage = false
         )
         val PREVIEW_ASSET_MESSAGE = COMPLETE_ASSET_MESSAGE.copy(
             content = PREVIEW_ASSET_CONTENT,
