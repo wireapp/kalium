@@ -23,14 +23,16 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
+import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOne
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -43,10 +45,11 @@ class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
+    private val unreadEventsQueries: UnreadEventsQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext
-) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries) {
+) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, selfUserId) {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = withContext(coroutineContext) {
@@ -187,6 +190,7 @@ class MessageDAOImpl(
         withContext(coroutineContext) {
             queries.updateMessageStatus(status, id, conversationId)
         }
+
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
@@ -280,10 +284,24 @@ class MessageDAOImpl(
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
-    override suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>> =
-        flowOf(emptyList())
-    // FIXME: Re-enable gradually as we improve its performance
-    //        queries.getUnreadMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+    override suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>> =
+        unreadEventsQueries.getUnreadEventsCount().asFlow().flowOn(coroutineContext).mapToOne()
+            .map {
+                val limit = UNREAD_EVENTS_LIMIT
+                var offset = 0L
+                val events = mutableListOf<UnreadEventEntity>()
+                while(true) {
+                    val newEvents = unreadEventsQueries.getPaginatedUnreadEvents(limit, offset, mapper::toUnreadEntity).executeAsList()
+                    if(newEvents.isEmpty()) {
+                        break
+                    } else {
+                        offset += limit
+                        events.addAll(newEvents)
+                    }
+                }
+                events
+            }
+            .map { it.groupBy { event -> event.conversationId } }
 
     override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
         queries.getUnreadMessagesCount { conversationId, count ->
@@ -336,5 +354,9 @@ class MessageDAOImpl(
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
+
+    companion object {
+        const val UNREAD_EVENTS_LIMIT: Long = 4000L
+    }
 
 }

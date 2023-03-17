@@ -90,6 +90,7 @@ class DeleteMessageUseCase internal constructor(
                                     senderUserId = selfUserId,
                                     senderClientId = currentClientId,
                                     status = Message.Status.PENDING,
+                                    isSelfMessage = true
                                 )
                                 messageSender.sendMessage(regularMessage)
                             }

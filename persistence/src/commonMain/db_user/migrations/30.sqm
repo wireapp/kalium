@@ -1,0 +1,13 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE UnreadEvent (
+      id TEXT NOT NULL,
+      type TEXT AS UnreadEventTypeEntity NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id, conversation_id)
+);

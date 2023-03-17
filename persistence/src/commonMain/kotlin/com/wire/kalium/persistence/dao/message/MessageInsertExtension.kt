@@ -1,6 +1,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -23,7 +26,9 @@ internal interface MessageInsertExtension {
 }
 
 internal class MessageInsertExtensionImpl(
-    private val messagesQueries: MessagesQueries
+    private val messagesQueries: MessagesQueries,
+    private val unreadEventsQueries: UnreadEventsQueries,
+    private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
     override fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
@@ -70,6 +75,7 @@ internal class MessageInsertExtensionImpl(
         try {
             insertBaseMessageOrError(message)
             insertMessageContent(message)
+            insertUnreadEvent(message)
         } catch (e: Exception) {
             /* no-op */
         }
@@ -201,6 +207,58 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
+        }
+    }
+
+    private fun insertUnreadEvent(message: MessageEntity) {
+        if (!message.isSelfMessage) {
+            when (message.content) {
+                is MessageEntityContent.Knock -> unreadEventsQueries.insertEvent(
+                    message.id,
+                    UnreadEventTypeEntity.KNOCK,
+                    message.conversationId,
+                    message.date
+                )
+                is MessageEntityContent.Text -> {
+                    val textContent: MessageEntityContent.Text = message.content as (MessageEntityContent.Text)
+                    when {
+                        textContent.quotedMessage?.isQuotingSelfUser ?: false -> unreadEventsQueries.insertEvent(
+                            message.id,
+                            UnreadEventTypeEntity.REPLY,
+                            message.conversationId,
+                            message.date
+                        )
+                        textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
+                            unreadEventsQueries.insertEvent(
+                                message.id,
+                                UnreadEventTypeEntity.MENTION,
+                                message.conversationId,
+                                message.date
+                            )
+                        else -> unreadEventsQueries.insertEvent(
+                            message.id,
+                            UnreadEventTypeEntity.MESSAGE,
+                            message.conversationId,
+                            message.date
+                        )
+                    }
+                }
+                is MessageEntityContent.Asset,
+                is MessageEntityContent.RestrictedAsset,
+                is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
+                    message.id,
+                    UnreadEventTypeEntity.MESSAGE,
+                    message.conversationId,
+                    message.date
+                )
+                MessageEntityContent.MissedCall -> unreadEventsQueries.insertEvent(
+                    message.id,
+                    UnreadEventTypeEntity.MISSED_CALL,
+                    message.conversationId,
+                    message.date
+                )
+                else -> {}
+            }
         }
     }
 

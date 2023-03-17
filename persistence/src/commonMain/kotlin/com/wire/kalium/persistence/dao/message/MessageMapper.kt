@@ -27,6 +27,8 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -184,6 +186,19 @@ object MessageMapper {
             senderUserId = senderUserId
         )
 
+    }
+
+    fun toUnreadEntity(
+        id: String,
+        type: UnreadEventTypeEntity,
+        conversation_id: QualifiedIDEntity,
+        creation_date: Instant,
+    ): UnreadEventEntity {
+        return UnreadEventEntity(
+            id = id,
+            type = type,
+            conversationId = conversation_id,
+        )
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
