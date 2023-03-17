@@ -21,6 +21,7 @@ package samples.logic
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.SendEditTextMessageUseCase
 import com.wire.kalium.logic.feature.message.SendTextMessageUseCase
 
 object MessageUseCases {
@@ -51,6 +52,26 @@ object MessageUseCases {
         sendTextMessageUseCase.invoke(
             conversationId = conversationId,
             text = text,
+            mentions = listOf(johnMention)
+        )
+    }
+
+    suspend fun sendingEditBasicTextMessage(
+        editTextMessageUseCase: SendEditTextMessageUseCase,
+        conversationId: ConversationId,
+        originalMessageId: String,
+        johnUserId: UserId
+    ) {
+        // Editing a simple text message
+        val johnMention = MessageMention(
+            start = 8, // The index of the @ in the text above
+            length = 5, // The length of the mention (including the @)
+            userId = johnUserId // ID of the user being mentioned
+        )
+        editTextMessageUseCase.invoke(
+            conversationId = conversationId,
+            text = "Hello",
+            originalMessageId = originalMessageId,
             mentions = listOf(johnMention)
         )
     }
