@@ -340,21 +340,21 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadEvents(),
+            messageDAO.observeConversationsUnreadEvents(),
         ) { conversationList, lastMessageList, unreadEvents ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    unreadEvents[conversation.id]?.map {
-                        when (it.type) {
+                    unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
+                        when (it.key) {
                             UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
                             UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
                             UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
                             UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
                             UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
                         }
-                    }?.groupingBy { it }?.eachCount()
+                    }
                 )
             }
         }

@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.dao.unread
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 
 data class UnreadEventEntity(
-    val id: String,
     val type: UnreadEventTypeEntity,
     val conversationId: ConversationIDEntity
 )
@@ -33,3 +32,8 @@ enum class UnreadEventTypeEntity {
     REPLY,
     MESSAGE
 }
+
+data class ConversationUnreadEventEntity(
+    val conversationId: ConversationIDEntity,
+    val unreadEvents: Map<UnreadEventTypeEntity, Int>
+)

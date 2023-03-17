@@ -89,6 +89,7 @@ internal class RestoreWebBackupUseCaseImpl(
             .map { tryImportConversations(filePath) }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun tryImportConversations(filePath: Path) =
         kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
@@ -115,6 +116,7 @@ internal class RestoreWebBackupUseCaseImpl(
                 }
         }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = kaliumFileSystem.listDirectories(filePath)
         .firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
