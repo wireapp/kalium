@@ -70,11 +70,11 @@ class SendEditTextMessageUseCase internal constructor(
         originalMessageId: String,
         text: String,
         mentions: List<MessageMention> = emptyList(),
+        editedMessageId: String =  uuid4().toString()
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-        val generatedMessageUuid = uuid4().toString()
 
         provideClientId().flatMap { clientId ->
             val content = MessageContent.TextEdited(
@@ -83,7 +83,7 @@ class SendEditTextMessageUseCase internal constructor(
                 newMentions = mentions
             )
             val message = Message.Signaling(
-                id = generatedMessageUuid,
+                id = editedMessageId,
                 content = content,
                 conversationId = conversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
@@ -91,24 +91,38 @@ class SendEditTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING
             )
+            // until the edit send is completed and accepted by the backend, we don't change the message id to be able to handle any
+            // incoming edits from other clients that happened in the meantime and already changed the message id
             messageRepository.updateTextMessage(
                 conversationId = message.conversationId,
                 messageContent = content,
-                newMessageId = generatedMessageUuid,
+                newMessageId = originalMessageId,
                 editTimeStamp = message.date
             ).flatMap {
-                messageRepository.updateMessageStatus(
-                    messageStatus = MessageEntity.Status.PENDING,
-                    conversationId = message.conversationId,
-                    messageUuid = generatedMessageUuid
-                )
-            }.flatMap {
-                messageSender.sendMessage(message)
-            }.flatMap {
-                messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
-            }
+                    messageRepository.updateMessageStatus(
+                        messageStatus = MessageEntity.Status.PENDING,
+                        conversationId = message.conversationId,
+                        messageUuid = originalMessageId
+                    )
+                }
+                .flatMap {
+                    messageSender.sendMessage(message)
+                        .flatMap {
+                            // when succeeded, we modify the message id locally
+                            messageRepository.updateTextMessage(
+                                conversationId = message.conversationId,
+                                messageContent = content,
+                                newMessageId = editedMessageId,
+                                editTimeStamp = message.date
+                            )
+                        }
+                        .flatMap {
+                            // and change the status of the message
+                            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, editedMessageId)
+                        }
+                }
         }.onFailure {
-            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, generatedMessageUuid)
+            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
             if (it is CoreFailure.Unknown) {
                 kaliumLogger.e("There was an unknown error trying to send the edit message $it", it.rootCause)
                 it.rootCause?.printStackTrace()

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -59,15 +58,22 @@ class SendEditTextMessageUseCaseTest {
             .withUpdateMessageStatusSuccess()
             .withSendMessageSuccess()
             .arrange()
+        val originalMessageId = "message id"
+        val editedMessageId = "edited message id"
+        val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, TestMessage.TEST_MESSAGE_ID, "message")
+        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertTrue(result is Either.Right)
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), eq(originalMessageId), any())
+            .wasInvoked(once)
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::updateTextMessage)
+            .with(any(), any(), eq(editedMessageId), any())
             .wasInvoked(once)
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateMessageStatus)
@@ -93,16 +99,23 @@ class SendEditTextMessageUseCaseTest {
             .withUpdateMessageStatusSuccess()
             .withSendMessageFailure()
             .arrange()
+        val originalMessageId = "message id"
+        val editedMessageId = "edited message id"
+        val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, TestMessage.TEST_MESSAGE_ID, "message")
+        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertTrue(result is Either.Left)
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), eq(originalMessageId), any())
             .wasInvoked(once)
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::updateTextMessage)
+            .with(any(), any(), eq(editedMessageId), any())
+            .wasNotInvoked()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.PENDING), any(), any())
