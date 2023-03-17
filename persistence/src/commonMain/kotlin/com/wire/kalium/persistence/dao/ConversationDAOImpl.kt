@@ -473,7 +473,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
-        unreadEventsQueries.deleteReadedEvents(date, conversationID)
+        unreadEventsQueries.deleteUnreadEvents(date, conversationID)
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
 

@@ -12,7 +12,7 @@ CREATE TABLE UnreadEvent (
     PRIMARY KEY (id, conversation_id)
 );
 
-deleteReadedEvents:
+deleteUnreadEvents:
 DELETE FROM UnreadEvent WHERE creation_date <= ? AND conversation_id = ?;
 
 insertEvent:

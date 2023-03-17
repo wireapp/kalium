@@ -42,7 +42,7 @@ internal class MigrationDAOImpl(
         migrationQueries.transaction {
             conversationList.forEach {
                 with(it) {
-                    unreadEventsQueries.deleteReadedEvents(lastReadDate, id)
+                    unreadEventsQueries.deleteUnreadEvents(lastReadDate, id)
                     migrationQueries.insertConversation(
                         id,
                         name,
