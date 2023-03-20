@@ -142,7 +142,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                isSelfMessage = true
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading

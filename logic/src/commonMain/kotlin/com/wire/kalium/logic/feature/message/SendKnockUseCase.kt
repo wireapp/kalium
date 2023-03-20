@@ -71,7 +71,8 @@ class SendKnockUseCase internal constructor(
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                isSelfMessage = true
             )
             persistMessage(message)
         }.flatMap {

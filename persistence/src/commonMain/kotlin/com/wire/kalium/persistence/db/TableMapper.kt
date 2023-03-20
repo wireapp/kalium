@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
+import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
@@ -160,5 +161,11 @@ internal object TableMapper {
     )
     val messageConversationReceiptModeChangedContentAdapter = MessageConversationReceiptModeChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val unreadEventAdapter = UnreadEvent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        typeAdapter = EnumColumnAdapter(),
+        creation_dateAdapter = InstantTypeAdapter,
     )
 }
