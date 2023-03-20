@@ -50,7 +50,6 @@ object UnreadEventMapper {
                 .plus(UnreadEventTypeEntity.REPLY to (repliesCount?.toInt() ?: 0))
                 .plus(UnreadEventTypeEntity.MESSAGE to (messagesCount?.toInt() ?: 0))
                 .filterValues { it > 0 }
-
         )
     }
 

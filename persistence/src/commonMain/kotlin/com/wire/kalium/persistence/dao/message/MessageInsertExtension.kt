@@ -219,30 +219,10 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
-                is MessageEntityContent.Text -> {
-                    val textContent: MessageEntityContent.Text = message.content as (MessageEntityContent.Text)
-                    when {
-                        textContent.quotedMessage?.isQuotingSelfUser ?: false -> unreadEventsQueries.insertEvent(
-                            message.id,
-                            UnreadEventTypeEntity.REPLY,
-                            message.conversationId,
-                            message.date
-                        )
-                        textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
-                            unreadEventsQueries.insertEvent(
-                                message.id,
-                                UnreadEventTypeEntity.MENTION,
-                                message.conversationId,
-                                message.date
-                            )
-                        else -> unreadEventsQueries.insertEvent(
-                            message.id,
-                            UnreadEventTypeEntity.MESSAGE,
-                            message.conversationId,
-                            message.date
-                        )
-                    }
-                }
+                is MessageEntityContent.Text -> insertUnreadTextContent(
+                    message,
+                    message.content as MessageEntityContent.Text
+                )
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
@@ -259,6 +239,39 @@ internal class MessageInsertExtensionImpl(
                 )
                 else -> {}
             }
+        }
+    }
+
+    private fun insertUnreadTextContent(message: MessageEntity, textContent: MessageEntityContent.Text) {
+        var isQuotingSelfUser = false
+        if (textContent.quotedMessageId != null) {
+            val senderId = messagesQueries.getMessageSenderId(
+                textContent.quotedMessageId,
+                message.conversationId
+            )
+                .executeAsOneOrNull()
+            isQuotingSelfUser = senderId == selfUserIDEntity
+        }
+        when {
+            isQuotingSelfUser -> unreadEventsQueries.insertEvent(
+                message.id,
+                UnreadEventTypeEntity.REPLY,
+                message.conversationId,
+                message.date
+            )
+            textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
+                unreadEventsQueries.insertEvent(
+                    message.id,
+                    UnreadEventTypeEntity.MENTION,
+                    message.conversationId,
+                    message.date
+                )
+            else -> unreadEventsQueries.insertEvent(
+                message.id,
+                UnreadEventTypeEntity.MESSAGE,
+                message.conversationId,
+                message.date
+            )
         }
     }
 
