@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 
 interface MessageTextEditHandler {
     suspend fun handle(
@@ -53,12 +55,45 @@ class MessageTextEditHandlerImpl(
             return@flatMap Either.Left(StorageFailure.DataNotFound)
         }
 
-        messageRepository.updateTextMessage(
-            conversationId = message.conversationId,
-            messageContent = messageContent,
-            newMessageId = message.id,
-            editTimeStamp = message.date
-        )
+        if (currentMessage is Message.Regular
+            && currentMessage.content is MessageContent.Text
+            && currentMessage.editStatus is Message.EditStatus.Edited
+        ) {
+            // if the locally stored message is also already edited, we check which one is newer
+            if (DateTimeUtil.calculateMillisDifference(currentMessage.editStatus.lastTimeStamp, message.date) < 0) {
+                // our local pending or failed edit is newer than one we got from the backend so we update locally only message id and date
+                messageRepository.updateTextMessage(
+                    conversationId = message.conversationId,
+                    messageContent = messageContent.copy(
+                        newContent = currentMessage.content.value,
+                        newMentions = currentMessage.content.mentions
+                    ),
+                    newMessageId = message.id,
+                    editTimeStamp = currentMessage.editStatus.lastTimeStamp
+                )
+            } else {
+                // incoming edit from the backend is newer than the one we have locally so we update the whole message and change the status
+                messageRepository.updateTextMessage(
+                    conversationId = message.conversationId,
+                    messageContent = messageContent,
+                    newMessageId = message.id,
+                    editTimeStamp = message.date
+                ).flatMap {
+                    messageRepository.updateMessageStatus(
+                        messageStatus = MessageEntity.Status.SENT,
+                        conversationId = message.conversationId,
+                        messageUuid = message.id
+                    )
+                }
+            }
+        } else {
+            messageRepository.updateTextMessage(
+                conversationId = message.conversationId,
+                messageContent = messageContent,
+                newMessageId = message.id,
+                editTimeStamp = message.date
+            )
+        }
     }
 
 }
