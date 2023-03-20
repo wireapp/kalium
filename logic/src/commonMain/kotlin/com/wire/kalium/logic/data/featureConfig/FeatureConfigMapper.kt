@@ -32,6 +32,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
     fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
     fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
+    fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -44,10 +45,11 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 conversationGuestLinksModel = ConfigsStatusModel(fromDTO(conversationGuestLinks.status)),
                 digitalSignaturesModel = ConfigsStatusModel(fromDTO(digitalSignatures.status)),
                 fileSharingModel = fromDTO(fileSharing),
+                guestRoomLinkModel = fromDTO(conversationGuestLinks),
                 legalHoldModel = ConfigsStatusModel(fromDTO(legalHold.status)),
                 searchVisibilityModel = ConfigsStatusModel(fromDTO(searchVisibility.status)),
                 selfDeletingMessagesModel = fromDTO(featureConfigResponse.selfDeletingMessages),
-                sndFactorPasswordChallengeModel = ConfigsStatusModel(
+                secondFactorPasswordChallengeModel = ConfigsStatusModel(
                     fromDTO(sndFactorPasswordChallenge.status)
                 ),
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
@@ -92,6 +94,11 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel =
+        ConfigsStatusModel(
+            fromDTO(data.status)
+        )
+
+    override fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel =
         ConfigsStatusModel(
             fromDTO(data.status)
         )

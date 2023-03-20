@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
@@ -58,6 +56,6 @@ internal class ObserveMessageReceiptsUseCaseImpl(
             type
         ).also {
             kaliumLogger.i("[ObserveMessageReceiptsUseCase] - Observing read receipts for " +
-                    "Conversation: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}")
+                    "Conversation: ${conversationId.toLogString()}")
         }
 }

@@ -32,8 +32,10 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.session.DoesValidSessionExistResult
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -50,9 +52,9 @@ class WrapperWorker(
     CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): AndroidResult = when (innerWorker.doWork()) {
-        is KaliumResult.Failure -> AndroidResult.success()
-        is KaliumResult.Retry -> AndroidResult.failure()
-        is KaliumResult.Success -> AndroidResult.retry()
+        is KaliumResult.Failure -> AndroidResult.failure()
+        is KaliumResult.Retry -> AndroidResult.retry()
+        is KaliumResult.Success -> AndroidResult.success()
     }
 
     // TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
@@ -128,14 +130,21 @@ class WrapperWorkerFactory(
         return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
-    private fun createPendingMessageSenderWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker {
-        val userScope = coreLogic.getSessionScope(userId)
-        val worker = PendingMessagesSenderWorker(
-            userScope.messages.messageRepository,
-            userScope.messages.messageSender,
-            userId
-        )
-        return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
+    private fun createPendingMessageSenderWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker? {
+        val doesValidSessionExist = runBlocking {
+            coreLogic.globalScope {
+                doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
+            }
+        }
+        return if (doesValidSessionExist) {
+            val userScope = coreLogic.getSessionScope(userId)
+            val worker = PendingMessagesSenderWorker(
+                userScope.messages.messageRepository,
+                userScope.messages.messageSender,
+                userId
+            )
+            WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
+        } else null
     }
 
     private fun createDefaultWorker(

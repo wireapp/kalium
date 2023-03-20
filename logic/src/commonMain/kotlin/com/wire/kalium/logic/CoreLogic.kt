@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
@@ -52,7 +53,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    private val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
+    protected val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider, authenticationScopeProvider)
@@ -83,6 +84,8 @@ abstract class CoreLogicCommon internal constructor(
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
+
+    protected abstract val networkStateObserver: NetworkStateObserver
 }
 
 expect val clientPlatform: String

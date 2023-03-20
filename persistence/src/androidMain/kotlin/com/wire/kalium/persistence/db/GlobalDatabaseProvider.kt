@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Accounts
@@ -31,9 +32,10 @@ import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
-import net.sqlcipher.database.SupportFactory
 import kotlin.coroutines.CoroutineContext
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
@@ -48,24 +50,27 @@ actual class GlobalDatabaseProvider(
     private val database: GlobalDatabase
 
     init {
+        val schema = GlobalDatabase.Schema
         driver = if (encrypt) {
+            System.loadLibrary("sqlcipher")
             AndroidSqliteDriver(
-                schema = GlobalDatabase.Schema,
+                schema = schema,
                 context = context,
                 name = dbName,
-                factory = SupportFactory(passphrase.value)
+                factory = SupportOpenHelperFactory(passphrase.value, true)
             )
         } else {
             AndroidSqliteDriver(
-                schema = GlobalDatabase.Schema,
+                schema = schema,
                 context = context,
-                name = dbName
+                name = dbName,
+                callback = SqliteCallback(schema, true)
             )
         }
 
         database = GlobalDatabase(
             driver,
-            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter),
+            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter, EnumColumnAdapter()),
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,

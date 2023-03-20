@@ -94,7 +94,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
-    private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -110,7 +109,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
-        currentAssetMessageContent = AssetMessageMetadata(
+        val currentAssetMessageContent = AssetMessageMetadata(
             conversationId = conversationId,
             mimeType = assetMimeType,
             assetDataPath = assetDataPath,
@@ -149,7 +148,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
             persistMessage(message).onSuccess {
                 // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
-                scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId, expectsReadConfirmation) }
+                scope.launch(dispatcher.io) {
+                    uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                }
             }
         }.fold({
             updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
@@ -160,6 +161,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 
     private suspend fun uploadAssetAndUpdateMessage(
+        currentAssetMessageContent: AssetMessageMetadata,
         message: Message.Regular,
         conversationId: ConversationId,
         expectsReadConfirmation: Boolean
@@ -175,12 +177,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist and
             // update the message on the DB layer to display the changes on the Conversation screen
-            currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
+            val updatedAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
                 content = MessageContent.Asset(
                     value = provideAssetMessageContent(
-                        currentAssetMessageContent,
+                        updatedAssetMessageContent,
                         Message.UploadStatus.UPLOADED
                     )
                 ),
@@ -202,9 +204,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         message: Message,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
-        }
+        messageSender.sendPendingMessage(conversationId, message.id)
 
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(

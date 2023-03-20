@@ -51,7 +51,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.UNKNOWN_CLIENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
 import io.ktor.http.HttpStatusCode
 
-sealed class KaliumException() : Exception() {
+sealed class KaliumException : Exception() {
 
     class Unauthorized(val errorCode: Int) : KaliumException()
 
@@ -63,7 +63,7 @@ sealed class KaliumException() : Exception() {
     /**
      * http error 400 .. 499
      */
-    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException() {
+    open class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException() {
         override fun toString(): String {
             return "InvalidRequestError(response = $errorResponse"
         }
@@ -79,7 +79,12 @@ sealed class KaliumException() : Exception() {
      */
     class GenericError(override val cause: Throwable) : KaliumException()
 
-    sealed class FeatureError() : KaliumException()
+    /**
+     * Federation errors types
+     */
+    class FederationError(val errorResponse: ErrorResponse) : KaliumException()
+
+    sealed class FeatureError : KaliumException()
 }
 
 sealed class SendMessageError : KaliumException.FeatureError() {
@@ -197,3 +202,8 @@ fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
 fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
 }
+
+val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
+    get() = AuthenticationCodeFailure.values().firstOrNull {
+        errorResponse.label == it.responseLabel
+    }

@@ -25,18 +25,21 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import com.wire.kalium.logic.util.ExponentialDurationHelper
+import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -65,12 +68,15 @@ import kotlin.time.Duration.Companion.seconds
  * @see Event
  * @see SlowSyncManager
  */
+@Suppress("LongParameterList")
 internal class IncrementalSyncManager(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncWorker: IncrementalSyncWorker,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val networkStateObserver: NetworkStateObserver,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
 ) {
 
     /**
@@ -93,9 +99,10 @@ internal class IncrementalSyncManager(
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
 
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
-                    kaliumLogger.i("$TAG Triggering delay")
-                    delay(RETRY_DELAY)
-                    kaliumLogger.i("$TAG Delay finished")
+                    val delay = exponentialDurationHelper.next()
+                    kaliumLogger.i("$TAG Triggering delay($delay) and waiting for reconnection")
+                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                    kaliumLogger.i("$TAG Delay and waiting for connection finished - retrying")
                     startMonitoringForSync()
                 }
             }
@@ -141,7 +148,10 @@ internal class IncrementalSyncManager(
             .collect {
                 val newState = when (it) {
                     EventSource.PENDING -> IncrementalSyncStatus.FetchingPendingEvents
-                    EventSource.LIVE -> IncrementalSyncStatus.Live
+                    EventSource.LIVE -> {
+                        exponentialDurationHelper.reset()
+                        IncrementalSyncStatus.Live
+                    }
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
@@ -150,7 +160,8 @@ internal class IncrementalSyncManager(
     }
 
     private companion object {
-        val RETRY_DELAY = 10.seconds
+        val MIN_RETRY_DELAY = 10.seconds
+        val MAX_RETRY_DELAY = 10.minutes
         private const val TAG = "IncrementalSyncManager"
     }
 }

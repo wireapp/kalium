@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -43,6 +44,8 @@ sealed interface Message {
         val senderUserName: String? // TODO we can get it from entity but this will need a lot of changes in use cases,
         val isSelfMessage: Boolean
         val senderClientId: ClientId
+
+        fun toLogString(): String
     }
 
     /**
@@ -76,9 +79,9 @@ sealed interface Message {
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
         @Suppress("LongMethod")
-        override fun toString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.Text -> mutableMapOf(
                     typeKey to "text"
                 )
@@ -107,7 +110,8 @@ sealed interface Message {
                 }
 
                 is MessageContent.Knock -> mutableMapOf(
-                    typeKey to "knock"
+                    typeKey to "knock",
+                    "hot" to "${content.hotKnock}"
                 )
 
                 is MessageContent.Unknown -> mutableMapOf(
@@ -117,19 +121,19 @@ sealed interface Message {
 
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
-                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "conversationId" to conversationId.toLogString(),
                 "date" to date,
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to "$editStatus",
+                "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation"
             )
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toMap().toJsonElement()}"
         }
     }
 
@@ -144,10 +148,10 @@ sealed interface Message {
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean = false,
     ) : Sendable {
-        override fun toString(): String {
+        override fun toLogString(): String {
             val typeKey = "type"
 
-            val properties: MutableMap<String, String> = when (content) {
+            val properties: MutableMap<String, Any> = when (content) {
                 is MessageContent.TextEdited -> mutableMapOf(
                     typeKey to "textEdit"
                 )
@@ -191,7 +195,7 @@ sealed interface Message {
 
                 is MessageContent.Receipt -> mutableMapOf(
                     typeKey to "receipt",
-                    "content" to "$content",
+                    "content" to content.toLogMap(),
                 )
 
                 MessageContent.Ignored -> mutableMapOf(
@@ -202,7 +206,7 @@ sealed interface Message {
 
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
-                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "conversationId" to conversationId.toLogString(),
                 "date" to date,
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "senderClientId" to senderClientId.value.obfuscateId(),
@@ -210,7 +214,7 @@ sealed interface Message {
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return "${properties.toJsonElement()}"
         }
 
     }
@@ -227,7 +231,7 @@ sealed interface Message {
         //                 instead of having it nullable in all system messages
         val senderUserName: String? = null,
     ) : Message, Standalone {
-        override fun toString(): String {
+        fun toLogString(): String {
 
             val typeKey = "type"
             val properties: MutableMap<String, String> = when (content) {
@@ -249,6 +253,7 @@ sealed interface Message {
                 is MessageContent.TeamMemberRemoved -> mutableMapOf(
                     typeKey to "teamMemberRemoved"
                 )
+
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
@@ -266,7 +271,7 @@ sealed interface Message {
 
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
-                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "conversationId" to "${conversationId.toLogString()}",
                 "date" to date,
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
@@ -280,12 +285,32 @@ sealed interface Message {
     }
 
     enum class Status {
-        PENDING, SENT, READ, FAILED
+        PENDING, SENT, READ, FAILED, FAILED_REMOTELY
     }
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()
+
+        override fun toString(): String = when (this) {
+                is NotEdited -> "NOT_EDITED"
+                is Edited -> "EDITED_$lastTimeStamp"
+            }
+
+        fun toLogString(): String {
+            val properties = toLogMap()
+            return Json.encodeToString(properties)
+        }
+
+        fun toLogMap(): Map<String, String> = when (this) {
+                is NotEdited -> mutableMapOf(
+                    "value" to "NOT_EDITED"
+                )
+                is Edited -> mutableMapOf(
+                    "value" to "EDITED",
+                    "time" to this.lastTimeStamp
+                )
+            }
     }
 
     enum class UploadStatus {

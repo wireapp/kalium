@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
@@ -69,6 +71,10 @@ object TestEvent {
     fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(
         eventId,
         false, userId.toString(), null, false, "newName", null, null, null, null
+    )
+
+    fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
+        false, eventId, clientId, "time", "model", ClientTypeDTO.Permanent, DeviceTypeDTO.Phone, "label"
     )
 
     fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
@@ -168,8 +174,9 @@ object TestEvent {
         "eventId",
         TestConversation.ID,
         false,
+        null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
-        "content"
+        "content",
     )
 }

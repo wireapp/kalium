@@ -26,11 +26,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.mapLeft
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 interface ProteusClientProvider {
     suspend fun clearLocalFiles()
@@ -50,7 +53,8 @@ class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
@@ -58,8 +62,10 @@ class ProteusClientProviderImpl(
 
     override suspend fun clearLocalFiles() {
         mutex.withLock {
-            _proteusClient?.clearLocalFiles()
-            _proteusClient = null
+            withContext(dispatcher.io) {
+                _proteusClient?.clearLocalFiles()
+                _proteusClient = null
+            }
         }
     }
 
@@ -90,9 +96,18 @@ class ProteusClientProviderImpl(
 
     private fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId))
+            ProteusClientImpl(
+                rootProteusPath,
+                SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId),
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         } else {
-            ProteusClientImpl(rootProteusPath)
+            ProteusClientImpl(
+                rootProteusPath, null,
+                defaultContext = dispatcher.default,
+                ioContext = dispatcher.io
+            )
         }
     }
 }

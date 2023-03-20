@@ -25,7 +25,8 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class CallClient(
     @SerialName("userid") val userId: String,
-    @SerialName("clientid") val clientId: String
+    @SerialName("clientid") val clientId: String,
+    @SerialName("in_subconv") val isMemberOfSubconversation: Boolean = false
 )
 
 @Serializable

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -31,12 +32,16 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.authenticationCodeFailure
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
@@ -47,7 +52,23 @@ sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
 
     sealed class Failure : RegisterClientResult() {
-        object InvalidCredentials : Failure()
+        sealed class InvalidCredentials : Failure() {
+            /**
+             * The team has enabled 2FA but has not provided a 2FA code.
+             */
+            object Missing2FA : InvalidCredentials()
+
+            /**
+             * The team has enabled 2FA but the user has provided an invalid or expired 2FA code.
+             */
+            object Invalid2FA : InvalidCredentials()
+
+            /**
+             * The password is invalid.
+             */
+            object InvalidPassword : InvalidCredentials()
+        }
+
         object TooManyClients : Failure()
         object PasswordAuthRequired : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
@@ -57,6 +78,12 @@ sealed class RegisterClientResult {
 /**
  * This use case is responsible for registering the client.
  * The client will be registered on the backend and the local storage.
+ *
+ * If fails due to missing or invalid 2FA code, use
+ * [RequestSecondFactorVerificationCodeUseCase] to request a new code
+ * and then call this method again with the new code.
+ *
+ * @see RequestSecondFactorVerificationCodeUseCase
  */
 interface RegisterClientUseCase {
     suspend operator fun invoke(
@@ -76,6 +103,7 @@ interface RegisterClientUseCase {
         val capabilities: List<ClientCapability>?,
         val clientType: ClientType? = null,
         val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
+        val secondFactorVerificationCode: String? = null,
     )
 
     companion object {
@@ -85,7 +113,7 @@ interface RegisterClientUseCase {
 }
 
 @Suppress("LongParameterList")
-class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
+class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -93,15 +121,19 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val userRepository: UserRepository,
+    private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
-    override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
-        with(registerClientParam) {
-              sessionRepository.cookieLabel(selfUserId)
-                  .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel)
+    override suspend operator fun invoke(
+        registerClientParam: RegisterClientUseCase.RegisterClientParam
+    ): RegisterClientResult = with(registerClientParam) {
+        val verificationCode = registerClientParam.secondFactorVerificationCode ?: currentlyStoredVerificationCode()
+        sessionRepository.cookieLabel(selfUserId)
+            .flatMap { cookieLabel ->
+                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel, verificationCode)
             }.fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
@@ -116,22 +148,51 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
                         otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
                         Either.Right(client)
                     }.fold({ failure ->
-                        if (failure is NetworkFailure.ServerMiscommunication &&
-                            failure.kaliumException is KaliumException.InvalidRequestError
-                        )
-                            when {
-                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
-                                failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
-                                failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
-                                else -> RegisterClientResult.Failure.Generic(failure)
-                            }
-                        else RegisterClientResult.Failure.Generic(failure)
+                        handleFailure(failure)
                     }, { client ->
                         RegisterClientResult.Success(client)
                     })
             })
+    }
+
+    private suspend fun currentlyStoredVerificationCode(): String? {
+        val userEmail = userRepository.getSelfUser()?.email
+        return userEmail?.let { secondFactorVerificationRepository.getStoredVerificationCode(it) }
+    }
+
+    private suspend fun handleFailure(
+        failure: CoreFailure,
+    ): RegisterClientResult = if (failure is NetworkFailure.ServerMiscommunication &&
+        failure.kaliumException is KaliumException.InvalidRequestError
+    ) {
+        val kaliumException = failure.kaliumException
+        val authCodeFailure = kaliumException.authenticationCodeFailure
+        when {
+            kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+            kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+            kaliumException.isInvalidCredentials() ->
+                RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
+
+            kaliumException.isBadRequest() ->
+                RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
+
+            authCodeFailure != null -> handleAuthCodeFailure(authCodeFailure)
+
+            else -> RegisterClientResult.Failure.Generic(failure)
         }
+    } else RegisterClientResult.Failure.Generic(failure)
+
+    private suspend fun handleAuthCodeFailure(authCodeFailure: AuthenticationCodeFailure) = when (authCodeFailure) {
+        AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
+            RegisterClientResult.Failure.InvalidCredentials.Missing2FA
+
+        AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE -> {
+            userRepository.getSelfUser()?.email?.let {
+                secondFactorVerificationRepository.clearStoredVerificationCode(it)
+            }
+            RegisterClientResult.Failure.InvalidCredentials.Invalid2FA
+        }
+    }
 
     // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we
     // can remove registerMLSClient() and supply the MLS public key in registerClient().
@@ -146,7 +207,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
         password: String?,
         capabilities: List<ClientCapability>?,
         clientType: ClientType? = null,
-        cookieLabel: String?
+        cookieLabel: String?,
+        secondFactorVerificationCode: String? = null,
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
             Either.Right(
@@ -159,7 +221,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
                     label = null,
                     model = null,
                     clientType = clientType,
-                    cookieLabel = cookieLabel
+                    cookieLabel = cookieLabel,
+                    secondFactorVerificationCode = secondFactorVerificationCode,
                 )
             )
         }

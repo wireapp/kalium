@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -49,16 +50,19 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
+    private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
             // TODO handle other feature flags
-            checkFileSharingStatus(it.fileSharingModel)
-            checkMLSStatus(it.mlsModel)
-            checkClassifiedDomainsStatus(it.classifiedDomainsModel)
-            checkConferenceCalling(it.conferenceCallingModel)
+            handleGuestRoomLinkFeatureFlag(it.guestRoomLinkModel)
+            handleFileSharingStatus(it.fileSharingModel)
+            handleMLSStatus(it.mlsModel)
+            handleClassifiedDomainsStatus(it.classifiedDomainsModel)
+            handleConferenceCalling(it.conferenceCallingModel)
+            handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -75,17 +79,22 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
         }
 
-    private fun checkConferenceCalling(model: ConferenceCallingModel) {
+    private fun handleConferenceCalling(model: ConferenceCallingModel) {
         val conferenceCallingEnabled = model.status == Status.ENABLED
         userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
     }
 
-    private fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
+    private fun handlePasswordChallengeStatus(model: ConfigsStatusModel) {
+        val isRequired = model.status == Status.ENABLED
+        userConfigRepository.setSecondFactorPasswordChallengeStatus(isRequired)
+    }
+
+    private fun handleClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
         val classifiedDomainsEnabled = model.status == Status.ENABLED
         userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, model.config.domains)
     }
 
-    private fun checkFileSharingStatus(model: ConfigsStatusModel) {
+    private fun handleFileSharingStatus(model: ConfigsStatusModel) {
         if (kaliumConfigs.fileRestrictionEnabled) {
             userConfigRepository.setFileSharingStatus(false, null)
         } else {
@@ -98,7 +107,20 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private suspend fun checkMLSStatus(featureConfig: MLSModel) {
+    private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
+        if (!kaliumConfigs.guestRoomLink) {
+            userConfigRepository.setGuestRoomStatus(false, null)
+        } else {
+            val status: Boolean = model.status == Status.ENABLED
+            val isStatusChanged = when (getGuestRoomLinkFeatureStatus().isGuestRoomLinkEnabled) {
+                null, status -> false
+                else -> true
+            }
+            userConfigRepository.setGuestRoomStatus(status, isStatusChanged)
+        }
+    }
+
+    private fun handleMLSStatus(featureConfig: MLSModel) {
         val mlsEnabled = featureConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)

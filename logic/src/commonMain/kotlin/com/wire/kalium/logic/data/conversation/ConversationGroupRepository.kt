@@ -20,15 +20,17 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -46,6 +48,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Limited
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
+import kotlinx.coroutines.flow.Flow
 
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
@@ -58,11 +61,15 @@ interface ConversationGroupRepository {
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
+    suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
     private val conversationDAO: ConversationDAO,
@@ -130,18 +137,17 @@ internal class ConversationGroupRepositoryImpl(
         userIdList: List<UserId>,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            .flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus ->
+                        addMembersToCloudAndStorage(userIdList, conversationId)
 
-            when (conversation.protocol) {
-                is Conversation.ProtocolInfo.Proteus ->
-                    addMembersToCloudAndStorage(userIdList, conversationId)
-
-                is Conversation.ProtocolInfo.MLS -> {
-                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                    }
                 }
             }
-        } ?: Either.Left(StorageFailure.DataNotFound)
 
     private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapApiRequest {
@@ -162,25 +168,24 @@ internal class ConversationGroupRepositoryImpl(
         userId: UserId,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let { conversationEntity ->
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            .flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus ->
+                        deleteMemberFromCloudAndStorage(userId, conversationId)
 
-            when (conversation.protocol) {
-                is Conversation.ProtocolInfo.Proteus ->
-                    deleteMemberFromCloudAndStorage(userId, conversationId)
-
-                is Conversation.ProtocolInfo.MLS -> {
-                    if (userId == selfUserId) {
-                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                            mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        if (userId == selfUserId) {
+                            deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                                mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+                            }
+                        } else {
+                            // when removing a member from an MLS group, don't need to call the api
+                            mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
                         }
-                    } else {
-                        // when removing a member from an MLS group, don't need to call the api
-                        mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
                     }
                 }
             }
-        } ?: Either.Left(StorageFailure.DataNotFound)
 
     override suspend fun joinViaInviteCode(
         code: String,
@@ -190,7 +195,24 @@ internal class ConversationGroupRepositoryImpl(
         conversationApi.joinConversation(code, key, uri)
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
+            val conversationId = response.event.qualifiedConversation.toModel()
+
             memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+                .flatMap {
+                    wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+                        .flatMap {
+                            when (it) {
+                                is ConversationEntity.ProtocolInfo.Proteus ->
+                                    Either.Right(Unit)
+
+                                is ConversationEntity.ProtocolInfo.MLS -> {
+                                    joinExistingMLSConversation(conversationId).flatMap {
+                                        addMembers(listOf(selfUserId), conversationId)
+                                    }
+                                }
+                            }
+                        }
+                }
         }
     }
 
@@ -205,4 +227,22 @@ internal class ConversationGroupRepositoryImpl(
                 memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))
             }
         }.map { }
+
+    override suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.generateGuestRoomLink(conversationId.toApi())
+        }.onSuccess {
+            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri) }
+            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link) }
+        }.map { Either.Right(Unit) }
+
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.revokeGuestRoomLink(conversationId.toApi())
+        }.onSuccess {
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
+        }.map { }
+
+    override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 }

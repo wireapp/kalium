@@ -23,6 +23,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -31,6 +33,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberJoinEventHandler {
     suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
@@ -48,10 +51,17 @@ internal class MemberJoinEventHandlerImpl(
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
-                    logger.v("Succeeded fetching conversation details on MemberJoin Event: $event")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap()
+                    )
+                    logger.v("Success fetching conversation details on MemberJoin Event: ${logMap.toJsonElement()}")
                 }
                 onFailure {
-                    logger.w("Failure fetching conversation details on MemberJoin Event: $event")
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                        "errorInfo" to "$it"
+                    )
+                    logger.w("Failure fetching conversation details on MemberJoin Event: ${logMap.toJsonElement()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt adding the members
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
@@ -67,6 +77,17 @@ internal class MemberJoinEventHandlerImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 persistMessage(message)
-
-            }.onFailure { logger.e("failure on member join event: $it") }
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }.onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
 }

@@ -24,8 +24,10 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageTarget
+import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -225,80 +227,22 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenABaseMessageEntityAndMapper_whenGettingPendingConfirmationMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
-        // Given
-        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        val entity = TEST_MESSAGE_ENTITY.copy(expectsReadConfirmation = true)
-        val mappedMessage = TEST_MESSAGE.copy(expectsReadConfirmation = true)
+    fun whenUpdatingMessageAfterSending_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val millis = 500L
+        val newServerData = Instant.DISTANT_FUTURE
 
         val (arrangement, messageRepository) = Arrangement()
-            .withMockedMessages(listOf(entity))
-            .withMappedMessageModel(mappedMessage)
+            .withUpdateMessageAfterSend()
             .arrange()
 
-        // When
-        val messageList = messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
-            TEST_CONVERSATION_ID,
-            "2022-03-30T15:36:00.000Z"
-        ).shouldSucceed {
-            assertEquals(listOf(mappedMessage), it)
-        }
+        messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
 
-        // Then
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .with(eq(entity))
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenANewConversationSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
-        val message = TEST_SYSTEM_MESSAGE
-        val mappedEntity = TEST_MESSAGE_ENTITY
-        val (arrangement, messageRepository) = Arrangement()
-            .withMappedMessageEntity(mappedEntity)
-            .arrange()
-
-        messageRepository.persistMessage(message)
-
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
-
-            verify(messageDAO)
-                .suspendFunction(messageDAO::insertOrIgnoreMessage)
-                .with(eq(mappedEntity), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenAConversationReceiptModeChangedSystemMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
-        val message = TEST_SYSTEM_MESSAGE.copy(
-            content = TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT
-        )
-        val mappedEntity = TEST_MESSAGE_ENTITY
-        val (arrangement, messageRepository) = Arrangement()
-            .withMappedMessageEntity(mappedEntity)
-            .arrange()
-
-        messageRepository.persistMessage(message)
-
-        with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
-
-            verify(messageDAO)
-                .suspendFunction(messageDAO::insertOrIgnoreMessage)
-                .with(eq(mappedEntity), anything(), anything())
-                .wasInvoked(exactly = once)
-        }
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::promoteMessageToSentUpdatingServerTime)
+            .with(eq(conversationID.toDao()), eq(messageID), eq(newServerData), eq(millis))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -327,8 +271,8 @@ class MessageRepositoryTest {
                 .then { _, _, _, _ -> flowOf(messages) }
             given(messageDAO)
                 .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
-                .whenInvokedWith(anything(), anything(), anything())
-                .then { _, _, _ -> messages }
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> messages.map { it.id } }
             return this
         }
 
@@ -360,6 +304,13 @@ class MessageRepositoryTest {
                     )
                 }
             return this
+        }
+
+        fun withUpdateMessageAfterSend() = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::promoteMessageToSentUpdatingServerTime)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .then { _, _, _, _ -> Unit }
         }
 
         fun arrange() = this to MessageDataSource(
@@ -403,20 +354,6 @@ class MessageRepositoryTest {
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
-        )
-        val TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT = MessageContent.NewConversationReceiptMode(
-            receiptMode = true
-        )
-        val TEST_CONVERSATION_RECEIPT_MODE_CHANGED_CONTENT = MessageContent.ConversationReceiptModeChanged(
-            receiptMode = true
-        )
-        val TEST_SYSTEM_MESSAGE = Message.System(
-            id = "uid",
-            content = TEST_NEW_CONVERSATION_RECEIPT_MODE_CONTENT,
-            conversationId = TEST_CONVERSATION_ID,
-            date = TEST_DATETIME,
-            senderUserId = TEST_USER_ID,
-            status = Message.Status.SENT,
         )
     }
 }

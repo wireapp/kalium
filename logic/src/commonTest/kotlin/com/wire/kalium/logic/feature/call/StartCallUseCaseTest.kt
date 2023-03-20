@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
+import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -49,11 +49,11 @@ class StartCallUseCaseTest {
             .withWaitingForSyncSucceeding()
             .arrange()
 
-        startCall.invoke(conversationId, CallType.AUDIO, ConversationType.OneOnOne)
+        startCall.invoke(conversationId, CallType.AUDIO)
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationType.OneOnOne), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
             .wasInvoked(once)
     }
 
@@ -65,7 +65,7 @@ class StartCallUseCaseTest {
             .withWaitingForSyncSucceeding()
             .arrange()
 
-        val result = startCall.invoke(conversationId, CallType.AUDIO, ConversationType.OneOnOne)
+        val result = startCall.invoke(conversationId, CallType.AUDIO)
 
         assertIs<StartCallUseCase.Result.Success>(result)
     }
@@ -78,11 +78,11 @@ class StartCallUseCaseTest {
             .withWaitingForSyncFailing()
             .arrange()
 
-        startCall.invoke(conversationId, CallType.AUDIO, ConversationType.OneOnOne)
+        startCall.invoke(conversationId, CallType.AUDIO)
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -94,7 +94,7 @@ class StartCallUseCaseTest {
             .withWaitingForSyncFailing()
             .arrange()
 
-        val result = startCall.invoke(conversationId, CallType.AUDIO, ConversationType.OneOnOne)
+        val result = startCall.invoke(conversationId, CallType.AUDIO)
 
         assertIs<StartCallUseCase.Result.SyncFailure>(result)
     }
@@ -106,6 +106,9 @@ class StartCallUseCaseTest {
 
         @Mock
         val syncManager = mock(classOf<SyncManager>())
+
+        @Mock
+        val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
 
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager }, syncManager

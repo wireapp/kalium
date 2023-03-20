@@ -33,13 +33,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
 /**
  * This use case will update last read date for a conversation.
  * After that, will sync against other user's registered clients, using the self conversation.
  */
+
+// TODO: look into excluding self clients from sendConfirmation or run sendLastReadMessageToOtherClients if
+//  the conversation does not need to be notified
 class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
@@ -54,14 +56,13 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
+        sendConfirmation(conversationId)
+        conversationRepository.updateConversationReadDate(conversationId, time)
         selfConversationIdProvider().flatMap { selfConversationIds ->
-            sendConfirmation(conversationId)
-            conversationRepository.updateConversationReadDate(conversationId, time.toIsoDateTimeString())
-            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-            }
+           selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+               sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+           }
         }
-        return
     }
 
     private suspend fun sendLastReadMessageToOtherClients(

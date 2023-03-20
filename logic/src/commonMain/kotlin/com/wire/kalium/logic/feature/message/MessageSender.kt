@@ -39,12 +39,13 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.toInstant
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -118,41 +119,42 @@ internal class MessageSenderImpl internal constructor(
                 else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
             }.onFailure {
                 logger.i("Failed to send message. Failure = $it")
-                if (it is NetworkFailure.NoNetworkConnection) {
-                    logger.i("Scheduling message for retrying in the future.")
-                    messageSendingScheduler.scheduleSendingOfPendingMessages()
-                } else {
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                when (it) {
+                    is NetworkFailure.FederatedBackendFailure -> {
+                        logger.i("Failed due to federation context availability.")
+                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageUuid)
+                    }
+
+                    is NetworkFailure.NoNetworkConnection -> {
+                        logger.i("Scheduling message for retrying in the future.")
+                        messageSendingScheduler.scheduleSendingOfPendingMessages()
+                    }
+
+                    else -> {
+                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                    }
                 }
             }
         }
     }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
-            attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
-                updateDatesOfMessagesWithServerTime(processedMessage, messageRemoteTime)
+        messageSendingInterceptor
+            .prepareMessage(message)
+            .flatMap { processedMessage ->
+                attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
+                    val serverDate = messageRemoteTime.toInstant()
+                    val localDate = message.date.toInstant()
+                    val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    messageRepository.promoteMessageToSentUpdatingServerTime(
+                        processedMessage.conversationId,
+                        processedMessage.id,
+                        serverDate,
+                        millis
+                    )
+                    Unit
+                }
             }
-        }
-
-    private suspend fun updateDatesOfMessagesWithServerTime(
-        message: Message.Sendable,
-        messageRemoteTime: String
-    ) {
-        messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
-            .flatMap {
-                messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
-            }.flatMap {
-                // this should make sure that pending messages are ordered correctly after one of them is sent
-                messageRepository.updatePendingMessagesAddMillisToDate(
-                    message.conversationId,
-                    DateTimeUtil.calculateMillisDifference(message.date, messageRemoteTime)
-                )
-            }.onFailure {
-                val cause = (it as? CoreFailure.Unknown)?.rootCause ?: (it as? StorageFailure.Generic)?.rootCause
-                logger.w("Failure '$it' on updating dates after sending message '${message.id}'", cause)
-            }
-    }
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
@@ -160,18 +162,20 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation
     ): Either<CoreFailure, String> {
-        return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
-            when (protocolInfo) {
-                is Conversation.ProtocolInfo.MLS -> {
-                    attemptToSendWithMLS(protocolInfo.groupId, message)
-                }
+        return conversationRepository
+            .getConversationProtocolInfo(message.conversationId)
+            .flatMap { protocolInfo ->
+                when (protocolInfo) {
+                    is Conversation.ProtocolInfo.MLS -> {
+                        attemptToSendWithMLS(protocolInfo.groupId, message)
+                    }
 
-                is Conversation.ProtocolInfo.Proteus -> {
-                    // TODO(messaging): make this thread safe (per user)
-                    attemptToSendWithProteus(message, messageTarget)
+                    is Conversation.ProtocolInfo.Proteus -> {
+                        // TODO(messaging): make this thread safe (per user)
+                        attemptToSendWithProteus(message, messageTarget)
+                    }
                 }
             }
-        }
     }
 
     private suspend fun attemptToSendWithProteus(
@@ -184,13 +188,18 @@ internal class MessageSenderImpl internal constructor(
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
         }
 
-        return target.flatMap { recipients ->
-            sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
-        }.flatMap { recipients ->
-            messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                trySendingProteusEnvelope(envelope, message, messageTarget)
+        return target
+            .flatMap { recipients ->
+                sessionEstablisher
+                    .prepareRecipientsForNewOutgoingMessage(recipients)
+                    .map { recipients }
+            }.flatMap { recipients ->
+                messageEnvelopeCreator
+                    .createOutgoingEnvelope(recipients, message)
+                    .flatMap { envelope ->
+                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                    }
             }
-        }
     }
 
     /**
@@ -226,15 +235,34 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
-        messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({
-            when (it) {
-                is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                    attemptToSend(message, messageTarget)
-                }
+        messageRepository
+            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .fold({
+                when (it) {
 
-                else -> Either.Left(it)
-            }
-        }, {
-            Either.Right(it)
-        })
+                    is ProteusSendMessageFailure -> {
+                        logger.w("Proteus Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        messageSendFailureHandler
+                            .handleClientsHaveChangedFailure(it)
+                            .flatMap {
+                                logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
+                                attemptToSend(message, messageTarget)
+                            }
+                            .onFailure { failure ->
+                                val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +
+                                        " , " +
+                                        "\"errorInfo\" : \"${failure}\"}"
+                                logger.e(logLine)
+                            }
+                    }
+
+                    else -> {
+                        logger.e("Message Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        Either.Left(it)
+                    }
+                }
+            }, {
+                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
+                Either.Right(it)
+            })
 }

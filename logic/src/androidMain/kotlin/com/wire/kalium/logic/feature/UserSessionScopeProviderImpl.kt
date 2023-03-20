@@ -28,9 +28,11 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -40,6 +42,7 @@ import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
+    private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val rootPathsProvider: RootPathsProvider,
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
@@ -47,6 +50,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
+    private val networkStateObserver: NetworkStateObserver,
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -74,6 +78,10 @@ internal actual class UserSessionScopeProviderImpl(
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
             networkContainer,
+            authenticationScopeProvider.provide(
+                sessionManager.getServerConfig(),
+                sessionManager.getProxyCredentials()
+            ),
             proteusClientProvider,
             userSessionWorkScheduler
         )
@@ -90,6 +98,7 @@ internal actual class UserSessionScopeProviderImpl(
             featureSupport = featureSupport,
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
+            networkStateObserver = networkStateObserver,
         )
     }
 }

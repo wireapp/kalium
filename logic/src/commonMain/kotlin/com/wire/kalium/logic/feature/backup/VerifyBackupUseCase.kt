@@ -54,6 +54,7 @@ internal class VerifyBackupUseCaseImpl(
                 it[BackupConstants.BACKUP_DB_EXTENSION] == true && it[BackupConstants.BACKUP_METADATA_EXTENSION] == true ->
                     VerifyBackupResult.Success.NotEncrypted
 
+                it[BackupConstants.BACKUP_METADATA_EXTENSION] == true -> VerifyBackupResult.Success.Web
                 else ->
                     VerifyBackupResult.Failure.InvalidBackupFile
             }
@@ -64,6 +65,7 @@ sealed class VerifyBackupResult {
     sealed class Success : VerifyBackupResult() {
         object Encrypted : Success()
         object NotEncrypted : Success()
+        object Web : Success()
     }
 
     sealed class Failure : VerifyBackupResult() {

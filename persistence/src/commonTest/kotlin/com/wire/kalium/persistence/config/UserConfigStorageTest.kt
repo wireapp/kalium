@@ -22,14 +22,17 @@ import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserConfigStorageTest {
     private val settings: Settings = MapSettings()
 
@@ -47,7 +50,7 @@ class UserConfigStorageTest {
     }
 
     @Test
-    fun givenAFileSharingStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
+    fun givenAFileSharingStatusValue_whenCAllPersistItSaveAnd_thenCanRestoreTheValueLocally() = runTest {
         userConfigStorage.persistFileSharingStatus(true, null)
         assertEquals(IsFileSharingEnabledEntity(true, null), userConfigStorage.isFileSharingEnabled())
 
@@ -79,4 +82,49 @@ class UserConfigStorageTest {
         assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
     }
 
+    @Test
+    fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
+        userConfigStorage.persistFileSharingStatus(true, true)
+        userConfigStorage.setFileSharingAsNotified()
+        assertEquals(IsFileSharingEnabledEntity(true, false), userConfigStorage.isFileSharingEnabled())
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(false)
+        assertFalse {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistSecondFactorPasswordChallengeStatus(true)
+        assertTrue {
+            userConfigStorage.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() {
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = false, isStatusChanged = false)
+        userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
+            assertFalse { it }
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() {
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = false)
+        userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
+            assertTrue { it }
+        }
+    }
 }

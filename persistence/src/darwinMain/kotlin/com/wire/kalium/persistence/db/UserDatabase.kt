@@ -23,11 +23,13 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
+import co.touchlab.sqliter.JournalMode
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: String) : DatabaseCredentials
@@ -35,20 +37,23 @@ sealed interface DatabaseCredentials {
 }
 
 // TODO encrypt database using sqlcipher
-internal actual class PlatformDatabaseData(val storePath: String)
+actual class PlatformDatabaseData(val storePath: String)
 
-fun userDatabaseBuilder(
+actual fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-    storePath: String,
-    dispatcher: CoroutineDispatcher
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
 ): UserDatabaseBuilder {
-    NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
+    NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
 
     val schema = UserDatabase.Schema
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
             name = FileNameUtil.userDBName(userId),
             version = schema.version,
+            journalMode = if (enableWAL) JournalMode.WAL else JournalMode.DELETE,
             create = { connection ->
                 wrapConnection(connection) { schema.create(it) }
             },
@@ -56,7 +61,7 @@ fun userDatabaseBuilder(
                 wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
             },
             extendedConfig = DatabaseConfiguration.Extended(
-                basePath = storePath
+                basePath = platformDatabaseData.storePath
             )
         )
     )
@@ -65,7 +70,8 @@ fun userDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(storePath)
+        platformDatabaseData,
+        passphrase != null
     )
 }
 
@@ -91,14 +97,20 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData("inMemory")
+        PlatformDatabaseData(""),
+        false
     )
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
     return NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storePath, null)
 }
+
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storePath).checkResourceIsReachableAndReturnError(null) ?: false)
+    platformDatabaseData.storePath else null

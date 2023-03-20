@@ -31,6 +31,10 @@ kaliumLibrary {
 
 kotlin {
 
+    fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+        kotlin.srcDir("src/commonJvmAndroid/kotlin")
+    }
+
     sourceSets {
         val androidTest by getting {
             dependencies {
@@ -39,6 +43,7 @@ kotlin {
             }
         }
         val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 api(libs.avs)
                 api(libs.jna.map {
@@ -51,6 +56,7 @@ kotlin {
             }
         }
         val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
             }

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -38,7 +39,10 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * This use case allows to send a confirmation type [ReceiptType.READ]
@@ -57,7 +61,10 @@ internal class SendConfirmationUseCase internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
 ) {
     private companion object {
-        const val TAG = "[SendConfirmationUseCase]"
+        const val TAG = "SendConfirmation"
+        const val conversationIdKey = "conversationId"
+        const val messageIdsKey = "messageIds"
+        const val statusKey = "status"
     }
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
@@ -67,7 +74,8 @@ internal class SendConfirmationUseCase internal constructor(
 
         val messageIds = getPendingUnreadMessagesIds(conversationId)
         if (messageIds.isEmpty()) {
-            logger.d("$TAG skipping, NO messages to send confirmation signal")
+
+            logConfirmationNothingToSend(conversationId)
             return Either.Right(Unit)
         }
 
@@ -84,40 +92,67 @@ internal class SendConfirmationUseCase internal constructor(
 
             messageSender.sendMessage(message)
         }.onFailure {
-            logger.e("$TAG there was an error trying to send the confirmation signal $it")
+            logConfirmationError(conversationId, messageIds, it)
         }.onSuccess {
-            logger.d("$TAG confirmation signal sent successful")
+            logConfirmationSuccess(conversationId, messageIds)
         }
     }
 
     private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
-        conversationRepository.detailsById(conversationId).fold({
-            logger.e("$TAG There was an unknown error trying to get latest messages from conversation $conversationId")
-            emptyList()
-        }, { conversation ->
+        if (isReceiptsEnabledForConversation(conversationId)) {
+            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId)
+                .fold({
+                    logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
+                    emptyList()
+                }, { it })
+        } else emptyList()
 
-            val readReceiptsEnabled = isReceiptsEnabledForConversation(conversation)
-            if (!readReceiptsEnabled) {
-                emptyList()
-            } else {
-                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId, conversation.lastReadDate)
-                    .fold({
-                        logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
-                        emptyList()
-                    }, { messages ->
-                        messages.map { it.id }
-                    })
+    private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
+        conversationRepository.baseInfoById(conversationId).fold({
+            false
+        }, { conversation ->
+            when (conversation.type) {
+                Conversation.Type.ONE_ON_ONE -> userPropertyRepository.getReadReceiptsStatus()
+                else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
 
-    private suspend fun isReceiptsEnabledForConversation(conversation: Conversation) =
-        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
-            userPropertyRepository.getReadReceiptsStatus()
-        } else {
-            when (conversation.receiptMode) {
-                Conversation.ReceiptMode.DISABLED -> false
-                Conversation.ReceiptMode.ENABLED -> true
-            }
-        }
+    private fun logConfirmationNothingToSend(conversationId: ConversationId) {
+        val properties = mapOf(
+            conversationIdKey to conversationId.toLogString(),
+            statusKey to "NOTHING_TO_CONFIRM"
+        )
+        val jsonLogString = Json.encodeToString(properties.toMap())
+        val logMessage = "$TAG: $jsonLogString"
 
+        logger.d(logMessage)
+    }
+
+    private fun logConfirmationError(conversationId: ConversationId, messageIds: List<String>, failure: CoreFailure) {
+
+        val properties = mapOf(
+            conversationIdKey to conversationId.toLogString(),
+            messageIdsKey to messageIds.map { it.obfuscateId() },
+            statusKey to "ERROR",
+            "errorInfo" to "$failure"
+        )
+
+        val jsonLogString = "${properties.toJsonElement()}"
+        val logMessage = "$TAG: $jsonLogString"
+
+        logger.e(logMessage)
+    }
+
+    private fun logConfirmationSuccess(conversationId: ConversationId, messageIds: List<String>) {
+
+        val properties = mapOf(
+            conversationIdKey to conversationId.toLogString(),
+            messageIdsKey to messageIds.map { it.obfuscateId() },
+            statusKey to "CONFIRMED"
+        )
+        val jsonLogString = "${properties.toJsonElement()}"
+        val logMessage = "$TAG: $jsonLogString"
+
+        logger.i("$logMessage")
+    }
 }

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -34,7 +34,6 @@ interface CallManager {
     suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
-        conversationType: ConversationType,
         isAudioCbr: Boolean
     ) // TODO(calling): Audio CBR
 
@@ -44,4 +43,5 @@ interface CallManager {
     suspend fun muteCall(shouldMute: Boolean)
     suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
     suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
+    suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
 }

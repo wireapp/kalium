@@ -21,6 +21,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.functional.Either
+import okio.BufferedSource
 import okio.Path
 import okio.Sink
 import okio.Source
@@ -32,3 +33,5 @@ expect fun checkIfCompressedFileContainsFileTypes(
     fileSystem: KaliumFileSystem,
     expectedFileExtensions: List<String>
 ): Either<CoreFailure, Map<String, Boolean>>
+
+expect inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T>

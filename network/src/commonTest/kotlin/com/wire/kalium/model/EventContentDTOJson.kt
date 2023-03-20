@@ -21,11 +21,14 @@ package com.wire.kalium.model
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
 
 object EventContentDTOJson {
@@ -111,6 +114,28 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
+    private val jsonProviderUpdateConversationReceiptMode = { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
+        """
+        |{
+        |  "conversation":"${serializable.qualifiedConversation.value}",
+        |  "data":{
+        |    "receipt_mode":1
+        |  },
+        |  "from":"${serializable.qualifiedFrom.value}",
+        |  "qualified_conversation": {
+        |    "id": "${serializable.qualifiedConversation.value}",
+        |    "domain": "${serializable.qualifiedConversation.domain}"
+        |  },
+        |  "qualified_from" : {
+        |     "id" : "${serializable.qualifiedFrom.value}",
+        |     "domain" : "${serializable.qualifiedFrom.domain}"
+        |  },
+        |  "time":"2023-01-27T10:35:10.146Z",
+        |  "type":"conversation.receipt-mode-update"
+        |}
+        """.trimMargin()
+    }
+
     val validAccessUpdate = ValidJsonProvider(
         EventContentDTO.Conversation.AccessUpdate(
             qualifiedConversation = ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
@@ -169,6 +194,35 @@ object EventContentDTOJson {
         |  }, 
         |  "data" : {
         |       "access": [code]
+        |  }
+        |}
+        """.trimMargin()
+
+    val validUpdateReceiptMode = ValidJsonProvider(
+        EventContentDTO.Conversation.ReceiptModeUpdate(
+            qualifiedConversation = QualifiedID(
+                value = "conversationId",
+                domain = "conversationDomain"
+            ),
+            qualifiedFrom = QualifiedID(
+                value = "qualifiedFromId",
+                domain = "qualifiedFromDomain"
+            ),
+            data = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED)
+        ),
+        jsonProviderUpdateConversationReceiptMode
+    )
+
+    val validGenerateGuestRoomLink = """
+        |{
+        |  "conversation" : "f2520615-f860-****-****-9ace3b5f6c37",
+        |  "type" : "conversation.code-update",
+        |  "time" : "2018-02-15T17:44:54.351Z",
+        |  "from" : "f52eed1b-aa64-****-****-96529f72105f",
+        |  "data" : {
+        |     "uri" : "https:\/\/wire-webapp-staging.zinfra.io\/join\/?key=NHRSj7****JkEZV5qsPd&code=755Asq****nITN_0AHV9",
+        |     "key" : "NHRSj7****JkEZV5qsPd",
+        |     "code" : "755Asq****nITN_0AHV9"
         |  }
         |}
         """.trimMargin()

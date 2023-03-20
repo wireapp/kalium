@@ -39,7 +39,7 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.kaliumLogger
-import com.wire.kalium.network.utils.toJsonElement
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -227,6 +227,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val message: String,
+            @SerialName("subconv") val subconversation: String?,
         ) : Conversation()
 
         @Serializable
@@ -273,7 +274,6 @@ sealed class EventContentDTO {
             @SerialName("team") val teamId: TeamId,
             val time: String,
         ) : Team()
-
     }
 
     @Serializable

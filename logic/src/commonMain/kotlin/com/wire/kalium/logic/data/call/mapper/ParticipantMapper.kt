@@ -45,7 +45,8 @@ class ParticipantMapperImpl(
             clientId = clientId,
             isMuted = isMuted == 1,
             isCameraOn = isCameraOn,
-            isSharingScreen = isSharingScreen
+            isSharingScreen = isSharingScreen,
+            hasEstablishedAudio = aestab == 1
         )
     }
 

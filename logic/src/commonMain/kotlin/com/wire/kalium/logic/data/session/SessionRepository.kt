@@ -40,7 +40,9 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
@@ -64,16 +66,17 @@ interface SessionRepository {
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
-    fun currentSession(): Either<StorageFailure, AccountInfo>
+    suspend fun currentSession(): Either<StorageFailure, AccountInfo>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
-    suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
+    suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
+    suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -154,7 +157,7 @@ internal class SessionDataSource(
             )
         }
 
-    override fun currentSession(): Either<StorageFailure, AccountInfo> =
+    override suspend fun currentSession(): Either<StorageFailure, AccountInfo> =
         wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }
 
     override fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>> =
@@ -181,9 +184,14 @@ internal class SessionDataSource(
             accountsDAO.updatePersistentWebSocketStatus(userId.toDao(), isPersistentWebSocketEnabled)
         }
 
-    override suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
-        accountsDAO.updateSsoId(userId.toDao(), idMapper.toSsoIdEntity(ssoId))
-    }
+    override suspend fun updateSsoIdAndScimInfo(
+        userId: UserId,
+        ssoId: SsoId?,
+        managedBy: ManagedByDTO?
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            accountsDAO.updateSsoIdAndScimInfo(userId.toDao(), idMapper.toSsoIdEntity(ssoId), managedBy?.toDao())
+        }
 
     override fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         accountsDAO.isFederated(userId.toDao())
@@ -204,5 +212,19 @@ internal class SessionDataSource(
 
     override suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?> = wrapStorageNullableRequest {
         authTokenStorage.getToken(userId.toDao())?.cookieLabel
+    }
+
+    override suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageNullableRequest { accountsDAO.getAccountManagedBy(userId.toDao()) }.map {
+            when (it) {
+                // Only WIRE and no-value accounts are considered as fully editable
+                ManagedByEntity.WIRE, null -> false
+                ManagedByEntity.SCIM -> true
+            }
+        }
+
+    internal fun ManagedByDTO.toDao() = when (this) {
+        ManagedByDTO.WIRE -> ManagedByEntity.WIRE
+        ManagedByDTO.SCIM -> ManagedByEntity.SCIM
     }
 }

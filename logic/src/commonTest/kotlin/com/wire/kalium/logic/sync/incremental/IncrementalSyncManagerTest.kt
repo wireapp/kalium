@@ -24,7 +24,10 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.network.NetworkState
+import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -39,6 +42,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -51,7 +55,10 @@ import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class IncrementalSyncManagerTest {
 
     @Test
@@ -259,6 +266,40 @@ class IncrementalSyncManagerTest {
                 .wasInvoked(exactly = twice)
         }
 
+    @Test
+    fun givenBothSyncsAreCompleted_whenWorkerEmitsSources_thenShouldResetExponentialDuration() = runTest(TestKaliumDispatcher.default) {
+        val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
+
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(sourceFlow.consumeAsFlow())
+            .withKeepAliveConnectionPolicy()
+            .arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        sourceFlow.send(EventSource.LIVE)
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::reset)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSlowSyncIsCompleted_whenRecovers_thenShouldCalculateNextExponentialDelay() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(flowThatFailsOnFirstTime())
+            .withDisconnectConnectionPolicy()
+            .withRecoveringFromFailure()
+            .withNextExponentialDuration(10.seconds)
+            .arrange()
+
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+        advanceUntilIdle()
+
+        verify(arrangement.exponentialDurationHelper)
+            .function(arrangement.exponentialDurationHelper::next)
+            .wasInvoked(exactly = once)
+    }
     private class Arrangement {
 
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
@@ -273,15 +314,28 @@ class IncrementalSyncManagerTest {
         @Mock
         val incrementalSyncRecoveryHandler = mock(classOf<IncrementalSyncRecoveryHandler>())
 
+        @Mock
+        val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
+
+        @Mock
+        val exponentialDurationHelper: ExponentialDurationHelper =
+            configure(mock(classOf<ExponentialDurationHelper>())) { stubsUnitByDefault = true }
+
         private val incrementalSyncManager by lazy {
             IncrementalSyncManager(
                 slowSyncRepository = slowSyncRepository,
                 incrementalSyncWorker = incrementalSyncWorker,
                 incrementalSyncRepository = incrementalSyncRepository,
                 incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
-                kaliumDispatcher = TestKaliumDispatcher
+                networkStateObserver = networkStateObserver,
+                kaliumDispatcher = TestKaliumDispatcher,
+                exponentialDurationHelper = exponentialDurationHelper,
             )
+        }
 
+        init {
+            withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
+            withNextExponentialDuration(10.seconds)
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
@@ -317,6 +371,20 @@ class IncrementalSyncManagerTest {
                 .suspendFunction(incrementalSyncRecoveryHandler::recover)
                 .whenInvokedWith(any(), any())
                 .then { _, onRetryCallback -> onRetryCallback.retry() }
+        }
+
+        fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
+            given(networkStateObserver)
+                .function(networkStateObserver::observeNetworkState)
+                .whenInvoked()
+                .thenReturn(networkStateFlow)
+        }
+
+        fun withNextExponentialDuration(duration: Duration) = apply {
+            given(exponentialDurationHelper)
+                .function(exponentialDurationHelper::next)
+                .whenInvoked()
+                .thenReturn(duration)
         }
 
         fun arrange() = this to incrementalSyncManager

@@ -18,10 +18,16 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -35,6 +41,12 @@ class ProteusClientTest : BaseProteusClientTest() {
     private val bob = SampleUser(CryptoUserID("bobId", "bobDomain"), "Bob")
     private val aliceSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
     private val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
+
+    @BeforeTest
+    fun before() {
+        val dispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(dispatcher)
+    }
 
     @IgnoreJS
     @IgnoreIOS
@@ -119,6 +131,48 @@ class ProteusClientTest : BaseProteusClientTest() {
         val decryptedMessage2 = aliceClient.decrypt(encryptedMessage2, bobSessionId)
 
         assertEquals(message2, decryptedMessage2.decodeToString())
+    }
+
+    @IgnoreJS
+    @IgnoreIOS
+    @Test
+    fun givenReceivingSameMessageTwice_whenCallingDecrypt_thenDuplicateMessageError() = runTest {
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        aliceClient.openOrCreate()
+
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
+        bobClient.openOrCreate()
+
+        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val message1 = "Hi Alice!"
+        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        aliceClient.decrypt(encryptedMessage1, bobSessionId)
+
+        val exception: ProteusException = assertFailsWith {
+            aliceClient.decrypt(encryptedMessage1, bobSessionId)
+        }
+        assertEquals(ProteusException.Code.DUPLICATE_MESSAGE, exception.code)
+    }
+
+    @IgnoreJS
+    @IgnoreIOS
+    @Test
+    fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
+        val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
+        aliceClient.openOrCreate()
+
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id))
+        bobClient.openOrCreate()
+
+        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val message1 = "Hi Alice!"
+        bobClient.createSession(aliceKey, aliceSessionId)
+
+        val missingAliceSessionId = CryptoSessionId(alice.id, CryptoClientId("missing"))
+        val encryptedMessages = bobClient.encryptBatched(message1.encodeToByteArray(), listOf(aliceSessionId, missingAliceSessionId))
+
+        assertEquals(1, encryptedMessages.size)
+        assertTrue(encryptedMessages.containsKey(aliceSessionId))
     }
 
     @Test

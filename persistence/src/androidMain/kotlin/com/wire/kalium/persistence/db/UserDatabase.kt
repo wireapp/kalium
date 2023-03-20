@@ -24,9 +24,11 @@ import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
-import net.sqlcipher.database.SupportFactory
+import java.io.File
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
@@ -38,40 +40,39 @@ sealed interface DatabaseCredentials {
  * that might be necessary for future operations
  * in the future like [nuke]
  */
-internal actual class PlatformDatabaseData(
-    val context: Context,
-    val databaseCredentials: DatabaseCredentials
+actual class PlatformDatabaseData(
+    val context: Context
 )
 
-fun userDatabaseBuilder(
-    context: Context,
+actual fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-    passphrase: UserDBSecret,
-    encrypt: Boolean = true,
-    dispatcher: CoroutineDispatcher
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
 
-    val driver: AndroidSqliteDriver = if (encrypt) {
+    val driver: AndroidSqliteDriver = if (passphrase != null) {
+        System.loadLibrary("sqlcipher")
         AndroidSqliteDriver(
             schema = UserDatabase.Schema,
-            context = context,
+            context = platformDatabaseData.context,
             name = dbName,
-            factory = SupportFactory(passphrase.value)
+            factory = SupportOpenHelperFactory(
+                passphrase.value,
+                enableWriteAheadLogging = enableWAL
+            )
         )
     } else {
         AndroidSqliteDriver(
             schema = UserDatabase.Schema,
-            context = context,
-            name = dbName
+            context = platformDatabaseData.context,
+            name = dbName,
+            callback = SqliteCallback(UserDatabase.Schema, enableWAL = enableWAL)
         )
     }
-    val credentials = if (encrypt) {
-        DatabaseCredentials.Passphrase(passphrase)
-    } else {
-        DatabaseCredentials.NotSet
-    }
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context, credentials))
+    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, passphrase != null)
 }
 
 fun inMemoryDatabase(
@@ -80,25 +81,37 @@ fun inMemoryDatabase(
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
     val passphrase = "testPass".toByteArray()
+    System.loadLibrary("sqlcipher")
     val driver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
         context = context,
         name = null,
-        factory = SupportFactory(passphrase)
+        factory = SupportOpenHelperFactory(passphrase)
     )
     return UserDatabaseBuilder(
-        userId, driver, dispatcher, PlatformDatabaseData(
-            context, DatabaseCredentials.Passphrase(
-                UserDBSecret(passphrase)
-            )
-        )
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = PlatformDatabaseData(context = context),
+        true
     )
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
-    database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
     return platformDatabaseData.context.deleteDatabase(FileNameUtil.userDBName(userId))
+}
+
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? {
+    val dbFile: File = platformDatabaseData.context.getDatabasePath(FileNameUtil.userDBName(userId))
+    return if (dbFile.exists()) {
+        dbFile.absolutePath
+    } else {
+        null
+    }
 }

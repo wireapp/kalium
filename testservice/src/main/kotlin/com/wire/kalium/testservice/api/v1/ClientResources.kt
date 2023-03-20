@@ -18,13 +18,16 @@
 
 package com.wire.kalium.testservice.api.v1
 
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.testservice.managed.InstanceService
-import com.wire.kalium.testservice.models.Instance
+import com.wire.kalium.testservice.models.AvailabilityRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import javax.validation.Valid
 import javax.ws.rs.GET
 import javax.ws.rs.POST
 import javax.ws.rs.Path
@@ -43,8 +46,23 @@ class ClientResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/availability")
     @Operation(summary = "Set a user's availability")
-    fun availability(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Instance $id: Not yet implemented")
+    @Suppress("MagicNumber")
+    fun availability(@PathParam("id") id: String, @Valid request: AvailabilityRequest): Response {
+        instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
+        val status = when (request.type) {
+            0 -> UserAvailabilityStatus.NONE
+            1 -> UserAvailabilityStatus.AVAILABLE
+            2 -> UserAvailabilityStatus.AWAY
+            3 -> UserAvailabilityStatus.BUSY
+            else -> {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("type should be one of 0, 1, 2 or 3").build()
+            }
+        }
+        runBlocking {
+            instanceService.setAvailabilityStatus(id, status)
+        }
+        return Response.status(Response.Status.OK).build()
     }
 
     // GET /api/v1/instance/{instanceId}/clients
@@ -70,7 +88,9 @@ class ClientResources(private val instanceService: InstanceService) {
     )
     fun fingerprint(@PathParam("id") id: String): Response {
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
-        return instanceService.getFingerprint(id)
+        return runBlocking {
+            instanceService.getFingerprint(id)
+        }
     }
 
     // POST /api/v1/instance/{instanceId}/breakSession

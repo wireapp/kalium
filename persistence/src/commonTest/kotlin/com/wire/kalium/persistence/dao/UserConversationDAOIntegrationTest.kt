@@ -42,11 +42,12 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
     }

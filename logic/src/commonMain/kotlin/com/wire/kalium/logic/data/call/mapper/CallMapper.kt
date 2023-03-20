@@ -45,9 +45,13 @@ interface CallMapper {
     fun fromIntToConversationType(conversationType: Int): ConversationType
     fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling
     fun toVideoStateCalling(videoState: VideoState): VideoStateCalling
+    fun fromConversationToConversationType(conversation: Conversation): ConversationType
+
+    @Suppress("LongParameterList")
     fun toCallEntity(
         conversationId: ConversationId,
         id: String,
+        type: ConversationType,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -65,6 +69,7 @@ interface CallMapper {
     fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client
 }
 
+@Suppress("TooManyFunctions")
 class CallMapperImpl(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : CallMapper {
@@ -80,14 +85,16 @@ class CallMapperImpl(
         return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
+            ConversationType.ConferenceMls -> ConversationTypeCalling.ConferenceMls
             else -> ConversationTypeCalling.Unknown
         }
     }
 
     override fun fromIntToConversationType(conversationType: Int): ConversationType {
         return when (conversationType) {
-            0 -> ConversationType.OneOnOne
-            2 -> ConversationType.Conference
+            ConversationTypeCalling.OneOnOne.avsValue -> ConversationType.OneOnOne
+            ConversationTypeCalling.Conference.avsValue -> ConversationType.Conference
+            ConversationTypeCalling.ConferenceMls.avsValue -> ConversationType.ConferenceMls
             else -> ConversationType.Unknown
         }
     }
@@ -113,9 +120,22 @@ class CallMapperImpl(
         VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
     }
 
+    override fun fromConversationToConversationType(conversation: Conversation): ConversationType =
+        when (conversation.type) {
+            Conversation.Type.GROUP -> {
+                when (conversation.protocol) {
+                    is Conversation.ProtocolInfo.MLS -> ConversationType.ConferenceMls
+                    is Conversation.ProtocolInfo.Proteus -> ConversationType.Conference
+                }
+            }
+            Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
+            else -> ConversationType.Unknown
+        }
+
     override fun toCallEntity(
         conversationId: ConversationId,
         id: String,
+        type: ConversationType,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -127,7 +147,8 @@ class CallMapperImpl(
         id = id,
         status = toCallEntityStatus(callStatus = status),
         callerId = callerId.toString(),
-        conversationType = toConversationEntityType(conversationType = conversationType)
+        conversationType = toConversationEntityType(conversationType = conversationType),
+        type = toCallEntityType(type)
     )
 
     override fun toCall(
@@ -154,6 +175,13 @@ class CallMapperImpl(
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
         Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
         else -> ConversationEntity.Type.ONE_ON_ONE
+    }
+
+    private fun toCallEntityType(conversationType: ConversationType): CallEntity.Type = when (conversationType) {
+        ConversationType.OneOnOne -> CallEntity.Type.ONE_ON_ONE
+        ConversationType.Conference -> CallEntity.Type.CONFERENCE
+        ConversationType.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
+        ConversationType.Unknown -> CallEntity.Type.UNKNOWN
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {

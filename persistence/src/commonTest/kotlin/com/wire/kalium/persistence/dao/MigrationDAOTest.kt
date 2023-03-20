@@ -30,11 +30,12 @@ import kotlin.test.assertEquals
 class MigrationDAOTest : BaseDatabaseTest() {
     private lateinit var migrationDAO: MigrationDAO
     private lateinit var conversationDAO: ConversationDAO
+    private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
     fun setUp() {
-        deleteDatabase()
-        val db = createDatabase()
+        deleteDatabase(selfUserId)
+        val db = createDatabase(selfUserId, encryptedDBSecret, true)
         migrationDAO = db.migrationDAO
         conversationDAO = db.conversationDAO
     }

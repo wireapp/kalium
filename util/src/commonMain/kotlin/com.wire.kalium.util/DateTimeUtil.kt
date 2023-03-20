@@ -36,13 +36,20 @@ expect open class PlatformDateTimeUtil() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun fromInstantToIsoDateTimeString(instant: Instant): String
+
+    /**
+     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
+     */
+    fun fromInstantToSimpleDateTimeString(instant: Instant): String
 }
 
 // TODO(qol): we need to think if it should return an either or should we catch the exception,
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
 object DateTimeUtil : PlatformDateTimeUtil() {
-    const val pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
-    const val regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d(([+-]\\d\\d:\\d\\d)|Z)?\$"
+    const val iso8601Pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+    const val simplePattern: String = "yyyy-MM-dd_HH:mm:ss"
+    const val iso8601Regex = "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\dZ\$"
     internal const val MILLISECONDS_DIGITS = 3
 
     /**
@@ -52,7 +59,16 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return difference between two provided date-times in milliseconds
      */
     fun calculateMillisDifference(isoDateTime1: String, isoDateTime2: String): Long =
-        isoDateTime1.toInstant().until(isoDateTime2.toInstant(), DateTimeUnit.MILLISECOND)
+        calculateMillisDifference(isoDateTime1.toInstant(), isoDateTime2.toInstant())
+
+    /**
+     * Calculate the difference between two date-times provided to it
+     * @param instant1 date-time as Instant
+     * @param instant2 date-time as Instant
+     * @return difference between two provided date-times in milliseconds
+     */
+    fun calculateMillisDifference(instant1: Instant, instant2: Instant): Long =
+        instant1.until(instant2, DateTimeUnit.MILLISECOND)
 
     /**
      * Subtract milliseconds from the given date-time
@@ -69,6 +85,12 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      */
     fun currentIsoDateTimeString(): String =
         fromInstantToIsoDateTimeString(Clock.System.now())
+
+    /**
+     * Return the current date-time as a simple string
+     * @return current date-time in simplified format, i.e. until seconds precision (YYYY-MM-DD_HH:mm:ss)
+     */
+    fun currentSimpleDateTimeString(): String = fromInstantToSimpleDateTimeString(Clock.System.now())
 
     /**
      * Return the current date-time as [kotlinx.datetime.Instant].

@@ -37,6 +37,8 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import okio.Path
 import pbandk.ByteArr
 
@@ -55,18 +57,22 @@ interface AssetMapper {
 }
 
 class AssetMapperImpl(
-    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : AssetMapper {
-    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
-        val dataSource = kaliumFileSystem.source(uploadAssetMetadata.tempEncryptedDataPath)
-        return AssetMetadataRequest(
-            uploadAssetMetadata.assetType,
-            uploadAssetMetadata.isPublic,
-            AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            // TODO: pass the md5 to the mapper so we can return Either left in case of any error
-            calcFileMd5(dataSource) ?: TODO("handle failure")
-        )
-    }
+    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest =
+        with(dispatcher.io) {
+            val dataSource = kaliumFileSystem.source(uploadAssetMetadata.tempEncryptedDataPath)
+            val md5 = calcFileMd5(dataSource)
+            dataSource.close()
+            return AssetMetadataRequest(
+                uploadAssetMetadata.assetType,
+                uploadAssetMetadata.isPublic,
+                AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
+                // TODO: pass the md5 to the mapper so we can return Either left in case of any error
+                md5 ?: TODO("handle failure")
+            )
+        }
 
     override fun fromApiUploadResponseToDomainModel(asset: AssetResponse) =
         UploadedAssetId(key = asset.key, domain = asset.domain, assetToken = asset.token)
@@ -159,6 +165,11 @@ class AssetMapperImpl(
                 mimeType = original?.mimeType ?: "*/*",
                 metadata = when (val metadataType = original?.metaData) {
                     is Asset.Original.MetaData.Image -> Image(width = metadataType.value.width, height = metadataType.value.height)
+                    is Asset.Original.MetaData.Audio -> Audio(
+                        durationMs = metadataType.value.durationInMillis,
+                        normalizedLoudness = metadataType.value.normalizedLoudness?.array
+                    )
+
                     null -> null
                     else -> null
                 },

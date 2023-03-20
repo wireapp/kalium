@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -41,6 +42,10 @@ import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -60,6 +65,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     private val log = LoggerFactory.getLogger(InstanceService::class.java.name)
     private val instances: MutableMap<String, Instance> = ConcurrentHashMap<String, Instance>()
+    private val scope = CoroutineScope(Dispatchers.Default)
 
     override fun start() {
         log.info("Instance service started.")
@@ -163,6 +169,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                     )) {
                         is RegisterClientResult.Failure ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")
+
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance $instanceId: Login with new device $clientId successful")
@@ -192,20 +199,22 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         val instance = getInstanceOrThrow(id)
         log.info("Instance $id: Delete device ${instance.clientId} and logout")
         instance.coreLogic?.globalScope {
-            val result = session.currentSession()
-            if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                    instance.clientId?.let {
-                        runBlocking {
-                            client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))
+            scope.launch {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        instance.clientId?.let {
+                            runBlocking {
+                                client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))
+                            }
                         }
+                        log.info("Instance $id: Device ${instance.clientId} deleted")
+                        runBlocking { logout(LogoutReason.SELF_SOFT_LOGOUT) }
                     }
-                    log.info("Instance $id: Device ${instance.clientId} deleted")
-                    runBlocking { logout(LogoutReason.SELF_SOFT_LOGOUT) }
                 }
+                log.info("Instance $id: Delete sessions in preference file")
+                // TODO Something like session.allSessions.deleteInvalidSession()
             }
-            log.info("Instance $id: Delete sessions in preference file")
-            // TODO Something like session.allSessions.deleteInvalidSession()
         }
         log.info("Instance $id: Logged out")
         log.info("Instance $id: Delete locate files in ${instance.instancePath}")
@@ -241,7 +250,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
-    fun getFingerprint(id: String): Response {
+    suspend fun getFingerprint(id: String): Response {
         log.info("Instance $id: Get fingerprint of client")
         val instance = getInstanceOrThrow(id)
         instance.coreLogic?.globalScope {
@@ -258,8 +267,10 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
                             is GetProteusFingerprintResult.Failure -> {
                                 return@runBlocking Response.status(Response.Status.NO_CONTENT)
-                                    .entity("Instance $id: Cannot get fingerprint: "
-                                            + fingerprint.genericFailure).build()
+                                    .entity(
+                                        "Instance $id: Cannot get fingerprint: "
+                                                + fingerprint.genericFailure
+                                    ).build()
                             }
                         }
                     }
@@ -272,4 +283,18 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         throw WebApplicationException("Instance $id: No client assigned to instance yet")
     }
 
+    suspend fun setAvailabilityStatus(id: String, status: UserAvailabilityStatus) {
+        log.info("Instance $id: Set availability status to $status of client")
+        val instance = getInstanceOrThrow(id)
+        instance.coreLogic?.globalScope {
+            scope.async {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        users.updateSelfAvailabilityStatus(status)
+                    }
+                }
+            }
+        }
+    }
 }

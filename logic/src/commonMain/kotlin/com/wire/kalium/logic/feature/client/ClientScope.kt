@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
@@ -56,7 +58,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val selfUserId: UserId,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider,
-    private val slowSyncRepository: SlowSyncRepository
+    private val userRepository: UserRepository,
+    private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
+    private val slowSyncRepository: SlowSyncRepository,
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -68,10 +72,13 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             keyPackageLimitsProvider,
             mlsClientProvider,
             sessionRepository,
-            selfUserId
+            selfUserId,
+            userRepository,
+            secondFactorVerificationRepository
         )
 
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
+    val getClientDetailsUseCase: GetClientDetailsUseCase get() = GetClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)

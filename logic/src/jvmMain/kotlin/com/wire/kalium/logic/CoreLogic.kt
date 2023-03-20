@@ -24,8 +24,11 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -60,17 +63,19 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager()
+    override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext())
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
-
+    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
+            authenticationScopeProvider,
             rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            userStorageProvider
+            userStorageProvider,
+            networkStateObserver
         )
     }
 }

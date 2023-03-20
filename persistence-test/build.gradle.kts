@@ -37,6 +37,7 @@ kotlin {
                 // coroutines
                 implementation(libs.coroutines.core)
                 implementation(libs.coroutines.test)
+                implementation(libs.settings.kmp)
                 implementation(libs.settings.kmpTest)
             }
         }

@@ -68,7 +68,7 @@ class EndCallUseCaseTest {
 
         given(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(false))
             .thenDoNothing()
 
         endCall.invoke(conversationId)
@@ -80,12 +80,12 @@ class EndCallUseCaseTest {
 
         verify(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId.toString()), eq(false))
+            .with(eq(conversationId), eq(false))
             .wasInvoked(once)
 
         verify(callRepository)
             .function(callRepository::persistMissedCall)
-            .with(eq(conversationId.toString()))
+            .with(eq(conversationId))
             .wasNotInvoked()
     }
 
@@ -107,7 +107,7 @@ class EndCallUseCaseTest {
 
         given(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(false))
             .thenDoNothing()
 
         endCall.invoke(conversationId)
@@ -119,7 +119,7 @@ class EndCallUseCaseTest {
 
         verify(callRepository)
             .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId.toString()), eq(false))
+            .with(eq(conversationId), eq(false))
             .wasInvoked(once)
 
         verify(callRepository)

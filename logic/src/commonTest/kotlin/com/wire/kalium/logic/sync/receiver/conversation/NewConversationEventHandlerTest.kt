@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
@@ -47,7 +47,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -122,7 +121,7 @@ class NewConversationEventHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(eq(event.conversationId), matching { it.toInstant().wasInTheLastSecond })
+            .with(eq(event.conversationId), matching { it.wasInTheLastSecond })
             .wasInvoked(exactly = once)
     }
 
@@ -185,7 +184,7 @@ class NewConversationEventHandlerTest {
         @Mock
         private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,

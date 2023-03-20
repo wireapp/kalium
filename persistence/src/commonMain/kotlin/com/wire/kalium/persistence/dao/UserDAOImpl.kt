@@ -53,6 +53,50 @@ class UserMapper {
         )
     }
 
+    @Suppress("LongParameterList")
+    fun toUserAndTeamPairModel(
+        qualifiedId: QualifiedIDEntity,
+        name: String?,
+        handle: String?,
+        email: String?,
+        phone: String?,
+        accentId: Int,
+        team: String?,
+        connectionStatus: ConnectionEntity.State,
+        previewAssetId: QualifiedIDEntity?,
+        completeAssetId: QualifiedIDEntity?,
+        userAvailabilityStatus: UserAvailabilityStatusEntity,
+        userType: UserTypeEntity,
+        botService: BotEntity?,
+        deleted: Boolean,
+        id: String?,
+        teamName: String?,
+        teamIcon: String?,
+    ): Pair<UserEntity, TeamEntity?> {
+        val userEntity = UserEntity(
+            id = qualifiedId,
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = team,
+            connectionStatus = connectionStatus,
+            previewAssetId = previewAssetId,
+            completeAssetId = completeAssetId,
+            availabilityStatus = userAvailabilityStatus,
+            userType = userType,
+            botService = botService,
+            deleted = deleted
+        )
+
+        val teamEntity = if (team != null && teamName != null && teamIcon != null) {
+            TeamEntity(team, teamName, teamIcon)
+        } else null
+
+        return userEntity to teamEntity
+    }
+
     fun toModelMinimized(
         userId: QualifiedIDEntity,
         name: String?,
@@ -242,6 +286,11 @@ class UserDAOImpl internal constructor(
             .map { it?.let { mapper.toModel(it) } }
             .shareIn(databaseScope, Lazily, 1)
     }
+
+    override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?> =
+        userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
+            .asFlow()
+            .mapToOneOrNull()
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
         userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->

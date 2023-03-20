@@ -54,7 +54,8 @@ object TestCall {
         id = DATABASE_ID,
         status = CallEntity.Status.ESTABLISHED,
         callerId = CALLER_ID.toString(),
-        conversationType = ConversationEntity.Type.ONE_ON_ONE
+        conversationType = ConversationEntity.Type.ONE_ON_ONE,
+        type = CallEntity.Type.ONE_ON_ONE
     )
 
     // Call Metadata
@@ -69,7 +70,8 @@ object TestCall {
         conversationType = Conversation.Type.ONE_ON_ONE,
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
-        establishedTime = null
+        establishedTime = null,
+        protocol = Conversation.ProtocolInfo.Proteus
     )
 
     fun oneOnOneEstablishedCall() = Call(

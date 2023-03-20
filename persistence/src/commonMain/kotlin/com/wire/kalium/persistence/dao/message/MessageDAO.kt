@@ -19,9 +19,11 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
@@ -58,14 +60,8 @@ interface MessageDAO {
 
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
-    /**
-     * Returns the most recent message sent from other users, _i.e._ not self user
-     */
-    suspend fun getLatestMessageFromOtherUsers(): MessageEntity?
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
-    suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
+    suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
     suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
@@ -73,9 +69,7 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
-    suspend fun getNotificationMessage(
-        filteredContent: List<MessageEntity.ContentType>
-    ): Flow<List<NotificationMessageEntity>>
+    suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -102,6 +96,7 @@ interface MessageDAO {
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
+    suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
     suspend fun resetAssetUploadStatus()
 
@@ -115,11 +110,17 @@ interface MessageDAO {
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
-    ): List<MessageEntity>
+    ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
+
+    suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationIDEntity,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    )
 
     val platformExtensions: MessageExtensions
 }

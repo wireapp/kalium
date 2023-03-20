@@ -47,18 +47,17 @@ class MarkMessagesAsNotifiedUseCaseTest {
     fun givenMarkIsCalledForAllConversations_whenInvokingTheUseCase_thenAllConversationsAreMarkedAsNotified() = runTest {
         val (arrangement, markMessagesAsNotified) = Arrangement()
             .withUpdatingAllConversationsReturning(Either.Right(Unit))
-            .withLastInstantFromOthersReturning(Either.Right(TEST_INSTANT))
             .arrange()
 
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
 
         verify(arrangement.conversationRepository)
-            .coroutine { updateAllConversationsNotificationDate(TEST_INSTANT) }
+            .coroutine { updateAllConversationsNotificationDate() }
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
-            .with(anything(), anything())
+            .with(anything())
             .wasNotInvoked()
 
         assertEquals(result, Result.Success)
@@ -68,19 +67,17 @@ class MarkMessagesAsNotifiedUseCaseTest {
     fun givenMarkIsCalledWithSpecificConversationId_whenInvokingTheUseCase_thenSpecificConversationIsMarkedAsNotified() = runTest {
         val (arrangement, markMessagesAsNotified) = Arrangement()
             .withUpdatingOneConversationReturning(Either.Right(Unit))
-            .withLastInstantFromOthersReturning(Either.Right(TEST_INSTANT))
             .arrange()
 
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
-            .with(eq(CONVERSATION_ID), anything())
+            .with(eq(CONVERSATION_ID))
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateAllConversationsNotificationDate)
-            .with(anything())
             .wasNotInvoked()
 
         assertEquals(result, Result.Success)
@@ -92,7 +89,6 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val (_, markMessagesAsNotified) = Arrangement()
             .withUpdatingOneConversationReturning(Either.Left(failure))
-            .withLastInstantFromOthersReturning(Either.Right(TEST_INSTANT))
             .arrange()
 
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
@@ -106,7 +102,6 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val (_, markMessagesAsNotified) = Arrangement()
             .withUpdatingAllConversationsReturning(Either.Left(failure))
-            .withLastInstantFromOthersReturning(Either.Right(TEST_INSTANT))
             .arrange()
 
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
@@ -119,38 +114,27 @@ class MarkMessagesAsNotifiedUseCaseTest {
         @Mock
         val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
-        @Mock
-        val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
-
         fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
-                .whenInvokedWith(any())
+                .whenInvoked()
                 .thenReturn(result)
         }
 
         fun withUpdatingOneConversationReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
-        }
-
-        fun withLastInstantFromOthersReturning(result: Either<StorageFailure, Instant>) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getInstantOfLatestMessageFromOtherUsers)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
         fun arrange() = this to MarkMessagesAsNotifiedUseCase(
-            conversationRepository, messageRepository
+            conversationRepository
         )
 
     }
 
     companion object {
-        private val TEST_INSTANT = Instant.fromEpochMilliseconds(123_456_789L)
         private val CONVERSATION_ID = QualifiedID("some_id", "some_domain")
     }
 }

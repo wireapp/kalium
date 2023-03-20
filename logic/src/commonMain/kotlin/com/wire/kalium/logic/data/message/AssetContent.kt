@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
+
 data class AssetContent(
     val sizeInBytes: Long,
     val name: String? = null,
@@ -27,6 +29,17 @@ data class AssetContent(
     val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
     val downloadStatus: Message.DownloadStatus
 ) {
+
+    private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
+
+    private val hasValidImageMetadata = when (metadata) {
+        is AssetMetadata.Image -> metadata.width > 0 && metadata.height > 0
+        else -> false
+    }
+
+    // We should not display Preview Assets (assets w/o valid encryption keys sent by Mac/Web clients) unless they include image metadata
+    val shouldBeDisplayed = !isPreviewMessage || hasValidImageMetadata
+
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()
         data class Video(val width: Int?, val height: Int?, val durationMs: Long?) : AssetMetadata()

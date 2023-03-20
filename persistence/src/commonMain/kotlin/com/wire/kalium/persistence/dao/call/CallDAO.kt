@@ -27,7 +27,8 @@ data class CallEntity(
     val id: String,
     val status: Status,
     val callerId: String,
-    val conversationType: ConversationEntity.Type
+    val conversationType: ConversationEntity.Type,
+    val type: Type
 ) {
     enum class Status {
         STARTED,
@@ -40,6 +41,13 @@ data class CallEntity(
         CLOSED,
         REJECTED
     }
+
+    enum class Type {
+        ONE_ON_ONE,
+        CONFERENCE,
+        MLS_CONFERENCE,
+        UNKNOWN
+    }
 }
 
 interface CallDAO {
@@ -49,7 +57,7 @@ interface CallDAO {
     suspend fun observeEstablishedCalls(): Flow<List<CallEntity>>
     suspend fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
-    suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String
+    suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
     suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type?

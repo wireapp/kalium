@@ -20,13 +20,14 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
@@ -47,11 +48,17 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryTest {
 
     @Test
@@ -216,6 +223,24 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun givenSelfUserIsUnknown_whenObservingSelfUser_thenShouldAttemptToFetchIt() = runTest {
+        val selfUserIdChannel = Channel<String?>(Channel.UNLIMITED)
+        selfUserIdChannel.send(null)
+        selfUserIdChannel.send(TestUser.JSON_QUALIFIED_ID)
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withSelfUserIdFlowMetadataReturning(selfUserIdChannel.consumeAsFlow())
+            .withRemoteGetSelfReturningDeletedUser()
+            .arrange()
+        // when
+        userRepository.observeSelfUser().first()
+        // then
+        verify(arrangement.selfApi)
+            .suspendFunction(arrangement.selfApi::getSelfInfo)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenANewDisplayName_whenUpdatingOk_thenShouldSucceedAndPersistTheNameLocally() = runTest {
         val (arrangement, userRepository) = Arrangement()
             .withGetSelfUserId()
@@ -290,29 +315,31 @@ class UserRepositoryTest {
         }
 
         init {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(any())
-                .then { flowOf(TestUser.JSON_QUALIFIED_ID) }
+            withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.ENTITY) }
         }
 
-        fun withSuccessfulGetUsersInfo(): Arrangement {
+        fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
+                .whenInvokedWith(eq(SELF_USER_ID_KEY))
+                .thenReturn(selfUserIdStringFlow)
+        }
+
+        fun withSuccessfulGetUsersInfo() = apply {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
-            return this
         }
 
-        fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserEntity>): Arrangement {
+        fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserEntity>) = apply {
             given(userDAO)
                 .suspendFunction(userDAO::getUsersByQualifiedIDList)
                 .whenInvokedWith(any())
                 .thenReturn(knownUserEntities)
-            return this
         }
 
         fun withMapperQualifiedUserId(nonQualifiedId: String = "alice@wonderland") = apply {
@@ -320,19 +347,15 @@ class UserRepositoryTest {
                 .function(qualifiedIdMapper::fromStringToQualifiedID)
                 .whenInvokedWith(eq(nonQualifiedId))
                 .thenReturn(com.wire.kalium.logic.data.id.QualifiedID("alice", "wonderland"))
-
-            return this
         }
 
         fun withUserDaoReturning(userEntity: UserEntity? = TestUser.ENTITY) = apply {
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(userEntity) }
-
-            return this
         }
 
-        fun withGetSelfUserId(): Arrangement {
+        fun withGetSelfUserId() = apply {
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKey)
                 .whenInvokedWith(any())
@@ -344,7 +367,6 @@ class UserRepositoryTest {
                     }
                 """.trimIndent()
                 )
-            return this
         }
 
         fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
@@ -352,15 +374,13 @@ class UserRepositoryTest {
                 .suspendFunction(selfApi::getSelfInfo)
                 .whenInvoked()
                 .thenReturn(NetworkResponse.Success(TestUser.USER_DTO.copy(deleted = true), mapOf(), 200))
-            return this
         }
 
-        fun withSuccessfulGetMultipleUsersApiRequest(result: List<UserProfileDTO>): Arrangement {
+        fun withSuccessfulGetMultipleUsersApiRequest(result: List<UserProfileDTO>) = apply {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
-            return this
         }
 
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
@@ -368,9 +388,12 @@ class UserRepositoryTest {
                 .suspendFunction(selfApi::updateSelf)
                 .whenInvokedWith(any())
                 .thenReturn(response)
-            return this
         }
 
         fun arrange() = this to userRepository
+    }
+
+    private companion object {
+        val SELF_USER = TestUser.USER_DTO
     }
 }

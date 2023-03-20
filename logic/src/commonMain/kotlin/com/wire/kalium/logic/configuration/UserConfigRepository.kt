@@ -26,8 +26,10 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 interface UserConfigRepository {
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
     fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
@@ -36,16 +38,26 @@ interface UserConfigRepository {
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    fun setSecondFactorPasswordChallengeStatus(required: Boolean): Either<StorageFailure, Unit>
+    fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
+    fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
 }
 
+@Suppress("TooManyFunctions")
 class UserConfigDataSource(
     private val userConfigStorage: UserConfigStorage
 ) : UserConfigRepository {
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
+
+    override fun setFileSharingAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.setFileSharingAsNotified()
+    }
 
     override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
         wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
@@ -90,6 +102,15 @@ class UserConfigDataSource(
             userConfigStorage.isConferenceCallingEnabled()
         }
 
+    override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistSecondFactorPasswordChallengeStatus(isRequired)
+        }
+
+    override fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        userConfigStorage.isSecondFactorPasswordChallengeRequired()
+    }
+
     override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isReadReceiptsEnabled().wrapStorageRequest()
 
@@ -97,4 +118,23 @@ class UserConfigDataSource(
         wrapStorageRequest {
             userConfigStorage.persistReadReceipts(enabled)
         }
+
+    override fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistGuestRoomLinkFeatureFlag(status, isStatusChanged)
+        }
+
+    override fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus> =
+        wrapStorageRequest { userConfigStorage.isGuestRoomLinkEnabled() }.map {
+            with(it) { GuestRoomLinkStatus(status, isStatusChanged) }
+        }
+
+    override fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>> =
+        userConfigStorage.isGuestRoomLinkEnabledFlow()
+            .wrapStorageRequest()
+            .map {
+                it.map { isGuestRoomLinkEnabledEntity ->
+                    GuestRoomLinkStatus(isGuestRoomLinkEnabledEntity.status, isGuestRoomLinkEnabledEntity.isStatusChanged)
+                }
+            }
 }

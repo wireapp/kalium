@@ -1,6 +1,7 @@
 name: "iOS Tests"
 
 on:
+  merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
@@ -25,7 +26,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '17'
-          distribution: 'zulu'
+          distribution: 'temurin'
           cache: gradle
 
       - name: Gradle Setup

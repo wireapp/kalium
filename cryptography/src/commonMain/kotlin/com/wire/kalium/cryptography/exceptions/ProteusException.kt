@@ -18,9 +18,9 @@
 
 package com.wire.kalium.cryptography.exceptions
 
-class ProteusException(message: String?, val code: Code) : Exception(message) {
+class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
 
-    constructor(message: String?, code: Int) : this(message, fromNativeCode(code))
+    constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
 
     enum class Code {
         /**
@@ -149,6 +149,7 @@ class ProteusException(message: String?, val code: Code) : Exception(message) {
     }
 
     companion object {
+        @Suppress("MagicNumber")
         fun fromNativeCode(code: Int): Code {
             return when (code) {
                 1 -> Code.STORAGE_ERROR
@@ -163,6 +164,28 @@ class ProteusException(message: String?, val code: Code) : Exception(message) {
                 13 -> Code.IDENTITY_ERROR
                 14 -> Code.PREKEY_NOT_FOUND
                 15 -> Code.PANIC
+                else -> Code.UNKNOWN_ERROR
+            }
+        }
+
+        // Mapping source:
+        // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
+        // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
+        fun fromProteusCode(code: Int): Code {
+            @Suppress("MagicNumber")
+            return when (code) {
+                501 -> Code.STORAGE_ERROR
+                102 -> Code.SESSION_NOT_FOUND
+                3, 301, 302, 303 -> Code.DECODE_ERROR
+                204 -> Code.REMOTE_IDENTITY_CHANGED
+                206, 207, 210 -> Code.INVALID_SIGNATURE
+                200, 201, 202, 205, 213 -> Code.INVALID_MESSAGE
+                209 -> Code.DUPLICATE_MESSAGE
+                211, 212 -> Code.TOO_DISTANT_FUTURE
+                208 -> Code.OUTDATED_MESSAGE
+                300 -> Code.IDENTITY_ERROR
+                101 -> Code.PREKEY_NOT_FOUND
+                5 -> Code.PANIC
                 else -> Code.UNKNOWN_ERROR
             }
         }

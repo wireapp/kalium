@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
@@ -48,9 +49,11 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ApplicationMessageHandlerTest {
 
     @Test
@@ -93,6 +96,7 @@ class ApplicationMessageHandlerTest {
             )
             .wasInvoked()
     }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -130,11 +134,14 @@ class ApplicationMessageHandlerTest {
         @Mock
         val receiptMessageHandler = mock(classOf<ReceiptMessageHandler>())
 
+        @Mock
+        val assetMessageHandler = mock(classOf<AssetMessageHandler>())
+
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
             assetRepository,
             messageRepository,
-            userConfigRepository,
+            assetMessageHandler,
             lazyOf(callManager),
             persistMessage,
             persistReactionsUseCase,
@@ -175,7 +182,5 @@ class ApplicationMessageHandlerTest {
         }
 
         fun arrange() = this to applicationMessageHandler
-
     }
-
 }

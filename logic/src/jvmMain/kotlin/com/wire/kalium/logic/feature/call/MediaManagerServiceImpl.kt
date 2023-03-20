@@ -19,10 +19,13 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-actual class MediaManagerServiceImpl : MediaManagerService {
+actual class MediaManagerServiceImpl(
+    platformContext: PlatformContext
+) : MediaManagerService {
     override fun turnLoudSpeakerOn() {
         kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
     }

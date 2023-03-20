@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -50,7 +50,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -164,7 +163,7 @@ class CreateGroupConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(any(), matching { it.toInstant().wasInTheLastSecond })
+            .with(any(), matching { it.wasInTheLastSecond })
             .wasInvoked(exactly = once)
     }
 
@@ -258,7 +257,7 @@ class CreateGroupConversationUseCaseTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCase = IsSelfATeamMemberUseCase(selfTeamIdProvider)
+        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
 
         private val createGroupConversation = CreateGroupConversationUseCase(
             conversationRepository,

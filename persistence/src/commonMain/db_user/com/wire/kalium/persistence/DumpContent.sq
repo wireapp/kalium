@@ -1,0 +1,18 @@
+
+dumpAllTables{
+INSERT INTO User SELECT * FROM local_db.User;
+INSERT INTO Conversation SELECT * FROM local_db.Conversation;
+INSERT INTO Message SELECT * FROM local_db.Message;
+INSERT INTO Call SELECT * FROM local_db.Call;
+INSERT INTO MessageAssetContent SELECT * FROM local_db.MessageAssetContent;
+INSERT INTO MessageRestrictedAssetContent SELECT * FROM local_db.MessageRestrictedAssetContent;
+INSERT INTO MessageConversationChangedContent SELECT * FROM local_db.MessageConversationChangedContent;
+INSERT INTO MessageFailedToDecryptContent SELECT * FROM local_db.MessageFailedToDecryptContent;
+INSERT INTO MessageMemberChangeContent SELECT * FROM local_db.MessageMemberChangeContent;
+INSERT INTO MessageMention SELECT * FROM local_db.MessageMention;
+INSERT INTO MessageMissedCallContent SELECT * FROM local_db.MessageMissedCallContent;
+INSERT INTO MessageTextContent SELECT * FROM local_db.MessageTextContent;
+INSERT INTO MessageUnknownContent SELECT * FROM local_db.MessageUnknownContent;
+INSERT INTO Reaction SELECT * FROM local_db.Reaction;
+INSERT INTO Receipt SELECT * FROM local_db.Receipt;
+}

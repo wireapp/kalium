@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
@@ -72,7 +73,8 @@ class EventMapper(
             is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO, transient)
             is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO, transient)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient)
-            is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id, transient)
+            is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
+            is EventContentDTO.Unknown -> Event.Unknown(id, transient)
             is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id, transient) // TODO: update it after logic code is merged
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
@@ -158,6 +160,7 @@ class EventMapper(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        eventContentDTO.subconversation?.let { SubconversationId(it) },
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.message
@@ -183,6 +186,23 @@ class EventMapper(
         transient: Boolean
     ): Event.User.ClientRemove {
         return Event.User.ClientRemove(transient, id, ClientId(eventClientRemove.client.clientId))
+    }
+
+    private fun newClient(
+        id: String,
+        eventNewClient: EventContentDTO.User.NewClientDTO,
+        transient: Boolean
+    ): Event.User.NewClient {
+        return Event.User.NewClient(
+            transient = transient,
+            id = id,
+            clientId = ClientId(eventNewClient.client.id),
+            registrationTime = eventNewClient.client.registrationTime,
+            model = eventNewClient.client.model,
+            clientType = eventNewClient.client.clientType,
+            deviceType = eventNewClient.client.deviceType,
+            label = eventNewClient.client.label
+        )
     }
 
     private fun newConversation(
@@ -298,6 +318,12 @@ class EventMapper(
             id,
             transient,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConferenceCalling)
+        )
+
+        is FeatureConfigData.ConversationGuestLinks -> Event.FeatureConfig.GuestRoomLinkUpdated(
+            id,
+            transient,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
         )
 
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)

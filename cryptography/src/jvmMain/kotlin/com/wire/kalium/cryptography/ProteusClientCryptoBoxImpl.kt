@@ -22,13 +22,19 @@ import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.Base64
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
 /**
  *
  */
-class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(
+    rootDir: String,
+    private val defaultContext: CoroutineContext,
+    private val ioContext: CoroutineContext
+) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -62,7 +68,11 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
                 CryptoBox.open(path)
             }
         } else {
-            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                "Local files were not found",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
         }
     }
 
@@ -74,7 +84,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.localFingerprint }
     }
 
-    override fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -95,13 +105,23 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
     }
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box.encryptFromSession(sessionId.value, message) }
+        return wrapException {
+            box.encryptFromSession(sessionId.value, message)
+        }?.let { it } ?: throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
     }
 
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
         return sessionIds.associateWith { sessionId ->
-            encrypt(message, sessionId)
-        }
+            try {
+                encrypt(message, sessionId)
+            } catch (e: ProteusException) {
+                if (e.code == ProteusException.Code.SESSION_NOT_FOUND) {
+                    ByteArray(0)
+                } else {
+                    throw e
+                }
+            }
+        }.filter { it.value.isNotEmpty() }
     }
 
     override suspend fun encryptWithPreKey(
@@ -112,7 +132,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
-    override fun deleteSession(sessionId: CryptoSessionId) {
+    override suspend fun deleteSession(sessionId: CryptoSessionId) {
         // TODO Delete session
     }
 
@@ -121,9 +141,9 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
+            throw ProteusException(e.message, e.code.ordinal, e.cause)
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
     }
 

@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -74,10 +73,10 @@ class ProtoContentMapperImpl(
     }
 
     @Suppress("ComplexMethod")
-    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
+    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
-            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
+            is MessageContent.Calling -> packCalling(readableContent)
             is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
@@ -99,7 +98,7 @@ class ProtoContentMapperImpl(
 
             is MessageContent.ClientAction -> packClientAction()
 
-            is MessageContent.TextEdited -> TODO("Message type not yet supported")
+            is MessageContent.TextEdited -> packEdited(readableContent)
 
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
@@ -117,11 +116,6 @@ class ProtoContentMapperImpl(
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
         val protobufModel = genericMessage.content
-        protobufModel?.let {
-            kaliumLogger.d(
-                "Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," + "content: ${it::class}}"
-            )
-        }
 
         return if (protobufModel is GenericMessage.Content.External) {
             val external = protobufModel.value
@@ -161,7 +155,7 @@ class ProtoContentMapperImpl(
 
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
-            is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
+            is GenericMessage.Content.Calling -> unpackCalling(protoContent)
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
@@ -281,6 +275,21 @@ class ProtoContentMapperImpl(
         }
     }
 
+    private fun packEdited(readableContent: MessageContent.TextEdited): GenericMessage.Content.Edited {
+        val mentions = readableContent.newMentions.map { messageMentionMapper.fromModelToProto(it) }
+        return GenericMessage.Content.Edited(
+            MessageEdit(
+                replacingMessageId = readableContent.editMessageId,
+                content = MessageEdit.Content.Text( // TODO: for now we do not implement Composite
+                    Text(
+                        content = readableContent.newContent,
+                        mentions = mentions,
+                    )
+                )
+            )
+        )
+    }
+
     private fun unpackEdited(
         protoContent: GenericMessage.Content.Edited,
         typeName: String?,
@@ -306,6 +315,18 @@ class ProtoContentMapperImpl(
             }
         }
     }
+
+    private fun packCalling(readableContent: MessageContent.Calling) = GenericMessage.Content.Calling(
+        Calling(
+            content = readableContent.value,
+            qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) }
+        )
+    )
+
+    private fun unpackCalling(protoContent: GenericMessage.Content.Calling) = MessageContent.Calling(
+        value = protoContent.value.content,
+        conversationId = protoContent.value.qualifiedConversationId?.let { idMapper.fromProtoModel(it) }
+    )
 
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
         Cleared(

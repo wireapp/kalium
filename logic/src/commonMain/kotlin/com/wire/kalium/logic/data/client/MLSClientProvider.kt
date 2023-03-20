@@ -29,9 +29,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -41,13 +44,14 @@ class MLSClientProviderImpl(
     private val rootKeyStorePath: String,
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val passphraseStorage: PassphraseStorage
+    private val passphraseStorage: PassphraseStorage,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
 
-    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
-        val currentClientId = clientId ?: currentClientIdProvider().fold({ return Either.Left(it) }, { it })
+    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
+        val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
         val location = "$rootKeyStorePath/${currentClientId.value}".also {
@@ -55,14 +59,14 @@ class MLSClientProviderImpl(
             FileUtil.mkDirs(it)
         }
 
-        return mlsClient?.let {
+        return@withContext mlsClient?.let {
             Either.Right(it)
         } ?: run {
             val newClient = mlsClient(
                 cryptoUserId,
                 currentClientId,
                 location,
-                SecurityHelper(passphraseStorage).mlsDBSecret(userId)
+                SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
             )
             mlsClient = newClient
             Either.Right(newClient)

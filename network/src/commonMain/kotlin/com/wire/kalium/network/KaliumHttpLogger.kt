@@ -21,7 +21,7 @@ package com.wire.kalium.network
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
-import com.wire.kalium.network.utils.toJsonElement
+import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.request.HttpRequest

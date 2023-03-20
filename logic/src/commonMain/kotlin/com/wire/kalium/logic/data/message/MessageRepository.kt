@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -39,8 +40,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -54,7 +53,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
@@ -99,10 +97,8 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant>
-    suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
-    suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
@@ -110,7 +106,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<List<LocalNotificationConversation>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotificationConversation>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -136,9 +132,8 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
-    ): Either<CoreFailure, List<Message>>
+    ): Either<CoreFailure, List<String>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -157,6 +152,17 @@ interface MessageRepository {
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
+
+    /**
+     * updates the message status to [MessageEntity.Status.SENT] and the server date to [serverDate]
+     * also mark other pending messages and add millis to their date
+     */
+    suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -191,31 +197,23 @@ class MessageDataSource(
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getNotificationMessage(messageSizePerConversation: Int): Flow<List<LocalNotificationConversation>> =
-        messageDAO.getNotificationMessage(
-            listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.RESTRICTED_ASSET,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.KNOCK,
-                MessageEntity.ContentType.MISSED_CALL
-            )
-        ).mapLatest {
-            it.groupBy { item ->
-                item.conversationId
-            }.map { (conversationId, messages) ->
-                LocalNotificationConversation(
-                    // todo: needs some clean up!
-                    id = conversationId.toModel(),
-                    conversationName = messages.first().conversationName ?: "",
-                    messages = messages.take(messageSizePerConversation)
-                        .map { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
-                    isOneToOneConversation = messages.first().conversationType?.let { type ->
-                        type == ConversationEntity.Type.ONE_ON_ONE
-                    } ?: false
-                )
-            }
+    override suspend fun getNotificationMessage(
+        messageSizePerConversation: Int
+    ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
+        messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
+            notificationEntities.groupBy { it.conversationId }
+                .map { (conversationId, messages) ->
+                    LocalNotificationConversation(
+                        // todo: needs some clean up!
+                        id = conversationId.toModel(),
+                        conversationName = messages.first().conversationName ?: "",
+                        messages = messages.take(messageSizePerConversation)
+                            .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
+                    )
+                }
         }
+    }
 
     @DelicateKaliumApi(
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
@@ -258,14 +256,7 @@ class MessageDataSource(
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-                .firstOrNull()?.run {
-                    messageMapper.fromEntityToMessage(this)
-                }
-        }.onSuccess {
-            Either.Right(it)
-        }.onFailure {
-            Either.Left(it)
-        }
+        }.map { messageMapper.fromEntityToMessage(it) }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -308,26 +299,12 @@ class MessageDataSource(
             )
         }
 
-    override suspend fun getInstantOfLatestMessageFromOtherUsers(): Either<StorageFailure, Instant> =
-        wrapStorageRequest { messageDAO.getLatestMessageFromOtherUsers() }
-            .map { it.date }
-
-    override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
-        wrapStorageRequest {
-            messageDAO.updateMessageDate(date, messageUuid, conversationId.toDao())
-        }
-
-    override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
-        wrapStorageRequest {
-            messageDAO.updateMessagesAddMillisToDate(millis, conversationId.toDao(), MessageEntity.Status.PENDING)
-        }
-
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> {
-        val recipientMap = envelope.recipients.associate { recipientEntry ->
+        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }
@@ -343,7 +320,11 @@ class MessageDataSource(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
-                    recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
+                    recipientMap,
+                    true,
+                    MessagePriority.HIGH,
+                    false,
+                    envelope.dataBlob?.data,
                     messageOption
                 ),
                 conversationId.toApi(),
@@ -376,14 +357,12 @@ class MessageDataSource(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        date: String,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
         messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
             conversationId.toDao(),
-            date,
             visibility.map { it.toEntityVisibility() }
-        ).map(messageMapper::fromEntityToMessage)
+        )
     }
 
     override suspend fun updateTextMessage(
@@ -431,5 +410,19 @@ class MessageDataSource(
     ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
             ?.let { receiptModeMapper.fromEntityToModel(it) }
+    }
+
+    override suspend fun promoteMessageToSentUpdatingServerTime(
+        conversationId: ConversationId,
+        messageUuid: String,
+        serverDate: Instant,
+        millis: Long
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.promoteMessageToSentUpdatingServerTime(
+            conversationId.toDao(),
+            messageUuid,
+            serverDate,
+            millis
+        )
     }
 }

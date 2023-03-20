@@ -50,7 +50,7 @@ private class ConversationMapper {
                 mls_group_id,
                 mls_group_state,
                 mls_epoch,
-                mls_last_keying_material_update_date.epochSeconds,
+                mls_last_keying_material_update_date,
                 mls_cipher_suite
             ),
             isCreator = isCreator,
@@ -82,6 +82,52 @@ private class ConversationMapper {
         )
     }
 
+    @Suppress("LongParameterList")
+    fun toModel(
+        qualifiedId: QualifiedIDEntity,
+        name: String?,
+        type: ConversationEntity.Type,
+        teamId: String?,
+        mlsGroupId: String?,
+        mlsGroupState: ConversationEntity.GroupState,
+        mlsEpoch: Long,
+        mlsProposalTimer: String?,
+        protocol: ConversationEntity.Protocol,
+        mutedStatus: ConversationEntity.MutedStatus,
+        mutedTime: Long,
+        creatorId: String,
+        lastModifiedDate: Instant,
+        lastNotifiedDate: Instant?,
+        lastReadDate: Instant,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>,
+        mlsLastKeyingMaterialUpdateDate: Instant,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+        receiptMode: ConversationEntity.ReceiptMode
+    ) = ConversationEntity(
+        id = qualifiedId,
+        name = name,
+        type = type,
+        teamId = teamId,
+        protocolInfo = mapProtocolInfo(
+            protocol,
+            mlsGroupId,
+            mlsGroupState,
+            mlsEpoch,
+            mlsLastKeyingMaterialUpdateDate,
+            mlsCipherSuite
+        ),
+        mutedStatus = mutedStatus,
+        mutedTime = mutedTime,
+        creatorId = creatorId,
+        lastNotificationDate = lastNotifiedDate,
+        lastModifiedDate = lastModifiedDate,
+        lastReadDate = lastReadDate,
+        access = accessList,
+        accessRole = accessRoleList,
+        receiptMode = receiptMode
+    )
+
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
             ConversationViewEntity(
@@ -94,7 +140,7 @@ private class ConversationMapper {
                     mls_group_id,
                     mls_group_state,
                     mls_epoch,
-                    mls_last_keying_material_update_date.epochSeconds,
+                    mls_last_keying_material_update_date,
                     mls_cipher_suite
                 ),
                 isCreator = isCreator,
@@ -128,12 +174,12 @@ private class ConversationMapper {
     }
 
     @Suppress("LongParameterList")
-    private fun mapProtocolInfo(
+    fun mapProtocolInfo(
         protocol: ConversationEntity.Protocol,
         mlsGroupId: String?,
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
-        mlsLastKeyingMaterialUpdate: Long,
+        mlsLastKeyingMaterialUpdate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
@@ -141,7 +187,7 @@ private class ConversationMapper {
                 mlsGroupId ?: "",
                 mlsGroupState,
                 mlsEpoch.toULong(),
-                Instant.fromEpochSeconds(mlsLastKeyingMaterialUpdate),
+                mlsLastKeyingMaterialUpdate,
                 mlsCipherSuite
             )
 
@@ -235,16 +281,16 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationGroupState(groupState, groupId)
         }
 
-    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationModifiedDate(date.toInstant(), qualifiedID)
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.updateConversationNotificationsDateWithTheLastMessage(qualifiedID)
     }
 
-    override suspend fun updateAllConversationsNotificationDate(date: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateAllNotifiedConversationsNotificationsDate(date)
+    override suspend fun updateAllConversationsNotificationDate() = withContext(coroutineContext) {
+        conversationQueries.updateAllNotifiedConversationsNotificationsDate()
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {
@@ -271,6 +317,19 @@ class ConversationDAOImpl(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
+    override suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+        return conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(coroutineContext)
+    }
+
+    // todo: find a better naming for views vs tables queries
+    override suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity? =
+        withContext(coroutineContext) {
+            conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel).executeAsOneOrNull()
+        }
+
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
         withContext(coroutineContext) {
             conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
@@ -285,6 +344,11 @@ class ConversationDAOImpl(
             .flowOn(coroutineContext)
             .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
+
+    override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo =
+        withContext(coroutineContext) {
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOne()
+        }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
@@ -326,12 +390,13 @@ class ConversationDAOImpl(
         }
 
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
-            memberQueries.transaction {
-                for (member: Member in memberList) {
-                    userQueries.insertOrIgnoreUserId(member.user)
-                    memberQueries.insertMember(member.user, conversationID, member.role)
-                }
+        memberQueries.transaction {
+            for (member: Member in memberList) {
+                userQueries.insertOrIgnoreUserId(member.user)
+                memberQueries.insertMember(member.user, conversationID, member.role)
             }
+        }
+
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
         withContext(coroutineContext) {
             getConversationByGroupID(groupId).firstOrNull()?.let {
@@ -397,14 +462,6 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 
-    override suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectConversationsWithUnnotifiedMessages()
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToList()
-            .map { it.map(conversationMapper::toModel) }
-    }
-
     override suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
@@ -413,8 +470,8 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) = withContext(coroutineContext) {
-        conversationQueries.updateConversationReadDate(date.toInstant(), conversationID)
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+        conversationQueries.updateConversationReadDate(date, conversationID)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
@@ -485,4 +542,12 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
+    override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(link, conversationId)
+    }
+
+    override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
+        conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().map {
+            it.executeAsOne().guest_room_link
+        }.flowOn(coroutineContext)
 }
