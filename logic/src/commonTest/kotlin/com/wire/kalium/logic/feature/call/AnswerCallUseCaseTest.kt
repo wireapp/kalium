@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -38,12 +39,16 @@ class AnswerCallUseCaseTest {
     @Mock
     private val callManager = mock(classOf<CallManager>())
 
+    @Mock
+    private val kaliumConfigs = mock(classOf<KaliumConfigs>())
+
     private lateinit var answerCallUseCase: AnswerCallUseCase
 
     @BeforeTest
     fun setUp() {
         answerCallUseCase = AnswerCallUseCaseImpl(
-            callManager = lazy { callManager }
+            callManager = lazy { callManager },
+            kaliumConfigs = kaliumConfigs
         )
     }
 
@@ -56,7 +61,7 @@ class AnswerCallUseCaseTest {
 
         given(callManager)
             .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId))
+            .whenInvokedWith(eq(conversationId), eq(false))
             .thenDoNothing()
 
         answerCallUseCase.invoke(
@@ -65,7 +70,7 @@ class AnswerCallUseCaseTest {
 
         verify(callManager)
             .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId))
+            .with(eq(conversationId), eq(false))
             .wasInvoked(exactly = once)
     }
 }

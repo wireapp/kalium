@@ -1121,7 +1121,8 @@ class UserSessionScope internal constructor(
             syncManager,
             qualifiedIdMapper,
             clientIdProvider,
-            userConfigRepository
+            userConfigRepository,
+            kaliumConfigs
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

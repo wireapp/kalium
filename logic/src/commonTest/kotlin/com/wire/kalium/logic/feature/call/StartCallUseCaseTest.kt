@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -108,10 +108,10 @@ class StartCallUseCaseTest {
         val syncManager = mock(classOf<SyncManager>())
 
         @Mock
-        val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
+        val kaliumConfigs = mock(classOf<KaliumConfigs>())
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager
+            lazy { callManager }, syncManager, kaliumConfigs
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
