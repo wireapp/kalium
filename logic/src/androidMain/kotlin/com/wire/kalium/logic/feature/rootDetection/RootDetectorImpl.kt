@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.rootDetection
 
+import android.annotation.SuppressLint
 import java.io.File
 
 actual class RootDetectorImpl actual constructor() : RootDetector {
@@ -11,7 +12,8 @@ actual class RootDetectorImpl actual constructor() : RootDetector {
         return !releaseTagsExist || !otacertsExist || canRunSu
     }
 
-    private fun getSystemProperty(key: String): List<String>  {
+    @SuppressLint("PrivateApi")
+    private fun getSystemProperty(key: String): List<String> {
         val result = Class.forName("android.os.SystemProperties")
             .getMethod("get", List::class.java as Class<out List<String>>)
             .invoke(null, key) as? List<String>
@@ -19,6 +21,7 @@ actual class RootDetectorImpl actual constructor() : RootDetector {
         return result ?: emptyList()
     }
 
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     private fun runCommand(command: String): Boolean =
         try {
             Runtime.getRuntime().exec(command).exitValue() == 0

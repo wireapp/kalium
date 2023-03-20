@@ -16,9 +16,10 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+package com.wire.kalium.logic.feature.rootDetection
+
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.rootDetection.RootDetector
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -38,19 +39,18 @@ import com.wire.kalium.logic.kaliumLogger
 interface CheckSystemIntegrityUseCase {
 
     sealed class Result {
-        object Success: Result()
-        object Failed: Result()
+        object Success : Result()
+        object Failed : Result()
     }
 
-    suspend fun invoke():  Result
-
+    suspend fun invoke(): Result
 }
 
 class CheckSystemIntegrityUseCaseImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val rootDetector: RootDetector,
     private val sessionRepository: SessionRepository,
-): CheckSystemIntegrityUseCase {
+) : CheckSystemIntegrityUseCase {
 
     override suspend fun invoke(): CheckSystemIntegrityUseCase.Result {
         return if (kaliumConfigs.wipeOnRootedDevice && rootDetector.isSystemRooted()) {

@@ -4,4 +4,4 @@ interface RootDetector {
     fun isSystemRooted(): Boolean
 }
 
-expect class RootDetectorImpl(): RootDetector
+expect class RootDetectorImpl() : RootDetector
