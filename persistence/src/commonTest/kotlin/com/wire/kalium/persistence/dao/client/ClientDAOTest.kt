@@ -260,6 +260,21 @@ class ClientDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenVerifiedClient_whenINsertingTheSameIdAgian_thenVerificationStatusIsNotChanges() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+
+        clientDAO.insertClient(insertedClient)
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+
+        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, true)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+
+        clientDAO.insertClient(insertedClient)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
