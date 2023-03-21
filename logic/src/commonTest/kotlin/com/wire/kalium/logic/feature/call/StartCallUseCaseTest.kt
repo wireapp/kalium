@@ -39,6 +39,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
+private val kaliumConfigs = KaliumConfigs()
+
 class StartCallUseCaseTest {
 
     @Test
@@ -53,7 +55,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(kaliumConfigs.forceConstantBitrateCalls))
             .wasInvoked(once)
     }
 
@@ -82,7 +84,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(any(), any(), any())
+            .with(any(), any(), eq(kaliumConfigs.forceConstantBitrateCalls))
             .wasNotInvoked()
     }
 
@@ -101,13 +103,12 @@ class StartCallUseCaseTest {
 
     private class Arrangement {
 
+
         @Mock
         val callManager = configure(mock(classOf<CallManager>())) { stubsUnitByDefault = true }
 
         @Mock
         val syncManager = mock(classOf<SyncManager>())
-
-        val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager }, syncManager, kaliumConfigs

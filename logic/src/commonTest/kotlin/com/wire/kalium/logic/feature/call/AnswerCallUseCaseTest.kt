@@ -60,7 +60,7 @@ class AnswerCallUseCaseTest {
 
         given(callManager)
             .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(kaliumConfigs.forceConstantBitrateCalls))
             .thenDoNothing()
 
         answerCallUseCase.invoke(
@@ -69,7 +69,7 @@ class AnswerCallUseCaseTest {
 
         verify(callManager)
             .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(false))
+            .with(eq(conversationId), eq(kaliumConfigs.forceConstantBitrateCalls))
             .wasInvoked(exactly = once)
     }
 }
