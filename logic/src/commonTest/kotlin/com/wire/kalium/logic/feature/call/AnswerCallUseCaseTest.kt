@@ -39,8 +39,7 @@ class AnswerCallUseCaseTest {
     @Mock
     private val callManager = mock(classOf<CallManager>())
 
-    @Mock
-    private val kaliumConfigs = mock(classOf<KaliumConfigs>())
+    private val kaliumConfigs = KaliumConfigs()
 
     private lateinit var answerCallUseCase: AnswerCallUseCase
 
