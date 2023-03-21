@@ -39,8 +39,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-private val kaliumConfigs = KaliumConfigs()
-
 class StartCallUseCaseTest {
 
     @Test
@@ -55,7 +53,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(kaliumConfigs.forceConstantBitrateCalls))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
             .wasInvoked(once)
     }
 
@@ -84,7 +82,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(any(), any(), eq(kaliumConfigs.forceConstantBitrateCalls))
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -101,8 +99,23 @@ class StartCallUseCaseTest {
         assertIs<StartCallUseCase.Result.SyncFailure>(result)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
+        val conversationId = TestConversation.ID
 
+        val (arrangement, startCall) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .arrangeWithCBR()
+
+        startCall.invoke(conversationId, CallType.AUDIO)
+
+        verify(arrangement.callManager)
+            .suspendFunction(arrangement.callManager::startCall)
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
+            .wasInvoked(once)
+    }
+
+    private class Arrangement {
 
         @Mock
         val callManager = configure(mock(classOf<CallManager>())) { stubsUnitByDefault = true }
@@ -110,8 +123,14 @@ class StartCallUseCaseTest {
         @Mock
         val syncManager = mock(classOf<SyncManager>())
 
+        private val kaliumConfigs = KaliumConfigs()
+
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager }, syncManager, kaliumConfigs
+        )
+
+        private val startCallUseCaseWithCBR = StartCallUseCase(
+            lazy { callManager }, syncManager, KaliumConfigs(forceConstantBitrateCalls = true)
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -126,6 +145,7 @@ class StartCallUseCaseTest {
         }
 
         fun arrange() = this to startCallUseCase
+        fun arrangeWithCBR() = this to startCallUseCaseWithCBR
 
     }
 }

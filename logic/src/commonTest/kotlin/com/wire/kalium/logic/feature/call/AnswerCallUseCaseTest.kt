@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mock
@@ -31,7 +30,6 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
@@ -39,28 +37,19 @@ class AnswerCallUseCaseTest {
     @Mock
     private val callManager = mock(classOf<CallManager>())
 
-    private val kaliumConfigs = KaliumConfigs()
-
-    private lateinit var answerCallUseCase: AnswerCallUseCase
-
-    @BeforeTest
-    fun setUp() {
-        answerCallUseCase = AnswerCallUseCaseImpl(
-            callManager = lazy { callManager },
-            kaliumConfigs = kaliumConfigs
-        )
-    }
-
     @Test
-    fun givenAConversationId_whenAnsweringACallOfThatConversation_thenCallManagerIsCalledWithTheCorrectId() = runTest {
-        val conversationId = ConversationId(
-            value = "value1",
-            domain = "domain1"
+    fun givenCbrEnabled_whenAnsweringACall_thenInvokeAnswerCallWithCbrOnce() = runTest {
+        val isCbrEnabled = true
+        val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
+
+        val answerCallUseCase = AnswerCallUseCaseImpl(
+            callManager = lazy { callManager },
+            kaliumConfigs = configs
         )
 
         given(callManager)
             .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId), eq(kaliumConfigs.forceConstantBitrateCalls))
+            .whenInvokedWith(eq(conversationId), eq(configs.forceConstantBitrateCalls))
             .thenDoNothing()
 
         answerCallUseCase.invoke(
@@ -69,7 +58,39 @@ class AnswerCallUseCaseTest {
 
         verify(callManager)
             .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(kaliumConfigs.forceConstantBitrateCalls))
+            .with(eq(conversationId), eq(isCbrEnabled))
             .wasInvoked(exactly = once)
+    }
+
+
+    @Test
+    fun givenACall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest {
+        val configs = KaliumConfigs()
+
+        val answerCallUseCase = AnswerCallUseCaseImpl(
+            callManager = lazy { callManager },
+            kaliumConfigs = configs
+        )
+
+        given(callManager)
+            .suspendFunction(callManager::answerCall)
+            .whenInvokedWith(eq(conversationId), eq(false))
+            .thenDoNothing()
+
+        answerCallUseCase.invoke(
+            conversationId = conversationId
+        )
+
+        verify(callManager)
+            .suspendFunction(callManager::answerCall)
+            .with(eq(conversationId), eq(false))
+            .wasInvoked(exactly = once)
+    }
+
+    companion object {
+        val conversationId = ConversationId(
+            value = "value1",
+            domain = "domain1"
+        )
     }
 }
