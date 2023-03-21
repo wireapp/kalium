@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic
 
-import CheckSystemIntegrityUseCase
-import CheckSystemIntegrityUseCaseImpl
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
