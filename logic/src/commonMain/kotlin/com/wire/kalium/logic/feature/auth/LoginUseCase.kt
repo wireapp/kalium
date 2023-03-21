@@ -127,7 +127,6 @@ internal class LoginUseCaseImpl internal constructor(
                     password = password,
                     label = cookieLabel,
                     shouldPersistClient = shouldPersistClient,
-                    secondFactorVerificationCode = secondFactorVerificationCode,
                 )
             }
 

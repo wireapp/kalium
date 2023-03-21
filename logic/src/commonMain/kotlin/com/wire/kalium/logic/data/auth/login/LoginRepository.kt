@@ -42,8 +42,7 @@ internal interface LoginRepository {
         handle: String,
         password: String,
         label: String?,
-        shouldPersistClient: Boolean,
-        secondFactorVerificationCode: String? = null,
+        shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
@@ -70,10 +69,9 @@ internal class LoginRepositoryImpl internal constructor(
         password: String,
         label: String?,
         shouldPersistClient: Boolean,
-        secondFactorVerificationCode: String?,
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
         login(
-            LoginApi.LoginParam.LoginWithHandle(handle, password, label, secondFactorVerificationCode),
+            LoginApi.LoginParam.LoginWithHandle(handle, password, label),
             shouldPersistClient
         )
 
