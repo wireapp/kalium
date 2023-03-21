@@ -60,7 +60,7 @@ class CheckSystemIntegrityUseCaseImpl(
                     kaliumLogger.w("Successfully deleted all account data")
                 }
                 .onFailure {
-                    kaliumLogger.w("Failure deleting account data: ${it}")
+                    kaliumLogger.w("Failure deleting account data: $it")
                 }
 
             CheckSystemIntegrityUseCase.Result.Failed
