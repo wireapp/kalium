@@ -129,7 +129,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                isSelfMessage = true
             )
 
             uploadAssetAndUpdateMessage(message, brokenState)

@@ -862,7 +862,8 @@ class UserSessionScope internal constructor(
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             messageEncoder,
-            receiptMessageHandler
+            receiptMessageHandler,
+            userId
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl

@@ -1,8 +1,14 @@
-import com.wire.kalium.persistence.dao.client.ClientTypeEntity;
-import kotlinx.datetime.Instant;
+CREATE TABLE UnreadEvent (
+      id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      conversation_id TEXT NOT NULL,
+      creation_date INTEGER NOT NULL,
 
-ALTER TABLE Client ADD COLUMN is_verified INTEGER AS Boolean NOT NULL DEFAULT 0;
-ALTER TABLE Client ADD COLUMN client_type TEXT AS ClientTypeEntity DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN registration_date INTEGER AS Instant DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN label TEXT DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN model TEXT DEFAULT NULL;
+    FOREIGN KEY (id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id, conversation_id)
+);
+
+INSERT INTO UnreadEvent(id, type, conversation_id, creation_date)
+SELECT id, 'MESSAGE', conversationId, date FROM MessagePreview AS message
+WHERE isUnread AND isSelfMessage = 0
+AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
