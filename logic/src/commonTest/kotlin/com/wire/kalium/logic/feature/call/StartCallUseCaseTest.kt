@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -99,6 +99,22 @@ class StartCallUseCaseTest {
         assertIs<StartCallUseCase.Result.SyncFailure>(result)
     }
 
+    @Test
+    fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
+        val conversationId = TestConversation.ID
+
+        val (arrangement, startCall) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .arrangeWithCBR()
+
+        startCall.invoke(conversationId, CallType.AUDIO)
+
+        verify(arrangement.callManager)
+            .suspendFunction(arrangement.callManager::startCall)
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -107,11 +123,14 @@ class StartCallUseCaseTest {
         @Mock
         val syncManager = mock(classOf<SyncManager>())
 
-        @Mock
-        val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
+        private val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager
+            lazy { callManager }, syncManager, kaliumConfigs
+        )
+
+        private val startCallUseCaseWithCBR = StartCallUseCase(
+            lazy { callManager }, syncManager, KaliumConfigs(forceConstantBitrateCalls = true)
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -126,6 +145,7 @@ class StartCallUseCaseTest {
         }
 
         fun arrange() = this to startCallUseCase
+        fun arrangeWithCBR() = this to startCallUseCaseWithCBR
 
     }
 }
