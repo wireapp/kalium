@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.datetime.Instant
 
 object TestClient {
     val CLIENT_ID = ClientId("test")
@@ -30,14 +31,12 @@ object TestClient {
     val CLIENT = Client(
         CLIENT_ID,
         ClientType.Permanent,
-        "time",
-        null,
-        null,
-        "label",
-        "cookie",
-        null,
-        "model",
-        emptyMap()
+        Instant.DISTANT_PAST,
+        deviceType = null,
+        model = null,
+        label = "label",
+        isVerified = false,
+        isValid = true
     )
 
     val SELF_USER_ID = UserId("self-user-id", "domain")

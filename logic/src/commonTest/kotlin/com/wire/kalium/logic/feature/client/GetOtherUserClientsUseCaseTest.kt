@@ -18,10 +18,11 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
-import com.wire.kalium.logic.data.client.OtherUserClient
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -32,50 +33,56 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
-class GetOtherUserClientsUseCaseTest {
+class ObserveClientsByUserIdUseCaseTest {
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
-        val otherUserClients = listOf(
-            OtherUserClient(DeviceType.Phone, "111", true), OtherUserClient(DeviceType.Desktop, "2222", true)
+        val clients = listOf(
+            Client(
+                id = ClientId("1111"),
+                type = ClientType.Permanent,
+                registrationTime = Instant.DISTANT_FUTURE,
+                deviceType = DeviceType.Desktop,
+                label = null,
+                model = "Mac ox",
+                isVerified = false,
+                isValid = true
+            ),
+            Client(
+                id = ClientId("2222"),
+                type = ClientType.Temporary,
+                registrationTime = Instant.DISTANT_FUTURE,
+                deviceType = DeviceType.Phone,
+                label = null,
+                model = "Mac ox",
+                isVerified = false,
+                isValid = true
+            )
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
-            .withSuccessfulResponse(otherUserClients)
+            .withSuccessfulResponse(clients)
             .arrange()
 
         // When
-        val result = getOtherUsersClientsUseCase.invoke(userId)
+        val result = getOtherUsersClientsUseCase(userId).first()
+
+        assertIs<ObserveClientsByUserIdUseCase.Result.Success>(result)
+        assertEquals(clients, result.clients)
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::getClientsByUserId).with(any())
+            .suspendFunction(arrangement.clientRepository::observeClientsByUserId)
+            .with(any())
             .wasInvoked(exactly = once)
-
-        assertTrue(result is GetOtherUserClientsResult.Success)
-    }
-
-    @Test
-    fun givenRepositoryCallFailWithInvaliUserId_thenNoUserFoundReturned() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
-            .withGetOtherUserClientsErrorResponse()
-            .arrange()
-
-        // When
-        val result = getOtherUsersClientsUseCase.invoke(userId)
-
-        // Then
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::getClientsByUserId).with(any())
-            .wasInvoked(exactly = once)
-
-        assertTrue(result is GetOtherUserClientsResult.Failure.UserNotFound)
     }
 
     private class Arrangement {
@@ -83,27 +90,14 @@ class GetOtherUserClientsUseCaseTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
-        val getOtherUserClientsUseCaseImpl = GetOtherUserClientsUseCaseImpl(clientRepository)
+        val getOtherUserClientsUseCaseImpl = ObserveClientsByUserIdUseCase(clientRepository)
 
-        fun withSuccessfulResponse(expectedResponse: List<OtherUserClient>): Arrangement {
+        fun withSuccessfulResponse(expectedResponse: List<Client>) = apply {
             given(clientRepository)
-                .suspendFunction(clientRepository::getClientsByUserId).whenInvokedWith(any())
-                .thenReturn(Either.Right(expectedResponse))
-
-            given(clientRepository)
-                .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
+                .suspendFunction(clientRepository::observeClientsByUserId)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            return this
+                .thenReturn(flowOf(Either.Right(expectedResponse)))
         }
-
-        fun withGetOtherUserClientsErrorResponse(): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::getClientsByUserId).whenInvokedWith(any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-            return this
-        }
-
         fun arrange() = this to getOtherUserClientsUseCaseImpl
     }
 }

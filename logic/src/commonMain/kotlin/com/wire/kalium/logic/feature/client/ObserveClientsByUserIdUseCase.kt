@@ -19,34 +19,26 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * Use case to fetch all the other user clients (devices) information from the local db for specific user
  */
-interface GetOtherUserClientsUseCase {
-    suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult
-}
-
-internal class GetOtherUserClientsUseCaseImpl(
+class ObserveClientsByUserIdUseCase(
     private val clientRepository: ClientRepository
-) : GetOtherUserClientsUseCase {
-    override suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult =
-        clientRepository.getClientsByUserId(userId).fold({
-            GetOtherUserClientsResult.Failure.UserNotFound
-        }, {
-            GetOtherUserClientsResult.Success(it)
-        })
-}
+) {
+    suspend operator fun invoke(userId: UserId): Flow<Result> =
+        clientRepository.observeClientsByUserId(userId).map { clients ->
+            clients.fold(Result::Failure, Result::Success)
+        }
 
-sealed class GetOtherUserClientsResult {
-    class Success(val otherUserClients: List<OtherUserClient>) : GetOtherUserClientsResult()
-
-    sealed class Failure : GetOtherUserClientsResult() {
-        object UserNotFound : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+    sealed class Result {
+        class Success(val clients: List<Client>) : Result()
+        class Failure(val genericFailure: CoreFailure) : Result()
     }
 }
