@@ -45,28 +45,28 @@ jobs:
               run: |
                   ./gradlew :samples:compileDebugSources
 
-            # - name: AVD cache
-            #   uses: actions/cache@v3
-            #   id: avd-cache
-            #   with:
-            #       path: |
-            #           ~/.android/avd/*
-            #           ~/.android/adb*
-            #       key: avd-${{ matrix.api-level }}
+             - name: AVD cache
+               uses: actions/cache@v3
+               id: avd-cache
+               with:
+                   path: |
+                       ~/.android/avd/*
+                       ~/.android/adb*
+                   key: avd-${{ matrix.api-level }}
 
-            # - name: Create AVD and generate snapshot for caching
-            #   if: steps.avd-cache.outputs.cache-hit != 'true'
-            #   uses: reactivecircus/android-emulator-runner@v2.27.0
-            #   with:
-            #       api-level: ${{ matrix.api-level }}
-            #       force-avd-creation: false
-            #       target: google_apis
-            #       emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-            #       cores: 4
-            #       ram-size: 4096M
-            #       heap-size: 2048M
-            #       disable-animations: false
-            #       script: echo "Generated AVD snapshot for caching."
+             - name: Create AVD and generate snapshot for caching
+               if: steps.avd-cache.outputs.cache-hit != 'true'
+               uses: reactivecircus/android-emulator-runner@v2.27.0
+               with:
+                   api-level: ${{ matrix.api-level }}
+                   force-avd-creation: false
+                   target: google_apis
+                   emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+                   cores: 4
+                   ram-size: 4096M
+                   heap-size: 2048M
+                   disable-animations: false
+                   script: echo "Generated AVD snapshot for caching."
 
             - name: Android Instrumentation Tests
               uses: reactivecircus/android-emulator-runner@v2.27.0
