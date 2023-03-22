@@ -162,10 +162,16 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
+import com.wire.kalium.logic.feature.message.MLSMessageCreator
+import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
+import com.wire.kalium.logic.feature.message.SessionEstablisher
+import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -545,6 +551,21 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
+            userId,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+        )
+
+    private val sessionEstablisher: SessionEstablisher
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
+
+    private val messageEnvelopeCreator: MessageEnvelopeCreator
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider, selfUserId = userId
+        )
+
+    private val mlsMessageCreator: MLSMessageCreator
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider, selfUserId = userId
         )
 
     private val messageSendingScheduler: MessageSendingScheduler
@@ -921,7 +942,8 @@ class UserSessionScope internal constructor(
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
             authenticatedDataSourceSet.proteusClientProvider,
-            userStorage.database.prekeyDAO
+            userStorage.database.prekeyDAO,
+            userStorage.database.clientDAO
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -1010,7 +1032,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            userStorage,
             this,
         )
     val messages: MessageScope
@@ -1033,7 +1054,6 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            applicationMessageHandler,
             userStorage,
             userPropertyRepository,
             incrementalSyncRepository,

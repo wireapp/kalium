@@ -23,7 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -32,8 +32,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -60,12 +63,19 @@ interface ClientRepository {
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
-    suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
+    suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
+
+    suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -73,9 +83,10 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
+    private val selfUserID: UserId,
+    private val clientApi: ClientApi,
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -132,14 +143,29 @@ class ClientDataSource(
         return clientRemoteRepository.deleteClient(param)
     }
 
-    // TODO(self-device-list): after fetch save list of self client in the db
+    /**
+     * fetches the clients from the backend and stores them in the database
+     */
     override suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>> {
-        return clientRemoteRepository.fetchSelfUserClients()
+        return wrapApiRequest { clientApi.fetchSelfUserClient() }
+            .onSuccess { clientList ->
+                val selfUserIdDTO = selfUserID.toApi()
+                val list = clientList.map { clientMapper.toInsertClientParam(it, selfUserIdDTO) }
+                // when calling this function the first time after tooManyClients error
+                // this will fail because self user is not in the database
+                // that is why in  clientDAO.insertClientsAndRemoveRedundant user id is inserted first
+                wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(list) }
+            }.map {
+                // TODO: mapping directly from the api to the domain model is not ideal,
+                //  and the verification status is not correctly reflected
+                it.map { clientMapper.fromClientResponse(it) }
+            }
     }
 
-    override suspend fun clientInfo(clientId: ClientId): Either<NetworkFailure, Client> {
-        return clientRemoteRepository.fetchClientInfo(clientId)
-    }
+    override suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>> =
+        clientDAO.observeClient(userId.toDao(), clientId.value)
+            .map { it?.let { clientMapper.fromClientEntity(it) } }
+            .wrapStorageRequest()
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
@@ -155,10 +181,8 @@ class ClientDataSource(
         }
 
     override suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
-        userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { InsertClientParam(userEntity, it.value, null) }.let { clientEntityList ->
-                wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
-            }
+        clientMapper.toInsertClientParam(userId, clients).let { clientEntityList ->
+            wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
         }
 
     override suspend fun storeUserClientListAndRemoveRedundantClients(
@@ -174,4 +198,17 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
+
+    override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =
+        clientDAO.observeClientsByUserId(userId.toDao())
+            .map { it.map { clientMapper.fromClientEntity(it) } }
+            .wrapStorageRequest()
+
+    override suspend fun updateClientVerificationStatus(
+        userId: UserId,
+        clientId: ClientId,
+        verified: Boolean
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
+    }
 }

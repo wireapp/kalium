@@ -15,12 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.cryptography
 
-package com.wire.kalium.logic.data.location
-
-import com.wire.kalium.network.api.base.model.LocationResponse
-
-class LocationMapper {
-    fun fromLocationResponse(locationResponse: LocationResponse): Location =
-        with(locationResponse) { Location(latitude = latitude, longitude = longitude) }
-}
+// it had to be junit.Ignore because
+// Right-hand side of actual type alias should be a class, not another type alias
+actual typealias IgnoreJvm = org.junit.Ignore

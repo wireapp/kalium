@@ -37,6 +37,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -47,7 +48,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenValidClientIsRetained_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
@@ -76,7 +77,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenInvalidClientIsRetained_whenRegisteringAClient_thenClearDataAndRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
@@ -110,7 +111,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenClientNotRetained_whenRegisteringAClient_thenRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
@@ -163,12 +164,14 @@ class GetOrRegisterClientUseCaseTest {
                 .whenInvoked()
                 .thenReturn(result)
         }
+
         fun withRegisterClientResult(result: RegisterClientResult) = apply {
             given(registerClientUseCase)
                 .suspendFunction(registerClientUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
+
         fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::clearRetainedClientId)
@@ -182,12 +185,14 @@ class GetOrRegisterClientUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
+
         fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
             given(verifyExistingClientUseCase)
                 .suspendFunction(verifyExistingClientUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
+
         fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
             given(upgradeCurrentSessionUseCase)
                 .suspendFunction(upgradeCurrentSessionUseCase::invoke)
