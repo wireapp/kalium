@@ -33,12 +33,15 @@ import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SelfClientsUseCaseTest {
 
     @Mock
@@ -47,11 +50,11 @@ class SelfClientsUseCaseTest {
     }
     @Mock
     private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
-    private lateinit var selfClientsUseCase: SelfClientsUseCase
+    private lateinit var fetchSelfClientsFromRemoteUseCase: FetchSelfClientsFromRemoteUseCase
 
     @BeforeTest
     fun setup() {
-        selfClientsUseCase = SelfClientsUseCaseImpl(clientRepository, provideClientId = currentClientIdProvider)
+        fetchSelfClientsFromRemoteUseCase = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, provideClientId = currentClientIdProvider)
         given(currentClientIdProvider)
             .suspendFunction(currentClientIdProvider::invoke)
             .whenInvoked()
@@ -65,7 +68,7 @@ class SelfClientsUseCaseTest {
             .coroutine { clientRepository.selfListOfClients() }
             .then { Either.Right(expected) }
 
-        val actual = selfClientsUseCase.invoke()
+        val actual = fetchSelfClientsFromRemoteUseCase.invoke()
         assertIs<SelfClientsResult.Success>(actual)
     }
 
@@ -73,15 +76,15 @@ class SelfClientsUseCaseTest {
     fun givenSelfListOfClientsSuccess_whenGettingListOfSelfClients_thenTheListIsSortedReverseChronologically() = runTest {
         // given
         val list = listOf(
-            CLIENT.copy(registrationTime = "2022.01.01"),
-            CLIENT.copy(registrationTime = "2022.01.02")
+            CLIENT.copy(registrationTime = Instant.parse("2021-05-12T10:52:02.671Z")),
+            CLIENT.copy(registrationTime = Instant.parse("2022-05-12T10:52:02.671Z"))
         )
         val sorted = listOf(list[1], list[0])
         given(clientRepository)
             .coroutine { clientRepository.selfListOfClients() }
             .then { Either.Right(list) }
         // when
-        val actual = (selfClientsUseCase.invoke() as SelfClientsResult.Success)
+        val actual = (fetchSelfClientsFromRemoteUseCase.invoke() as SelfClientsResult.Success)
         // then
         assertEquals(sorted, actual.clients)
     }
@@ -93,7 +96,7 @@ class SelfClientsUseCaseTest {
             .coroutine { clientRepository.selfListOfClients() }
             .then { Either.Left(expected) }
 
-        val actual = selfClientsUseCase.invoke()
+        val actual = fetchSelfClientsFromRemoteUseCase.invoke()
         assertIs<SelfClientsResult.Failure.Generic>(actual)
         assertEquals(expected, actual.genericFailure)
     }
@@ -102,14 +105,12 @@ class SelfClientsUseCaseTest {
         val CLIENT = Client(
             id = PlainId(value = "client_id_1"),
             type = ClientType.Permanent,
-            registrationTime = "2022.01.01",
-            location = null,
+            registrationTime = Instant.parse("2022-01-01T10:52:02.671Z"),
             deviceType = DeviceType.Desktop,
             label = null,
-            cookie = null,
-            capabilities = null,
             model = "Mac ox",
-            emptyMap()
+            isVerified = false,
+            isValid = true
         )
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),

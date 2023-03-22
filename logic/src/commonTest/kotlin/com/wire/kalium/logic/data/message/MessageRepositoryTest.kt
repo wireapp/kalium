@@ -353,7 +353,8 @@ class MessageRepositoryTest {
             senderUserId = TEST_USER_ID,
             senderClientId = TEST_CLIENT_ID,
             status = Message.Status.SENT,
-            editStatus = Message.EditStatus.NotEdited
+            editStatus = Message.EditStatus.NotEdited,
+            isSelfMessage = false
         )
     }
 }

@@ -82,14 +82,12 @@ class LoginRepositoryTest {
             password = TEST_PASSWORD,
             label = TEST_LABEL,
             shouldPersistClient = TEST_PERSIST_CLIENT,
-            secondFactorVerificationCode = TEST_SECOND_FACTOR_CODE
         )
 
         val expectedParam = LoginApi.LoginParam.LoginWithHandle(
             handle = TEST_HANDLE,
             password = TEST_PASSWORD,
             label = TEST_LABEL,
-            verificationCode = TEST_SECOND_FACTOR_CODE
         )
         verify(arrangement.loginApi)
             .suspendFunction(arrangement.loginApi::login)

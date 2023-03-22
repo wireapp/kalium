@@ -54,7 +54,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralNotificationsMan
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -80,7 +79,6 @@ class MessageScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
     private val userPropertyRepository: UserPropertyRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
@@ -93,7 +91,7 @@ class MessageScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(

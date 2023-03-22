@@ -83,7 +83,8 @@ internal class ApplicationMessageHandlerImpl(
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
     private val messageEncoder: MessageContentEncoder,
-    private val receiptMessageHandler: ReceiptMessageHandler
+    private val receiptMessageHandler: ReceiptMessageHandler,
+    private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
@@ -129,6 +130,7 @@ internal class ApplicationMessageHandlerImpl(
                             selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                         )
                     }
+                    isSelfMessage = senderUserId == selfUserId
                 )
                 processMessage(message)
             }
@@ -141,7 +143,8 @@ internal class ApplicationMessageHandlerImpl(
                     date = timestampIso,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    isSelfMessage = senderUserId == selfUserId
                 )
                 processSignaling(signalingMessage)
             }
@@ -300,7 +303,8 @@ internal class ApplicationMessageHandlerImpl(
             senderClientId = senderClientId,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = senderUserId == selfUserId
         )
         processMessage(message)
     }

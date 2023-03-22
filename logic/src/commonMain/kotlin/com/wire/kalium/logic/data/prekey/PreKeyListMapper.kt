@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 
 class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 
-    // TODO(testing): unit test to be created later
     fun toRemoteClientPreKeyInfoTo(
         clientPreKeyInfo: Map<UserId, List<ClientId>>
     ): Map<String, Map<String, List<String>>> =
