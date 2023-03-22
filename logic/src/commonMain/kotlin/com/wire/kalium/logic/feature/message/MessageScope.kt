@@ -135,6 +135,7 @@ class MessageScope internal constructor(
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
+            messageRepository,
             persistMessage,
             selfUserId,
             currentClientIdProvider,
@@ -216,8 +217,9 @@ class MessageScope internal constructor(
 
     val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
+            messageRepository,
             persistMessage,
-            userRepository,
+            selfUserId,
             currentClientIdProvider,
             slowSyncRepository,
             messageSender

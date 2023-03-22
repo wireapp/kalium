@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -123,7 +124,15 @@ class SendEditTextMessageUseCase internal constructor(
                         }
                 }
         }.onFailure {
-            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
+            when (it) {
+                is NetworkFailure.FederatedBackendFailure -> {
+                    kaliumLogger.i("Failed due to federation context availability.")
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, originalMessageId)
+                }
+                else -> {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
+                }
+            }
             if (it is CoreFailure.Unknown) {
                 kaliumLogger.e("There was an unknown error trying to send the edit message $it", it.rootCause)
                 it.rootCause?.printStackTrace()
