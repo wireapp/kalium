@@ -124,13 +124,13 @@ internal class ApplicationMessageHandlerImpl(
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
                     expectsReadConfirmation = content.expectsReadConfirmation,
+                    isSelfMessage = senderUserId == selfUserId,
                     expirationData = content.expiresAfterMillis?.let {
                         Message.ExpirationData(
                             expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
                             selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                         )
-                    },
-                    isSelfMessage = senderUserId == selfUserId
+                    }
                 )
                 processMessage(message)
             }
