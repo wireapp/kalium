@@ -39,5 +39,6 @@ data class KaliumConfigs(
     val developmentApiEnabled: Boolean = false,
     val guestRoomLink: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,
-    val wipeOnDeviceRemoval: Boolean = false
+    val wipeOnDeviceRemoval: Boolean = false,
+    val wipeOnRootedDevice: Boolean = false
 )

@@ -20,18 +20,28 @@ package com.wire.kalium.persistence.dao.client
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 data class Client(
     val userId: QualifiedIDEntity,
     val id: String,
     val deviceType: DeviceTypeEntity?,
-    val isValid: Boolean
+    val clientType: ClientTypeEntity?,
+    val isValid: Boolean,
+    val isVerified: Boolean,
+    val registrationDate: Instant?,
+    val label: String?,
+    val model: String?,
 )
 
 data class InsertClientParam(
     val userId: QualifiedIDEntity,
     val id: String,
-    val deviceType: DeviceTypeEntity?
+    val deviceType: DeviceTypeEntity?,
+    val clientType: ClientTypeEntity?,
+    val label: String?,
+    val registrationDate: Instant?,
+    val model: String?
 )
 
 enum class DeviceTypeEntity {
@@ -42,11 +52,19 @@ enum class DeviceTypeEntity {
     Unknown;
 }
 
+enum class ClientTypeEntity {
+    Permanent,
+    Temporary,
+    LegalHold;
+}
+
+@Suppress("TooManyFunctions")
 interface ClientDAO {
     suspend fun insertClient(client: InsertClientParam)
     suspend fun insertClients(clients: List<InsertClientParam>)
     suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client>
+    suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUsersByQualifiedIDs(ids: List<QualifiedIDEntity>): Map<QualifiedIDEntity, List<Client>>
     suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)
@@ -54,4 +72,6 @@ interface ClientDAO {
     suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
+    suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
+    suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
 }

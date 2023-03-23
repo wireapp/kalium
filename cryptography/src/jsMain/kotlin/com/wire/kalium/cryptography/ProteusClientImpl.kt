@@ -71,6 +71,10 @@ actual class ProteusClientImpl actual constructor(
         return box.identity.public_key.fingerprint().encodeToByteArray()
     }
 
+    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
+        return box.session_load(sessionId.value).await().fingerprint_remote().encodeToByteArray()
+    }
+
     override suspend fun newPreKeys(
         from: Int,
         count: Int

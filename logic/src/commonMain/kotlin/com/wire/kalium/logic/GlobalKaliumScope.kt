@@ -40,6 +40,9 @@ import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
+import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCase
+import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCaseImpl
+import com.wire.kalium.logic.feature.rootDetection.RootDetectorImpl
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
@@ -151,6 +154,13 @@ class GlobalKaliumScope internal constructor(
             serverConfigRepository,
             authenticationScopeProvider,
             userSessionScopeProvider.value
+        )
+
+    val checkSystemIntegrity: CheckSystemIntegrityUseCase
+        get() = CheckSystemIntegrityUseCaseImpl(
+            kaliumConfigs,
+            RootDetectorImpl(),
+            sessionRepository
         )
 
     val observeNewClientsUseCase: ObserveNewClientsUseCase

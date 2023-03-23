@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -36,10 +35,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.client.ClientDAO
 
 internal interface SessionEstablisher {
 
@@ -55,38 +52,17 @@ internal interface SessionEstablisher {
 internal class SessionEstablisherImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val preKeyRepository: PreKeyRepository,
-    private val clientDAO: ClientDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) : SessionEstablisher, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
+) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
         getAllMissingClients(recipients).flatMap {
-            establishMissingSessions(it)
-        }
-
-    private suspend fun establishMissingSessions(
-        missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, Unit> =
-        if (missingContactClients.isEmpty()) {
-            Either.Right(Unit)
-        } else {
-            preKeyRepository.preKeysOfClientsByQualifiedUsers(missingContactClients)
-                .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
-        }
-
-    private suspend fun establishSessions(preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>): Either<CoreFailure, Unit> =
-        proteusClientProvider.getOrError()
-            .flatMap { proteusClient ->
-                val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
-                wrapCryptoRequest {
-                    proteusClient.createSessions(valid)
-                }.also {
-                    wrapStorageRequest {
-                        clientDAO.tryMarkInvalid(invalid)
-                    }
-                }
+            if (it.isEmpty()) {
+                return@flatMap Either.Right(Unit)
             }
+            preKeyRepository.establishSessions(it)
+        }
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>

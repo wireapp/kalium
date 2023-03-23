@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.client
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -61,8 +62,10 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
-        val expected = Client(user.id, "id1", deviceType = null, true)
-        val insertedClient = InsertClientParam(expected.userId, expected.id, deviceType = expected.deviceType)
+
+        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null)
+        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isVerified = false)
+
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
@@ -74,11 +77,12 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenMultipleClientsAreInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
-        val client = Client(user.id, "id1", deviceType = null, isValid = true)
-        val insertedClient = InsertClientParam(user.id, "id1", deviceType = null)
 
-        val client2 = Client(user.id, "id2", deviceType = null, isValid = true)
-        val insertedClient2 = InsertClientParam(user.id, "id2", deviceType = null)
+        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null)
+        val client = insertedClient.toClient()
+
+        val insertedClient2 = insertedClient2.copy(user.id, "id2", deviceType = null)
+        val client2 = insertedClient2.toClient()
 
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
@@ -98,7 +102,8 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         val unrelatedUserId = QualifiedIDEntity("unrelated", "user")
         val unrelatedUser = newUserEntity(unrelatedUserId)
-        val unrelatedInsertedClient = InsertClientParam(unrelatedUserId, "id1", deviceType = null)
+        val unrelatedInsertedClient = insertedClient1.copy(unrelatedUserId, "id1", deviceType = null)
+
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
 
@@ -132,12 +137,10 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientWithDeviceIsStored_whenInsertingTheSameClientWithNullType_thenTypeIsNotOverwritten() = runTest {
-        val insertClientWithType = InsertClientParam(user.id, "id1", deviceType = DeviceTypeEntity.Tablet)
-        val clientWithType = Client(insertClientWithType.userId, insertClientWithType.id, insertClientWithType.deviceType, true)
+        val insertClientWithType = insertedClient1.copy(user.id, "id1", deviceType = DeviceTypeEntity.Tablet)
+        val clientWithType = insertClientWithType.toClient()
 
         val insertClientWithNullType = insertClientWithType.copy(deviceType = null)
-        val clientWithNullType =
-            Client(insertClientWithNullType.userId, insertClientWithNullType.id, insertClientWithNullType.deviceType, true)
 
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertClientWithType))
@@ -147,6 +150,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClients(listOf(insertClientWithNullType))
 
+        // device type should not be overwritten
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
             assertEquals(listOf(clientWithType), resultList)
         }
@@ -219,17 +223,77 @@ class ClientDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenNewClientAdded_thenItisMarkedAsNotVerified() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient)
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
+    @Test
+    fun givenClient_whenUpdateingVerificationStatus_thenItIsUpdated() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient)
+        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, true)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+
+        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, false)
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
+    @Test
+    fun givenUserId_whenANewClientIsAdded_thennewListIsEmited() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+
+        clientDAO.observeClientsByUserId(user.id).test {
+            awaitItem().also { result -> assertEquals(emptyList(), result) }
+
+            clientDAO.insertClient(insertedClient)
+            awaitItem().also { result -> assertEquals(listOf(client), result) }
+
+            clientDAO.insertClient(insertedClient1)
+            awaitItem().also { result -> assertEquals(listOf(client, client1), result) }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenVerifiedClient_whenINsertingTheSameIdAgian_thenVerificationStatusIsNotChanges() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+
+        clientDAO.insertClient(insertedClient)
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+
+        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, true)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+
+        clientDAO.insertClient(insertedClient)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
-        val insertedClient = InsertClientParam(user.id, "id0", deviceType = null)
-        val client = Client(insertedClient.userId, insertedClient.id, deviceType = insertedClient.deviceType, isValid = true)
+        val insertedClient = InsertClientParam(
+            userId = user.id,
+            id = "id0",
+            deviceType = null,
+            clientType = null,
+            label = null,
+            model = null,
+            registrationDate = null
+        )
+        val client = insertedClient.toClient()
 
-        val client1 = Client(user.id, "id1", deviceType = null, isValid = true)
-        val insertedClient1 = InsertClientParam(user.id, "id1", deviceType = null)
+        val insertedClient1 = insertedClient.copy(user.id, "id1", deviceType = null)
+        val client1 = insertedClient1.toClient()
 
-        val client2 = Client(user.id, "id2", deviceType = null, isValid = true)
-        val insertedClient2 = InsertClientParam(user.id, "id2", deviceType = null)
+        val insertedClient2 = insertedClient.copy(user.id, "id2", deviceType = null)
+        val client2 = insertedClient2.toClient()
 
         const val teamId = "teamId"
         val conversationEntity1 = ConversationEntity(
@@ -249,3 +313,16 @@ class ClientDAOTest : BaseDatabaseTest() {
         )
     }
 }
+
+private fun InsertClientParam.toClient(): Client =
+        Client(
+            userId,
+            id,
+            deviceType = deviceType,
+            clientType = clientType,
+            isValid = true,
+            isVerified = false,
+            label = label,
+            model = model,
+            registrationDate = registrationDate
+        )

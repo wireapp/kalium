@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.IgnoreIOS
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -169,7 +168,8 @@ class GetMessageAssetUseCaseTest {
                 senderUserId = userId,
                 senderClientId = clientId,
                 status = Message.Status.SENT,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                isSelfMessage = false
             )
         }
 

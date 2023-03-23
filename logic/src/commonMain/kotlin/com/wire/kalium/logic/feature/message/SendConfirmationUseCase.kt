@@ -88,6 +88,7 @@ internal class SendConfirmationUseCase internal constructor(
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
+                isSelfMessage = true
             )
 
             messageSender.sendMessage(message)

@@ -18,18 +18,17 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.KaliumDispatcher
-import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -37,14 +36,17 @@ import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetClientDetailsUseCaseTest {
+class ObserveClientDetailsUseCaseTest {
 
     @Mock
     private val clientRepository = configure(mock(classOf<ClientRepository>())) {
@@ -53,12 +55,12 @@ class GetClientDetailsUseCaseTest {
 
     @Mock
     private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
-    private lateinit var getClientDetailsUseCase: GetClientDetailsUseCase
+    private lateinit var observeClientDetailsUseCase: ObserveClientDetailsUseCase
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
     @BeforeTest
     fun setup() {
-        getClientDetailsUseCase = GetClientDetailsUseCaseImpl(clientRepository, currentClientIdProvider, testDispatchers)
+        observeClientDetailsUseCase = ObserveClientDetailsUseCaseImpl(clientRepository, currentClientIdProvider)
         given(currentClientIdProvider)
             .suspendFunction(currentClientIdProvider::invoke)
             .whenInvoked()
@@ -69,40 +71,39 @@ class GetClientDetailsUseCaseTest {
     fun givenAClientIdSuccess_thenTheSuccessPropagated() = runTest(testDispatchers.io) {
         val expected = CLIENT_RESULT
         given(clientRepository)
-            .suspendFunction(clientRepository::clientInfo)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(expected))
+            .suspendFunction(clientRepository::observeClientsByUserIdAndClientId)
+            .whenInvokedWith(any(), any())
+            .thenReturn(flowOf(Either.Right(expected)))
 
-        val actual = getClientDetailsUseCase.invoke(CLIENT_ID)
+        val actual = observeClientDetailsUseCase.invoke(USER_ID, CLIENT_ID).first()
         assertIs<GetClientDetailsResult.Success>(actual)
     }
 
     @Test
     fun givenClientDetailsFail_thenTheErrorPropagated() = runTest(testDispatchers.io) {
-        val expected = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("some error")))
+        val expected = StorageFailure.DataNotFound
         given(clientRepository)
-            .suspendFunction(clientRepository::clientInfo)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Left(expected))
+            .suspendFunction(clientRepository::observeClientsByUserIdAndClientId)
+            .whenInvokedWith(any(), any())
+            .thenReturn(flowOf(Either.Left(expected)))
 
-        val actual = getClientDetailsUseCase.invoke(CLIENT_ID)
+        val actual = observeClientDetailsUseCase.invoke(USER_ID, CLIENT_ID).first()
         assertIs<GetClientDetailsResult.Failure.Generic>(actual)
         assertEquals(expected, actual.genericFailure)
     }
 
     private companion object {
+        val USER_ID = UserId("user_id", "domain")
         val CLIENT_ID = PlainId(value = "client_id_1")
         val CLIENT = Client(
             id = CLIENT_ID,
             type = ClientType.Permanent,
-            registrationTime = "2022.01.01",
-            location = null,
+            registrationTime = Instant.DISTANT_FUTURE,
             deviceType = DeviceType.Desktop,
             label = null,
-            cookie = null,
-            capabilities = null,
             model = "Mac ox",
-            emptyMap()
+            isVerified = false,
+            isValid = true
         )
         val CLIENT_RESULT = CLIENT.copy(id = PlainId(value = "client_id_1"))
     }
