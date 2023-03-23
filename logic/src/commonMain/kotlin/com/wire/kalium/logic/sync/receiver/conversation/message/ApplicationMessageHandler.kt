@@ -129,7 +129,7 @@ internal class ApplicationMessageHandlerImpl(
                             expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
                             selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                         )
-                    }
+                    },
                     isSelfMessage = senderUserId == selfUserId
                 )
                 processMessage(message)
