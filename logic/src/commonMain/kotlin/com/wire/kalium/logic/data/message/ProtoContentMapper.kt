@@ -45,6 +45,7 @@ import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.Asset
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -390,6 +391,17 @@ class ProtoContentMapperImpl(
                     )
                 )
                 unpackText(genericMessageTextContent)
+            }
+
+            is Ephemeral.Content.Asset -> {
+                val genericAssetContent = GenericMessage.Content.Asset(
+                    Asset(
+                        original = ephemeralContent.value.original,
+                        status = ephemeralContent.value.status,
+                        expectsReadConfirmation = ephemeralContent.value.expectsReadConfirmation
+                    )
+                )
+                unpackAsset(genericAssetContent)
             }
 
             // TODO: Mateusz : for now we ignore anything else then Text
