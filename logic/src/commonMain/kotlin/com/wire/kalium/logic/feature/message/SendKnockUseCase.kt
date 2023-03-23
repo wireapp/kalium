@@ -37,6 +37,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 
+@Suppress("LongParameterList")
 /**
  * Sending a ping/knock message to a conversation
  */
