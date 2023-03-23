@@ -270,7 +270,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     MessageMention(
                         mention.start,
                         mention.length,
-                        UserId(mention.userId, mention.userDomain)
+                        UserId(mention.userId, mention.userDomain),
+                        false
                     )
                 }.toList()
             }
