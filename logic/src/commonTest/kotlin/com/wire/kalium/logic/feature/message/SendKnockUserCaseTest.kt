@@ -34,6 +34,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -74,6 +75,10 @@ class SendKnockUserCaseTest {
             .suspendFunction(arrangement.messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.SENT), any(), any())
             .wasInvoked(once)
+        verify(arrangement.messageSendFailureHandler)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureUpdateMessageStatus)
+            .with(any(), any(), any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -97,9 +102,9 @@ class SendKnockUserCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
             .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.FAILED), any(), any())
+        verify(arrangement.messageSendFailureHandler)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureUpdateMessageStatus)
+            .with(any(), any(), any(), any())
             .wasInvoked(once)
     }
 
@@ -119,6 +124,9 @@ class SendKnockUserCaseTest {
 
         @Mock
         val messageSender = mock(classOf<MessageSender>())
+
+        @Mock
+        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
 
 
         fun withSendMessageSuccess() = apply {
@@ -165,7 +173,8 @@ class SendKnockUserCaseTest {
             TestUser.SELF.id,
             currentClientIdProvider,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            messageSendFailureHandler
         )
     }
 

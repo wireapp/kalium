@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -36,7 +35,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -56,6 +54,7 @@ class SendTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -103,22 +102,10 @@ class SendTextMessageUseCase internal constructor(
                 .onSuccess {
                     messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
                 }
-        }.onFailure {
-            when (it) {
-                is NetworkFailure.FederatedBackendFailure -> {
-                    kaliumLogger.i("Failed due to federation context availability.")
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, generatedMessageUuid)
-                }
-                else -> {
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, generatedMessageUuid)
-                }
-            }
-            if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("There was an unknown error trying to send the message $it", it.rootCause)
-                it.rootCause?.printStackTrace()
-            } else {
-                kaliumLogger.e("There was an error trying to send the message $it")
-            }
-        }
+        }.onFailure { messageSendFailureHandler.handleFailureUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+    }
+
+    companion object {
+        const val TYPE = "text"
     }
 }

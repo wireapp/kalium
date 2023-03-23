@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -34,7 +33,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -55,6 +53,7 @@ class SendEditTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -123,24 +122,10 @@ class SendEditTextMessageUseCase internal constructor(
                             }
                         }
                 }
-        }.onFailure { handleFailure(it, conversationId, originalMessageId) }
+        }.onFailure { messageSendFailureHandler.handleFailureUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
     }
 
-    private suspend fun handleFailure(failure: CoreFailure, conversationId: ConversationId, originalMessageId: String) {
-        when (failure) {
-            is NetworkFailure.FederatedBackendFailure -> {
-                kaliumLogger.i("Failed due to federation context availability.")
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, originalMessageId)
-            }
-            else -> {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
-            }
-        }
-        if (failure is CoreFailure.Unknown) {
-            kaliumLogger.e("There was an unknown error trying to send the edit message $failure", failure.rootCause)
-            failure.rootCause?.printStackTrace()
-        } else {
-            kaliumLogger.e("There was an error trying to send the edit message $failure")
-        }
+    companion object {
+        const val TYPE = "edit text"
     }
 }
