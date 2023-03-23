@@ -100,8 +100,6 @@ class ProtoContentMapperImpl(
                 throw IllegalArgumentException(
                     "Unexpected message content type: $readableContent"
                 )
-
-            is MessageContent.TextEdited -> TODO("Message type not yet supported")
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
