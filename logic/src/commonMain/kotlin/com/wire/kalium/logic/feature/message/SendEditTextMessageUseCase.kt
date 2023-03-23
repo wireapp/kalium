@@ -123,22 +123,24 @@ class SendEditTextMessageUseCase internal constructor(
                             }
                         }
                 }
-        }.onFailure {
-            when (it) {
-                is NetworkFailure.FederatedBackendFailure -> {
-                    kaliumLogger.i("Failed due to federation context availability.")
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, originalMessageId)
-                }
-                else -> {
-                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
-                }
+        }.onFailure { handleFailure(it, conversationId, originalMessageId) }
+    }
+
+    private suspend fun handleFailure(failure: CoreFailure, conversationId: ConversationId, originalMessageId: String) {
+        when (failure) {
+            is NetworkFailure.FederatedBackendFailure -> {
+                kaliumLogger.i("Failed due to federation context availability.")
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, originalMessageId)
             }
-            if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("There was an unknown error trying to send the edit message $it", it.rootCause)
-                it.rootCause?.printStackTrace()
-            } else {
-                kaliumLogger.e("There was an error trying to send the edit message $it")
+            else -> {
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
             }
+        }
+        if (failure is CoreFailure.Unknown) {
+            kaliumLogger.e("There was an unknown error trying to send the edit message $failure", failure.rootCause)
+            failure.rootCause?.printStackTrace()
+        } else {
+            kaliumLogger.e("There was an error trying to send the edit message $failure")
         }
     }
 }
