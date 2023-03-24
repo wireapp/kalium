@@ -34,16 +34,18 @@ class EphemeralMessageDeletionHandlerTest {
         testDispatcher.default
     ) {
         // given
+        val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(
+                expireAfter = 1.seconds,
+                selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
+        )
+
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
             coroutineScope = this,
             dispatcher = testDispatcher
         ).withMessageRepositoryReturningMessage(
-            message = TestMessage.TEXT_MESSAGE.copy(
-                expirationData = Message.ExpirationData(
-                    expireAfter = 1.seconds,
-                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                )
-            )
+            message = oneSecondEphemeralMessage
         ).withMessageRepositoryMarkingSelfDeletionStartDate().arrange()
 
         // when
@@ -69,14 +71,16 @@ class EphemeralMessageDeletionHandlerTest {
     @Test
     fun givenRegularMessage_whenEnqueueingTwice_thenSelfDeletionShouldBeCalledOnce() = runTest(testDispatcher.default) {
         // given
+        val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(
+                expireAfter = 1.seconds,
+                selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
+        )
+
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
             .withMessageRepositoryReturningMessage(
-                message = TestMessage.TEXT_MESSAGE.copy(
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                )
+                message = oneSecondEphemeralMessage
             )
             .withMessageRepositoryMarkingSelfDeletionStartDate()
             .arrange()
@@ -112,16 +116,18 @@ class EphemeralMessageDeletionHandlerTest {
             // given
             val timeUntilExpiration = 1.seconds
 
+            val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                expirationData = Message.ExpirationData(
+                    expireAfter = timeUntilExpiration,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
                 coroutineScope = this,
                 dispatcher = testDispatcher
             ).withMessageRepositoryReturningMessage(
-                message = TestMessage.TEXT_MESSAGE.copy(
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                )
+                message = oneSecondEphemeralMessage
             ).withMessageRepositoryMarkingSelfDeletionStartDate()
                 .withDeletingMessage()
                 .arrange()
@@ -147,14 +153,16 @@ class EphemeralMessageDeletionHandlerTest {
             // given
             val timeUntilExpiration = 1.seconds
 
+            val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                expirationData = Message.ExpirationData(
+                    expireAfter = timeUntilExpiration,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
                 .withMessageRepositoryReturningMessage(
-                    message = TestMessage.TEXT_MESSAGE.copy(
-                        expirationData = Message.ExpirationData(
-                            expireAfter = 1.seconds,
-                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                        )
-                    )
+                    message = oneSecondEphemeralMessage
                 )
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
                 .withDeletingMessage()
@@ -181,34 +189,25 @@ class EphemeralMessageDeletionHandlerTest {
             // given
             val timeUntilExpiration = 1.seconds
 
+            val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                expirationData = Message.ExpirationData(
+                    expireAfter = timeUntilExpiration,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
             val pendingMessagesToDelete = listOf(
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "1",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+                oneSecondEphemeralMessage.copy(
+                    id = "1"
                 ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "2",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+                oneSecondEphemeralMessage.copy(
+                    id = "2"
                 ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "3",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+                oneSecondEphemeralMessage.copy(
+                    id = "3"
                 ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "4",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+                oneSecondEphemeralMessage.copy(
+                    id = "4"
                 )
             )
 
@@ -234,35 +233,43 @@ class EphemeralMessageDeletionHandlerTest {
     fun givenMultipleMessageWithDifferentExpiration_whenEnqueuedForDeletionAndTimeElapsed_thenTheMessagesPastTheTimeShouldBeDeleted() =
         runTest(testDispatcher.default) {
             // given
-            val pendingMessagesToDelete = listOf(
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "1",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "2",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 2.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "3",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 3.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "4",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 4.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+            val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                id = "1",
+                expirationData = Message.ExpirationData(
+                    expireAfter = 1.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 )
+            )
+
+            val twoSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                id = "2",
+                expirationData = Message.ExpirationData(
+                    expireAfter = 2.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
+            val threeSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                id = "3",
+                expirationData = Message.ExpirationData(
+                    expireAfter = 3.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
+            val fourSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                id = "4",
+                expirationData = Message.ExpirationData(
+                    expireAfter = 4.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+
+            val pendingMessagesToDelete = listOf(
+                oneSecondEphemeralMessage,
+                twoSecondEphemeralMessage,
+                threeSecondsEphemeralMessage,
+                fourSecondsEphemeralMessage
             )
 
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
@@ -310,38 +317,28 @@ class EphemeralMessageDeletionHandlerTest {
     fun givenMultipleRegularMessageWithDifferentExpiration_whenEnqueuedWithTimeAdvancing_thenDeleteThosePastTheExpiration() =
         runTest(testDispatcher.default) {
             // given
-            val pendingMessagesToDeletePastTheTime = listOf(
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "1",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "2",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 1.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+            val oneSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                expirationData = Message.ExpirationData(
+                    expireAfter = 1.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 )
             )
 
-            val pendingMessagesToDeleteBeforeTime = listOf(
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "3",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 2.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
-                ),
-                TestMessage.TEXT_MESSAGE.copy(
-                    id = "4",
-                    expirationData = Message.ExpirationData(
-                        expireAfter = 2.seconds,
-                        selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+            val twoSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                expirationData = Message.ExpirationData(
+                    expireAfter = 2.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 )
+            )
+
+            val pendingMessagesToDeletePastTheTime = listOf(
+                oneSecondsEphemeralMessage.copy(id = "1"),
+                oneSecondsEphemeralMessage.copy(id = "2")
+            )
+
+            val pendingMessagesToDeleteBeforeTime = listOf(
+                twoSecondsEphemeralMessage.copy(id = "3"),
+                twoSecondsEphemeralMessage.copy(id = "4")
             )
 
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
