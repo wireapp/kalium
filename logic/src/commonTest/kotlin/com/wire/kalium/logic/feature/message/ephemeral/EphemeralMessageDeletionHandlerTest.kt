@@ -12,6 +12,7 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,12 +61,12 @@ class EphemeralMessageDeletionHandlerTest {
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(any(), any(), any())
-            .wasInvoked(exactly = Times(1))
+            .wasInvoked(exactly = once)
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(any(), any())
-            .wasInvoked(exactly = Times(1))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -102,12 +103,12 @@ class EphemeralMessageDeletionHandlerTest {
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(any(), any(), any())
-            .wasInvoked(exactly = Times(1))
+            .wasInvoked(exactly = once)
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(any(), any())
-            .wasInvoked(exactly = Times(2))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -144,7 +145,7 @@ class EphemeralMessageDeletionHandlerTest {
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::deleteMessage)
                 .with(any(), any())
-                .wasInvoked(exactly = Times(1))
+                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -289,28 +290,28 @@ class EphemeralMessageDeletionHandlerTest {
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::deleteMessage)
                 .with(any(), any())
-                .wasInvoked(Times(1))
+                .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::deleteMessage)
                 .with(any(), any())
-                .wasInvoked(Times(1))
+                .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::deleteMessage)
                 .with(any(), any())
-                .wasInvoked(Times(1))
+                .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::deleteMessage)
                 .with(any(), any())
-                .wasInvoked(Times(1))
+                .wasInvoked(once)
         }
 
     @Test
