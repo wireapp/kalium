@@ -90,7 +90,8 @@ class SendEditTextMessageUseCase internal constructor(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
-                status = Message.Status.PENDING
+                status = Message.Status.PENDING,
+                isSelfMessage = true
             )
             // until the edit send is completed and accepted by the backend, we don't change the message id to be able to handle any
             // incoming edits from other clients that happened in the meantime and already changed the message id

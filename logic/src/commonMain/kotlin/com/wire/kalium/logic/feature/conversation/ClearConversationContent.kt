@@ -101,7 +101,8 @@ internal class ClearConversationContentUseCaseImpl(
                             date = DateTimeUtil.currentIsoDateTimeString(),
                             senderUserId = selfUserId,
                             senderClientId = currentClientId,
-                            status = Message.Status.PENDING
+                            status = Message.Status.PENDING,
+                            isSelfMessage = true
                         )
                         messageSender.sendMessage(regularMessage)
                     }

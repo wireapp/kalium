@@ -65,7 +65,6 @@ internal open class LoginApiV0 internal constructor(
                 handle = handle,
                 password = password,
                 label = label,
-                verificationCode = verificationCode
             )
         }
     }

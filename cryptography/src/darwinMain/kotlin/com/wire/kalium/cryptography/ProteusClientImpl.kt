@@ -55,6 +55,10 @@ actual class ProteusClientImpl actual constructor(
         return client.getLocalFingerprint()
     }
 
+    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
+        return client.remoteFingerPrint(sessionId)
+    }
+
     override suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto> {
         return client.newPreKeys(from, count)
     }

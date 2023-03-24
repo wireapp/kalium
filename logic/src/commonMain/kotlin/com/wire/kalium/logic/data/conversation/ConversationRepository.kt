@@ -68,6 +68,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -339,13 +340,21 @@ internal class ConversationDataSource internal constructor(
         combine(
             conversationDAO.getAllConversationDetails(),
             messageDAO.observeLastMessages(),
-            messageDAO.observeUnreadMessageCounter(),
-        ) { conversationList, lastMessageList, unreadMessageCount ->
+            messageDAO.observeConversationsUnreadEvents(),
+        ) { conversationList, lastMessageList, unreadEvents ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetails(conversation,
                     lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    unreadMessageCount[conversation.id]?.let { mapOf(UnreadEventType.MESSAGE to it) }
+                    unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
+                        when (it.key) {
+                            UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
+                            UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
+                            UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
+                            UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
+                            UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
+                        }
+                    }
                 )
             }
         }

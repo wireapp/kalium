@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
@@ -71,7 +70,6 @@ class DebugScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val userStorage: UserStorage,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -97,7 +95,7 @@ class DebugScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl(selfUserId = userId)

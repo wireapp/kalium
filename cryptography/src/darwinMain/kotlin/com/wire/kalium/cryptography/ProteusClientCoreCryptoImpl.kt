@@ -121,6 +121,10 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 
+    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
+        return wrapException { coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray() }
+    }
+
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
         return wrapException {
             from.until(from + count).map {

@@ -77,8 +77,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             secondFactorVerificationRepository
         )
 
-    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
-    val getClientDetailsUseCase: GetClientDetailsUseCase get() = GetClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
+    val selfClients: FetchSelfClientsFromRemoteUseCase get() = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, clientIdProvider)
+    val observeClientDetailsUseCase: ObserveClientDetailsUseCase get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)
@@ -99,8 +99,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             clientRemoteRepository,
             clientRepository
         )
-    val getOtherUserClients: GetOtherUserClientsUseCase
-        get() = GetOtherUserClientsUseCaseImpl(
+    val getOtherUserClients: ObserveClientsByUserIdUseCase
+        get() = ObserveClientsByUserIdUseCase(
             clientRepository
         )
 
@@ -130,4 +130,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase
         )
+
+    val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCase(proteusClientProvider, preKeyRepository)
+    val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
+        get() = UpdateClientVerificationStatusUseCase(clientRepository)
+
 }

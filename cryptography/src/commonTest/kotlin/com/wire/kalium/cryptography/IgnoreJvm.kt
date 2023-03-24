@@ -15,11 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.cryptography
 
-package com.wire.kalium.logic.data.location
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+expect annotation class IgnoreJvm()
 
-data class Location(
-    // val name: String,
-    val latitude: String,
-    val longitude: String
-)
