@@ -73,7 +73,7 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
     }
 }
 
-actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {
+actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
     val iv = generateRandomData(kCCBlockSizeAES128.toInt())
     val encryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
@@ -102,10 +102,10 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             }
 
             Buffer().use {
-                outputSink.write(it.write(iv), iv.size.toLong())
+                sink.write(it.write(iv), iv.size.toLong())
             }
 
-            val inputBuffer = assetDataSource.buffer()
+            val inputBuffer = source.buffer()
             val unencryptedBuffer = ByteArray(BUFFER_SIZE)
             var bytesRead: Int
 
@@ -128,7 +128,7 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
                 }
 
                 Buffer().use {
-                    outputSink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
+                    sink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
                 }
                 bytesCopiedTotal += bytesCopied.value
             }
@@ -147,20 +147,20 @@ actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, output
             }
 
             Buffer().use {
-                outputSink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
+                sink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
             }
             bytesCopiedTotal += bytesCopied.value
         } finally {
             CCCryptorRelease(cryptor.value)
-            assetDataSource.close()
-            outputSink.close()
+            source.close()
+            sink.close()
         }
 
         bytesCopiedTotal.toLong()
     }
 }
 
-actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long {
+actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
     val decryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
     return memScoped {
@@ -170,7 +170,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
 
         try {
             val iv = Buffer().use {
-                encryptedDataSource.read(it, kCCBlockSizeAES128.toLong())
+                source.read(it, kCCBlockSizeAES128.toLong())
                 it.readByteArray()
             }
 
@@ -192,7 +192,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
                 }
             }
 
-            val inputBuffer = encryptedDataSource.buffer()
+            val inputBuffer = source.buffer()
             val encryptedBuffer = ByteArray(BUFFER_SIZE)
             var bytesRead: Int
 
@@ -215,7 +215,7 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
                 }
 
                 Buffer().use {
-                    decryptedDataSink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
+                    sink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
                 }
                 bytesCopiedTotal += bytesCopied.value
             }
@@ -234,13 +234,13 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
             }
 
             Buffer().use {
-                decryptedDataSink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
+                sink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
             }
             bytesCopiedTotal += bytesCopied.value
         } finally {
             CCCryptorRelease(cryptor.value)
-            encryptedDataSource.close()
-            decryptedDataSink.close()
+            source.close()
+            sink.close()
         }
 
         bytesCopiedTotal.toLong()
