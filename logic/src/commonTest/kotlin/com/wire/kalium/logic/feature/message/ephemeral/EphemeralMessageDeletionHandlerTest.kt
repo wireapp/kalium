@@ -46,9 +46,10 @@ class EphemeralMessageDeletionHandlerTest {
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
             coroutineScope = this,
             dispatcher = testDispatcher
-        ).withMessageRepositoryReturningMessage(
-            message = oneSecondEphemeralMessage.copy(id = "1")
-        ).withMessageRepositoryMarkingSelfDeletionStartDate().arrange()
+        ).withMessageRepositoryReturningMessage(message = oneSecondEphemeralMessage.copy(id = "1"))
+            .withMessageRepositoryMarkingSelfDeletionStartDate()
+            .withDeletingMessage()
+            .arrange()
 
         // when
         ephemeralMessageDeletionHandler.startSelfDeletion(
