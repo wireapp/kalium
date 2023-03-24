@@ -13,6 +13,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +47,7 @@ class EphemeralMessageDeletionHandlerTest {
             coroutineScope = this,
             dispatcher = testDispatcher
         ).withMessageRepositoryReturningMessage(
-            message = oneSecondEphemeralMessage
+            message = oneSecondEphemeralMessage.copy(id = "1")
         ).withMessageRepositoryMarkingSelfDeletionStartDate().arrange()
 
         // when
@@ -108,7 +109,7 @@ class EphemeralMessageDeletionHandlerTest {
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(any(), any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = twice)
     }
 
     @Test
