@@ -73,6 +73,7 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
     }
 }
 
+@Suppress("LongMethod", "ThrowsCount")
 actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
     val iv = generateRandomData(kCCBlockSizeAES128.toInt())
     val encryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
@@ -160,6 +161,7 @@ actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Lo
     }
 }
 
+@Suppress("LongMethod", "ThrowsCount")
 actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
     val decryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
