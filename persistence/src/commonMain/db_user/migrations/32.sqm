@@ -1,0 +1,2 @@
+ALTER TABLE Message ADD COLUMN expire_after_millis INTEGER DEFAULT(NULL);
+ALTER TABLE Message ADD COLUMN self_deletion_start_date INTEGER AS Instant DEFAULT(NULL);
