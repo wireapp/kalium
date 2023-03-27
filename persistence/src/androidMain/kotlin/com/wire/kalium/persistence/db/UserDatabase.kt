@@ -83,14 +83,14 @@ actual fun userDatabaseDriver(
     platformDatabaseData: PlatformDatabaseData,
     dbPath: String
 ): SqlDriver {
+    System.loadLibrary("sqlcipher")
     val db: SupportSQLiteDatabase = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
         dbPath,
         null,
         SQLiteDatabase.OPEN_READWRITE
     )
-    return AndroidSqliteDriver(db, 0)
+    return AndroidSqliteDriver(db, 100)
 }
-
 
 fun inMemoryDatabase(
     context: Context,

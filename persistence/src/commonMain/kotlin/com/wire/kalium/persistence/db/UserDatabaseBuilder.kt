@@ -227,7 +227,7 @@ internal expect fun getDatabaseAbsoluteFileLocation(
 ): String?
 
 fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
-    val oldVersion = this.executeQuery(null, "PRAGMA schema_version;", {
+    val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
         it.next()
         it.getLong(0)
     }, 0).value?.toInt() ?: return false
