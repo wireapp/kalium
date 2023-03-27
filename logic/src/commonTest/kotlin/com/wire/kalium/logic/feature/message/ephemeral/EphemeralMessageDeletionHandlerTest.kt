@@ -139,8 +139,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             // when
             ephemeralMessageDeletionHandler.startSelfDeletion(
-                conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-                messageId = TestMessage.TEXT_MESSAGE.id
+                conversationId = oneSecondEphemeralMessage.conversationId,
+                messageId = oneSecondEphemeralMessage.id
             )
 
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
@@ -173,8 +173,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             // when
             ephemeralMessageDeletionHandler.startSelfDeletion(
-                conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-                messageId = TestMessage.TEXT_MESSAGE.id
+                conversationId = oneSecondEphemeralMessage.conversationId,
+                messageId = oneSecondEphemeralMessage.id
             )
 
             advanceTimeBy(timeUntilExpiration - 1.milliseconds)
