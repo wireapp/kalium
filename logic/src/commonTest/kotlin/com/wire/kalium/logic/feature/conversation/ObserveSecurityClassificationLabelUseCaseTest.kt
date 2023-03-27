@@ -116,10 +116,6 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             domains.map { domain -> Conversation.Member(UserId(uuid4().toString(), domain), Conversation.Member.Role.Member) }
 
         fun arrange() = this to getSecurityClassificationType
-
-        companion object {
-            val selfUserId = UserId("someValue", "wire.com")
-        }
     }
 
 }
