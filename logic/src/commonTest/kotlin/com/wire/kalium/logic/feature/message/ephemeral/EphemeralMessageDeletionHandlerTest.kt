@@ -97,11 +97,6 @@ class EphemeralMessageDeletionHandlerTest {
             messageId = oneSecondEphemeralMessage.id
         )
 
-        ephemeralMessageDeletionHandler.startSelfDeletion(
-            conversationId = oneSecondEphemeralMessage.conversationId,
-            messageId = oneSecondEphemeralMessage.id
-        )
-
         advanceUntilIdle()
 
         // then
