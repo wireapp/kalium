@@ -100,6 +100,8 @@ class EphemeralMessageDeletionHandlerTest {
         advanceUntilIdle()
 
         // then
+
+        // invoke first time
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
@@ -108,7 +110,25 @@ class EphemeralMessageDeletionHandlerTest {
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
             .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
-            .wasInvoked(exactly = twice)
+            .wasInvoked(exactly = once)
+
+        // invoke second time
+        ephemeralMessageDeletionHandler.startSelfDeletion(
+            conversationId = oneSecondEphemeralMessage.conversationId,
+            messageId = oneSecondEphemeralMessage.id
+        )
+
+        advanceUntilIdle()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
+            .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
+            .wasNotInvoked()
     }
 
     @Test
