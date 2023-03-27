@@ -59,6 +59,11 @@ actual fun userDatabaseBuilder(
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, !passphrase.isNullOrBlank())
 }
 
+actual fun userDatabaseDriver(
+    platformDatabaseData: PlatformDatabaseData,
+    dbPath: String
+): SqlDriver = sqlDriver(dbPath, false)
+
 private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
     driverUri,
     Properties(1).apply {

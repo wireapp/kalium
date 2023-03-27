@@ -20,6 +20,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
@@ -72,6 +73,29 @@ actual fun userDatabaseBuilder(
         dispatcher,
         platformDatabaseData,
         passphrase != null
+    )
+}
+actual fun userDatabaseDriver(
+    platformDatabaseData: PlatformDatabaseData,
+    dbPath: String
+): SqlDriver {
+    val schema = UserDatabase.Schema
+
+    return NativeSqliteDriver(
+        DatabaseConfiguration(
+            name = dbPath,
+            version = schema.version,
+            journalMode = JournalMode.DELETE,
+            create = { connection ->
+                wrapConnection(connection) { schema.create(it) }
+            },
+            upgrade = { connection, oldVersion, newVersion ->
+                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+            },
+            extendedConfig = DatabaseConfiguration.Extended(
+                basePath = platformDatabaseData.storePath
+            )
+        )
     )
 }
 

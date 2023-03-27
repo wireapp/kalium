@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
@@ -90,6 +91,11 @@ expect fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean = true
 ): UserDatabaseBuilder
+
+expect fun userDatabaseDriver(
+    platformDatabaseData: PlatformDatabaseData,
+    dbPath: String
+): SqlDriver
 
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
@@ -219,3 +225,23 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
 ): String?
+
+fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
+    val oldVersion = this.executeQuery(null, "PRAGMA schema_version;", {
+        it.next()
+        it.getLong(0)
+    }, 0).value?.toInt() ?: return false
+
+    val newVersion = sqlSchema.version
+
+    return if (oldVersion == newVersion) {
+        true
+    } else {
+        try {
+            sqlSchema.migrate(this, oldVersion, newVersion)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+}
