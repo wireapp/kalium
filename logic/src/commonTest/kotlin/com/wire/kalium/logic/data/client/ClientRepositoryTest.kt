@@ -25,6 +25,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -210,6 +211,9 @@ class ClientRepositoryTest {
         verify(arrangement.clientRemoteRepository)
             .coroutine { arrangement.clientRemoteRepository.deleteClient(param) }
             .wasInvoked(exactly = once)
+        verify(arrangement.clientDAO)
+            .coroutine { arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value) }
+            .wasNotInvoked()
     }
 
     @Test
@@ -218,6 +222,7 @@ class ClientRepositoryTest {
 
         val (arrangement, clientRepository) = Arrangement()
             .withDeleteClientReportedly(Either.Right(Unit))
+            .withDeleteClientLocally()
             .arrange()
 
         val actual = clientRepository.deleteClient(param)
@@ -226,6 +231,9 @@ class ClientRepositoryTest {
 
         verify(arrangement.clientRemoteRepository)
             .coroutine { clientRepository.deleteClient(param) }
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientDAO)
+            .coroutine { arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value) }
             .wasInvoked(exactly = once)
     }
 
@@ -420,7 +428,7 @@ class ClientRepositoryTest {
         }
 
         @Mock
-        private val clientDAO = mock(classOf<ClientDAO>())
+        val clientDAO = mock(classOf<ClientDAO>())
 
         var clientRepository: ClientRepository =
             ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
@@ -490,6 +498,13 @@ class ClientRepositoryTest {
                 .suspendFunction(clientRemoteRepository::registerMLSClient)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
+        }
+
+        fun withDeleteClientLocally() = apply {
+            given(clientDAO)
+                .suspendFunction(clientDAO::deleteClient)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
         }
 
         fun arrange() = this to clientRepository
