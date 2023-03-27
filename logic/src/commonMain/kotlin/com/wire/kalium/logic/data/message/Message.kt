@@ -72,7 +72,7 @@ sealed interface Message {
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val senderUserName: String? = null,
-        override val isSelfMessage: Boolean = false,
+        override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY,
@@ -148,7 +148,7 @@ sealed interface Message {
         override val senderClientId: ClientId,
         override val status: Status,
         override val senderUserName: String? = null,
-        override val isSelfMessage: Boolean = false,
+        override val isSelfMessage: Boolean,
     ) : Sendable {
         override fun toLogString(): String {
             val typeKey = "type"

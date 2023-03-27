@@ -439,6 +439,9 @@ UPDATE Message
 SET last_edit_date = ?
 WHERE id = ? AND conversation_id = ?;
 
+getMessageSenderId:
+SELECT sender_user_id FROM Message WHERE id = ? AND conversation_id = ?;
+
 insertOrIgnoreMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);

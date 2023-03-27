@@ -60,7 +60,8 @@ object TestMessage {
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = Message.EditStatus.NotEdited,
+        isSelfMessage = false
     )
 
     val MISSED_CALL_MESSAGE = Message.System(
@@ -80,7 +81,8 @@ object TestMessage {
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = Message.EditStatus.NotEdited,
+        isSelfMessage = false
     )
 
     val ENTITY = MessageEntity.Regular(
@@ -105,6 +107,7 @@ object TestMessage {
         date = "currentDate",
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.SENT
+        status = Message.Status.SENT,
+        isSelfMessage = false
     )
 }

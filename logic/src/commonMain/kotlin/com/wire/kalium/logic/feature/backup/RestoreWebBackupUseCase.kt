@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFai
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.decodeBufferSequence
@@ -44,8 +45,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.MissingFieldException
 import okio.Path
 import okio.buffer
 import okio.use
@@ -86,11 +85,11 @@ internal class RestoreWebBackupUseCaseImpl(
         filePath: Path,
         coroutineScope: CoroutineScope
     ): Either<RestoreBackupResult.BackupRestoreFailure, Unit> {
-        tryImportConversations(filePath)
         return importMessages(filePath, coroutineScope)
+            .map { tryImportConversations(filePath) }
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun tryImportConversations(filePath: Path) =
         kaliumFileSystem.listDirectories(filePath).firstOrNull { it.name == BACKUP_WEB_CONVERSATIONS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
@@ -105,7 +104,7 @@ internal class RestoreWebBackupUseCaseImpl(
                             if (migratedConversation != null) {
                                 migratedConversations.add(migratedConversation)
                             }
-                        } catch (exception: MissingFieldException) {
+                        } catch (exception: Exception) {
                             kaliumLogger.e("$TAG ${exception.message}")
                         }
                     }
@@ -117,7 +116,7 @@ internal class RestoreWebBackupUseCaseImpl(
                 }
         }
 
-    @OptIn(ExperimentalSerializationApi::class)
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun importMessages(filePath: Path, coroutineScope: CoroutineScope) = kaliumFileSystem.listDirectories(filePath)
         .firstOrNull { it.name == BACKUP_WEB_EVENTS_FILE_NAME }?.let { path ->
             kaliumFileSystem.source(path).buffer()
@@ -133,7 +132,7 @@ internal class RestoreWebBackupUseCaseImpl(
                             if (migratedMessage != null) {
                                 migratedMessagesBatch.add(migratedMessage)
                             }
-                        } catch (exception: MissingFieldException) {
+                        } catch (exception: Exception) {
                             kaliumLogger.e("$TAG ${exception.message}")
                         }
 

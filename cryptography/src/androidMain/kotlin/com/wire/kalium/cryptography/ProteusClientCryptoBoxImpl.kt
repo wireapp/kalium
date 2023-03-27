@@ -54,6 +54,10 @@ class ProteusClientCryptoBoxImpl constructor(
         return false
     }
 
+    override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
+        wrapException { box.getSession(sessionId.value).remoteFingerprint }
+    }
+
     /**
      * Create the crypto files if missing and call box.open
      * this must be called only one time

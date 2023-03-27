@@ -20,24 +20,31 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 /**
  * This use case is responsible for answering a call.
  */
 interface AnswerCallUseCase {
-    suspend operator fun invoke(conversationId: ConversationId)
+    suspend operator fun invoke(
+        conversationId: ConversationId
+    )
 }
 
 internal class AnswerCallUseCaseImpl(
-    private val callManager: Lazy<CallManager>
+    private val callManager: Lazy<CallManager>,
+    private val kaliumConfigs: KaliumConfigs
 ) : AnswerCallUseCase {
 
     /**
      * @param conversationId the id of the conversation.
      */
-    override suspend fun invoke(conversationId: ConversationId) {
+    override suspend fun invoke(
+        conversationId: ConversationId
+    ) {
         callManager.value.answerCall(
-            conversationId = conversationId
+            conversationId = conversationId,
+            isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
         )
     }
 }

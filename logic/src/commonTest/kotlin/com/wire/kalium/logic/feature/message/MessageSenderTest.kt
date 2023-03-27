@@ -371,6 +371,7 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
+            isSelfMessage = false
         )
 
         val messageTarget = MessageTarget.Client(
@@ -422,6 +423,7 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
+            isSelfMessage = false
         )
 
         val messageTarget = MessageTarget.Conversation
