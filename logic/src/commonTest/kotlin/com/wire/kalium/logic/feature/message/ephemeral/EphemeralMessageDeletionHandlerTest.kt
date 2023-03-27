@@ -40,6 +40,7 @@ class EphemeralMessageDeletionHandlerTest {
     ) {
         // given
         val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+            id = "1",
             expirationData = Message.ExpirationData(
                 expireAfter = 1.seconds,
                 selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
@@ -78,6 +79,7 @@ class EphemeralMessageDeletionHandlerTest {
     fun givenRegularMessage_whenEnqueueingTwice_thenSelfDeletionShouldBeCalledOnce() = runTest(testDispatcher.default) {
         // given
         val oneSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+            id = "1",
             expirationData = Message.ExpirationData(
                 expireAfter = 1.seconds,
                 selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
@@ -91,13 +93,13 @@ class EphemeralMessageDeletionHandlerTest {
 
         // when
         ephemeralMessageDeletionHandler.startSelfDeletion(
-            conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-            messageId = TestMessage.TEXT_MESSAGE.id
+            conversationId = oneSecondEphemeralMessage.conversationId,
+            messageId = oneSecondEphemeralMessage.id
         )
 
         ephemeralMessageDeletionHandler.startSelfDeletion(
-            conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-            messageId = TestMessage.TEXT_MESSAGE.id
+            conversationId = oneSecondEphemeralMessage.conversationId,
+            messageId = oneSecondEphemeralMessage.id
         )
 
         advanceUntilIdle()
