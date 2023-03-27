@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -92,12 +91,8 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
         }
 
         fun arrange() = this to GetOtherUserSecurityClassificationLabelUseCaseImpl(
-            selfUserId, userConfigRepository, dispatcher
+            userConfigRepository, dispatcher
         )
-
-        companion object {
-            val selfUserId = UserId("someValue", "wire.com")
-        }
     }
 
     companion object {
