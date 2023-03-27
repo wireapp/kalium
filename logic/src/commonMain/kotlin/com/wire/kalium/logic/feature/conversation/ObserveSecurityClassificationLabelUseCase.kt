@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onlyRight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull

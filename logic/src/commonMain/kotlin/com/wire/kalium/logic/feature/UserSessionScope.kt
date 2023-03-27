@@ -170,10 +170,10 @@ import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
-import com.wire.kalium.logic.feature.message.SessionEstablisher
-import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.message.SessionEstablisher
+import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
