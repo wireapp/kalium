@@ -37,5 +37,8 @@ data class KaliumConfigs(
     val blacklistHost: String = "",
     val maxAccount: Int = 0,
     val developmentApiEnabled: Boolean = false,
-    val guestRoomLink: Boolean = true
+    val guestRoomLink: Boolean = true,
+    val wipeOnCookieInvalid: Boolean = false,
+    val wipeOnDeviceRemoval: Boolean = false,
+    val wipeOnRootedDevice: Boolean = false
 )

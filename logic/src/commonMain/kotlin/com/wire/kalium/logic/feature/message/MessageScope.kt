@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -54,7 +53,6 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -80,10 +78,10 @@ class MessageScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val applicationMessageHandler: ApplicationMessageHandler,
     private val userStorage: UserStorage,
     private val userPropertyRepository: UserPropertyRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val protoContentMapper: ProtoContentMapper,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -92,10 +90,7 @@ class MessageScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
-
-    private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl(selfUserId = selfUserId)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
@@ -144,6 +139,15 @@ class MessageScope internal constructor(
             slowSyncRepository,
             messageSender,
             userPropertyRepository
+        )
+
+    val sendEditTextMessage: SendEditTextMessageUseCase
+        get() = SendEditTextMessageUseCase(
+            messageRepository,
+            selfUserId,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender
         )
 
     val getMessageById: GetMessageByIdUseCase
@@ -236,13 +240,6 @@ class MessageScope internal constructor(
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             ephemeralNotificationsManager = EphemeralNotificationsManager
-        )
-
-    val persistMigratedMessage: PersistMigratedMessagesUseCase
-        get() = PersistMigratedMessagesUseCaseImpl(
-            selfUserId,
-            userStorage.database.migrationDAO,
-            protoContentMapper = protoContentMapper
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

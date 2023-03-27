@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
@@ -423,11 +424,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val messageIds = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
         // then
-        assertContains(messageIds, messageId)
+        assertContains(messageTypes, UnreadEventTypeEntity.MESSAGE)
     }
 
     @Test
@@ -458,11 +459,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val messageIds = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
         // then
-        assertContains(messageIds, messageId)
+        assertContains(messageTypes, UnreadEventTypeEntity.MISSED_CALL)
     }
 
     @Test
@@ -496,11 +497,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(message)
 
         // when
-        val messages = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
         // then
-        assertEquals(0, messages.size)
+        assertEquals(0, messageTypes.size)
     }
 
     @Test
@@ -547,11 +548,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(message)
 
         // when
-        val messages = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
         // then
-        assertEquals(unreadMessagesCount, messages.size)
+        assertEquals(unreadMessagesCount, messageTypes.size)
     }
 
     @Test
@@ -598,13 +599,12 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(message)
 
         // when
-        val messages = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
 
-        assertNotNull(messages)
         // then
-        assertEquals(unreadMessagesCount, messages.size)
+        assertEquals(unreadMessagesCount, messageTypes.size)
     }
 
     @Test
@@ -635,11 +635,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val messageIds = messageDAO.observeUnreadMessages()
-            .map { it.filter { previewEntity -> previewEntity.conversationId == conversationId }.map { message -> message.id } }
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
             .first()
         // then
-        assertContains(messageIds, messageId)
+        assertContains(messageTypes, UnreadEventTypeEntity.MESSAGE)
     }
 
     @Test
@@ -1329,47 +1329,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                     resultForGroupConversation?.content == MessageEntityContent.HistoryLost &&
                     resultForConnectionPendingConversation == null &&
                     resultForGlobalTeamConversation == null
-        }
-    }
-
-    @Test
-    fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest {
-        // given
-        val conversationId = QualifiedIDEntity("1", "someDomain")
-        val messageId = "Conversation MessageSent With Partial Success"
-        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
-
-        messageDAO.insertOrIgnoreMessages(
-            listOf(
-                newRegularMessageEntity(
-                    messageId,
-                    conversationId = conversationId,
-                    senderUserId = userEntity1.id,
-                    status = MessageEntity.Status.PENDING,
-                    // date after
-                    date = "2022-03-30T15:37:00.000Z".toInstant(),
-                    senderName = userEntity1.name!!,
-                    expectsReadConfirmation = true
-                )
-            )
-        )
-
-        // when
-        messageDAO.insertFailedRecipientDelivery(
-            messageId, conversationId, listOf(userEntity1.id, userEntity2.id), RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
-        )
-
-        // then
-        val result = messageDAO.getMessageById(
-            id = messageId,
-            conversationId = conversationId
-        )
-
-        assertTrue {
-            ((result as MessageEntity.Regular).deliveryStatus as DeliveryStatusEntity.PartialDelivery)
-                .recipientsFailedDelivery.size == 2
         }
     }
 

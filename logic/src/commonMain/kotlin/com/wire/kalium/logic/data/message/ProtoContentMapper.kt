@@ -98,7 +98,7 @@ class ProtoContentMapperImpl(
 
             is MessageContent.ClientAction -> packClientAction()
 
-            is MessageContent.TextEdited -> TODO("Message type not yet supported")
+            is MessageContent.TextEdited -> packEdited(readableContent)
 
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
@@ -273,6 +273,21 @@ class ProtoContentMapperImpl(
             kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
             MessageContent.Ignored
         }
+    }
+
+    private fun packEdited(readableContent: MessageContent.TextEdited): GenericMessage.Content.Edited {
+        val mentions = readableContent.newMentions.map { messageMentionMapper.fromModelToProto(it) }
+        return GenericMessage.Content.Edited(
+            MessageEdit(
+                replacingMessageId = readableContent.editMessageId,
+                content = MessageEdit.Content.Text( // TODO: for now we do not implement Composite
+                    Text(
+                        content = readableContent.newContent,
+                        mentions = mentions,
+                    )
+                )
+            )
+        )
     }
 
     private fun unpackEdited(

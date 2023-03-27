@@ -126,7 +126,8 @@ class CallManagerTest {
                 any(),
                 eq(expectedConversationId),
                 eq(USER_ID.toString()),
-                eq(CLIENT_ID.value)
+                eq(CLIENT_ID.value),
+                any()
             )
             .wasInvoked(exactly = once)
     }
@@ -143,6 +144,7 @@ class CallManagerTest {
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
             status = Message.Status.SENT,
+            isSelfMessage = false
         )
     }
 }

@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature
 
-package com.wire.kalium.logic.data.location
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.session.SessionManager
 
-import com.wire.kalium.network.api.base.model.LocationResponse
+internal fun SessionManager.getProxyCredentials(): ProxyCredentials? =
+    MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(proxyCredentials())
 
-class LocationMapper {
-    fun fromLocationResponse(locationResponse: LocationResponse): Location =
-        with(locationResponse) { Location(latitude = latitude, longitude = longitude) }
-}
+internal fun SessionManager.getServerConfig() =
+    MapperProvider.serverConfigMapper().fromDTO(serverConfig())

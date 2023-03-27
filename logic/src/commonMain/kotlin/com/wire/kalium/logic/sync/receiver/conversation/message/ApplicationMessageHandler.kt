@@ -81,7 +81,8 @@ internal class ApplicationMessageHandlerImpl(
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
     private val messageEncoder: MessageContentEncoder,
-    private val receiptMessageHandler: ReceiptMessageHandler
+    private val receiptMessageHandler: ReceiptMessageHandler,
+    private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
@@ -120,7 +121,8 @@ internal class ApplicationMessageHandlerImpl(
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation
+                    expectsReadConfirmation = content.expectsReadConfirmation,
+                    isSelfMessage = senderUserId == selfUserId
                 )
                 processMessage(message)
             }
@@ -133,7 +135,8 @@ internal class ApplicationMessageHandlerImpl(
                     timestampIso,
                     senderUserId,
                     senderClientId,
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    isSelfMessage = senderUserId == selfUserId
                 )
                 processSignaling(signalingMessage)
             }
@@ -197,7 +200,7 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     private suspend fun processMessage(message: Message.Regular) {
-        logger.i(message = "Message received: { \"message\" : $message }")
+        logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
 
         when (val content = message.content) {
             // Persist Messages - > lists
@@ -208,10 +211,10 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Knock -> handleKnock(message)
-            is MessageContent.Asset -> assetMessageHandler.handle(message, content)
+            is MessageContent.Asset -> assetMessageHandler.handle(message)
 
             is MessageContent.Unknown -> {
-                logger.i(message = "Unknown Message received: $message")
+                logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
 
@@ -301,12 +304,13 @@ internal class ApplicationMessageHandlerImpl(
             senderClientId = senderClientId,
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = senderUserId == selfUserId
         )
         processMessage(message)
     }
 }
 
-fun AssetContent.hasValidRemoteData() = this.remoteData.let {
-    it.assetId.isNotEmpty() && it.sha256.isNotEmpty() && it.otrKey.isNotEmpty()
-}
+fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+
+fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()

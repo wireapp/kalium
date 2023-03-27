@@ -30,13 +30,19 @@ interface LoginApi {
         data class LoginWithEmail(
             val email: String,
             override val password: String,
-            override val label: String?
+            override val label: String?,
+            /**
+             * Two-factor authentication code received in the user's email.
+             * Optional as it may or may not be required depending on team settings.
+             * @see VerificationCodeApi
+             */
+            val verificationCode: String? = null,
         ) : LoginParam(password, label)
 
-        data class LoginWithHandel(
+        data class LoginWithHandle(
             val handle: String,
             override val password: String,
-            override val label: String?
+            override val label: String?,
         ) : LoginParam(password, label)
     }
 

@@ -16,16 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.base.model.UserId
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConversationMembers(
     @SerialName("user_ids") val userIds: List<String>,
-    @SerialName("users") val users: List<ConversationMemberDTO.Other>
+    @EncodeDefault @SerialName("users") val users: List<ConversationMemberDTO.Other> = emptyList()
 )
 
 @Serializable

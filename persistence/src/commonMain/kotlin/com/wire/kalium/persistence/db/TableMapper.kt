@@ -34,13 +34,13 @@ import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageNewConversationReceiptModeContent
-import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
+import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
@@ -55,11 +55,14 @@ internal object TableMapper {
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        conversation_typeAdapter = EnumColumnAdapter()
+        conversation_typeAdapter = EnumColumnAdapter(),
+        typeAdapter = EnumColumnAdapter()
     )
     val clientAdapter = Client.Adapter(
         user_idAdapter = QualifiedIDAdapter,
-        device_typeAdapter = EnumColumnAdapter()
+        device_typeAdapter = EnumColumnAdapter(),
+        client_typeAdapter = EnumColumnAdapter(),
+        registration_dateAdapter = InstantTypeAdapter
     )
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
@@ -162,9 +165,9 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter
     )
 
-    val messageRecipientFailureAdapter = MessageRecipientFailure.Adapter(
+    val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
-        recipient_failure_listAdapter = QualifiedIDListAdapter(),
-        recipient_failure_typeAdapter = EnumColumnAdapter()
+        typeAdapter = EnumColumnAdapter(),
+        creation_dateAdapter = InstantTypeAdapter,
     )
 }

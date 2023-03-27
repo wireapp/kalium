@@ -22,6 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
+import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -214,6 +215,7 @@ class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
     private val memberQueries: MembersQueries,
+    private val unreadEventsQueries: UnreadEventsQueries,
     private val coroutineContext: CoroutineContext
 ) : ConversationDAO {
 
@@ -471,6 +473,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+        unreadEventsQueries.deleteUnreadEvents(date, conversationID)
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
 

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
@@ -49,9 +50,11 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ApplicationMessageHandlerTest {
 
     @Test
@@ -148,7 +151,8 @@ class ApplicationMessageHandlerTest {
             clearConversationContentHandler,
             deleteForMeHandler,
             MessageContentEncoder(),
-            receiptMessageHandler
+            receiptMessageHandler,
+            TestUser.SELF.id
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
@@ -180,7 +184,5 @@ class ApplicationMessageHandlerTest {
         }
 
         fun arrange() = this to applicationMessageHandler
-
     }
-
 }

@@ -142,6 +142,7 @@ class ReceiptMessageHandlerTest {
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
                 status = Message.Status.SENT,
+                isSelfMessage = false
             ),
             messageContent = content
         )

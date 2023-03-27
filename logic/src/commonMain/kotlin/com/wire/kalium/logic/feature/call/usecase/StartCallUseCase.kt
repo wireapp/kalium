@@ -19,13 +19,12 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
-import kotlin.Boolean
 import kotlin.Lazy
 
 /**
@@ -35,22 +34,20 @@ import kotlin.Lazy
  */
 class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val kaliumConfigs: KaliumConfigs
 ) {
 
     suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
-        conversationType: ConversationType,
-        isAudioCbr: Boolean = false
     ) = syncManager.waitUntilLiveOrFailure().fold({
         Result.SyncFailure
     }, {
         callManager.value.startCall(
             conversationId = conversationId,
             callType = callType,
-            conversationType = conversationType,
-            isAudioCbr = isAudioCbr
+            isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
         )
         Result.Success
     })

@@ -64,7 +64,7 @@ class OnParticipantListChanged internal constructor(
             }
 
             callRepository.updateCallParticipants(
-                conversationId = conversationIdWithDomain.toString(),
+                conversationId = conversationIdWithDomain,
                 participants = participants
             )
             callingLogger.i(

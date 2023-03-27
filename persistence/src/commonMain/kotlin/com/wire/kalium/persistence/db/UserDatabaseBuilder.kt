@@ -123,7 +123,7 @@ class UserDatabaseBuilder internal constructor(
         UserAdapter = TableMapper.userAdapter,
         MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter,
         MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
-        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
+        UnreadEventAdapter = TableMapper.unreadEventAdapter
     )
 
     init {
@@ -140,7 +140,13 @@ class UserDatabaseBuilder internal constructor(
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries, queriesContext)
 
     val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries, queriesContext)
+        get() = ConversationDAOImpl(
+            database.conversationsQueries,
+            database.usersQueries,
+            database.membersQueries,
+            database.unreadEventsQueries,
+            queriesContext
+        )
 
     private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
     val metadataDAO: MetadataDAO
@@ -163,6 +169,7 @@ class UserDatabaseBuilder internal constructor(
             database.messagesQueries,
             database.notificationQueries,
             database.conversationsQueries,
+            database.unreadEventsQueries,
             userId,
             database.reactionsQueries,
             queriesContext
@@ -183,7 +190,10 @@ class UserDatabaseBuilder internal constructor(
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
 
-    val migrationDAO: MigrationDAO get() = MigrationDAOImpl(database.migrationQueries, database.messagesQueries)
+    val migrationDAO: MigrationDAO
+        get() = MigrationDAOImpl(
+            database.migrationQueries, database.messagesQueries, database.unreadEventsQueries, userId
+        )
 
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist

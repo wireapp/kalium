@@ -142,7 +142,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                isSelfMessage = true
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
@@ -204,9 +205,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         message: Message,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
-        }
+        messageSender.sendPendingMessage(conversationId, message.id)
 
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(

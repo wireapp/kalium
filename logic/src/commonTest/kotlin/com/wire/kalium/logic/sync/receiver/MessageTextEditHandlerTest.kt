@@ -27,6 +27,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -72,6 +73,75 @@ class MessageTextEditHandlerTest {
         }
     }
 
+    @Test
+    fun givenEditIsNewerThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateTheWholeMessageDataAndStatus() = runTest {
+        val originalContent = TestMessage.TEXT_CONTENT
+        val originalEditStatus = Message.EditStatus.Edited("2000-01-01T12:00:00.000Z")
+        val originalMessage = ORIGINAL_MESSAGE.copy(
+            editStatus = originalEditStatus,
+            content = originalContent,
+            status = Message.Status.PENDING
+        )
+        val editContent = EDIT_CONTENT
+        val editMessage = EDIT_MESSAGE.copy(
+            date = "2000-01-01T12:00:00.001Z",
+            content = editContent
+        )
+        val (arrangement, messageTextEditHandler) = Arrangement()
+            .withCurrentMessageByIdReturning(Either.Right(originalMessage))
+            .arrange()
+
+        messageTextEditHandler.handle(editMessage, editContent)
+
+        with(arrangement) {
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .with(eq(editMessage.conversationId), eq(editContent), eq(editMessage.id), eq(editMessage.date))
+                .wasInvoked()
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
+                .wasInvoked()
+        }
+    }
+
+    @Test
+    fun givenEditIsOlderThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateOnlyMessageIdAndDate() = runTest {
+        val originalContent = TestMessage.TEXT_CONTENT
+        val originalEditStatus = Message.EditStatus.Edited("2000-01-01T12:00:00.001Z")
+        val originalMessage = ORIGINAL_MESSAGE.copy(
+            editStatus = originalEditStatus,
+            content = originalContent,
+            status = Message.Status.PENDING
+        )
+        val editContent = EDIT_CONTENT
+        val editMessage = EDIT_MESSAGE.copy(
+            date = "2000-01-01T12:00:00.000Z",
+            content = editContent
+        )
+        val expectedContent = MessageContent.TextEdited(
+            editMessageId = editContent.editMessageId,
+            newContent = originalContent.value,
+            newMentions = originalContent.mentions
+        )
+        val (arrangement, messageTextEditHandler) = Arrangement()
+            .withCurrentMessageByIdReturning(Either.Right(originalMessage))
+            .arrange()
+
+        messageTextEditHandler.handle(editMessage, editContent)
+
+        with(arrangement) {
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .with(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastTimeStamp))
+                .wasInvoked()
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(any(), any(), any())
+                .wasNotInvoked()
+        }
+    }
+
     private class Arrangement {
 
         @Mock
@@ -81,6 +151,10 @@ class MessageTextEditHandlerTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateTextMessage)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+            given(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 

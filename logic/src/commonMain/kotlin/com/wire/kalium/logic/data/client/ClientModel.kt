@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.location.Location
+import kotlinx.datetime.Instant
 
 data class RegisterClientParam(
     val password: String?,
@@ -31,7 +31,8 @@ data class RegisterClientParam(
     val capabilities: List<ClientCapability>?,
     val clientType: ClientType?,
     val model: String?,
-    val cookieLabel: String?
+    val cookieLabel: String?,
+    val secondFactorVerificationCode: String? = null,
 )
 
 data class DeleteClientParam(
@@ -41,22 +42,16 @@ data class DeleteClientParam(
 
 data class Client(
     val id: ClientId,
-    val type: ClientType,
-    val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
-    val location: Location?,
+    val type: ClientType?,
+    val registrationTime: Instant?, // yyyy-mm-ddThh:MM:ss.qqq
+    val isVerified: Boolean,
+    val isValid: Boolean,
     val deviceType: DeviceType?,
     val label: String?,
-    val cookie: String?,
-    val capabilities: Capabilities?,
-    val model: String?,
-    val mlsPublicKeys: Map<String, String>
+    val model: String?
 ) {
     val name by lazy { model ?: label ?: "Unknown Client" } // TODO: ask design about the name when model/liable is null
 }
-
-data class Capabilities(
-    val capabilities: List<ClientCapability>
-)
 
 enum class ClientType {
     Temporary,
@@ -79,5 +74,6 @@ enum class ClientCapability {
 data class OtherUserClient(
     val deviceType: DeviceType,
     val id: String,
-    val isValid: Boolean
+    val isValid: Boolean,
+    val isVerified: Boolean
 )

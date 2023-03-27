@@ -105,6 +105,14 @@ enum class UserTypeEntity {
     NONE;
 }
 
+/**
+ * This is used to indicate if the self user (account) is managed by SCIM or Wire
+ * If the user is managed by other than [WIRE], then is a read only account.
+ */
+enum class ManagedByEntity {
+    WIRE, SCIM
+}
+
 internal typealias UserAssetIdEntity = QualifiedIDEntity
 
 @Suppress("TooManyFunctions")
@@ -156,6 +164,7 @@ interface UserDAO {
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(

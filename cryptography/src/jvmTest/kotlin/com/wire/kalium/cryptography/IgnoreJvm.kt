@@ -15,11 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.cryptography
 
-package com.wire.kalium.logic.data.location
-
-data class Location(
-    // val name: String,
-    val latitude: String,
-    val longitude: String
-)
+// it had to be junit.Ignore because
+// Right-hand side of actual type alias should be a class, not another type alias
+actual typealias IgnoreJvm = org.junit.Ignore

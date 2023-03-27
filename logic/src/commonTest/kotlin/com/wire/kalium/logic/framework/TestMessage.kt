@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.toInstant
@@ -30,7 +29,6 @@ import kotlinx.datetime.toInstant
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
     const val TEST_DATE_STRING = "2000-01-01T12:00:00.000Z"
-    val TEST_MESSAGE_SENT = MessageSent(TEST_DATE_STRING)
     val TEST_DATE = TEST_DATE_STRING.toInstant()
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
@@ -60,7 +58,8 @@ object TestMessage {
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = Message.EditStatus.NotEdited,
+        isSelfMessage = false
     )
 
     val MISSED_CALL_MESSAGE = Message.System(
@@ -80,7 +79,8 @@ object TestMessage {
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.PENDING,
-        editStatus = Message.EditStatus.NotEdited
+        editStatus = Message.EditStatus.NotEdited,
+        isSelfMessage = false
     )
 
     val ENTITY = MessageEntity.Regular(
@@ -105,6 +105,7 @@ object TestMessage {
         date = "currentDate",
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.SENT
+        status = Message.Status.SENT,
+        isSelfMessage = false
     )
 }

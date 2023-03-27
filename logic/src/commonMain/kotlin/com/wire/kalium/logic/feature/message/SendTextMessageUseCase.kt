@@ -89,6 +89,7 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
+                isSelfMessage = true
             )
             persistMessage(message)
         }.flatMap {

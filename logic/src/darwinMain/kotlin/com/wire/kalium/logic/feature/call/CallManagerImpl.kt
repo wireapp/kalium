@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
@@ -36,13 +35,12 @@ class CallManagerImpl : CallManager {
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
-        conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun answerCall(conversationId: ConversationId) {
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean) {
         TODO("Not yet implemented")
     }
 

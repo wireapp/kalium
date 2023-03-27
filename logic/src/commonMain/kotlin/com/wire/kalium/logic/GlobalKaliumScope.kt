@@ -35,8 +35,14 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.client.NewClientManagerImpl
+import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
+import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
+import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCase
+import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCaseImpl
+import com.wire.kalium.logic.feature.rootDetection.RootDetectorImpl
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
@@ -149,4 +155,14 @@ class GlobalKaliumScope internal constructor(
             authenticationScopeProvider,
             userSessionScopeProvider.value
         )
+
+    val checkSystemIntegrity: CheckSystemIntegrityUseCase
+        get() = CheckSystemIntegrityUseCaseImpl(
+            kaliumConfigs,
+            RootDetectorImpl(),
+            sessionRepository
+        )
+
+    val observeNewClientsUseCase: ObserveNewClientsUseCase
+        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, NewClientManagerImpl)
 }
