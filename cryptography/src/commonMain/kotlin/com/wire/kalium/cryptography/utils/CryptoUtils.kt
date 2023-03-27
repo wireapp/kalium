@@ -33,6 +33,7 @@ fun calcMd5(bytes: ByteArray): String =
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
+ *
  * @param bytes the data to be hashed
  * @return the digested md5 hash of the input [bytes] data
  * @see calcFileMd5
@@ -56,6 +57,7 @@ fun calcSHA256(bytes: ByteArray): ByteArray =
 
 /**
  * Method used to calculate the digested SHA256 hash of a relatively small byte array
+ *
  * @param bytes the data to be hashed
  * @return the digested SHA256 hash of the input [bytes] data
  * @see calcFileSHA256
@@ -76,6 +78,7 @@ fun calcFileSHA256(dataSource: Source): ByteArray? =
 
 /**
  * Method used to encrypt a relatively small array of bytes using the AES256 encryption algorithm
+ *
  * @param data the [PlainData] that needs to be encrypted
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
  * @return the final [EncryptedData], on which the first 16 bytes belong to the initialisation vector
@@ -88,6 +91,7 @@ expect fun encryptDataWithAES256(
 
 /**
  * Method used to decrypt a relatively small array of bytes using the AES256 decryption algorithm
+ *
  * @param data the [EncryptedData] that needs to be decrypted
  * @return the decrypted data as a byte array encapsulated in a [PlainData] object
  * @see decryptFileWithAES256
@@ -95,24 +99,26 @@ expect fun encryptDataWithAES256(
 expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData
 
 /**
- * Method used to encrypt some data stored on the file system using the AES256 encryption algorithm
- * @param assetDataSource the path to the data that needs to be encrypted
+ * Method used to encrypt binary data using the AES256 encryption algorithm
+ *
+ * @param source the [Source] of the plain text data that needs to be encrypted
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
- * @param outputSink the path where the encrypted data will be saved
+ * @param sink the [Sink] which the encrypted data will be written to
  * @return the size of the encrypted data in bytes if the encryption succeeded and 0 otherwise
  * @see encryptDataWithAES256
  */
-expect fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long
+expect fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long
 
 /**
  * Method used to decrypt some binary data using the AES256 encryption algorithm
- * @param encryptedDataSource the [Source] of the encrypted data that needs to be decrypted
- * @param decryptedDataSink the output stream data sink invoked to write the decrypted data
+ *
+ * @param source the [Source] of the encrypted data that needs to be decrypted
+ * @param sink the [Sink] to which the plain text data will be written to
  * @param secretKey the key used for the decryption
  * @return the size of the decrypted data in bytes if the decryption succeeded -1L otherwise
  * @see decryptDataWithAES256
  */
-expect fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long
+expect fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long
 
 /**
  * Method to generate a random Secret Key via the AES256 ciphering Algorithm

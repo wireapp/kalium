@@ -37,19 +37,12 @@ interface GetOtherUserSecurityClassificationLabelUseCase {
 }
 
 internal class GetOtherUserSecurityClassificationLabelUseCaseImpl(
-    private val selfUserId: UserId,
     private val userConfigRepository: UserConfigRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetOtherUserSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(otherUserId: UserId): SecurityClassificationType = withContext(dispatchers.io) {
-        val trustedDomains = getClassifiedDomainsStatus()
-        val computedStatus = if (trustedDomains == null) {
-            null
-        } else {
-            otherUserId.domain == selfUserId.domain || trustedDomains.contains(otherUserId.domain)
-        }
-        return@withContext when (computedStatus) {
+        return@withContext when (getClassifiedDomainsStatus()?.contains(otherUserId.domain)) {
             true -> SecurityClassificationType.CLASSIFIED
             false -> SecurityClassificationType.NOT_CLASSIFIED
             null -> SecurityClassificationType.NONE
