@@ -21,29 +21,34 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 
+@Suppress("LongParameterList")
 /**
  * Sending a ping/knock message to a conversation
  */
 class SendKnockUseCase internal constructor(
+    private val messageRepository: MessageRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val userRepository: UserRepository,
+    private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val messageSendFailureHandler: MessageSendFailureHandler
 ) {
 
     /**
@@ -58,8 +63,6 @@ class SendKnockUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        val selfUser = userRepository.observeSelfUser().first()
-
         val generatedMessageUuid = uuid4().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
@@ -68,22 +71,23 @@ class SendKnockUseCase internal constructor(
                 content = MessageContent.Knock(hotKnock),
                 conversationId = conversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
-                senderUserId = selfUser.id,
+                senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = true
             )
             persistMessage(message)
-        }.flatMap {
-            messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
-        }.onFailure {
-            if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("There was an unknown error trying to send the message $it", it.rootCause)
-                it.rootCause?.printStackTrace()
-            } else {
-                kaliumLogger.e("There was an error trying to send the message $it")
-            }
-        }
+                .flatMap {
+                    messageSender.sendMessage(message)
+                }
+                .onSuccess {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
+                }
+        }.onFailure { messageSendFailureHandler.handleFailureUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+    }
+
+    companion object {
+        const val TYPE = "knock"
     }
 }

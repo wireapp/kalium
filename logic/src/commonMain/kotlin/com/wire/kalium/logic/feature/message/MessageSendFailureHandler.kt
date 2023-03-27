@@ -19,12 +19,17 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageSendFailureHandler {
     /**
@@ -34,11 +39,27 @@ interface MessageSendFailureHandler {
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
     suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit>
+
+    /**
+     * Handle a failure when attempting to send a message
+     * update the message status to FAILED or FAILED_REMOTELY depending on the resulted failure.
+     * @param failure the failure that occured
+     * @param conversationId id of the conversation of the message that failed
+     * @param messageId id of the message that failed
+     * @param messageType type of the message that failed (for logging purposes)
+     */
+    suspend fun handleFailureUpdateMessageStatus(
+        failure: CoreFailure,
+        conversationId: ConversationId,
+        messageId: String,
+        messageType: String
+    )
 }
 
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val messageRepository: MessageRepository
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
@@ -54,4 +75,30 @@ class MessageSendFailureHandlerImpl internal constructor(
                         clientRepository.storeUserClientIdList(entry.key, entry.value)
                     }
             }
+
+    override suspend fun handleFailureUpdateMessageStatus(
+        failure: CoreFailure,
+        conversationId: ConversationId,
+        messageId: String,
+        messageType: String
+    ) {
+        when (failure) {
+            is NetworkFailure.FederatedBackendFailure -> {
+                kaliumLogger.i("Sending message of type $messageType failed due to federation context availability.")
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
+            }
+            else -> {
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageId)
+            }
+        }
+        if (failure is CoreFailure.Unknown) {
+            kaliumLogger.e(
+                "There was an unknown error trying to send the message of type: $messageType, cause: $failure",
+                failure.rootCause
+            )
+            failure.rootCause?.printStackTrace()
+        } else {
+            kaliumLogger.e("There was an error trying to send the message of type: $messageType, cause: $failure")
+        }
+    }
 }
