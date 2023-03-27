@@ -1148,9 +1148,10 @@ class UserSessionScope internal constructor(
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
-        get() = ObserveSecurityClassificationLabelUseCaseImpl(userId, conversationRepository, userConfigRepository)
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversationRepository, userConfigRepository)
+
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
-        get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userId, userConfigRepository)
+        get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories

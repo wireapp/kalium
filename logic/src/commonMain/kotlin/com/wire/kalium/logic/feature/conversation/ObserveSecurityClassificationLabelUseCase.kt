@@ -39,7 +39,6 @@ interface ObserveSecurityClassificationLabelUseCase {
 }
 
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
-    private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val userConfigRepository: UserConfigRepository
 ) : ObserveSecurityClassificationLabelUseCase {
@@ -51,9 +50,7 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
                 if (trustedDomains == null) {
                     null
                 } else {
-                    participantsIds.map { it.id.domain }.all { participantDomain ->
-                        participantDomain == selfUserId.domain || trustedDomains.contains(participantDomain)
-                    }
+                    participantsIds.map { it.id.domain }.all { participantDomain -> trustedDomains.contains(participantDomain) }
                 }
             }.map { isClassified ->
                 when (isClassified) {

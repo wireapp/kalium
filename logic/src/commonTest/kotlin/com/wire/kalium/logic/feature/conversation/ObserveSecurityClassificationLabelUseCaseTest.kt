@@ -88,7 +88,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
-            selfUserId, conversationRepository, userConfigRepository
+            conversationRepository, userConfigRepository
         )
 
         fun withGettingClassifiedDomainsDisabled() = apply {

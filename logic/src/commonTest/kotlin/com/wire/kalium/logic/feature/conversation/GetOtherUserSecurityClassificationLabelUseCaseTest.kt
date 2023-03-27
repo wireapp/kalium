@@ -92,7 +92,7 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
         }
 
         fun arrange() = this to GetOtherUserSecurityClassificationLabelUseCaseImpl(
-            selfUserId, userConfigRepository, dispatcher
+            userConfigRepository, dispatcher
         )
 
         companion object {
