@@ -34,6 +34,7 @@ import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -82,7 +83,7 @@ class CryptoUtilsTest {
 
         // Then
         assertNotNull(digest)
-        assertTrue(digest.contentEquals(expectedValue))
+        assertContentEquals(expectedValue, digest)
     }
 
     @Test
@@ -120,7 +121,7 @@ class CryptoUtilsTest {
         // Then
         assertTrue(input.size % 16 == 0)
         assertEquals(decryptedDataSize, input.size.toLong())
-        assertTrue(input.contentEquals(decryptedData))
+        assertContentEquals(decryptedData, input)
     }
 
     @Test
@@ -157,7 +158,7 @@ class CryptoUtilsTest {
         assertTrue(encryptedDataSize % 16 == 0)
         assertEquals(decryptedData.size, input.size)
         assertEquals(decryptedDataSize, input.size.toLong())
-        assertTrue(input.contentEquals(decryptedData))
+        assertContentEquals(decryptedData, input)
     }
 
     @Test
@@ -189,8 +190,8 @@ class CryptoUtilsTest {
 
         // Then
         assertTrue(input.size % 16 == 0)
-        assertEquals(decryptedData.data.size, input.size)
-        assertTrue(input.contentEquals(decryptedData.data))
+        assertEquals(input.size, decryptedData.data.size)
+        assertContentEquals(input, decryptedData.data)
     }
 
     @Test

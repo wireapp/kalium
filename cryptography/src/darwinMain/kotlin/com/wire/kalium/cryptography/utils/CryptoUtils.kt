@@ -31,7 +31,11 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.use
-import platform.CoreCrypto.CCCrypt
+import platform.CoreCrypto.CCCryptorCreate
+import platform.CoreCrypto.CCCryptorFinal
+import platform.CoreCrypto.CCCryptorRefVar
+import platform.CoreCrypto.CCCryptorRelease
+import platform.CoreCrypto.CCCryptorUpdate
 import platform.CoreCrypto.kCCAlgorithmAES
 import platform.CoreCrypto.kCCBlockSizeAES128
 import platform.CoreCrypto.kCCDecrypt
@@ -69,101 +73,179 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
     }
 }
 
-actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {
-    try {
-        val iv = generateRandomData(kCCBlockSizeAES128.toInt())
-        val plainData = assetDataSource.buffer().readByteArray()
-        val encryptedBuffer = ByteArray(plainData.size + kCCBlockSizeAES128.toInt())
+@Suppress("LongMethod", "ThrowsCount")
+actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
+    val iv = generateRandomData(kCCBlockSizeAES128.toInt())
+    val encryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
-        // TODO avoid read whole file into memory by using streaming or block based API
-        return memScoped {
-            val bytesCopied = alloc<ULongVar>()
-            val status = key.data.usePinned { key ->
+    return memScoped {
+        val cryptor = alloc<CCCryptorRefVar>()
+        val bytesCopied = alloc<ULongVar>()
+        var bytesCopiedTotal: ULong = 0u
+
+        try {
+            key.data.usePinned { key ->
                 iv.usePinned { iv ->
-                    plainData.usePinned { plainData ->
-                        encryptedBuffer.usePinned { encryptedBuffer ->
-                            CCCrypt(
-                                kCCEncrypt,
-                                kCCAlgorithmAES,
-                                kCCOptionPKCS7Padding,
-                                key.addressOf(0),
-                                kCCKeySizeAES256.toULong(),
-                                iv.addressOf(0),
-                                plainData.addressOf(0),
-                                plainData.get().size.toULong(),
-                                encryptedBuffer.addressOf(0),
-                                encryptedBuffer.get().size.toULong(),
-                                bytesCopied.ptr
-                            )
-                        }
+                    val status = CCCryptorCreate(
+                        kCCEncrypt,
+                        kCCAlgorithmAES,
+                        kCCOptionPKCS7Padding,
+                        key.addressOf(0),
+                        kCCKeySizeAES256.toULong(),
+                        iv.addressOf(0),
+                        cryptor.ptr
+                    )
+
+                    if (status != kCCSuccess) {
+                        throw CryptographyException("Failure on CCCryptorCreate, status = $status")
                     }
                 }
             }
 
-            if (status != kCCSuccess) {
-                throw CryptographyException("Failure while encrypting data using AES256")
+            Buffer().use {
+                sink.write(it.write(iv), iv.size.toLong())
+            }
+
+            val inputBuffer = source.buffer()
+            val unencryptedBuffer = ByteArray(BUFFER_SIZE)
+            var bytesRead: Int
+
+            while (inputBuffer.read(unencryptedBuffer, 0, BUFFER_SIZE).also { bytesRead = it } > 0) {
+                unencryptedBuffer.usePinned { unencryptedBuffer ->
+                    encryptedBuffer.usePinned { encryptedBuffer ->
+                        val status = CCCryptorUpdate(
+                            cryptor.value,
+                            unencryptedBuffer.addressOf(0),
+                            bytesRead.toULong(),
+                            encryptedBuffer.addressOf(0),
+                            encryptedBuffer.get().size.toULong(),
+                            bytesCopied.ptr
+                        )
+
+                        if (status != kCCSuccess) {
+                            throw CryptographyException("Failure on CCCryptorUpdate, status = $status")
+                        }
+                    }
+                }
+
+                Buffer().use {
+                    sink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
+                }
+                bytesCopiedTotal += bytesCopied.value
+            }
+
+            encryptedBuffer.usePinned { encryptedBuffer ->
+                val status = CCCryptorFinal(
+                    cryptor.value,
+                    encryptedBuffer.addressOf(0),
+                    encryptedBuffer.get().size.toULong(),
+                    bytesCopied.ptr
+                )
+
+                if (status != kCCSuccess) {
+                    throw CryptographyException("Failure on CCCryptorFinal, status = $status")
+                }
             }
 
             Buffer().use {
-                outputSink.write(it.write(iv), iv.size.toLong())
+                sink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
             }
-            Buffer().use {
-                outputSink.write(it.write(encryptedBuffer), bytesCopied.value.toLong())
-            }
-            bytesCopied.value.toLong()
+            bytesCopiedTotal += bytesCopied.value
+        } finally {
+            CCCryptorRelease(cryptor.value)
+            source.close()
+            sink.close()
         }
-    } finally {
-        assetDataSource.close()
-        outputSink.close()
+
+        bytesCopiedTotal.toLong()
     }
 }
 
-actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long {
-    try {
-        val iv = Buffer().use {
-            encryptedDataSource.read(it, kCCBlockSizeAES128.toLong())
-            it.readByteArray()
-        }
-        val encryptedData = encryptedDataSource.buffer().readByteArray()
-        val decryptedBuffer = ByteArray(encryptedData.size + kCCBlockSizeAES128.toInt())
+@Suppress("LongMethod", "ThrowsCount")
+actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
+    val decryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
-        // TODO avoid read whole file into memory by using streaming or block based API
-        return memScoped {
-            val bytesCopied = alloc<ULongVar>()
-            val status = secretKey.data.usePinned { key ->
+    return memScoped {
+        val cryptor = alloc<CCCryptorRefVar>()
+        val bytesCopied = alloc<ULongVar>()
+        var bytesCopiedTotal: ULong = 0u
+
+        try {
+            val iv = Buffer().use {
+                source.read(it, kCCBlockSizeAES128.toLong())
+                it.readByteArray()
+            }
+
+            secretKey.data.usePinned { key ->
                 iv.usePinned { iv ->
-                    encryptedData.usePinned { encryptedData ->
-                        decryptedBuffer.usePinned { decryptedBuffer ->
-                            CCCrypt(
-                                kCCDecrypt,
-                                kCCAlgorithmAES,
-                                kCCOptionPKCS7Padding,
-                                key.addressOf(0),
-                                kCCKeySizeAES256.toULong(),
-                                iv.addressOf(0),
-                                encryptedData.addressOf(0),
-                                encryptedData.get().size.toULong(),
-                                decryptedBuffer.addressOf(0),
-                                decryptedBuffer.get().size.toULong(),
-                                bytesCopied.ptr
-                            )
-                        }
+                    val status = CCCryptorCreate(
+                        kCCDecrypt,
+                        kCCAlgorithmAES,
+                        kCCOptionPKCS7Padding,
+                        key.addressOf(0),
+                        kCCKeySizeAES256.toULong(),
+                        iv.addressOf(0),
+                        cryptor.ptr
+                    )
+
+                    if (status != kCCSuccess) {
+                        throw CryptographyException("Failure on CCCryptorCreate, status = $status")
                     }
                 }
             }
 
-            if (status != kCCSuccess) {
-                throw CryptographyException("Failure while decrypting data using AES256")
+            val inputBuffer = source.buffer()
+            val encryptedBuffer = ByteArray(BUFFER_SIZE)
+            var bytesRead: Int
+
+            while (inputBuffer.read(encryptedBuffer, 0, BUFFER_SIZE).also { bytesRead = it } > 0) {
+                decryptedBuffer.usePinned { decryptedBuffer ->
+                    encryptedBuffer.usePinned { encryptedDataBlock ->
+                        val status = CCCryptorUpdate(
+                            cryptor.value,
+                            encryptedDataBlock.addressOf(0),
+                            bytesRead.toULong(),
+                            decryptedBuffer.addressOf(0),
+                            decryptedBuffer.get().size.toULong(),
+                            bytesCopied.ptr
+                        )
+
+                        if (status != kCCSuccess) {
+                            throw CryptographyException("Failure on CCCryptorUpdate, status = $status")
+                        }
+                    }
+                }
+
+                Buffer().use {
+                    sink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
+                }
+                bytesCopiedTotal += bytesCopied.value
+            }
+
+            decryptedBuffer.usePinned { decryptedBuffer ->
+                val status = CCCryptorFinal(
+                    cryptor.value,
+                    decryptedBuffer.addressOf(0),
+                    decryptedBuffer.get().size.toULong(),
+                    bytesCopied.ptr
+                )
+
+                if (status != kCCSuccess) {
+                    throw CryptographyException("Failure on CCCryptorFinal, status = $status")
+                }
             }
 
             Buffer().use {
-                decryptedDataSink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
+                sink.write(it.write(decryptedBuffer), bytesCopied.value.toLong())
             }
-             bytesCopied.value.toLong()
+            bytesCopiedTotal += bytesCopied.value
+        } finally {
+            CCCryptorRelease(cryptor.value)
+            source.close()
+            sink.close()
         }
-    } finally {
-        encryptedDataSource.close()
-        decryptedDataSink.close()
+
+        bytesCopiedTotal.toLong()
     }
 }
 
@@ -184,3 +266,5 @@ private fun generateRandomData(size: Int): ByteArray {
 
     return keyMaterial
 }
+
+private const val BUFFER_SIZE = 1024 * 8

@@ -29,11 +29,11 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
     TODO("Not yet implemented")
 }
 
-actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {
+actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
     TODO("Not yet implemented")
 }
 
-actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long =
+actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long =
     TODO("Not yet implemented")
 
 actual fun generateRandomAES256Key(): AES256Key {
