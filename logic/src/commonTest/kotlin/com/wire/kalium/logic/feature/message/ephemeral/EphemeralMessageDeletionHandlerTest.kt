@@ -89,6 +89,7 @@ class EphemeralMessageDeletionHandlerTest {
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
             .withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
             .withMessageRepositoryMarkingSelfDeletionStartDate()
+            .withDeletingMessage()
             .arrange()
 
         // when
@@ -97,9 +98,8 @@ class EphemeralMessageDeletionHandlerTest {
             messageId = oneSecondEphemeralMessage.id
         )
 
-        advanceUntilIdle()
-
         // then
+        advanceUntilIdle()
 
         // invoke first time
         verify(arrangement.messageRepository)
