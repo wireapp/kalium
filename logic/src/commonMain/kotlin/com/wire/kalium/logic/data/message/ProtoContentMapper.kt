@@ -94,15 +94,11 @@ class ProtoContentMapperImpl(
             is MessageContent.Reaction -> packReaction(readableContent)
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
-
             is MessageContent.TextEdited -> packEdited(readableContent)
-
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: $readableContent"
                 )
-
-            is MessageContent.TextEdited -> TODO("Message type not yet supported")
         }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
