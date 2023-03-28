@@ -40,14 +40,16 @@ object MessageUseCases {
     suspend fun sendingTextMessageWithMentions(
         sendTextMessageUseCase: SendTextMessageUseCase,
         conversationId: ConversationId,
-        johnUserId: UserId
+        johnUserId: UserId,
+        selfUserId: UserId
     ) {
         // Sending a text message with mention
         val text = "Hello, @John"
         val johnMention = MessageMention(
             start = 8, // The index of the @ in the text above
             length = 5, // The length of the mention (including the @)
-            userId = johnUserId // ID of the user being mentioned
+            userId = johnUserId, // ID of the user being mentioned
+            isSelfMention = selfUserId == johnUserId // Whether the mention is for the current user
         )
         sendTextMessageUseCase.invoke(
             conversationId = conversationId,
@@ -60,13 +62,15 @@ object MessageUseCases {
         editTextMessageUseCase: SendEditTextMessageUseCase,
         conversationId: ConversationId,
         originalMessageId: String,
-        johnUserId: UserId
+        johnUserId: UserId,
+        selfUserId: UserId
     ) {
         // Editing a simple text message
         val johnMention = MessageMention(
             start = 8, // The index of the @ in the text above
             length = 5, // The length of the mention (including the @)
-            userId = johnUserId // ID of the user being mentioned
+            userId = johnUserId, // ID of the user being mentioned
+            isSelfMention = selfUserId == johnUserId // Whether the mention is for the current user
         )
         editTextMessageUseCase.invoke(
             conversationId = conversationId,
