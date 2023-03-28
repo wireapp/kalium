@@ -85,7 +85,7 @@ class SendTextMessageCaseTest {
             .with(eq(MessageEntity.Status.SENT), any(), any())
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureUpdateMessageStatus)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
             .with(any(), any(), any(), any())
             .wasNotInvoked()
     }
@@ -120,7 +120,7 @@ class SendTextMessageCaseTest {
             .with(any(), any())
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureUpdateMessageStatus)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
             .with(any(), any(), any(), any())
             .wasInvoked(once)
     }

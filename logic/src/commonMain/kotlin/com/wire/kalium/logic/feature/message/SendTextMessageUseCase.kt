@@ -102,7 +102,7 @@ class SendTextMessageUseCase internal constructor(
                 .onSuccess {
                     messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
                 }
-        }.onFailure { messageSendFailureHandler.handleFailureUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
     }
 
     companion object {

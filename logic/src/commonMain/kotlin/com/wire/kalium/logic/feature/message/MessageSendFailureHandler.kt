@@ -48,7 +48,7 @@ interface MessageSendFailureHandler {
      * @param messageId id of the message that failed
      * @param messageType type of the message that failed (for logging purposes)
      */
-    suspend fun handleFailureUpdateMessageStatus(
+    suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
         conversationId: ConversationId,
         messageId: String,
@@ -76,7 +76,7 @@ class MessageSendFailureHandlerImpl internal constructor(
                     }
             }
 
-    override suspend fun handleFailureUpdateMessageStatus(
+    override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
         conversationId: ConversationId,
         messageId: String,
@@ -84,7 +84,7 @@ class MessageSendFailureHandlerImpl internal constructor(
     ) {
         when (failure) {
             is NetworkFailure.FederatedBackendFailure -> {
-                kaliumLogger.i("Sending message of type $messageType failed due to federation context availability.")
+                kaliumLogger.e("Sending message of type $messageType failed due to federation context availability.")
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
             }
             else -> {
@@ -96,7 +96,6 @@ class MessageSendFailureHandlerImpl internal constructor(
                 "There was an unknown error trying to send the message of type: $messageType, cause: $failure",
                 failure.rootCause
             )
-            failure.rootCause?.printStackTrace()
         } else {
             kaliumLogger.e("There was an error trying to send the message of type: $messageType, cause: $failure")
         }

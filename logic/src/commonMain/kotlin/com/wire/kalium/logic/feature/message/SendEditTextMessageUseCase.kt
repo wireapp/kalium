@@ -122,7 +122,7 @@ class SendEditTextMessageUseCase internal constructor(
                             }
                         }
                 }
-        }.onFailure { messageSendFailureHandler.handleFailureUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
+        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
     }
 
     companion object {
