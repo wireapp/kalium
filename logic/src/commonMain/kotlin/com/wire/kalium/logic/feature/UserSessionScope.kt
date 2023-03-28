@@ -1131,13 +1131,13 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
-    private val selfDeletingMessageManager = EphemeralMessageDeletionHandlerImpl(
+    private val ephemeralMessageDeletionHandler = EphemeralMessageDeletionHandlerImpl(
         userSessionCoroutineScope = this,
         messageRepository = messageRepository
     )
 
     val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
-        ephemeralMessageDeletionHandler = selfDeletingMessageManager
+        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
@@ -1207,7 +1207,7 @@ class UserSessionScope internal constructor(
             conversationsRecoveryManager.invoke()
         }
         launch {
-            selfDeletingMessageManager.enqueuePendingSelfDeletionMessages()
+            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
         }
     }
 
