@@ -70,6 +70,11 @@ interface MessageSender {
      * @param conversationId
      * @param messageUuid
      */
+    @Deprecated(
+        "For now we don't support re-sending pending messages, they should fail immediately when there's an error, " +
+                "even if it's no network",
+        ReplaceWith("sendMessage")
+    )
     suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
 
     /**
