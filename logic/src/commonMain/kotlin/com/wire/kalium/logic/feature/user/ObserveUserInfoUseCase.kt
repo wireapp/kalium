@@ -61,6 +61,7 @@ internal class ObserveUserInfoUseCaseImpl(
     private val teamRepository: TeamRepository
 ) : ObserveUserInfoUseCase {
 
+    // private val poorManFederatedUsersCache = mutableMapOf<UserId, Instant>()
     override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
         val flow = observeOtherUser(userId)
             .flatMapRightWithEither { otherUser ->
@@ -69,31 +70,19 @@ internal class ObserveUserInfoUseCaseImpl(
             }
             .mapToRightOr(GetUserInfoResult.Failure)
 
-
+        var hasBeingFetched = false
         return flow
             .onStart { emitAll(flow) }
             .onEach { userInfoResult: GetUserInfoResult ->
-                if (userInfoResult is GetUserInfoResult.Success && !userInfoResult.otherUser.userType.isTeammate()) {
-                    kaliumLogger.d("User is not a teammate, fetching user info from API")
-                    userRepository.fetchUserInfo(userId)
+                if (!hasBeingFetched && userInfoResult is GetUserInfoResult.Success && !userInfoResult.otherUser.userType.isTeammate()) {
+                    userRepository.fetchUserInfo(userId).also {
+                        kaliumLogger.d("User is not a teammate, refreshing user info from API")
+                        hasBeingFetched = true
+                    }
                 }
             }
     }
 
-    /**
-     * What it is right now...
-     *
-     * 1. get user from DB.
-     * 2. if user is not in DB, fetch it from API and save it into DB, this handling DataNotFound.
-     * 3. filter invalid result to not emit.
-     *
-     * What should be...
-     *
-     * 1. observe user from DB.
-     * 2. if user is not in DB, fetch it from API and save it into DB, this handling DataNotFound.
-     * 3. if user is of type is not teammate, then always fetch from DB.
-     *
-     */
     private suspend fun observeOtherUser(userId: UserId): Flow<Either<CoreFailure, OtherUser>> {
         return userRepository.getKnownUser(userId)
             .wrapStorageRequest()
