@@ -18,35 +18,21 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.*
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.id.*
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
+import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.logic.functional.*
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
@@ -60,23 +46,20 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
+import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 internal interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
-    suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
@@ -308,9 +291,28 @@ internal class UserDataSource internal constructor(
             }
     }
 
+    /**
+     * In case of federated users, we need to refresh their info every X minutes.
+     * Since the current backend implementation at wire does not emit user events across backends.
+     *
+     * Hence, this time based cache.
+     */
+    private val poorManFederatedUsersCache = mutableMapOf<UserId, Instant>()
+
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
-            .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+            .map { userEntity ->
+                userEntity?.let {
+                    publicUserMapper.fromDaoModelToPublicUser(userEntity)
+                }
+            }.onEach { otherUser ->
+                if (otherUser != null && otherUser.userType.isFederated()
+                    && poorManFederatedUsersCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
+                ) {
+                    fetchUserInfo(userId).also { kaliumLogger.d("Federated user, refreshing user info from API after X minutes") }
+                    poorManFederatedUsersCache[userId] = DateTimeUtil.currentInstant().plus(15.seconds)
+                }
+            }
 
     override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
         qualifiedID = userId.toDao()
