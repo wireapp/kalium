@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -329,11 +330,11 @@ class MessageMapperImpl(
             MessageContent.Text(
                 value = this.messageBody,
                 mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.let {
+                quotedMessageReference = quotedMessageId?.let {
                     MessageContent.QuoteReference(
-                        quotedMessageId = it.messageId,
+                        quotedMessageId = it,
                         quotedMessageSha256 = null,
-                        isVerified = it.isVerified
+                        isVerified = quotedMessageDetails?.isVerified ?: false
                     )
                 },
                 quotedMessageDetails = quotedMessageDetails
