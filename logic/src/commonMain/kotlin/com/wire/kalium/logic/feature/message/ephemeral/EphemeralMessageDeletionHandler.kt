@@ -30,8 +30,8 @@ internal class EphemeralMessageDeletionHandlerImpl(
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
-    private val onGoingSelfDeletionMessagesMutex = Mutex()
-    private val onGoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()
+    private val ongoingSelfDeletionMessagesMutex = Mutex()
+    private val ongoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
             messageRepository.getMessageById(conversationId, messageId).map { message ->
@@ -42,11 +42,11 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     private suspend fun enqueueSelfDeletion(message: Message.Regular) {
         launch {
-            onGoingSelfDeletionMessagesMutex.withLock {
-                val isSelfDeletionOutgoing = onGoingSelfDeletionMessages[message.conversationId to message.id] != null
+            ongoingSelfDeletionMessagesMutex.withLock {
+                val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
                 if (isSelfDeletionOutgoing) return@launch
 
-                onGoingSelfDeletionMessages[message.conversationId to message.id] = Unit
+                ongoingSelfDeletionMessages[message.conversationId to message.id] = Unit
             }
 
             message.expirationData?.let { expirationData ->
@@ -62,8 +62,8 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     delay(timeLeftForDeletion())
                 }
 
-                onGoingSelfDeletionMessagesMutex.withLock {
-                    onGoingSelfDeletionMessages - message.conversationId to message.id
+                ongoingSelfDeletionMessagesMutex.withLock {
+                    ongoingSelfDeletionMessages - message.conversationId to message.id
                 }
 
                 messageRepository.deleteMessage(message.id, message.conversationId)
