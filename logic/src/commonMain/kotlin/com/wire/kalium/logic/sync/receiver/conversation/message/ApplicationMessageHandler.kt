@@ -209,7 +209,6 @@ internal class ApplicationMessageHandlerImpl(
 
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
-
         when (val content = message.content) {
             // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message,content)
