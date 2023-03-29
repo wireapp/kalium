@@ -212,7 +212,7 @@ internal class ApplicationMessageHandlerImpl(
 
         when (val content = message.content) {
             // Persist Messages - > lists
-            is MessageContent.Text -> persistMessage(adjustTextMessageWithQoutedReference(message, content))
+            is MessageContent.Text -> handleTextMessage(message,content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
@@ -221,24 +221,23 @@ internal class ApplicationMessageHandlerImpl(
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
-
         }
     }
 
-    private suspend fun adjustTextMessageWithQoutedReference(
+    private suspend fun handleTextMessage(
         message: Message.Regular,
         messageContent: MessageContent.Text
-    ): Message.Regular {
+    ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
             verifyMessageQuote(quotedReference, message)
         } else {
             messageContent.quotedMessageReference
         }
-
-        return message.copy(
+        val adjustedMessage = message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
+        persistMessage(adjustedMessage)
     }
 
     private suspend fun verifyMessageQuote(

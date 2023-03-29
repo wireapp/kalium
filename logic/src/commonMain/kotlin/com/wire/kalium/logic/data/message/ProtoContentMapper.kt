@@ -400,7 +400,7 @@ class ProtoContentMapperImpl(
                 unpackAsset(genericAssetContent)
             }
 
-            // TODO: Mateusz : for now we ignore anything else then Text
+            // Handle self-deleting Location messages when they are implemented
             else -> {
                 MessageContent.Ignored
             }
