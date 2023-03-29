@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.data.user.type.isTeammate
+import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.fold
@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
@@ -41,6 +42,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Use case that allows observing the user details of a user locally,
@@ -61,26 +64,34 @@ internal class ObserveUserInfoUseCaseImpl(
     private val teamRepository: TeamRepository
 ) : ObserveUserInfoUseCase {
 
-    // private val poorManFederatedUsersCache = mutableMapOf<UserId, Instant>()
+    private val poorManFederatedUsersCache = mutableMapOf<UserId, Instant>()
+
     override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
-        val flow = observeOtherUser(userId)
+        val getUserInfoResultFlow = observeOtherUser(userId)
             .flatMapRightWithEither { otherUser ->
                 observeOtherUserTeam(otherUser)
                     .mapRight { team -> GetUserInfoResult.Success(otherUser, team) }
             }
             .mapToRightOr(GetUserInfoResult.Failure)
 
-        var hasBeingFetched = false
-        return flow
-            .onStart { emitAll(flow) }
+        return getUserInfoResultFlow
+            .onStart { emitAll(getUserInfoResultFlow) }
             .onEach { userInfoResult: GetUserInfoResult ->
-                if (!hasBeingFetched && userInfoResult is GetUserInfoResult.Success && !userInfoResult.otherUser.userType.isTeammate()) {
+                if (shouldRefreshFederatedUser(userId, userInfoResult))
                     userRepository.fetchUserInfo(userId).also {
-                        kaliumLogger.d("User is not a teammate, refreshing user info from API")
-                        hasBeingFetched = true
+                        kaliumLogger.d("Federated user, refreshing user info from API...")
+                        poorManFederatedUsersCache[userId] = DateTimeUtil.currentInstant().plus(15.seconds)
                     }
-                }
             }
+    }
+
+    /**
+     * In case of federated users, we need to refresh their info every 5 minutes.
+     * Since the current backend implementation at wire does not emit this user event across backends.
+     */
+    private fun shouldRefreshFederatedUser(userId: UserId, userInfoResult: GetUserInfoResult): Boolean {
+        return userInfoResult is GetUserInfoResult.Success && userInfoResult.otherUser.userType.isFederated()
+                && poorManFederatedUsersCache[userId]?.let { DateTimeUtil.currentInstant() > it } ?: true
     }
 
     private suspend fun observeOtherUser(userId: UserId): Flow<Either<CoreFailure, OtherUser>> {
