@@ -147,65 +147,68 @@ internal class UserDataSource internal constructor(
         return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
         val selfUserDomain = selfUserId.domain
-        ids.groupBy { it.domain }
-            .map {
-                val usersOnSameDomain = it.key == selfUserDomain
-                if (usersOnSameDomain) {
-                    if (it.value.isEmpty()) Either.Right(Unit)
-                    else wrapApiRequest {
-                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.value.map { userId -> userId.toApi() }))
-                    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
-                } else {
-                    it.value.forEach { userId ->
-                        fetchUserInfo(userId).fold({
-                            kaliumLogger.w("Ignoring external users details")
-                        }) { kaliumLogger.d("External users details saved") }
+        qualifiedUserIdList.groupBy { it.domain }
+            .filter { it.value.isNotEmpty() }
+            .map { (domain: String, usersOnDomain: List<UserId>) ->
+                when (selfUserDomain == domain) {
+                    true -> fetchMultipleUsers(usersOnDomain)
+                    false -> {
+                        usersOnDomain.forEach { userId ->
+                            fetchUserInfo(userId).fold({
+                                kaliumLogger.w("Ignoring external users details")
+                            }) { kaliumLogger.d("External users details saved") }
+                        }
+                        Either.Right(Unit)
                     }
-                    Either.Right(Unit)
                 }
             }
 
         return Either.Right(Unit)
     }
 
+    private suspend fun fetchMultipleUsers(qualifiedUsersOnSameDomainList: List<UserId>) = wrapApiRequest {
+        userDetailsApi.getMultipleUsers(
+            ListUserRequest.qualifiedIds(qualifiedUsersOnSameDomainList.map { userId -> userId.toApi() })
+        )
+    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
+
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) =
-        wrapStorageRequest {
-            val selfUser = getSelfUser()
-            val selfUserTeamId = selfUser?.teamId?.value
-            val teamMembers = listUserProfileDTO
-                .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
-            val otherUsers = listUserProfileDTO
-                .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
-            userDAO.upsertTeamMembers(
-                teamMembers.map { userProfileDTO ->
-                    userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                        userProfileDTO = userProfileDTO,
-                        userTypeEntity = null
-                    )
-                }
-            )
+    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
+        val selfUser = getSelfUser()
+        val selfUserTeamId = selfUser?.teamId?.value
+        val teamMembers = listUserProfileDTO
+            .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+        val otherUsers = listUserProfileDTO
+            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+        userDAO.upsertTeamMembers(
+            teamMembers.map { userProfileDTO ->
+                userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                    userProfileDTO = userProfileDTO,
+                    userTypeEntity = null
+                )
+            }
+        )
 
-            userDAO.upsertUsers(
-                otherUsers.map { userProfileDTO ->
-                    userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                        userProfileDTO = userProfileDTO,
-                        userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = selfUser?.teamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUserId.domain,
-                            isService = userProfileDTO.service != null
-                        )
+        userDAO.upsertUsers(
+            otherUsers.map { userProfileDTO ->
+                userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                    userProfileDTO = userProfileDTO,
+                    userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
+                        otherUserDomain = userProfileDTO.id.domain,
+                        selfUserTeamId = selfUser?.teamId?.value,
+                        otherUserTeamId = userProfileDTO.teamId,
+                        selfUserDomain = selfUserId.domain,
+                        isService = userProfileDTO.service != null
                     )
-                }
-            )
-        }
+                )
+            }
+        )
+    }
 
     private fun isTeamMember(
         selfUserTeamId: String?,
