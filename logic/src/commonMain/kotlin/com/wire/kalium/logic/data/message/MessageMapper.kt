@@ -438,6 +438,5 @@ fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.IMAGE -> AssetType.IMAGE
     AssetTypeEntity.VIDEO -> AssetType.VIDEO
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
-    AssetTypeEntity.ASSET -> AssetType.ASSET
-    AssetTypeEntity.FILE -> AssetType.FILE
+    AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }

@@ -79,9 +79,9 @@ object MessageMapper {
                     it.contains("image/") -> AssetTypeEntity.IMAGE
                     it.contains("video/") -> AssetTypeEntity.VIDEO
                     it.contains("audio/") -> AssetTypeEntity.AUDIO
-                    else -> AssetTypeEntity.FILE
+                    else -> AssetTypeEntity.GENERIC_ASSET
                 }
-            } ?: AssetTypeEntity.FILE
+            } ?: AssetTypeEntity.GENERIC_ASSET
         )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
@@ -94,12 +94,12 @@ object MessageMapper {
                     } else {
                         MessagePreviewEntityContent.MembersAdded(
                             senderName = senderName,
-                            isContainSelfUserId = userIdList
-                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                             otherUserIdList = userIdList.filterNot { it == selfUserId },
                         )
                     }
                 }
+
                 MessageEntity.MemberChangeType.REMOVED -> {
                     if (userIdList.contains(senderUserId) && userIdList.size == 1) {
                         MessagePreviewEntityContent.MemberLeft(senderName)
@@ -118,7 +118,7 @@ object MessageMapper {
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
-            type = AssetTypeEntity.ASSET
+            type = AssetTypeEntity.GENERIC_ASSET
         )
 
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
@@ -415,9 +415,11 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(
                 receiptMode = newConversationReceiptMode ?: false
             )
+
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
                 receiptMode = conversationReceiptModeChanged ?: false
             )
+
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
         }
 
