@@ -95,7 +95,6 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val inMemoryFederatedUsersCache: ConcurrentMap<UserId, Instant> = ConcurrentMap(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -293,6 +292,12 @@ internal class UserDataSource internal constructor(
             }
     }
 
+    /**
+     * In case of federated users, we need to refresh their info every X minutes.
+     * Since the current backend implementation at wire does not emit user events across backends.
+     */
+    private val poorManFederatedUsersCache = ConcurrentMap<UserId, Instant>()
+
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
@@ -301,10 +306,10 @@ internal class UserDataSource internal constructor(
                 }
             }.onEach { otherUser ->
                 if (otherUser != null && otherUser.userType.isFederated()
-                    && inMemoryFederatedUsersCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
+                    && poorManFederatedUsersCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
                 ) {
                     fetchUserInfo(userId).also { kaliumLogger.d("Federated user, refreshing user info from API after X minutes") }
-                    inMemoryFederatedUsersCache[userId] = DateTimeUtil.currentInstant().plus(15.seconds)
+                    poorManFederatedUsersCache[userId] = DateTimeUtil.currentInstant().plus(15.seconds)
                 }
             }
 
