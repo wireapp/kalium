@@ -98,6 +98,7 @@ internal interface UserRepository {
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
+    suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -158,11 +159,9 @@ internal class UserDataSource internal constructor(
                     }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
                 } else {
                     it.value.forEach { userId ->
-                        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
-                            .fold(
-                                { kaliumLogger.w("Ignoring external users details") },
-                                { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
-                            )
+                        fetchUserInfo(userId).fold({
+                            kaliumLogger.w("Ignoring external users details")
+                        }) { kaliumLogger.d("External users details saved") }
                     }
                     Either.Right(Unit)
                 }
@@ -170,6 +169,10 @@ internal class UserDataSource internal constructor(
 
         return Either.Right(Unit)
     }
+
+    override suspend fun fetchUserInfo(userId: UserId) =
+        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
+            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) =
         wrapStorageRequest {

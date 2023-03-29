@@ -26,22 +26,27 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.isTeammate
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 
 /**
  * Use case that allows observing the user details of a user locally,
  * or request it from API and save to DB, if there is no local data for such user.
  */
-fun interface ObserveUserInfoUseCase {
+interface ObserveUserInfoUseCase {
     /**
      * Use case [GetUserInfoUseCase] operation
      *
@@ -57,14 +62,38 @@ internal class ObserveUserInfoUseCaseImpl(
 ) : ObserveUserInfoUseCase {
 
     override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
-        return observeOtherUser(userId)
+        val flow = observeOtherUser(userId)
             .flatMapRightWithEither { otherUser ->
                 observeOtherUserTeam(otherUser)
                     .mapRight { team -> GetUserInfoResult.Success(otherUser, team) }
             }
             .mapToRightOr(GetUserInfoResult.Failure)
+
+
+        return flow
+            .onStart { emitAll(flow) }
+            .onEach { userInfoResult: GetUserInfoResult ->
+                if (userInfoResult is GetUserInfoResult.Success && !userInfoResult.otherUser.userType.isTeammate()) {
+                    kaliumLogger.d("User is not a teammate, fetching user info from API")
+                    userRepository.fetchUserInfo(userId)
+                }
+            }
     }
 
+    /**
+     * What it is right now...
+     *
+     * 1. get user from DB.
+     * 2. if user is not in DB, fetch it from API and save it into DB, this handling DataNotFound.
+     * 3. filter invalid result to not emit.
+     *
+     * What should be...
+     *
+     * 1. observe user from DB.
+     * 2. if user is not in DB, fetch it from API and save it into DB, this handling DataNotFound.
+     * 3. if user is of type is not teammate, then always fetch from DB.
+     *
+     */
     private suspend fun observeOtherUser(userId: UserId): Flow<Either<CoreFailure, OtherUser>> {
         return userRepository.getKnownUser(userId)
             .wrapStorageRequest()
