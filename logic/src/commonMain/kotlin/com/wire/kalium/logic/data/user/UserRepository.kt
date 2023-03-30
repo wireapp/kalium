@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -95,7 +94,7 @@ internal interface UserRepository {
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
-    suspend fun getTeamRecipients(limit: Int = -1): Either<CoreFailure, List<Recipient>>
+    suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
@@ -367,19 +366,22 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun getTeamRecipients(limit: Int): Either<CoreFailure, List<Recipient>> =
+    override suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>> =
         teamIdProvider().flatMap { teamId ->
-            if (teamId == null) Either.Right(listOf())
-            else {
-                val userIdList = userDAO.getAllUsersByTeam(teamId.value)
-                    .let {
-                        if (limit > 0) it.take(limit)
-                        else it
+            val users = userDAO.getAllUsers().first()
+            val teamMateIds = users.filter { it.team == teamId?.value }.map { it.id.toModel() }
+
+            clientRepository.fetchOtherUserClients(users.map { it.id.toModel() })
+                .map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
+                .map { allRecipients ->
+                    val teamRecipients = mutableListOf<Recipient>()
+                    val otherRecipients = mutableListOf<Recipient>()
+                    allRecipients.forEach {
+                        if (teamMateIds.contains(it.id)) teamRecipients.add(it)
+                        else otherRecipients.add(it)
                     }
-                    .map { it.id.toModel() }
-                clientRepository.fetchOtherUserClients(userIdList)
-                    .map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
-            }
+                    teamRecipients.toList() to otherRecipients.toList()
+                }
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {

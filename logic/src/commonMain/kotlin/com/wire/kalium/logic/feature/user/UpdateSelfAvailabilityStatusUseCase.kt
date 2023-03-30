@@ -20,16 +20,23 @@ package com.wire.kalium.logic.feature.user
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.BroadcastMessageOption
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
+import kotlin.math.max
 
 /**
  * Updates the current user's [UserAvailabilityStatus] status.
@@ -37,44 +44,57 @@ import com.wire.kalium.util.DateTimeUtil
  */
 class UpdateSelfAvailabilityStatusUseCase internal constructor(
     private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val provideClientId: CurrentClientIdProvider,
     private val selfUserId: QualifiedID,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * @param status the new [UserAvailabilityStatus] status.
      */
     suspend operator fun invoke(status: UserAvailabilityStatus) {
-        val result = provideClientId().flatMap { selfClientId ->
-            println("cyka selfClientId $selfClientId")
-            conversationRepository.getProteusSelfConversationId()
-                .flatMap { conversationIds ->
-                    println("cyka conversationIds $conversationIds")
-                    userRepository.getTeamRecipients(500)
-                        .flatMap { recipients ->
-                            val message = Message.Signaling(
-                                id = uuid4().toString(),
-                                content = MessageContent.Availability(status),
-                                conversationId = conversationIds,
-                                date = DateTimeUtil.currentIsoDateTimeString(),
-                                senderUserId = selfUserId,
-                                senderClientId = selfClientId,
-                                status = Message.Status.SENT
-                            )
+        withContext(dispatchers.io) {
+            userRepository.updateSelfUserAvailabilityStatus(status)
+            provideClientId().flatMap { selfClientId ->
+                userRepository.getAllRecipients().flatMap { (teamRecipients, otherRecipients) ->
+                    val id = uuid4().toString()
 
-                            println("cyka recipients ${recipients.size}")
+                    val message = BroadcastMessage(
+                        id = id,
+                        content = MessageContent.Availability(status),
+                        date = DateTimeUtil.currentIsoDateTimeString(),
+                        senderUserId = selfUserId,
+                        senderClientId = selfClientId,
+                        status = Message.Status.PENDING,
+                        isSelfMessage = true
+                    )
 
-                            val recipientsFiltered = recipients
-                                .map { it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId }) }
+                    val receivers = mutableListOf<Recipient>()
+                    val filteredOut = mutableSetOf<UserId>()
+                    var selfRecipient: Recipient? = null
 
-                            messageSender.sendMessage(message, MessageTarget.Client(recipientsFiltered))
+                    teamRecipients.forEach {
+                        when {
+                            it.id == selfUserId -> selfRecipient =
+                                it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId })
+
+                            receivers.size < (MAX_RECEIVERS - 1) -> receivers.add(it)
+                            else -> filteredOut.add(it.id)
                         }
+                    }
+                    selfRecipient?.let { receivers.add(it) }
+
+                    val spaceLeftTillMax = max(MAX_RECEIVERS - receivers.size, 0)
+                    receivers.addAll(otherRecipients.take(spaceLeftTillMax))
+                    filteredOut.addAll(otherRecipients.takeLast(max(otherRecipients.size - spaceLeftTillMax, 0)).map { it.id })
+
+                    messageSender.broadcastMessage(message, BroadcastMessageOption.ReportSome(filteredOut.toList()), receivers)
                 }
+            }
         }
-        println("cyka result $result")
-        // TODO: Handle possibility of being offline. Storing the broadcast to be sent when Sync is done.
-        // For now, we don't need Sync, as we do not broadcast the availability to other devices or users.
-        userRepository.updateSelfUserAvailabilityStatus(status)
+    }
+
+    companion object {
+        private const val MAX_RECEIVERS = 500
     }
 }

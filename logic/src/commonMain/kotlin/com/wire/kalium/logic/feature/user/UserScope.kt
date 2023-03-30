@@ -74,7 +74,7 @@ class UserScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -101,8 +101,7 @@ class UserScope internal constructor(
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
-        get() =
-            UpdateSelfAvailabilityStatusUseCase(userRepository, conversationRepository, messageSender, clientIdProvider, selfUserId)
+        get() = UpdateSelfAvailabilityStatusUseCase(userRepository, messageSender, clientIdProvider, selfUserId)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 

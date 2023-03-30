@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.logic.feature.message.BroadcastMessageOption
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -125,6 +126,18 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
+    ): Either<CoreFailure, String>
+
+    /**
+     * Send a Proteus [MessageEnvelope].
+     *
+     * @return [Either.Right] with the server date time in case of success
+     * @return [Either.Left] of a [ProteusSendMessageFailure] if the server rejected the message
+     * @return [Either.Left] of other [CoreFailure] for more generic cases
+     */
+    suspend fun broadcastEnvelope(
+        envelope: MessageEnvelope,
+        messageOption: BroadcastMessageOption
     ): Either<CoreFailure, String>
 
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
@@ -328,6 +341,48 @@ class MessageDataSource(
                     messageOption
                 ),
                 conversationId.toApi(),
+            )
+        }.fold({ networkFailure ->
+            val failure = when {
+                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
+                    sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
+                }
+
+                else -> networkFailure
+            }
+            Either.Left(failure)
+        }, {
+            Either.Right(it.time)
+        })
+    }
+    override suspend fun broadcastEnvelope(
+        envelope: MessageEnvelope,
+        messageOption: BroadcastMessageOption
+    ): Either<CoreFailure, String> {
+        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
+            recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
+                clientPayload.clientId.value to clientPayload.payload.data
+            }
+        }
+
+        val option = when (messageOption) {
+            is BroadcastMessageOption.IgnoreSome -> MessageApi.QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportSome -> MessageApi.QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportAll -> MessageApi.QualifiedMessageOption.ReportAll
+            is BroadcastMessageOption.IgnoreAll -> MessageApi.QualifiedMessageOption.IgnoreAll
+        }
+
+        return wrapApiRequest {
+            messageApi.qualifiedBroadcastMessage(
+                MessageApi.Parameters.QualifiedDefaultParameters(
+                    envelope.senderClientId.value,
+                    recipientMap,
+                    true,
+                    MessagePriority.HIGH,
+                    false,
+                    envelope.dataBlob?.data,
+                    option
+                ),
             )
         }.fold({ networkFailure ->
             val failure = when {

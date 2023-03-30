@@ -59,7 +59,6 @@ internal class ProteusMessageUnpackerImpl(
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
     override suspend fun unpackProteusMessage(event: Event.Conversation.NewMessage): Either<CoreFailure, MessageUnpackResult> {
-        println("cyka unpack: ${event.conversationId} ${event.content}")
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
         val cryptoSessionId = CryptoSessionId(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),

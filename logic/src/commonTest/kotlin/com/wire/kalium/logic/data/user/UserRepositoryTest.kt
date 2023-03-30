@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
@@ -308,10 +310,26 @@ class UserRepositoryTest {
         @Mock
         val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
+        @Mock
+        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        @Mock
+        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+
         val selfUserId = TestUser.SELF.id
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper)
+            UserDataSource(
+                userDAO,
+                metadataDAO,
+                clientDAO,
+                selfApi,
+                userDetailsApi,
+                sessionRepository,
+                selfUserId,
+                qualifiedIdMapper,
+                selfTeamIdProvider,
+                clientRemoteRepository
+            )
         }
 
         init {

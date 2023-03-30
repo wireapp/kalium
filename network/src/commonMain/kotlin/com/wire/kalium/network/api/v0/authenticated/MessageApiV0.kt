@@ -96,6 +96,7 @@ internal open class MessageApiV0 internal constructor(
                 val body = parameters.toRequestBody()
                 performRequest(QUERY_IGNORE_MISSING, true, body)
             }
+
             is MessageApi.MessageOption.IgnoreSome -> {
                 val body = parameters.toRequestBody()
                 val commaSeparatedList = option.userIDs.joinToString(",")
@@ -106,10 +107,12 @@ internal open class MessageApiV0 internal constructor(
                 val body = parameters.toRequestBody()
                 performRequest(QUERY_REPORT_MISSING, true, body)
             }
+
             is MessageApi.MessageOption.ReportSome -> {
                 val body = parameters.toRequestBody()
                 body.reportMissing = option.userIDs
-                performRequest(null, null, body)
+                val commaSeparatedList = option.userIDs.joinToString(",")
+                performRequest(QUERY_REPORT_MISSING, commaSeparatedList, body)
             }
         }
     }
@@ -131,6 +134,52 @@ internal open class MessageApiV0 internal constructor(
         }
     }
 
+    override suspend fun qualifiedBroadcastMessage(
+        parameters: MessageApi.Parameters.QualifiedDefaultParameters
+    ): NetworkResponse<QualifiedSendMessageResponse> {
+
+        suspend fun performRequest(
+            queryParameter: String?,
+            queryParameterValue: Any?,
+            body: ByteArray
+        ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
+            if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
+            else NetworkResponse.Error(kException = ProteusClientsChangedError(errorBody = it.body()))
+        }) {
+            httpClient.post("$PATH_BROADCAST/$PATH_PROTEUS_MESSAGE") {
+                setBody(body)
+                if (queryParameter != null) {
+                    parameter(queryParameter, queryParameterValue)
+                }
+                contentType(ContentType.Application.XProtoBuf)
+            }
+        }
+
+        return when (parameters.messageOption) {
+            is MessageApi.QualifiedMessageOption.IgnoreAll -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                performRequest(QUERY_IGNORE_MISSING, true, body)
+            }
+
+            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
+                performRequest(QUERY_IGNORE_MISSING, commaSeparatedList, body)
+            }
+
+            is MessageApi.QualifiedMessageOption.ReportAll -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                performRequest(QUERY_REPORT_MISSING, true, body)
+            }
+
+            is MessageApi.QualifiedMessageOption.ReportSome -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
+                performRequest(QUERY_REPORT_MISSING, commaSeparatedList, body)
+            }
+        }
+    }
+
     private companion object {
         val STATUS_CLIENTS_HAVE_CHANGED = HttpStatusCode(
             412,
@@ -139,6 +188,7 @@ internal open class MessageApiV0 internal constructor(
         const val PATH_OTR_MESSAGE = "otr/messages"
         const val PATH_PROTEUS_MESSAGE = "proteus/messages"
         const val PATH_CONVERSATIONS = "conversations"
+        const val PATH_BROADCAST = "broadcast"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }

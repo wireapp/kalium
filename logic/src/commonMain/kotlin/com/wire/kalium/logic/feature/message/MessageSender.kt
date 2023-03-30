@@ -26,8 +26,10 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -87,6 +89,23 @@ interface MessageSender {
      * @see [sendPendingMessage]
      */
     suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
+
+    /**
+     * Attempts to send the given [BroadcastMessage] to suitable recipients.
+     *
+     * Will handle all the needed encryption and possible set-up
+     * steps
+     *
+     * Will **not** handle connectivity failures and scheduling re-tries in the future.
+     * Suitable for fire-and-forget messages that are not belong to any specific Conversation,
+     * like changing user availability status.
+     *
+     */
+    suspend fun broadcastMessage(
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        recipients: List<Recipient>
+    ): Either<CoreFailure, Unit>
 
     /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
@@ -156,6 +175,15 @@ internal class MessageSenderImpl internal constructor(
                 }
             }
 
+    override suspend fun broadcastMessage(
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        recipients: List<Recipient>
+    ): Either<CoreFailure, Unit> =
+        withContext(scope.coroutineContext) {
+            attemptToBroadcastWithProteus(message, option, recipients).map { }
+        }
+
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
     private suspend fun attemptToSend(
@@ -199,6 +227,20 @@ internal class MessageSenderImpl internal constructor(
                     .flatMap { envelope ->
                         trySendingProteusEnvelope(envelope, message, messageTarget)
                     }
+            }
+    }
+
+    private suspend fun attemptToBroadcastWithProteus(
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        recipients: List<Recipient>
+    ): Either<CoreFailure, String> {
+        return sessionEstablisher
+            .prepareRecipientsForNewOutgoingMessage(recipients)
+            .flatMap {
+                messageEnvelopeCreator
+                    .createOutgoingBroadcastEnvelope(recipients, message)
+                    .flatMap { envelope -> tryBroadcastProteusEnvelope(envelope, message, option, recipients) }
             }
     }
 
@@ -247,6 +289,47 @@ internal class MessageSenderImpl internal constructor(
                             .flatMap {
                                 logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
                                 attemptToSend(message, messageTarget)
+                            }
+                            .onFailure { failure ->
+                                val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +
+                                        " , " +
+                                        "\"errorInfo\" : \"${failure}\"}"
+                                logger.e(logLine)
+                            }
+                    }
+
+                    else -> {
+                        logger.e("Message Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        Either.Left(it)
+                    }
+                }
+            }, {
+                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
+                Either.Right(it)
+            })
+
+    /**
+     * Attempts to send a Proteus envelope without need to provide a specific conversationId
+     * Will handle the failure and retry in case of [ProteusSendMessageFailure].
+     */
+    private suspend fun tryBroadcastProteusEnvelope(
+        envelope: MessageEnvelope,
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        recipients: List<Recipient>
+    ): Either<CoreFailure, String> =
+        messageRepository
+            .broadcastEnvelope(envelope, option)
+            .fold({
+                when (it) {
+
+                    is ProteusSendMessageFailure -> {
+                        logger.w("Proteus Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
+                        messageSendFailureHandler
+                            .handleClientsHaveChangedFailure(it)
+                            .flatMap {
+                                logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
+                                attemptToBroadcastWithProteus(message, option, recipients)
                             }
                             .onFailure { failure ->
                                 val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +

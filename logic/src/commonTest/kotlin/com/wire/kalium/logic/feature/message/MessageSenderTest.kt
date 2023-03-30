@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
@@ -493,6 +494,56 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenClientTargets_WhenBroadcastOutgoingMessage_ThenCallBroadcastEnvelopeWithCorrectTargets() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withPrepareRecipientsForNewOutgoingMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withCreateOutgoingBroadcastEnvelope()
+            .withBroadcastEnvelope()
+            .arrange()
+
+        val message = BroadcastMessage(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling(""),
+            date = TestMessage.TEST_DATE_STRING,
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.SENT,
+            isSelfMessage = false
+        )
+
+        val option = BroadcastMessageOption.IgnoreSome(listOf())
+
+        val recipients = listOf(
+            Arrangement.TEST_RECIPIENT_1,
+            Arrangement.TEST_RECIPIENT_2
+        )
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.broadcastMessage(
+                message = message,
+                option = option,
+                recipients = recipients
+            )
+
+            // then
+            result.shouldSucceed()
+
+            verify(arrangement.sessionEstablisher)
+                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1, Arrangement.TEST_RECIPIENT_2)))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
+                .with(anything(), eq(option))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -590,6 +641,20 @@ class MessageSenderTest {
                 .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MESSAGE_ENVELOPE))
+        }
+
+        fun withCreateOutgoingBroadcastEnvelope(failing: Boolean = false) = apply {
+            given(messageEnvelopeCreator)
+                .suspendFunction(messageEnvelopeCreator::createOutgoingBroadcastEnvelope)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MESSAGE_ENVELOPE))
+        }
+
+        fun withBroadcastEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::broadcastEnvelope)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(result)
         }
 
         fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {

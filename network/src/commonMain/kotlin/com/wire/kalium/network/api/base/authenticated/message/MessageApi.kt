@@ -108,6 +108,10 @@ interface MessageApi {
         parameters: Parameters.QualifiedDefaultParameters,
         conversationId: ConversationId
     ): NetworkResponse<QualifiedSendMessageResponse>
+
+    suspend fun qualifiedBroadcastMessage(
+        parameters: Parameters.QualifiedDefaultParameters
+    ): NetworkResponse<QualifiedSendMessageResponse>
 }
 
 typealias UserToClientToEncMsgMap = Map<String, Map<String, String>>
