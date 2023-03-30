@@ -437,17 +437,16 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
-    private val userRepository: UserRepository
-        get() = UserDataSource(
-            userStorage.database.userDAO,
-            userStorage.database.metadataDAO,
-            userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            globalScope.sessionRepository,
-            userId,
-            qualifiedIdMapper
-        )
+    private val userRepository: UserRepository = UserDataSource(
+        userStorage.database.userDAO,
+        userStorage.database.metadataDAO,
+        userStorage.database.clientDAO,
+        authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+        authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+        globalScope.sessionRepository,
+        userId,
+        qualifiedIdMapper
+    )
 
     internal val pushTokenRepository: PushTokenRepository
         get() = PushTokenDataSource(userStorage.database.metadataDAO)
