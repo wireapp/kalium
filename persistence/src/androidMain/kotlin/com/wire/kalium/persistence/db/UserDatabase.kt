@@ -21,8 +21,7 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
@@ -32,7 +31,6 @@ import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
-
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
@@ -79,17 +77,21 @@ actual fun userDatabaseBuilder(
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, passphrase != null)
 }
 
-actual fun userDatabaseDriver(
+actual fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
-    dbPath: String
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
 ): SqlDriver {
-    System.loadLibrary("sqlcipher")
-    val db: SupportSQLiteDatabase = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
-        dbPath,
-        null,
-        SQLiteDatabase.OPEN_READWRITE
-    )
-    return AndroidSqliteDriver(db, 100)
+    val configuration = SupportSQLiteOpenHelper.Configuration.builder(platformDatabaseData.context)
+        .name(path)
+        .build()
+    return SupportOpenHelperFactory(passphrase?.value, false)
+        .create(configuration)
+        .writableDatabase
+        .let {
+            AndroidSqliteDriver(it, 20)
+        }
 }
 
 fun inMemoryDatabase(

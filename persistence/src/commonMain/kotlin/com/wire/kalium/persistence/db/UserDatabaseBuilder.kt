@@ -92,9 +92,11 @@ expect fun userDatabaseBuilder(
     enableWAL: Boolean = true
 ): UserDatabaseBuilder
 
-expect fun userDatabaseDriver(
+internal expect fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
-    dbPath: String
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
 ): SqlDriver
 
 class UserDatabaseBuilder internal constructor(

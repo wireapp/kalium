@@ -33,9 +33,11 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean
 ): UserDatabaseBuilder = TODO("Not yet implemented")
 
-actual fun userDatabaseDriver(
+actual fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
-    dbPath: String
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
 ): SqlDriver = TODO()
 
 internal actual fun nuke(

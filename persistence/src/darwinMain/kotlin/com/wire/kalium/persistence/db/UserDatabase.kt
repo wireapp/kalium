@@ -48,23 +48,11 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean
 ): UserDatabaseBuilder {
     NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
-
-    val schema = UserDatabase.Schema
-    val driver = NativeSqliteDriver(
-        DatabaseConfiguration(
-            name = FileNameUtil.userDBName(userId),
-            version = schema.version,
-            journalMode = if (enableWAL) JournalMode.WAL else JournalMode.DELETE,
-            create = { connection ->
-                wrapConnection(connection) { schema.create(it) }
-            },
-            upgrade = { connection, oldVersion, newVersion ->
-                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
-            },
-            extendedConfig = DatabaseConfiguration.Extended(
-                basePath = platformDatabaseData.storePath
-            )
-        )
+    val driver = userDatabaseDriverByPath(
+        platformDatabaseData,
+        FileNameUtil.userDBName(userId),
+        passphrase,
+        enableWAL
     )
 
     return UserDatabaseBuilder(
@@ -75,15 +63,18 @@ actual fun userDatabaseBuilder(
         passphrase != null
     )
 }
-actual fun userDatabaseDriver(
+
+actual fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
-    dbPath: String
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
 ): SqlDriver {
     val schema = UserDatabase.Schema
 
     return NativeSqliteDriver(
         DatabaseConfiguration(
-            name = dbPath,
+            name = path,
             version = schema.version,
             journalMode = JournalMode.DELETE,
             create = { connection ->
