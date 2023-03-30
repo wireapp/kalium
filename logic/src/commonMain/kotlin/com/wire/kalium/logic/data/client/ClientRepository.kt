@@ -140,7 +140,9 @@ class ClientDataSource(
         }
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {
-        return clientRemoteRepository.deleteClient(param)
+        return clientRemoteRepository.deleteClient(param).onSuccess {
+            wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), param.clientId.value) }
+        }
     }
 
     /**
