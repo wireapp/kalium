@@ -236,15 +236,12 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
     }, 0).value?.toInt() ?: return false
 
     val newVersion = sqlSchema.version
-
-    return if (oldVersion == newVersion) {
-        true
-    } else {
-        try {
+    return try {
+        if (oldVersion != newVersion) {
             sqlSchema.migrate(this, oldVersion, newVersion)
-            true
-        } catch (e: Exception) {
-            false
         }
+        true
+    } catch (e: Exception) {
+        false
     }
 }
