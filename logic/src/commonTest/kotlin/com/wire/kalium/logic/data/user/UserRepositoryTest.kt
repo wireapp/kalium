@@ -22,8 +22,11 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
@@ -400,10 +403,23 @@ class UserRepositoryTest {
         @Mock
         val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
+        @Mock
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
         val selfUserId = TestUser.SELF.id
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, selfUserId, qualifiedIdMapper)
+            UserDataSource(
+                userDAO,
+                metadataDAO,
+                clientDAO,
+                selfApi,
+                userDetailsApi,
+                sessionRepository,
+                selfUserId,
+                qualifiedIdMapper,
+                selfTeamIdProvider
+            )
         }
 
         init {
@@ -411,6 +427,11 @@ class UserRepositoryTest {
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.ENTITY) }
+
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {

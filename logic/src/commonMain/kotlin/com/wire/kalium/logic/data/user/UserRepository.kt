@@ -40,9 +40,11 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
@@ -116,6 +118,7 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -160,12 +163,12 @@ internal class UserDataSource internal constructor(
                     publicUserMapper.fromDaoModelToPublicUser(userEntity)
                 }
             }.onEach { otherUser ->
-                // only in case of federated users and if it's expired from cache, we fetch and refresh the user info.
+                // only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
                 if (otherUser != null && otherUser.userType.isFederated()
                     && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
                 ) {
-                    fetchUserInfo(userId).also { kaliumLogger.d("Federated user, refreshing user info from API after 5 minutes") }
-                    federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(5.minutes)
+                    fetchUserInfo(userId).also { kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL") }
+                    federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
                 }
             }
 
@@ -208,12 +211,12 @@ internal class UserDataSource internal constructor(
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
-        val selfUser = getSelfUser()
-        val selfUserTeamId = selfUser?.teamId?.value
+        val selfUserDomain = selfUserId.domain
+        val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
-            .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+            .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
         val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
         userDAO.upsertTeamMembers(
             teamMembers.map { userProfileDTO ->
                 userMapper.fromApiModelWithUserTypeEntityToDaoModel(
@@ -229,7 +232,7 @@ internal class UserDataSource internal constructor(
                     userProfileDTO = userProfileDTO,
                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = selfUser?.teamId?.value,
+                        selfUserTeamId = selfUserTeamId,
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUserId.domain,
                         isService = userProfileDTO.service != null
@@ -242,10 +245,10 @@ internal class UserDataSource internal constructor(
     private fun isTeamMember(
         selfUserTeamId: String?,
         userProfileDTO: UserProfileDTO,
-        selfUser: SelfUser?
+        selfUserDomain: String?,
     ) = (selfUserTeamId != null &&
             userProfileDTO.teamId == selfUserTeamId &&
-            userProfileDTO.id.domain == selfUser?.id?.domain)
+            userProfileDTO.id.domain == selfUserDomain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map { it.toDao() }
@@ -439,5 +442,6 @@ internal class UserDataSource internal constructor(
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
+        internal val FEDERATED_USER_TTL = 5.minutes
     }
 }
