@@ -60,3 +60,6 @@ enum class UserType {
 
 fun UserType.isTeammate(): Boolean =
     this in listOf(UserType.INTERNAL, UserType.ADMIN, UserType.OWNER, UserType.EXTERNAL, UserType.SERVICE)
+
+fun UserType.isFederated(): Boolean =
+    this == UserType.FEDERATED
