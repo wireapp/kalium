@@ -94,6 +94,11 @@ internal interface UserRepository {
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
+
+    /**
+     * @return [Pair] of two Recipients lists, where [Pair.first] is the list of Recipients from my own team
+     * and [Pair.second] is the list of all the other Recipients.
+     */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>

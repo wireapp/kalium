@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.user
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.BroadcastMessage
