@@ -74,6 +74,7 @@ class MessageDAOImpl(
     ) = withContext(coroutineContext) {
         queries.transaction {
             val messageCreationInstant = message.date
+
             if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
             }
@@ -343,6 +344,18 @@ class MessageDAOImpl(
             message_id = messageUuid,
             delivery_duration = Instant.fromEpochMilliseconds(millis)
         )
+    }
+
+    override suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity> {
+        return withContext(coroutineContext) {
+            queries.selectAllEphemeralMessagesMarkedForDeletion(mapper::toEntityMessageFromView).executeAsList()
+        }
+    }
+
+    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant) {
+        return withContext(coroutineContext) {
+            queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
+        }
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)

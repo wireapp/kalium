@@ -47,7 +47,6 @@ sealed class MessageContent {
      * @see ProtoContentMapper
      */
     sealed class FromProto : MessageContent()
-
     /**
      * Main content of messages created by users/bot,
      * It's expected that this content will form the
