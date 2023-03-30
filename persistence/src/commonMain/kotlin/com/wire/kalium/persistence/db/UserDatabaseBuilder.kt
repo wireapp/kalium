@@ -228,6 +228,7 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     userId: UserIDEntity
 ): String?
 
+@Suppress("TooGenericExceptionCaught")
 fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
         it.next()

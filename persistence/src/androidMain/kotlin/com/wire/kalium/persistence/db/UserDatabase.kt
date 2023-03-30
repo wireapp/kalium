@@ -32,6 +32,8 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 
+private const val DEFAULT_CACHE_SIZE = 20
+
 /**
  * Platform-specific data used to create the database
  * that might be necessary for future operations
@@ -85,7 +87,7 @@ actual fun userDatabaseDriverByPath(
         .create(configuration)
         .writableDatabase
         .let {
-            AndroidSqliteDriver(it, 20)
+            AndroidSqliteDriver(it, DEFAULT_CACHE_SIZE)
         }
 }
 
