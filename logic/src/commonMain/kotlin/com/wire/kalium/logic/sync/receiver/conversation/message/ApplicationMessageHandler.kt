@@ -45,6 +45,8 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal interface ApplicationMessageHandler {
 
@@ -122,19 +124,25 @@ internal class ApplicationMessageHandlerImpl(
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
                     expectsReadConfirmation = content.expectsReadConfirmation,
-                    isSelfMessage = senderUserId == selfUserId
+                    isSelfMessage = senderUserId == selfUserId,
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processMessage(message)
             }
 
             is MessageContent.Signaling -> {
                 val signalingMessage = Message.Signaling(
-                    content.messageUid,
-                    protoContent,
-                    conversationId,
-                    timestampIso,
-                    senderUserId,
-                    senderClientId,
+                    id = content.messageUid,
+                    content = protoContent,
+                    conversationId = conversationId,
+                    date = timestampIso,
+                    senderUserId = senderUserId,
+                    senderClientId = senderClientId,
                     status = Message.Status.SENT,
                     isSelfMessage = senderUserId == selfUserId
                 )
@@ -201,29 +209,18 @@ internal class ApplicationMessageHandlerImpl(
 
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
-
         when (val content = message.content) {
             // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
-
-            is MessageContent.FailedDecryption -> {
-                persistMessage(message)
-            }
-
-            is MessageContent.Knock -> handleKnock(message)
+            is MessageContent.FailedDecryption -> persistMessage(message)
+            is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-
+            is MessageContent.RestrictedAsset -> TODO()
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
-
-            is MessageContent.RestrictedAsset -> TODO()
         }
-    }
-
-    private suspend fun handleKnock(message: Message.Regular) {
-        persistMessage(message)
     }
 
     private suspend fun handleTextMessage(
