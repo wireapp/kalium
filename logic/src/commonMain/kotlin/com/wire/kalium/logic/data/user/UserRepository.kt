@@ -159,18 +159,24 @@ internal class UserDataSource internal constructor(
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                userEntity?.let {
-                    publicUserMapper.fromDaoModelToPublicUser(userEntity)
-                }
+                userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) }
             }.onEach { otherUser ->
-                // only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
-                if (otherUser != null && otherUser.userType.isFederated()
-                    && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
-                ) {
-                    fetchUserInfo(userId).also { kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL") }
-                    federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
-                }
+                processFederatedUserRefresh(userId, otherUser)
             }
+
+    /**
+     * Only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
+     */
+    private suspend fun processFederatedUserRefresh(userId: UserId, otherUser: OtherUser?) {
+        if (otherUser != null && otherUser.userType.isFederated()
+            && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
+        ) {
+            fetchUserInfo(userId).also {
+                kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL")
+            }
+            federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
+        }
+    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
