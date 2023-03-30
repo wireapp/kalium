@@ -63,4 +63,3 @@ fun UserType.isTeammate(): Boolean =
 
 fun UserType.isFederated(): Boolean =
     this == UserType.FEDERATED
-

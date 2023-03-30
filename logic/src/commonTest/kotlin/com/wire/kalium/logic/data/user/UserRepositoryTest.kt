@@ -37,6 +37,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -281,6 +282,31 @@ class UserRepositoryTest {
                 .suspendFunction(arrangement.userDAO::updateUserDisplayName)
                 .with(any(), any())
                 .wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenAKnowFederatedUser_whenGettingFromDbAndCacheExpiredOrNotPresent_thenShouldRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasInvoked(exactly = once)
         }
     }
 
