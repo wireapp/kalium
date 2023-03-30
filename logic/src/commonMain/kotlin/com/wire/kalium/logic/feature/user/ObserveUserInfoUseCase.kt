@@ -55,7 +55,7 @@ internal class ObserveUserInfoUseCaseImpl(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository
 ) : ObserveUserInfoUseCase {
-    
+
     override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
         return observeOtherUser(userId)
             .flatMapRightWithEither { otherUser ->
