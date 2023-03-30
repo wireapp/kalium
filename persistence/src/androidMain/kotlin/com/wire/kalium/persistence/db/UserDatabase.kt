@@ -32,11 +32,6 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
-    object NotSet : DatabaseCredentials
-}
-
 /**
  * Platform-specific data used to create the database
  * that might be necessary for future operations
