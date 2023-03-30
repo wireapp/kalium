@@ -127,8 +127,10 @@ internal class UserDataSource internal constructor(
 ) : UserRepository {
 
     /**
-     * In case of federated users, we need to refresh their info after a certain time.
+     * In case of federated users, we need to refresh their info every time.
      * Since the current backend implementation at wire does not emit user events across backends.
+     *
+     * This is an in-memory cache, to help avoid unnecessary requests in a time window.
      */
     private val federatedUsersExpirationCache = ConcurrentMap<UserId, Instant>()
 
@@ -158,6 +160,7 @@ internal class UserDataSource internal constructor(
                     publicUserMapper.fromDaoModelToPublicUser(userEntity)
                 }
             }.onEach { otherUser ->
+                // only in case of federated users and if it's expired from cache, we fetch and refresh the user info.
                 if (otherUser != null && otherUser.userType.isFederated()
                     && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
                 ) {
