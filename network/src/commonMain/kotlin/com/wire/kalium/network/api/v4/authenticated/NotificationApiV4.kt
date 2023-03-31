@@ -16,7 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v2.authenticated
+package com.wire.kalium.network.api.v4.authenticated
 
-import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-internal open class MLSMessageApiV2 internal constructor() : MLSMessageApiV0()
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.api.v3.authenticated.NotificationApiV3
+import com.wire.kalium.network.tools.ServerConfigDTO
+
+internal open class NotificationApiV4 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    authenticatedWebSocketClient: AuthenticatedWebSocketClient,
+    serverLinks: ServerConfigDTO.Links
+) : NotificationApiV3(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks)
