@@ -348,9 +348,9 @@ object MessageMapper {
                 messageBody = text ?: "",
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
-                quotedMessage = quotedMessageId?.let {
+                quotedMessage = quotedMessageContentType?.let {
                     MessageEntityContent.Text.QuotedMessage(
-                        id = it,
+                        id = quotedMessageId.requireField("quotedMessageId"),
                         senderId = quotedSenderId.requireField("quotedSenderId"),
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
