@@ -63,6 +63,3 @@ SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversatio
 
 updateClientVerificatioStatus:
 UPDATE Client SET is_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;
-
-selectAllClientsByTeam:
-SELECT * FROM Client WHERE user_id IN (SELECT User.qualified_id FROM User WHERE team = :teamId) GROUP BY user_id;

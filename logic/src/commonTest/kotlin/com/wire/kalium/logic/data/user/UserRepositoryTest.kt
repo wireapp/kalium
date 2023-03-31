@@ -418,7 +418,7 @@ class UserRepositoryTest {
                 sessionRepository,
                 selfUserId,
                 qualifiedIdMapper,
-                selfTeamIdProvider,
+                selfTeamIdProvider
             )
         }
 
