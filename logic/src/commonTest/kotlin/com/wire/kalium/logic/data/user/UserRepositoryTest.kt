@@ -18,14 +18,15 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
@@ -39,6 +40,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -286,6 +288,97 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheExpiredOrNotPresent_thenShouldRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.STANDARD))
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+
+        val resultSecondTime = userRepository.getKnownUser(TestUser.USER_ID)
+        resultSecondTime.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -311,9 +404,7 @@ class UserRepositoryTest {
         val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
-        @Mock
-        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val selfUserId = TestUser.SELF.id
 
@@ -328,7 +419,6 @@ class UserRepositoryTest {
                 selfUserId,
                 qualifiedIdMapper,
                 selfTeamIdProvider,
-                clientRemoteRepository
             )
         }
 
@@ -337,6 +427,11 @@ class UserRepositoryTest {
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.ENTITY) }
+
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
