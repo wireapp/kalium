@@ -16,15 +16,26 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v0.authenticated
+package com.wire.kalium.network.api.v4.authenticated
 
-import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
-import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.api.v3.authenticated.MLSPublicKeyApiV3
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 
-open class MLSPublicKeyApiV0 internal constructor() : MLSPublicKeyApi {
-    override suspend fun getMLSPublicKeys(): NetworkResponse<MLSPublicKeysDTO> = NetworkResponse.Error(
-        APINotSupported("MLS: getMLSPublicKeys api is only available on API V4")
-    )
+internal open class MLSPublicKeyApiV4 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : MLSPublicKeyApiV3() {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
+    override suspend fun getMLSPublicKeys(): NetworkResponse<MLSPublicKeysDTO> =
+        wrapKaliumResponse { httpClient.get("$PATH_MLS/$PATH_PUBLIC_KEYS") }
+
+    private companion object {
+        const val PATH_PUBLIC_KEYS = "public-keys"
+        const val PATH_MLS = "mls"
+    }
 }

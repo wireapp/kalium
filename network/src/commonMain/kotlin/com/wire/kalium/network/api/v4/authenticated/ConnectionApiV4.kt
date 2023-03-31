@@ -16,7 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v2.authenticated
+package com.wire.kalium.network.api.v4.authenticated
 
-import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-internal open class MLSMessageApiV2 internal constructor() : MLSMessageApiV0()
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v3.authenticated.ConnectionApiV3
+
+internal open class ConnectionApiV4 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : ConnectionApiV3(authenticatedNetworkClient)
