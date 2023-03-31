@@ -223,7 +223,9 @@ internal class AssetDataSource(
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink)
+                assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink).also {
+                    tempFileSink.close()
+                }
             }.flatMap {
                 try {
                     if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
@@ -244,6 +246,7 @@ internal class AssetDataSource(
 
                     // Delete temp path now that the decoded asset has been persisted correctly
                     kaliumFileSystem.delete(tempFile)
+                    decodedAssetSink.close()
 
                     when {
                         // Either a decryption error or a hash error occurred

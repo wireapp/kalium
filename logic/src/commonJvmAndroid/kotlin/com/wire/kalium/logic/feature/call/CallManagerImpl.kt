@@ -65,8 +65,8 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.logic.util.toInt
+import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -263,14 +263,17 @@ class CallManagerImpl internal constructor(
             )
         }
 
-        if (callRepository.getCallMetadataProfile().get(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
             callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }
         }
     }
 
-    override suspend fun answerCall(conversationId: ConversationId) {
+    override suspend fun answerCall(
+        conversationId: ConversationId,
+        isAudioCbr: Boolean
+    ) {
         withCalling {
             callingLogger.d(
                 "$TAG -> answering call for conversation = " +
@@ -280,7 +283,7 @@ class CallManagerImpl internal constructor(
                 inst = deferredHandle.await(),
                 conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                 callType = CallTypeCalling.AUDIO.avsValue,
-                cbrEnabled = false
+                cbrEnabled = isAudioCbr
             )
             callingLogger.d(
                 "$TAG - wcall_answer() called -> Incoming call for conversation = " +
@@ -288,7 +291,7 @@ class CallManagerImpl internal constructor(
             )
         }
 
-        if (callRepository.getCallMetadataProfile().get(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
             callRepository.joinMlsConference(conversationId) { conversationId, epochInfo ->
                 updateEpochInfo(conversationId, epochInfo)
             }

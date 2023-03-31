@@ -121,6 +121,7 @@ internal class OnHttpRequest(
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT,
+            isSelfMessage = true
         )
 
         return messageSender.sendMessage(message, messageTarget)

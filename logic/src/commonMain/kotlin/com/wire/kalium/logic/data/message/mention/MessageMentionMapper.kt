@@ -41,7 +41,8 @@ class MessageMentionMapperImpl(
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId.toModel()
+            userId = mention.userId.toModel(),
+            isSelfMention = mention.userId.toModel() == selfUserId
         )
     }
 
@@ -64,6 +65,7 @@ class MessageMentionMapperImpl(
             start = mention.start,
             length = mention.length,
             userId = userId,
+            isSelfMention = userId == selfUserId
         )
     }
 

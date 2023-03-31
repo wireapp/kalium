@@ -66,7 +66,25 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(qualifiedID = userId)
-        val client = Client(user.id, "id1", null, true)
-        val insertClientParam = InsertClientParam(client.userId, client.id, client.deviceType)
+        val client = Client(
+            userId = user.id,
+            id = "id1",
+            deviceType = null,
+            isValid = true,
+            isVerified = false,
+            registrationDate = null,
+            label = null,
+            clientType = null,
+            model = null
+        )
+        val insertClientParam = InsertClientParam(
+            client.userId,
+            client.id,
+            client.deviceType,
+            client.clientType,
+            client.label,
+            client.registrationDate,
+            client.model
+        )
     }
 }

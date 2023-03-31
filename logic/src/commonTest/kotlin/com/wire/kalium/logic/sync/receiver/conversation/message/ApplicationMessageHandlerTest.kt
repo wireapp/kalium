@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
@@ -150,7 +151,8 @@ class ApplicationMessageHandlerTest {
             clearConversationContentHandler,
             deleteForMeHandler,
             MessageContentEncoder(),
-            receiptMessageHandler
+            receiptMessageHandler,
+            TestUser.SELF.id
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {

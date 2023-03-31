@@ -40,7 +40,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun answerCall(conversationId: ConversationId) {
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean) {
         TODO("Not yet implemented")
     }
 

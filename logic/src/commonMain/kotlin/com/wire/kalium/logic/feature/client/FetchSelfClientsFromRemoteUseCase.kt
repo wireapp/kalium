@@ -27,19 +27,20 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 
 /**
- * This use case will return the list of clients of the current user.
+ * Fetches the list of clients of the current user from remote.
+ * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
  */
-interface SelfClientsUseCase {
+interface FetchSelfClientsFromRemoteUseCase {
     /**
      * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
      */
     suspend operator fun invoke(): SelfClientsResult
 }
 
-class SelfClientsUseCaseImpl(
+class FetchSelfClientsFromRemoteUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider,
-) : SelfClientsUseCase {
+) : FetchSelfClientsFromRemoteUseCase {
     override suspend fun invoke(): SelfClientsResult = clientRepository.selfListOfClients().fold(
         { SelfClientsResult.Failure.Generic(it) },
         { clients ->

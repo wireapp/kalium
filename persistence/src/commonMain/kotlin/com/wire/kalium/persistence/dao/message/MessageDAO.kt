@@ -22,6 +22,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -57,7 +59,6 @@ interface MessageDAO {
      * @see insertOrIgnoreMessage
      */
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>)
-
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
@@ -95,7 +96,8 @@ interface MessageDAO {
 
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
-    suspend fun observeUnreadMessages(): Flow<List<MessagePreviewEntity>>
+    suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>>
+    suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
     suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
     suspend fun resetAssetUploadStatus()
@@ -121,6 +123,10 @@ interface MessageDAO {
         serverDate: Instant,
         millis: Long
     )
+
+    suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity>
+
+    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
 
     val platformExtensions: MessageExtensions
 }
