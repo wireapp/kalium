@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
@@ -373,20 +374,21 @@ internal class UserDataSource internal constructor(
 
     override suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>> =
         teamIdProvider().flatMap { teamId ->
-            val users = userDAO.getAllUsers().first()
-            val teamMateIds = users.filter { it.team == teamId?.value }.map { it.id.toModel() }
+            val teamMateIds = teamId?.value?.let { selfTeamId ->
+                wrapStorageRequest { userDAO.getAllUsersByTeam(selfTeamId).map { it.id.toModel() } }
+            }?.getOrNull() ?: listOf()
 
-            clientRepository.fetchOtherUserClients(users.map { it.id.toModel() })
-                .map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
-                .map { allRecipients ->
-                    val teamRecipients = mutableListOf<Recipient>()
-                    val otherRecipients = mutableListOf<Recipient>()
-                    allRecipients.forEach {
-                        if (teamMateIds.contains(it.id)) teamRecipients.add(it)
-                        else otherRecipients.add(it)
-                    }
-                    teamRecipients.toList() to otherRecipients.toList()
+            wrapStorageRequest {
+                memberMapper.fromMapOfClientsEntityToRecipients(clientDAO.selectAllClients())
+            }.map { allRecipients ->
+                val teamRecipients = mutableListOf<Recipient>()
+                val otherRecipients = mutableListOf<Recipient>()
+                allRecipients.forEach {
+                    if (teamMateIds.contains(it.id)) teamRecipients.add(it)
+                    else otherRecipients.add(it)
                 }
+                teamRecipients.toList() to otherRecipients.toList()
+            }
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -495,12 +496,17 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenClientTargets_WhenBroadcastOutgoingMessage_ThenCallBroadcastEnvelopeWithCorrectTargets() {
+    fun givenAllTargets_WhenBroadcastOutgoingMessage_ThenCallBroadcastEnvelopeWithCorrectTargets() {
         // given
+        val recipients = listOf(
+            Arrangement.TEST_RECIPIENT_1,
+            Arrangement.TEST_RECIPIENT_2
+        )
         val (arrangement, messageSender) = Arrangement()
             .withPrepareRecipientsForNewOutgoingMessage()
             .withPromoteMessageToSentUpdatingServerTime()
             .withCreateOutgoingBroadcastEnvelope()
+            .withAllRecipients(recipients to listOf())
             .withBroadcastEnvelope()
             .arrange()
 
@@ -514,19 +520,13 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val option = BroadcastMessageOption.IgnoreSome(listOf())
-
-        val recipients = listOf(
-            Arrangement.TEST_RECIPIENT_1,
-            Arrangement.TEST_RECIPIENT_2
-        )
+        val option = BroadcastMessageOption.ReportSome(listOf())
 
         arrangement.testScope.runTest {
             // when
             val result = messageSender.broadcastMessage(
                 message = message,
-                option = option,
-                recipients = recipients
+                target = BroadcastMessageTarget.AllUsers(100)
             )
 
             // then
@@ -535,6 +535,110 @@ class MessageSenderTest {
             verify(arrangement.sessionEstablisher)
                 .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .with(eq(listOf(Arrangement.TEST_RECIPIENT_1, Arrangement.TEST_RECIPIENT_2)))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
+                .with(anything(), eq(option))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAllTargets_WhenBroadcastOutgoingMessageWithLimit_ThenCallBroadcastEnvelopeWithCorrectTargets() {
+        // given
+        val senderUserId = UserId("userValue", "userDomain")
+        val senderClientId = ClientId("clientId")
+        val recipients = listOf(
+            Arrangement.TEST_RECIPIENT_2,
+            Arrangement.TEST_RECIPIENT_3,
+            Arrangement.TEST_RECIPIENT_1,
+            Recipient(senderUserId, listOf(senderClientId, ClientId("mySecondClientId")))
+        )
+        val (arrangement, messageSender) = Arrangement()
+            .withPrepareRecipientsForNewOutgoingMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withCreateOutgoingBroadcastEnvelope()
+            .withAllRecipients(recipients to listOf())
+            .withBroadcastEnvelope()
+            .arrange()
+
+        val message = BroadcastMessage(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling(""),
+            date = TestMessage.TEST_DATE_STRING,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId,
+            status = Message.Status.SENT,
+            isSelfMessage = false
+        )
+
+        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_1, Arrangement.TEST_MEMBER_3))
+
+        arrangement.testScope.runTest {
+            // when
+            messageSender.broadcastMessage(
+                message = message,
+                target = BroadcastMessageTarget.AllUsers(2)
+            )
+
+            // then
+            verify(arrangement.sessionEstablisher)
+                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .with(matching { it.size == 2 })
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
+                .with(anything(), eq(option))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenOnlyTeamTargets_WhenBroadcastOutgoingMessage_ThenCallBroadcastEnvelopeWithCorrectTargets() {
+        // given
+        val senderUserId = UserId("userValue", "userDomain")
+        val senderClientId = ClientId("clientId")
+        val teamRecipients = listOf(
+            Arrangement.TEST_RECIPIENT_2,
+            Recipient(senderUserId, listOf(senderClientId, ClientId("mySecondClientId")))
+        )
+        val otherRecipients = listOf(
+            Arrangement.TEST_RECIPIENT_1,
+            Arrangement.TEST_RECIPIENT_3,
+        )
+        val (arrangement, messageSender) = Arrangement()
+            .withPrepareRecipientsForNewOutgoingMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withCreateOutgoingBroadcastEnvelope()
+            .withAllRecipients(teamRecipients to otherRecipients)
+            .withBroadcastEnvelope()
+            .arrange()
+
+        val message = BroadcastMessage(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling(""),
+            date = TestMessage.TEST_DATE_STRING,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId,
+            status = Message.Status.SENT,
+            isSelfMessage = false
+        )
+
+        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_1, Arrangement.TEST_MEMBER_3))
+
+        arrangement.testScope.runTest {
+            // when
+            messageSender.broadcastMessage(
+                message = message,
+                target = BroadcastMessageTarget.OnlyTeam(100)
+            )
+
+            // then
+            verify(arrangement.sessionEstablisher)
+                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .with(matching { it.size == 2 })
                 .wasInvoked(exactly = once)
 
             verify(arrangement.messageRepository)
@@ -572,6 +676,9 @@ class MessageSenderTest {
         @Mock
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val userRepository = configure(mock(UserRepository::class)) { stubsUnitByDefault = true }
+
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -591,6 +698,7 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             messageSendingScheduler = messageSendingScheduler,
             messageSendingInterceptor = messageSendingInterceptor,
+            userRepository = userRepository,
             scope = testScope
         )
 
@@ -703,6 +811,13 @@ class MessageSenderTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withAllRecipients(recipients: Pair<List<Recipient>, List<Recipient>>) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::getAllRecipients)
+                .whenInvoked()
+                .thenReturn(Either.Right(recipients))
+        }
+
         @Suppress("LongParameterList")
         fun withSendProteusMessage(
             getConversationProtocolFailing: Boolean = false,
@@ -767,10 +882,13 @@ class MessageSenderTest {
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
             val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")
+            val TEST_CONTACT_CLIENT_4 = ClientId("clientId4")
             val TEST_MEMBER_1 = UserId("value1", "domain1")
             val TEST_RECIPIENT_1 = Recipient(TEST_MEMBER_1, listOf(TEST_CONTACT_CLIENT_1, TEST_CONTACT_CLIENT_2))
             val TEST_MEMBER_2 = UserId("value2", "domain2")
+            val TEST_MEMBER_3 = UserId("value3", "domain3")
             val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
+            val TEST_RECIPIENT_3 = Recipient(TEST_MEMBER_3, listOf(TEST_CONTACT_CLIENT_4))
         }
     }
 }

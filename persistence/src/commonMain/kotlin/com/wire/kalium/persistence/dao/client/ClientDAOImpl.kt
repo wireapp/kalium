@@ -117,8 +117,8 @@ internal class ClientDAOImpl internal constructor(
             .mapToOneNotNull()
             .flowOn(queriesContext)
 
-    override suspend fun selectAllClientsByTeam(teamId: String): Map<QualifiedIDEntity, List<Client>> =
-        clientsQueries.selectAllClientsByTeam(teamId, mapper::fromClient)
+    override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> =
+        clientsQueries.selectAllClients(mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
 

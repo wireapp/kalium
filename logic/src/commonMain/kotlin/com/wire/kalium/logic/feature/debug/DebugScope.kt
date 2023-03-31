@@ -130,6 +130,7 @@ class DebugScope internal constructor(
             mlsMessageCreator,
             messageSendingScheduler,
             messageSendingInterceptor,
+            userRepository,
             scope
         )
 }
