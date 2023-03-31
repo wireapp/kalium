@@ -19,16 +19,13 @@
 package com.wire.kalium.logic.feature.user
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.BroadcastMessageOption
 import com.wire.kalium.logic.feature.message.BroadcastMessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.flatMap
@@ -36,7 +33,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import kotlin.math.max
 
 /**
  * Updates the current user's [UserAvailabilityStatus] status.
