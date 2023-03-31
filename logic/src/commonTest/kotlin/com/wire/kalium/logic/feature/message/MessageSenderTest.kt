@@ -573,7 +573,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_1, Arrangement.TEST_MEMBER_3))
+        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_3, Arrangement.TEST_MEMBER_1))
 
         arrangement.testScope.runTest {
             // when
