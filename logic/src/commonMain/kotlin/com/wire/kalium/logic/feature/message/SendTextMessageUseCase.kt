@@ -63,6 +63,7 @@ class SendTextMessageUseCase internal constructor(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
+        expirationData: Message.ExpirationData? = null,
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
@@ -93,6 +94,7 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
+                expirationData = expirationData,
                 isSelfMessage = true
             )
             persistMessage(message)
