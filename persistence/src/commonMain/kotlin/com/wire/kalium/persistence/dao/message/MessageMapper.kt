@@ -183,7 +183,6 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             senderUserId = senderUserId
         )
-
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -231,26 +230,32 @@ object MessageMapper {
         selfReactionsJson: String?,
         senderName: String?,
         isSelfMessage: Boolean,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionStartDate: Instant?
     ): MessageEntity = when (content) {
-        is MessageEntityContent.Regular -> MessageEntity.Regular(
-            content = content,
-            id = id,
-            conversationId = conversationId,
-            date = date,
-            senderUserId = senderUserId,
-            senderClientId = senderClientId!!,
-            status = status,
-            editStatus = mapEditStatus(lastEdit),
-            visibility = visibility,
-            reactions = ReactionsEntity(
-                totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
-                selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-            ),
-            senderName = senderName,
-            isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation
-        )
+        is MessageEntityContent.Regular -> {
+            MessageEntity.Regular(
+                content = content,
+                id = id,
+                conversationId = conversationId,
+                date = date,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId!!,
+                status = status,
+                editStatus = mapEditStatus(lastEdit),
+                expireAfterMs = expireAfterMillis,
+                selfDeletionStartDate = selfDeletionStartDate,
+                visibility = visibility,
+                reactions = ReactionsEntity(
+                    totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
+                    selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
+                ),
+                senderName = senderName,
+                isSelfMessage = isSelfMessage,
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+        }
 
         is MessageEntityContent.System -> MessageEntity.System(
             content = content,
@@ -281,6 +286,8 @@ object MessageMapper {
         lastEditTimestamp: Instant?,
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionDate: Instant?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -437,7 +444,9 @@ object MessageMapper {
             selfReactionsJson,
             senderName,
             isSelfMessage,
-            expectsReadConfirmation ?: false
+            expectsReadConfirmation,
+            expireAfterMillis,
+            selfDeletionDate
         )
     }
 

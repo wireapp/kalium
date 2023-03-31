@@ -98,6 +98,7 @@ internal object TableMapper {
         visibilityAdapter = EnumColumnAdapter(),
         creation_dateAdapter = InstantTypeAdapter,
         last_edit_dateAdapter = InstantTypeAdapter,
+        self_deletion_start_dateAdapter = InstantTypeAdapter
     )
     val messageAssetContentAdapter = MessageAssetContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

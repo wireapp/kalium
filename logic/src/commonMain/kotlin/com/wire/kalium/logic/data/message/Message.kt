@@ -24,8 +24,11 @@ import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 sealed interface Message {
@@ -75,9 +78,11 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
+        val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
+
         @Suppress("LongMethod")
         override fun toLogString(): String {
             val typeKey = "type"
@@ -257,9 +262,11 @@ sealed interface Message {
                 is MessageContent.CryptoSessionReset -> mutableMapOf(
                     typeKey to "cryptoSessionReset"
                 )
+
                 is MessageContent.NewConversationReceiptMode -> mutableMapOf(
                     typeKey to "newConversationReceiptMode"
                 )
+
                 is MessageContent.ConversationReceiptModeChanged -> mutableMapOf(
                     typeKey to "conversationReceiptModeChanged"
                 )
@@ -293,9 +300,9 @@ sealed interface Message {
         data class Edited(val lastTimeStamp: String) : EditStatus()
 
         override fun toString(): String = when (this) {
-                is NotEdited -> "NOT_EDITED"
-                is Edited -> "EDITED_$lastTimeStamp"
-            }
+            is NotEdited -> "NOT_EDITED"
+            is Edited -> "EDITED_$lastTimeStamp"
+        }
 
         fun toLogString(): String {
             val properties = toLogMap()
@@ -303,14 +310,42 @@ sealed interface Message {
         }
 
         fun toLogMap(): Map<String, String> = when (this) {
-                is NotEdited -> mutableMapOf(
-                    "value" to "NOT_EDITED"
-                )
-                is Edited -> mutableMapOf(
-                    "value" to "EDITED",
-                    "time" to this.lastTimeStamp
-                )
+            is NotEdited -> mutableMapOf(
+                "value" to "NOT_EDITED"
+            )
+
+            is Edited -> mutableMapOf(
+                "value" to "EDITED",
+                "time" to this.lastTimeStamp
+            )
+        }
+    }
+
+    data class ExpirationData(val expireAfter: Duration, val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted) {
+
+        sealed class SelfDeletionStatus {
+            object NotStarted : SelfDeletionStatus()
+
+            data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+        }
+
+        fun timeLeftForDeletion(): Duration {
+            return if (selfDeletionStatus is SelfDeletionStatus.Started) {
+                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
+
+                // time left for deletion it can be a negative value if the time difference between the self deletion start date and
+                // now is greater then expire after millis, we normalize it to 0 seconds
+                val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
+
+                if (timeLeft.isNegative()) {
+                    Duration.ZERO
+                } else {
+                    timeLeft
+                }
+            } else {
+                expireAfter
             }
+        }
     }
 
     enum class UploadStatus {
