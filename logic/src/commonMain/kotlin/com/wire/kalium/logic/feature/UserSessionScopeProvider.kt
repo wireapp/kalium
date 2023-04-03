@@ -22,6 +22,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.util.computeIfAbsent
 
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
@@ -39,7 +40,9 @@ abstract class UserSessionScopeProviderCommon(
     }
 
     override fun getOrCreate(userId: UserId): UserSessionScope =
-        userScopeStorage.getOrPut(userId) { create(userId) }
+        userScopeStorage.computeIfAbsent(userId) {
+            create(userId)
+        }
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 

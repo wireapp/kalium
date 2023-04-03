@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.logic.util.computeIfAbsent
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
 class AuthenticationScopeProvider {
@@ -46,7 +47,7 @@ class AuthenticationScopeProvider {
     }
 
     fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
-        authenticationScopeStorage.getOrPut(serverConfig to proxyCredentials) {
+        authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 serverConfig,
                 proxyCredentials
