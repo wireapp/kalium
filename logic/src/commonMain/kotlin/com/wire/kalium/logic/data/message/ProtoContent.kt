@@ -37,7 +37,8 @@ sealed interface ProtoContent {
     data class Readable(
         override val messageUid: String,
         val messageContent: MessageContent.FromProto,
-        val expectsReadConfirmation: Boolean
+        val expectsReadConfirmation: Boolean,
+        val expiresAfterMillis: Long? = null
     ) : ProtoContent
 
     /**

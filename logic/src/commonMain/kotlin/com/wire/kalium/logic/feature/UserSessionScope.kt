@@ -174,6 +174,9 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
@@ -437,17 +440,17 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
-    private val userRepository: UserRepository
-        get() = UserDataSource(
-            userStorage.database.userDAO,
-            userStorage.database.metadataDAO,
-            userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            globalScope.sessionRepository,
-            userId,
-            qualifiedIdMapper
-        )
+    private val userRepository: UserRepository = UserDataSource(
+        userStorage.database.userDAO,
+        userStorage.database.metadataDAO,
+        userStorage.database.clientDAO,
+        authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+        authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+        globalScope.sessionRepository,
+        userId,
+        qualifiedIdMapper,
+        selfTeamId,
+    )
 
     internal val pushTokenRepository: PushTokenRepository
         get() = PushTokenDataSource(userStorage.database.metadataDAO)
@@ -1128,6 +1131,15 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
+    private val ephemeralMessageDeletionHandler = EphemeralMessageDeletionHandlerImpl(
+        userSessionCoroutineScope = this,
+        messageRepository = messageRepository
+    )
+
+    val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
+    )
+
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val calls: CallsScope
@@ -1194,6 +1206,9 @@ class UserSessionScope internal constructor(
 
         launch {
             conversationsRecoveryManager.invoke()
+        }
+        launch {
+            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
         }
     }
 
