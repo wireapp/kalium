@@ -440,8 +440,7 @@ enum class AssetType {
     IMAGE,
     VIDEO,
     AUDIO,
-    ASSET,
-    FILE
+    GENERIC_ASSET
 }
 
 typealias ReactionsCount = Map<String, Int>

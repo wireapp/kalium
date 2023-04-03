@@ -388,8 +388,7 @@ enum class AssetTypeEntity {
     IMAGE,
     VIDEO,
     AUDIO,
-    ASSET,
-    FILE
+    GENERIC_ASSET
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
