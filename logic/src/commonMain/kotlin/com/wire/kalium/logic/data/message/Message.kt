@@ -20,12 +20,15 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 sealed interface Message {
@@ -75,10 +78,12 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
+        val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
+
         @Suppress("LongMethod")
         override fun toLogString(): String {
             val typeKey = "type"
@@ -318,6 +323,33 @@ sealed interface Message {
         }
     }
 
+    data class ExpirationData(val expireAfter: Duration, val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted) {
+
+        sealed class SelfDeletionStatus {
+            object NotStarted : SelfDeletionStatus()
+
+            data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+        }
+
+        fun timeLeftForDeletion(): Duration {
+            return if (selfDeletionStatus is SelfDeletionStatus.Started) {
+                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
+
+                // time left for deletion it can be a negative value if the time difference between the self deletion start date and
+                // now is greater then expire after millis, we normalize it to 0 seconds
+                val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
+
+                if (timeLeft.isNegative()) {
+                    Duration.ZERO
+                } else {
+                    timeLeft
+                }
+            } else {
+                expireAfter
+            }
+        }
+    }
+
     enum class UploadStatus {
         /**
          * There was no attempt done to upload the asset's data to remote (server) storage.
@@ -410,8 +442,7 @@ enum class AssetType {
     IMAGE,
     VIDEO,
     AUDIO,
-    ASSET,
-    FILE
+    GENERIC_ASSET
 }
 
 typealias ReactionsCount = Map<String, Int>

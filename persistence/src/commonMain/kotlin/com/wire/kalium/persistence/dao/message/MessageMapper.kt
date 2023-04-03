@@ -79,9 +79,9 @@ object MessageMapper {
                     it.contains("image/") -> AssetTypeEntity.IMAGE
                     it.contains("video/") -> AssetTypeEntity.VIDEO
                     it.contains("audio/") -> AssetTypeEntity.AUDIO
-                    else -> AssetTypeEntity.FILE
+                    else -> AssetTypeEntity.GENERIC_ASSET
                 }
-            } ?: AssetTypeEntity.FILE
+            } ?: AssetTypeEntity.GENERIC_ASSET
         )
 
         MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
@@ -94,8 +94,7 @@ object MessageMapper {
                     } else {
                         MessagePreviewEntityContent.MembersAdded(
                             senderName = senderName,
-                            isContainSelfUserId = userIdList
-                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                             otherUserIdList = userIdList.filterNot { it == selfUserId },
                         )
                     }
@@ -119,7 +118,7 @@ object MessageMapper {
         MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
             senderName = senderName,
-            type = AssetTypeEntity.ASSET
+            type = AssetTypeEntity.GENERIC_ASSET
         )
 
         MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
@@ -184,7 +183,6 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             senderUserId = senderUserId
         )
-
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -233,31 +231,37 @@ object MessageMapper {
         senderName: String?,
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionStartDate: Instant?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity = when (content) {
-        is MessageEntityContent.Regular -> MessageEntity.Regular(
-            content = content,
-            id = id,
-            conversationId = conversationId,
-            date = date,
-            senderUserId = senderUserId,
-            senderClientId = senderClientId!!,
-            status = status,
-            editStatus = mapEditStatus(lastEdit),
-            visibility = visibility,
-            reactions = ReactionsEntity(
-                totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
-                selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-            ),
-            senderName = senderName,
-            isSelfMessage = isSelfMessage,
-            expectsReadConfirmation = expectsReadConfirmation,
-            deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
-                recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
-                recipientsFailedDeliveryList = recipientsFailedDeliveryList
+        is MessageEntityContent.Regular -> {
+            MessageEntity.Regular(
+                content = content,
+                id = id,
+                conversationId = conversationId,
+                date = date,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId!!,
+                status = status,
+                editStatus = mapEditStatus(lastEdit),
+                expireAfterMs = expireAfterMillis,
+                selfDeletionStartDate = selfDeletionStartDate,
+                visibility = visibility,
+                reactions = ReactionsEntity(
+                    totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
+                    selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
+                ),
+                senderName = senderName,
+                isSelfMessage = isSelfMessage,
+                expectsReadConfirmation = expectsReadConfirmation,
+                deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
+                    recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+                    recipientsFailedDeliveryList = recipientsFailedDeliveryList
+                )
             )
-        )
+        }
 
         is MessageEntityContent.System -> MessageEntity.System(
             content = content,
@@ -288,6 +292,8 @@ object MessageMapper {
         lastEditTimestamp: Instant?,
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionDate: Instant?,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -357,9 +363,9 @@ object MessageMapper {
                 messageBody = text ?: "",
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
-                quotedMessage = quotedMessageId?.let {
+                quotedMessage = quotedMessageContentType?.let {
                     MessageEntityContent.Text.QuotedMessage(
-                        id = it,
+                        id = quotedMessageId.requireField("quotedMessageId"),
                         senderId = quotedSenderId.requireField("quotedSenderId"),
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
                         isVerified = isQuoteVerified ?: false,
@@ -446,7 +452,9 @@ object MessageMapper {
             selfReactionsJson,
             senderName,
             isSelfMessage,
-            expectsReadConfirmation ?: false,
+            expectsReadConfirmation,
+            expireAfterMillis,
+            selfDeletionDate,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
         )

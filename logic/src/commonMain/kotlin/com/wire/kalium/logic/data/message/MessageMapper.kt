@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -42,6 +41,8 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
@@ -53,10 +54,9 @@ interface MessageMapper {
 }
 
 class MessageMapperImpl(
-    private val idMapper: IdMapper,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
@@ -80,6 +80,13 @@ class MessageMapperImpl(
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
+                },
+                expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
+                selfDeletionStartDate = message.expirationData?.let {
+                    when (val status = it.selfDeletionStatus) {
+                        is Message.ExpirationData.SelfDeletionStatus.Started -> status.selfDeletionStartDate
+                        is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
+                    }
                 },
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -108,34 +115,40 @@ class MessageMapperImpl(
             MessageEntity.Status.FAILED -> Message.Status.FAILED
             MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
         }
-        val visibility = message.visibility.toModel()
-
         return when (message) {
-            is MessageEntity.Regular -> Message.Regular(
-                id = message.id,
-                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
-                conversationId = message.conversationId.toModel(),
-                date = message.date.toIsoDateTimeString(),
-                senderUserId = message.senderUserId.toModel(),
-                senderClientId = ClientId(message.senderClientId),
-                status = status,
-                editStatus = when (val editStatus = message.editStatus) {
-                    MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                    is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
-                },
-                visibility = visibility,
-                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
-                senderUserName = message.senderName,
-                isSelfMessage = message.isSelfMessage,
-                expectsReadConfirmation = message.expectsReadConfirmation,
-                deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
-                    is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
-                    is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
-                        recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
-                        recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
-                    )
-                },
-            )
+            is MessageEntity.Regular ->
+                Message.Regular(
+                    id = message.id,
+                    content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
+                    conversationId = message.conversationId.toModel(),
+                    date = message.date.toIsoDateTimeString(),
+                    senderUserId = message.senderUserId.toModel(),
+                    senderClientId = ClientId(message.senderClientId),
+                    status = status,
+                    editStatus = when (val editStatus = message.editStatus) {
+                        MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+                        is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+                    },
+                    expirationData = message.expireAfterMs?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = message.selfDeletionStartDate
+                                ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                                ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    },
+                    visibility = message.visibility.toModel(),
+                    reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+                    senderUserName = message.senderName,
+                    isSelfMessage = message.isSelfMessage,
+                    expectsReadConfirmation = message.expectsReadConfirmation,
+                    deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
+                        is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
+                        is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
+                            recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
+                            recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
+                        )
+                    },
+                )
 
             is MessageEntity.System -> Message.System(
                 id = message.id,
@@ -144,7 +157,7 @@ class MessageMapperImpl(
                 date = message.date.toIsoDateTimeString(),
                 senderUserId = message.senderUserId.toModel(),
                 status = status,
-                visibility = visibility,
+                visibility = message.visibility.toModel(),
                 senderUserName = message.senderName,
             )
         }
@@ -338,11 +351,11 @@ class MessageMapperImpl(
             MessageContent.Text(
                 value = this.messageBody,
                 mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.let {
+                quotedMessageReference = quotedMessageId?.let {
                     MessageContent.QuoteReference(
-                        quotedMessageId = it.messageId,
+                        quotedMessageId = it,
                         quotedMessageSha256 = null,
-                        isVerified = it.isVerified
+                        isVerified = quotedMessageDetails?.isVerified ?: false
                     )
                 },
                 quotedMessageDetails = quotedMessageDetails
@@ -447,6 +460,5 @@ fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.IMAGE -> AssetType.IMAGE
     AssetTypeEntity.VIDEO -> AssetType.VIDEO
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
-    AssetTypeEntity.ASSET -> AssetType.ASSET
-    AssetTypeEntity.FILE -> AssetType.FILE
+    AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }

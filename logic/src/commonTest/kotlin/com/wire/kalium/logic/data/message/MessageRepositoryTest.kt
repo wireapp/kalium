@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.BroadcastMessageOption
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
@@ -229,6 +230,67 @@ class MessageRepositoryTest {
     }
 
     @Test
+    fun givenABroadcastMessage_whenBroadcastingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val timestamp = TEST_DATETIME
+
+        val (_, messageRepository) = Arrangement()
+            .withSuccessfulMessageBroadcasting(timestamp)
+            .arrange()
+
+        messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
+            .shouldSucceed {
+                assertSame(it, TEST_DATETIME)
+            }
+    }
+
+    @Test
+    fun givenABroadcastMessageWithExternalBlob_whenBroadcasting_thenApiShouldBeCalledWithBlob() = runTest {
+        val dataBlob = EncryptedMessageBlob(byteArrayOf(0x42, 0x13, 0x69))
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf(), dataBlob)
+        val timestamp = TEST_DATETIME
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withSuccessfulMessageBroadcasting(timestamp)
+            .arrange()
+
+        messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
+            .shouldSucceed {
+                assertSame(it, TEST_DATETIME)
+            }
+
+        with(arrangement) {
+            verify(messageApi)
+                .suspendFunction(messageApi::qualifiedBroadcastMessage)
+                .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) })
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAnEnvelopeTargetedToClients_whenBroadcasting_thenShouldCallTheAPIWithCorrectParameters() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val timestamp = TEST_DATETIME
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withSuccessfulMessageBroadcasting(timestamp)
+            .arrange()
+
+        messageRepository.broadcastEnvelope(
+            messageEnvelope,
+            BroadcastMessageOption.IgnoreSome(listOf())
+        ).shouldSucceed()
+
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedBroadcastMessage)
+            .with(
+                matching {
+                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreSome(listOf())
+                }
+            )
+    }
+
+    @Test
     fun whenUpdatingMessageAfterSending_thenDAOFunctionIsCalled() = runTest {
         val messageID = TEST_MESSAGE_ID
         val conversationID = TEST_CONVERSATION_ID
@@ -323,6 +385,20 @@ class MessageRepositoryTest {
                 .suspendFunction(messageApi::qualifiedSendMessage)
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ ->
+                    NetworkResponse.Success(
+                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        emptyMap(),
+                        201
+                    )
+                }
+            return this
+        }
+
+        fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
+            given(messageApi)
+                .suspendFunction(messageApi::qualifiedBroadcastMessage)
+                .whenInvokedWith(anything())
+                .then { _ ->
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
                         emptyMap(),

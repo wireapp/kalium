@@ -74,4 +74,5 @@ interface ClientDAO {
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
     suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
     suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
+    suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>>
 }

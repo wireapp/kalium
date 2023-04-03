@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCase
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCaseImpl
@@ -38,6 +40,7 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
@@ -67,6 +70,9 @@ class UserScope internal constructor(
     private val selfUserId: UserId,
     private val metadataDAO: MetadataDAO,
     private val userPropertyRepository: UserPropertyRepository,
+    private val messageSender: MessageSender,
+    private val clientIdProvider: CurrentClientIdProvider,
+    private val conversationRepository: ConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -93,8 +99,7 @@ class UserScope internal constructor(
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
-        get() =
-            UpdateSelfAvailabilityStatusUseCase(userRepository)
+        get() = UpdateSelfAvailabilityStatusUseCase(userRepository, messageSender, clientIdProvider, selfUserId)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 

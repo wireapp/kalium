@@ -1333,6 +1333,67 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenReplyMessage_WhenQuotedMessageExist_MessageShouldContainQuotedDetails() = runTest {
+        insertInitialData()
+        val quotedUser = userEntity1
+        val otherUser = userEntity2
+        val conversationId = conversationEntity1.id
+
+        val quotedMessageId = "quotedId"
+        val replyMessageId = "replyId"
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = quotedMessageId,
+                conversationId = conversationId,
+                senderUserId = quotedUser.id,
+            ),
+            newRegularMessageEntity(
+                id = replyMessageId,
+                senderUserId = otherUser.id,
+                conversationId = conversationId,
+                content = MessageEntityContent.Text(quotedMessageId = quotedMessageId, messageBody = "Sure")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        val replyMessage = messageDAO.getMessageById(replyMessageId, conversationId)
+        assertTrue {
+            replyMessage != null
+                    && replyMessage.content is MessageEntityContent.Text
+                    && (replyMessage.content as MessageEntityContent.Text).quotedMessage?.id == quotedMessageId
+        }
+    }
+
+    @Test
+    fun givenReplyMessage_WhenQuotedMessageNotExist_MessageShouldContainOnlyQuotedMessageId() = runTest {
+        insertInitialData()
+        val otherUser = userEntity2
+        val conversationId = conversationEntity1.id
+
+        val quotedMessageId = "quotedId"
+        val replyMessageId = "replyId"
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = replyMessageId,
+                senderUserId = otherUser.id,
+                conversationId = conversationId,
+                content = MessageEntityContent.Text(quotedMessageId = quotedMessageId, messageBody = "Sure")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        val replyMessage = messageDAO.getMessageById(replyMessageId, conversationId)
+        assertTrue {
+            replyMessage != null
+                    && replyMessage.content is MessageEntityContent.Text
+                    && (replyMessage.content as MessageEntityContent.Text).quotedMessageId == quotedMessageId
+                    && (replyMessage.content as MessageEntityContent.Text).quotedMessage == null
+        }
+    }
+
+    @Test
     fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")

@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -54,6 +53,7 @@ class SendEditTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -122,14 +122,10 @@ class SendEditTextMessageUseCase internal constructor(
                             }
                         }
                 }
-        }.onFailure {
-            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, originalMessageId)
-            if (it is CoreFailure.Unknown) {
-                kaliumLogger.e("There was an unknown error trying to send the edit message $it", it.rootCause)
-                it.rootCause?.printStackTrace()
-            } else {
-                kaliumLogger.e("There was an error trying to send the edit message $it")
-            }
-        }
+        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
+    }
+
+    companion object {
+        const val TYPE = "edit text"
     }
 }

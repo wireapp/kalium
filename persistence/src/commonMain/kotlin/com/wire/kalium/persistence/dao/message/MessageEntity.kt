@@ -38,7 +38,6 @@ sealed class MessageEntity(
     open val visibility: Visibility,
     open val isSelfMessage: Boolean,
 ) {
-
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
@@ -51,10 +50,21 @@ sealed class MessageEntity(
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
+        val expireAfterMs: Long? = null,
+        val selfDeletionStartDate: Instant? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(
+        id = id,
+        content = content,
+        conversationId = conversationId,
+        date = date,
+        senderUserId = senderUserId,
+        status = status,
+        visibility = visibility,
+        isSelfMessage = isSelfMessage
+    )
 
     data class System(
         override val id: String,
@@ -66,7 +76,16 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(
+        id = id,
+        content = content,
+        conversationId = conversationId,
+        date = date,
+        senderUserId = senderUserId,
+        status = status,
+        visibility = visibility,
+        isSelfMessage = isSelfMessage
+    )
 
     enum class Status {
         /**
@@ -370,8 +389,7 @@ enum class AssetTypeEntity {
     IMAGE,
     VIDEO,
     AUDIO,
-    ASSET,
-    FILE
+    GENERIC_ASSET
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>

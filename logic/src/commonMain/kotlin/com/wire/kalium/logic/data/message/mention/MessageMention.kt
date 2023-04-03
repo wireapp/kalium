@@ -23,5 +23,6 @@ import com.wire.kalium.logic.data.user.UserId
 data class MessageMention(
     val start: Int,
     val length: Int,
-    val userId: UserId
+    val userId: UserId,
+    val isSelfMention: Boolean
 )
