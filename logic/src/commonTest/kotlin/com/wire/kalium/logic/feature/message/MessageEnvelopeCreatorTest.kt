@@ -273,6 +273,201 @@ class MessageEnvelopeCreatorTest {
             .with(anything(), anything())
             .wasInvoked(exactly = once)
     }
+    @Test
+    fun givenRecipients_whenCreatingBroadcastEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient() = runTest {
+        val recipients = TEST_RECIPIENTS
+        val sessionIds = recipients.flatMap { recipient ->
+            recipient.clients.map { CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+            }
+        }
+
+        val encryptedData = byteArrayOf()
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(sessionIds.associateWith { encryptedData })
+
+        val plainData = byteArrayOf(0x42, 0x73)
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(anything())
+            .thenReturn(PlainMessageBlob(plainData))
+
+        messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
+
+        verify(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .with(
+                eq(plainData),
+                eq(sessionIds)
+            )
+    }
+
+    @Test
+    fun givenMessageContentIsTooBig_whenCreatingBroadcastEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
+        // Given
+        // A big byte array as the readable content
+        val plainData = ByteArray(SUPER_BIG_CONTENT_SIZE) { it.toByte() }
+
+        val recipients = TEST_RECIPIENTS
+        val externalInstructionsArray = byteArrayOf(0x42, 0x13)
+        val encryptedData = byteArrayOf(0x66)
+        val sessionIds = recipients.flatMap { recipient ->
+            recipient.clients.map { CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+            }
+        }
+
+        // Should only attempt to E2EE the external instructions, not the content itself
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(matching { it.contentEquals(externalInstructionsArray) }, anything())
+            .thenReturn(sessionIds.associateWith { encryptedData })
+
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(matching { it is ProtoContent.Readable })
+            .thenReturn(PlainMessageBlob(plainData))
+
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(matching { it is ProtoContent.ExternalMessageInstructions })
+            .thenReturn(PlainMessageBlob(externalInstructionsArray))
+
+        // When
+        val envelope = messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
+
+        // Then
+        envelope.shouldSucceed {
+            assertTrue { it.dataBlob!!.data.size >= SUPER_BIG_CONTENT_SIZE }
+
+            it.recipients.forEach { recipientEntry ->
+                recipientEntry.clientPayloads.forEach { clientPayload ->
+                    assertEquals(encryptedData, clientPayload.payload.data)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun givenMessageContentIsSmall_whenCreatingBroadcastEnvelope_thenShouldNotCreateExternalMessageInstructions() = runTest {
+        // Given
+        val plainData = ByteArray(1) { it.toByte() }
+
+        val recipients = TEST_RECIPIENTS
+        val encryptedData = byteArrayOf(0x66)
+        val sessionIds = recipients.flatMap { recipient ->
+            recipient.clients.map { CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+            }
+        }
+
+        // Should only attempt to E2EE the content itself
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(matching { it.contentEquals(plainData) }, anything())
+            .thenReturn(sessionIds.associateWith { encryptedData })
+
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(matching { it is ProtoContent.Readable })
+            .thenReturn(PlainMessageBlob(plainData))
+
+        // When
+        val envelope = messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
+
+        // Then
+        envelope.shouldSucceed {
+            assertNull(it.dataBlob)
+
+            it.recipients.forEach { recipientEntry ->
+                recipientEntry.clientPayloads.forEach { clientPayload ->
+                    assertEquals(encryptedData, clientPayload.payload.data)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun givenEncryptionSucceeds_whenCreatingBroadcastEnvelope_thenTheResultShouldContainAllEntries() = runTest {
+        val recipients = TEST_RECIPIENTS
+        val sessionIds = recipients.flatMap { recipient ->
+            recipient.clients.map { CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+            }
+        }
+
+        val encryptedData = byteArrayOf()
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(sessionIds.associateWith { encryptedData })
+
+        val plainData = byteArrayOf(0x42, 0x73)
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(anything())
+            .thenReturn(PlainMessageBlob(plainData))
+
+        messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
+            .shouldSucceed { envelope ->
+                assertEquals(TestMessage.TEXT_MESSAGE.senderClientId, envelope.senderClientId)
+
+                // Should get a corresponding contact for the envelope entry
+                // For each recipient
+                TEST_RECIPIENTS.forEach { recipient ->
+                    // Should get a matching recipient entry in the created envelope
+                    val matchingRecipientEntry = envelope.recipients.first { recipientEntry ->
+                        recipient.id == recipientEntry.userId
+                    }
+
+                    // All clients of this contact should have a matching payload in the entry
+                    recipient.clients.forEach { client ->
+                        val hasFoundClientEntry = matchingRecipientEntry.clientPayloads.any { clientPayload ->
+                            clientPayload.clientId == client
+                        }
+                        assertTrue(hasFoundClientEntry)
+                    }
+                }
+            }
+    }
+
+    @Test
+    fun givenProteusThrowsDuringEncryption_whenCreatingBroadcastEnvelope_thenTheFailureShouldBePropagated() = runTest {
+        val exception = ProteusException("OOPS", ProteusException.Code.PANIC)
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(anything(), anything())
+            .thenThrow(exception)
+
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(anything())
+            .thenReturn(PlainMessageBlob(byteArrayOf()))
+
+        messageEnvelopeCreator.createOutgoingBroadcastEnvelope(TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
+            .shouldFail {
+                assertIs<ProteusFailure>(it)
+                assertEquals(exception, it.proteusException)
+            }
+    }
+
+    @Test
+    fun givenProteusThrowsDuringEncryption_whenCreatingBroadcastEnvelope_thenNoMoreEncryptionsShouldBeAttempted() = runTest {
+        given(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .whenInvokedWith(anything(), anything())
+            .thenThrow(ProteusException("OOPS", ProteusException.Code.PANIC))
+
+        given(protoContentMapper)
+            .function(protoContentMapper::encodeToProtobuf)
+            .whenInvokedWith(anything())
+            .thenReturn(PlainMessageBlob(byteArrayOf()))
+
+        messageEnvelopeCreator.createOutgoingBroadcastEnvelope(TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
+
+        verify(proteusClient)
+            .suspendFunction(proteusClient::encryptBatched)
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
 
     private companion object {
         /**

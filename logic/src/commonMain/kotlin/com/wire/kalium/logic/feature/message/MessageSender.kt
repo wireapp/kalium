@@ -22,15 +22,20 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -46,6 +51,7 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.toInstant
+import kotlin.math.max
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -72,7 +78,7 @@ interface MessageSender {
      */
     @Deprecated(
         "For now we don't support re-sending pending messages, they should fail immediately when there's an error, " +
-            "even if it's no network",
+                "even if it's no network",
         ReplaceWith("sendMessage")
     )
     suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
@@ -94,6 +100,22 @@ interface MessageSender {
     suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
 
     /**
+     * Attempts to send the given [BroadcastMessage] to suitable recipients.
+     *
+     * Will handle all the needed encryption and possible set-up
+     * steps
+     *
+     * Will **not** handle connectivity failures and scheduling re-tries in the future.
+     * Suitable for fire-and-forget messages that are not belong to any specific Conversation,
+     * like changing user availability status.
+     *
+     */
+    suspend fun broadcastMessage(
+        message: BroadcastMessage,
+        target: BroadcastMessageTarget
+    ): Either<CoreFailure, Unit>
+
+    /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
      */
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
@@ -111,6 +133,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val messageSendingInterceptor: MessageSendingInterceptor,
+    private val userRepository: UserRepository,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -161,6 +184,14 @@ internal class MessageSenderImpl internal constructor(
                 }
             }
 
+    override suspend fun broadcastMessage(
+        message: BroadcastMessage,
+        target: BroadcastMessageTarget
+    ): Either<CoreFailure, Unit> =
+        withContext(scope.coroutineContext) {
+            attemptToBroadcastWithProteus(message, target).map { }
+        }
+
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
     private suspend fun attemptToSend(
@@ -207,6 +238,29 @@ internal class MessageSenderImpl internal constructor(
             }
     }
 
+    private suspend fun attemptToBroadcastWithProteus(
+        message: BroadcastMessage,
+        target: BroadcastMessageTarget
+    ): Either<CoreFailure, String> {
+        return userRepository.getAllRecipients().flatMap { (teamRecipients, otherRecipients) ->
+            val (option, recipients) = getBroadcastParams(
+                message.senderUserId,
+                message.senderClientId,
+                target,
+                teamRecipients,
+                otherRecipients
+            )
+
+            sessionEstablisher
+                .prepareRecipientsForNewOutgoingMessage(recipients)
+                .flatMap {
+                    messageEnvelopeCreator
+                        .createOutgoingBroadcastEnvelope(recipients, message)
+                        .flatMap { envelope -> tryBroadcastProteusEnvelope(envelope, message, option, target) }
+                }
+        }
+    }
+
     /**
      * Attempts to send a MLS application message
      *
@@ -243,31 +297,89 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                when (it) {
-
-                    is ProteusSendMessageFailure -> {
-                        logger.w("Proteus Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
-                        messageSendFailureHandler
-                            .handleClientsHaveChangedFailure(it)
-                            .flatMap {
-                                logger.w("Retrying After Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"}")
-                                attemptToSend(message, messageTarget)
-                            }
-                            .onFailure { failure ->
-                                val logLine = "Fatal Proteus Send Failure: { \"message\" : \"${message.toLogString()}\"" +
-                                        " , " +
-                                        "\"errorInfo\" : \"${failure}\"}"
-                                logger.e(logLine)
-                            }
-                    }
-
-                    else -> {
-                        logger.e("Message Send Failure: { \"message\" : \"${message.toLogString()}\", \"errorInfo\" : \"${it}\" }")
-                        Either.Left(it)
-                    }
-                }
+                handleProteusError(it, "Send", message.toLogString()) { attemptToSend(message, messageTarget) }
             }, {
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
                 Either.Right(it)
             })
+
+    /**
+     * Attempts to send a Proteus envelope without need to provide a specific conversationId
+     * Will handle the failure and retry in case of [ProteusSendMessageFailure].
+     */
+    private suspend fun tryBroadcastProteusEnvelope(
+        envelope: MessageEnvelope,
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        target: BroadcastMessageTarget
+    ): Either<CoreFailure, String> =
+        messageRepository
+            .broadcastEnvelope(envelope, option)
+            .fold({
+                handleProteusError(it, "Broadcast", message.toLogString()) { attemptToBroadcastWithProteus(message, target) }
+            }, {
+                logger.i("Message Broadcast Success: { \"message\" : \"${message.toLogString()}\" }")
+                Either.Right(it)
+            })
+
+    private suspend fun handleProteusError(
+        failure: CoreFailure,
+        action: String, // Send or Broadcast
+        messageLogString: String,
+        retry: suspend () -> Either<CoreFailure, String>
+    ) =
+        when (failure) {
+            is ProteusSendMessageFailure -> {
+                logger.w("Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }")
+                messageSendFailureHandler
+                    .handleClientsHaveChangedFailure(failure)
+                    .flatMap {
+                        logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
+                        retry()
+                    }
+                    .onFailure {
+                        val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
+                        logger.e(logLine)
+                    }
+            }
+
+            else -> {
+                logger.e("Message $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }")
+                Either.Left(failure)
+            }
+        }
+
+    private fun getBroadcastParams(
+        selfUserId: UserId,
+        selfClientId: ClientId,
+        target: BroadcastMessageTarget,
+        teamRecipients: List<Recipient>,
+        otherRecipients: List<Recipient>
+    ): Pair<BroadcastMessageOption, List<Recipient>> {
+        val receivers = mutableListOf<Recipient>()
+        val filteredOut = mutableSetOf<UserId>()
+        var selfRecipient: Recipient? = null
+
+        teamRecipients.forEach {
+            when {
+                it.id == selfUserId -> selfRecipient =
+                    it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId })
+
+                receivers.size < (target.limit - 1) -> receivers.add(it)
+                else -> filteredOut.add(it.id)
+            }
+        }
+        selfRecipient?.let { receivers.add(it) }
+
+        val spaceLeftTillMax = when (target) {
+            is BroadcastMessageTarget.AllUsers -> max(target.limit - receivers.size, 0)
+            is BroadcastMessageTarget.OnlyTeam -> 0
+        }
+        receivers.addAll(otherRecipients.take(spaceLeftTillMax))
+        filteredOut.addAll(otherRecipients.takeLast(max(otherRecipients.size - spaceLeftTillMax, 0)).map { it.id })
+
+        return BroadcastMessageOption.ReportSome(filteredOut.toList()) to receivers
+    }
 }

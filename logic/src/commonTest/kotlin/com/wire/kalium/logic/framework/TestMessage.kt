@@ -20,8 +20,10 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.toInstant
@@ -94,6 +96,16 @@ object TestMessage {
         senderClientId = "clientId",
         editStatus = MessageEntity.EditStatus.NotEdited,
         senderName = "senderName"
+    )
+
+    val BROADCAST_MESSAGE = BroadcastMessage(
+        id = TEST_MESSAGE_ID,
+        content = MessageContent.Availability(UserAvailabilityStatus.AVAILABLE),
+        date = TEST_DATE_STRING,
+        senderUserId = TEST_SENDER_USER_ID,
+        senderClientId = TEST_SENDER_CLIENT_ID,
+        status = Message.Status.PENDING,
+        isSelfMessage = false
     )
 
     fun signalingMessage(
