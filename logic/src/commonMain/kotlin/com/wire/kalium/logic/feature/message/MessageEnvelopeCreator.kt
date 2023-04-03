@@ -26,9 +26,11 @@ import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.ClientPayload
 import com.wire.kalium.logic.data.message.EncryptedMessageBlob
 import com.wire.kalium.logic.data.message.Message
@@ -53,6 +55,11 @@ interface MessageEnvelopeCreator {
         message: Message.Sendable
     ): Either<CoreFailure, MessageEnvelope>
 
+    suspend fun createOutgoingBroadcastEnvelope(
+        recipients: List<Recipient>,
+        message: BroadcastMessage
+    ): Either<CoreFailure, MessageEnvelope>
+
 }
 
 class MessageEnvelopeCreatorImpl(
@@ -74,6 +81,26 @@ class MessageEnvelopeCreatorImpl(
         }
 
         val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
+
+        return createEnvelope(actualMessageContent, recipients, senderClientId)
+    }
+
+    override suspend fun createOutgoingBroadcastEnvelope(
+        recipients: List<Recipient>,
+        message: BroadcastMessage
+    ): Either<CoreFailure, MessageEnvelope> {
+        val senderClientId = message.senderClientId
+        val expectsReadConfirmation = false
+        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
+
+        return createEnvelope(actualMessageContent, recipients, senderClientId)
+    }
+
+    private suspend fun createEnvelope(
+        actualMessageContent: ProtoContent.Readable,
+        recipients: List<Recipient>,
+        senderClientId: ClientId
+    ): Either<CoreFailure, MessageEnvelope> {
         val (encodedContent, externalDataBlob) = getContentAndExternalData(actualMessageContent, recipients)
 
         val sessions = recipients.flatMap { recipient ->
