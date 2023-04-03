@@ -85,11 +85,11 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
 
     override val messageApi: MessageApi get() = MessageApiV3(networkClient, EnvelopeProtoMapperImpl())
 
-    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV3(networkClient)
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV3()
 
     override val conversationApi: ConversationApi get() = ConversationApiV3(networkClient, ApiModelMapperImpl())
 
-    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV3(networkClient)
+    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV3()
 
     override val preKeyApi: PreKeyApi get() = PreKeyApiV3(networkClient)
 
@@ -111,7 +111,7 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
 
     override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV3(networkClient)
 
-    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV3(networkClient)
+    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV3()
 
     override val propertiesApi: PropertiesApi get() = PropertiesApiV3(networkClient)
 }

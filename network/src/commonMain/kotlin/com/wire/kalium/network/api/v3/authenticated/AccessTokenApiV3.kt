@@ -31,7 +31,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 
-internal class AccessTokenApiV3 internal constructor(
+internal open class AccessTokenApiV3 internal constructor(
     private val httpClient: HttpClient
 ) : AccessTokenApiV2(httpClient) {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =

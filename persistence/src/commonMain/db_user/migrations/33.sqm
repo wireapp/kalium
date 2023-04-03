@@ -1,0 +1,123 @@
+DROP VIEW IF EXISTS MessageDetailsView;
+
+CREATE VIEW IF NOT EXISTS MessageDetailsView
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.creation_date AS date,
+Message.sender_user_id AS senderUserId,
+Message.sender_client_id AS senderClientId,
+Message.status AS status,
+Message.last_edit_date AS lastEditTimestamp,
+Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
+Message.expire_after_millis AS expireAfterMillis,
+Message.self_deletion_start_date AS selfDeletionStartDate,
+User.name AS senderName,
+User.handle AS senderHandle,
+User.email AS senderEmail,
+User.phone AS senderPhone,
+User.accent_id AS senderAccentId,
+User.team AS senderTeamId,
+User.connection_status AS senderConnectionStatus,
+User.preview_asset_id AS senderPreviewAssetId,
+User.complete_asset_id AS senderCompleteAssetId,
+User.user_availability_status AS senderAvailabilityStatus,
+User.user_type AS senderUserType,
+User.bot_service AS senderBotService,
+User.deleted AS senderIsDeleted,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+TextContent.text_body AS text,
+TextContent.is_quoting_self AS isQuotingSelfUser,
+AssetContent.asset_size AS assetSize,
+AssetContent.asset_name AS assetName,
+AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
+AssetContent.asset_download_status AS assetDownloadStatus,
+AssetContent.asset_otr_key AS assetOtrKey,
+AssetContent.asset_sha256 AS assetSha256,
+AssetContent.asset_id AS assetId,
+AssetContent.asset_token AS assetToken,
+AssetContent.asset_domain AS assetDomain,
+AssetContent.asset_encryption_algorithm AS assetEncryptionAlgorithm,
+AssetContent.asset_width AS assetWidth,
+AssetContent.asset_height AS assetHeight,
+AssetContent.asset_duration_ms AS assetDuration,
+AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+MissedCallContent.caller_id AS callerId,
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
+UnknownContent.unknown_type_name AS unknownContentTypeName,
+UnknownContent.unknown_encoded_data AS unknownContentData,
+RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
+RestrictedAssetContent.asset_size AS restrictedAssetSize,
+RestrictedAssetContent.asset_name AS restrictedAssetName,
+FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
+ConversationNameChangedContent.conversation_name AS conversationName,
+'{' || IFNULL(
+    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
+    FROM (
+        SELECT COUNT(*) count, Reaction.emoji emoji
+        FROM Reaction
+        WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )),
+    '')
+|| '}' AS allReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
+    FROM Reaction
+    WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        AND Reaction.sender_id = SelfUser.id
+    ),
+    '[]'
+) AS selfReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions,
+TextContent.quoted_message_id AS quotedMessageId,
+QuotedMessage.sender_user_id AS quotedSenderId,
+TextContent.is_quote_verified AS isQuoteVerified,
+QuotedSender.name AS quotedSenderName,
+QuotedMessage.creation_date AS quotedMessageDateTime,
+QuotedMessage.last_edit_date AS quotedMessageEditTimestamp,
+QuotedMessage.visibility AS quotedMessageVisibility,
+QuotedMessage.content_type AS quotedMessageContentType,
+QuotedTextContent.text_body AS quotedTextBody,
+QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+QuotedAssetContent.asset_name AS quotedAssetName,
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
+FROM Message
+JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
+LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+
+-- joins for quoted messages
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+-- end joins for quoted messages
+LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
+LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
+LEFT JOIN SelfUser;
