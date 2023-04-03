@@ -111,8 +111,7 @@ internal open class MessageApiV0 internal constructor(
             is MessageApi.MessageOption.ReportSome -> {
                 val body = parameters.toRequestBody()
                 body.reportMissing = option.userIDs
-                val commaSeparatedList = option.userIDs.joinToString(",")
-                performRequest(QUERY_REPORT_MISSING, commaSeparatedList, body)
+                performRequest(null, null, body)
             }
         }
     }
