@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
@@ -35,17 +36,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.CurrentPlatform
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
-import io.ktor.util.collections.ConcurrentMap
 
 actual class GlobalCallManager(
     appContext: PlatformContext
 ) {
 
-    private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
-        ConcurrentMap()
+    private val callManagerHolder: ConcurrentMutableMap<QualifiedID, CallManager> by lazy {
+        ConcurrentMutableMap()
     }
 
     private val calling by lazy {

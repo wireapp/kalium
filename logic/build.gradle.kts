@@ -53,6 +53,9 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
+
+                // Concurrent collections
+                implementation(libs.concurrentCollections)
             }
         }
         val commonTest by getting {
