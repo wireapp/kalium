@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV3
+import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
@@ -62,6 +63,11 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 3 -> UnauthenticatedNetworkContainerV3(
+                    serverConfigDTO,
+                    proxyCredentials = proxyCredentials
+                )
+
+                4 -> UnauthenticatedNetworkContainerV4(
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
                 )

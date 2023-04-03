@@ -343,11 +343,11 @@ class MessageMapperImpl(
             MessageContent.Text(
                 value = this.messageBody,
                 mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.let {
+                quotedMessageReference = quotedMessageId?.let {
                     MessageContent.QuoteReference(
-                        quotedMessageId = it.messageId,
+                        quotedMessageId = it,
                         quotedMessageSha256 = null,
-                        isVerified = it.isVerified
+                        isVerified = quotedMessageDetails?.isVerified ?: false
                     )
                 },
                 quotedMessageDetails = quotedMessageDetails

@@ -26,15 +26,15 @@ import com.wire.kalium.network.utils.NetworkResponse
 internal open class MLSMessageApiV0 internal constructor() : MLSMessageApi {
 
     override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<SendMLSMessageResponse> = NetworkResponse.Error(
-        APINotSupported("MLS: sendMessage api is only available on API V2")
+        APINotSupported("MLS: sendMessage api is only available on API V4")
     )
 
     override suspend fun sendWelcomeMessage(message: MLSMessageApi.WelcomeMessage): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("MLS: sendWelcomeMessage api is only available on API V2")
+        APINotSupported("MLS: sendWelcomeMessage api is only available on API V4")
     )
 
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
         NetworkResponse.Error(
-            APINotSupported("MLS: sendCommitBundle api is only available on API V3")
+            APINotSupported("MLS: sendCommitBundle api is only available on API V4")
         )
 }
