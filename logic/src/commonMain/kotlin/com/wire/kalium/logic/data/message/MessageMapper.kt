@@ -107,6 +107,7 @@ class MessageMapperImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING

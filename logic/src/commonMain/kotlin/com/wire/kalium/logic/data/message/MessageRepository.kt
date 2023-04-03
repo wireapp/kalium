@@ -367,10 +367,11 @@ class MessageDataSource(
                 else -> networkFailure
             }
             Either.Left(failure)
-        },  { response: QualifiedSendMessageResponse ->
+        }, { response: QualifiedSendMessageResponse ->
             Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
         })
     }
+
     override suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
@@ -509,7 +510,6 @@ class MessageDataSource(
             messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)
         }
     }
-
 
     /**
      * Persist a list of users ids that failed to receive the message [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
