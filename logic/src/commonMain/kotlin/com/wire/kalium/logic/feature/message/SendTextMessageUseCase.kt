@@ -41,6 +41,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 /**
@@ -63,7 +64,7 @@ class SendTextMessageUseCase internal constructor(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        expirationData: Message.ExpirationData? = null,
+        expireAfter: Duration? = null,
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
@@ -94,7 +95,9 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                expirationData = expirationData,
+                expirationData = expireAfter?.let {
+                    Message.ExpirationData(expireAfter = it, selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                },
                 isSelfMessage = true
             )
             persistMessage(message)

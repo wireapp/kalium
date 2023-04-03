@@ -46,6 +46,7 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.Location
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -75,31 +76,50 @@ class ProtoContentMapperImpl(
     }
 
     @Suppress("ComplexMethod")
-    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> =
-        when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
-            is MessageContent.Calling -> packCalling(readableContent)
-            is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
-            is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
-            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
-            is MessageContent.DeleteForMe -> packHidden(readableContent)
-            is MessageContent.Availability -> GenericMessage.Content.Availability(
-                availabilityMapper.fromModelAvailabilityToProto(
-                    readableContent.status
+    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> {
+        return if (protoContent.expiresAfterMillis != null) {
+            val ephemeralContent = when (val readableContent = protoContent.messageContent) {
+                is MessageContent.Text -> {
+                    val test = packText(readableContent, protoContent.expectsReadConfirmation)
+                    Ephemeral.Content.Text(
+                        test.value
+                    )
+                }
+//
+//                 is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
+//                 is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+                else -> {
+                    throw IllegalArgumentException("Unexpected message content type: $readableContent")
+                }
+            }
+            GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = protoContent.expiresAfterMillis, content = ephemeralContent))
+        } else {
+           when (val readableContent = protoContent.messageContent) {
+                is MessageContent.Text -> packText(readableContent, protoContent.expectsReadConfirmation)
+                is MessageContent.Calling -> packCalling(readableContent)
+                is MessageContent.Asset -> packAsset(readableContent, protoContent.expectsReadConfirmation)
+                is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+                is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
+                is MessageContent.DeleteForMe -> packHidden(readableContent)
+                is MessageContent.Availability -> GenericMessage.Content.Availability(
+                    availabilityMapper.fromModelAvailabilityToProto(
+                        readableContent.status
+                    )
                 )
-            )
 
-            is MessageContent.LastRead -> packLastRead(readableContent)
-            is MessageContent.Cleared -> packCleared(readableContent)
-            is MessageContent.Reaction -> packReaction(readableContent)
-            is MessageContent.Receipt -> packReceipt(readableContent)
-            is MessageContent.ClientAction -> packClientAction()
-            is MessageContent.TextEdited -> packEdited(readableContent)
-            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
-                throw IllegalArgumentException(
-                    "Unexpected message content type: $readableContent"
-                )
+                is MessageContent.LastRead -> packLastRead(readableContent)
+                is MessageContent.Cleared -> packCleared(readableContent)
+                is MessageContent.Reaction -> packReaction(readableContent)
+                is MessageContent.Receipt -> packReceipt(readableContent)
+                is MessageContent.ClientAction -> packClientAction()
+                is MessageContent.TextEdited -> packEdited(readableContent)
+                is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+                    throw IllegalArgumentException(
+                        "Unexpected message content type: $readableContent"
+                    )
+            }
         }
+    }
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
         GenericMessage.Content.External(
