@@ -20,14 +20,12 @@ package com.wire.kalium.logic.feature.message
 sealed class BroadcastMessageTarget(open val limit: Int) {
 
     /** Broadcast the message to all users in contact list (teammates and others)
-     * @param limit if it's >= 0 than message will be sent to all found Users.
-     * If not then message will be broadcasted only to the first [limit] Users (teammates are prioritized)
+     * @param limit message will be broadcasted only to the first [limit] Users (teammates are prioritized)
      */
-    data class AllUsers(override val limit: Int = -1) : BroadcastMessageTarget(limit)
+    data class AllUsers(override val limit: Int) : BroadcastMessageTarget(limit)
 
     /** Broadcast the message only to the teammates
-     * @param limit if it's >= 0 than message will be sent to all found teammates.
-     * If not then message will be broadcasted only to the first [limit] teammates.
+     * @param limit message will be broadcasted only to the first [limit] teammates.
      */
-    data class OnlyTeam(override val limit: Int = -1) : BroadcastMessageTarget(limit)
+    data class OnlyTeam(override val limit: Int) : BroadcastMessageTarget(limit)
 }
