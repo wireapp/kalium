@@ -28,9 +28,7 @@ val documentedSubprojects = listOf(
     "cryptography",
     "logger",
     "logic",
-    "network",
     "persistence",
-    "protobuf"
 )
 
 /**
