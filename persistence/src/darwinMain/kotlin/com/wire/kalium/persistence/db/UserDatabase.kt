@@ -20,6 +20,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
@@ -47,8 +48,8 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean
 ): UserDatabaseBuilder {
     NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
-
     val schema = UserDatabase.Schema
+
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
             name = FileNameUtil.userDBName(userId),
@@ -72,6 +73,18 @@ actual fun userDatabaseBuilder(
         dispatcher,
         platformDatabaseData,
         passphrase != null
+    )
+}
+
+actual fun userDatabaseDriverByPath(
+    platformDatabaseData: PlatformDatabaseData,
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
+): SqlDriver {
+    return NativeSqliteDriver(
+        UserDatabase.Schema,
+        path
     )
 }
 
