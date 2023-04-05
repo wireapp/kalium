@@ -36,6 +36,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.DateTimeUtil
@@ -430,6 +432,18 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val transient: Boolean,
             val model: ConfigsStatusModel,
+        ) : FeatureConfig(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.GuestRoomLinkUpdated",
+                idKey to id.obfuscateId(),
+                "status" to model.status.name,
+            )
+        }
+
+        data class SelfDeletingMessagesConfig(
+            override val id: String,
+            override val transient: Boolean,
+            val model: SelfDeletingMessagesModel,
         ) : FeatureConfig(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.GuestRoomLinkUpdated",

@@ -47,6 +47,7 @@ interface UserConfigRepository {
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
     fun setSelfDeletingMessagesStatus(selfDeletingMessagesStatus: SelfDeletingMessagesStatus): Either<StorageFailure, Unit>
+    fun setSelfDeletingMessagesAsNotified(): Either<StorageFailure, Unit>
     fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus>
     fun observeSelfDeletingMessagesStatus(): Flow<Either<StorageFailure, SelfDeletingMessagesStatus>>
 }
@@ -150,6 +151,10 @@ class UserConfigDataSource(
                 selfDeletingMessagesStatus.enforcedTimeoutInSeconds
             )
         }
+
+    override fun setSelfDeletingMessagesAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.setSelfDeletingMessagesAsNotified()
+    }
 
     override fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus> =
         wrapStorageRequest { userConfigStorage.isSelfDeletingMessagesEnabled() }.map {

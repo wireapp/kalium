@@ -111,6 +111,7 @@ interface UserConfigStorage {
     fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity?
     fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?>
     fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?, enforcedTimeoutInSeconds: Int)
+    fun setSelfDeletingMessagesAsNotified()
 }
 
 @Serializable
@@ -271,19 +272,32 @@ class UserConfigStorageImpl(
             .map { isGuestRoomLinkEnabled() }
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
+
     override fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?> =
         isSelfDeletingMessagesEnabledFlow
             .map { isSelfDeletingMessagesEnabled() }
             .onStart { emit(isSelfDeletingMessagesEnabled()) }
             .distinctUntilChanged()
 
-    override fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?,  enforcedTimeoutInSeconds: Int) {
+    override fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?, enforcedTimeoutInSeconds: Int) {
         kaliumPreferences.putSerializable(
-            GUEST_ROOM_LINK,
+            SELF_DELETING_MESSAGES,
             SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds),
             SelfDeletingMessagesEntity.serializer()
         ).also {
             isGuestRoomLinkEnabledFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun setSelfDeletingMessagesAsNotified() {
+        val newValue = kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, SelfDeletingMessagesEntity.serializer())
+            ?.copy(isStatusChanged = false) ?: return
+        kaliumPreferences.putSerializable(
+            SELF_DELETING_MESSAGES,
+            newValue,
+            SelfDeletingMessagesEntity.serializer()
+        ).also {
+            isSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
         }
     }
 
