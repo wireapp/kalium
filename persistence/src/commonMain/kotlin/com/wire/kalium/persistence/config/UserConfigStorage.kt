@@ -108,6 +108,7 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
+    fun markGuestRoomLinkAsNotified()
 }
 
 @Serializable
@@ -240,7 +241,10 @@ class UserConfigStorageImpl(
     ) {
         kaliumPreferences.putSerializable(
             GUEST_ROOM_LINK,
-            IsGuestRoomLinkEnabledEntity(status, isStatusChanged),
+            IsGuestRoomLinkEnabledEntity(
+                status = status,
+                isStatusChanged = isStatusChanged
+            ),
             IsGuestRoomLinkEnabledEntity.serializer()
         ).also {
             isGuestRoomLinkEnabledFlow.tryEmit(Unit)
@@ -255,6 +259,21 @@ class UserConfigStorageImpl(
             .map { isGuestRoomLinkEnabled() }
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
+
+    override fun markGuestRoomLinkAsNotified() {
+        kaliumPreferences.getSerializable(
+            GUEST_ROOM_LINK,
+            IsGuestRoomLinkEnabledEntity.serializer()
+        )?.copy(isStatusChanged = false)?.let {
+            kaliumPreferences.putSerializable(
+                GUEST_ROOM_LINK,
+                it,
+                IsGuestRoomLinkEnabledEntity.serializer()
+            ).also {
+                isGuestRoomLinkEnabledFlow.tryEmit(Unit)
+            }
+        }
+    }
 
     private companion object {
         const val FILE_SHARING = "file_sharing"
