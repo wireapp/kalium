@@ -343,11 +343,11 @@ class MessageMapperImpl(
             MessageContent.Text(
                 value = this.messageBody,
                 mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.let {
+                quotedMessageReference = quotedMessageId?.let {
                     MessageContent.QuoteReference(
-                        quotedMessageId = it.messageId,
+                        quotedMessageId = it,
                         quotedMessageSha256 = null,
-                        isVerified = it.isVerified
+                        isVerified = quotedMessageDetails?.isVerified ?: false
                     )
                 },
                 quotedMessageDetails = quotedMessageDetails
@@ -452,6 +452,5 @@ fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.IMAGE -> AssetType.IMAGE
     AssetTypeEntity.VIDEO -> AssetType.VIDEO
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
-    AssetTypeEntity.ASSET -> AssetType.ASSET
-    AssetTypeEntity.FILE -> AssetType.FILE
+    AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }
