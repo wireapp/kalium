@@ -108,6 +108,9 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
+    fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity?
+    fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?>
+    fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?, enforcedTimeoutInSeconds: Int)
 }
 
 @Serializable
@@ -128,6 +131,13 @@ data class IsGuestRoomLinkEnabledEntity(
     @SerialName("isStatusChanged") val isStatusChanged: Boolean?
 )
 
+@Serializable
+data class SelfDeletingMessagesEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?,
+    @SerialName("enforcedTimeout") val enforcedTimeoutInSeconds: Int,
+)
+
 @Suppress("TooManyFunctions")
 class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
@@ -143,6 +153,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isGuestRoomLinkEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isSelfDeletingMessagesEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -250,15 +263,34 @@ class UserConfigStorageImpl(
     override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
         kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
 
+    override fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity? =
+        kaliumPreferences.getSerializable(GUEST_ROOM_LINK, SelfDeletingMessagesEntity.serializer())
+
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
         isGuestRoomLinkEnabledFlow
             .map { isGuestRoomLinkEnabled() }
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
+    override fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?> =
+        isSelfDeletingMessagesEnabledFlow
+            .map { isSelfDeletingMessagesEnabled() }
+            .onStart { emit(isSelfDeletingMessagesEnabled()) }
+            .distinctUntilChanged()
+
+    override fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?,  enforcedTimeoutInSeconds: Int) {
+        kaliumPreferences.putSerializable(
+            GUEST_ROOM_LINK,
+            SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds),
+            SelfDeletingMessagesEntity.serializer()
+        ).also {
+            isGuestRoomLinkEnabledFlow.tryEmit(Unit)
+        }
+    }
 
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
+        const val SELF_DELETING_MESSAGES = "self_deleting_messages"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"

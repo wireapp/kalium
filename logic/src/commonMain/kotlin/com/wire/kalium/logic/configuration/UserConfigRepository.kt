@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
@@ -45,6 +46,9 @@ interface UserConfigRepository {
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
+    fun setSelfDeletingMessagesStatus(selfDeletingMessagesStatus: SelfDeletingMessagesStatus): Either<StorageFailure, Unit>
+    fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus>
+    fun observeSelfDeletingMessagesStatus(): Flow<Either<StorageFailure, SelfDeletingMessagesStatus>>
 }
 
 @Suppress("TooManyFunctions")
@@ -135,6 +139,33 @@ class UserConfigDataSource(
             .map {
                 it.map { isGuestRoomLinkEnabledEntity ->
                     GuestRoomLinkStatus(isGuestRoomLinkEnabledEntity.status, isGuestRoomLinkEnabledEntity.isStatusChanged)
+                }
+            }
+
+    override fun setSelfDeletingMessagesStatus(selfDeletingMessagesStatus: SelfDeletingMessagesStatus): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistSelfDeletingMessagesStatus(
+                selfDeletingMessagesStatus.isEnabled,
+                selfDeletingMessagesStatus.isStatusChanged,
+                selfDeletingMessagesStatus.enforcedTimeoutInSeconds
+            )
+        }
+
+    override fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus> =
+        wrapStorageRequest { userConfigStorage.isSelfDeletingMessagesEnabled() }.map {
+            with(it) { SelfDeletingMessagesStatus(status, isStatusChanged, enforcedTimeoutInSeconds) }
+        }
+
+    override fun observeSelfDeletingMessagesStatus(): Flow<Either<StorageFailure, SelfDeletingMessagesStatus>> =
+        userConfigStorage.isSelfDeletingMessagesEnabledFlow()
+            .wrapStorageRequest()
+            .map {
+                it.map { isSelfDeletingMessagesEnabledEntity ->
+                    SelfDeletingMessagesStatus(
+                        isSelfDeletingMessagesEnabledEntity.status,
+                        isSelfDeletingMessagesEnabledEntity.isStatusChanged,
+                        isSelfDeletingMessagesEnabledEntity.enforcedTimeoutInSeconds
+                    )
                 }
             }
 }
