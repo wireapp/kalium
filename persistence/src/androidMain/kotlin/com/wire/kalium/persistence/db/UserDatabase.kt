@@ -21,7 +21,7 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
 
 private const val DEFAULT_CACHE_SIZE = 20
@@ -80,15 +81,15 @@ actual fun userDatabaseDriverByPath(
     passphrase: UserDBSecret?,
     enableWAL: Boolean
 ): SqlDriver {
-    val configuration = SupportSQLiteOpenHelper.Configuration.builder(platformDatabaseData.context)
-        .name(path)
-        .build()
-    return SupportOpenHelperFactory(passphrase?.value, false)
-        .create(configuration)
-        .writableDatabase
-        .let {
-            AndroidSqliteDriver(it, DEFAULT_CACHE_SIZE)
-        }
+    System.loadLibrary("sqlcipher")
+    val db: SupportSQLiteDatabase = SQLiteDatabase.openDatabase(
+        path,
+        passphrase?.value,
+        null,
+        SQLiteDatabase.OPEN_READWRITE,
+        null
+    )
+    return AndroidSqliteDriver(db, DEFAULT_CACHE_SIZE)
 }
 
 fun inMemoryDatabase(
