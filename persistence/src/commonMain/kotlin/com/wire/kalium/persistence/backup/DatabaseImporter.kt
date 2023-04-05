@@ -23,7 +23,7 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.migrate
-import com.wire.kalium.persistence.db.userDatabaseDriver
+import com.wire.kalium.persistence.db.userDatabaseDriverByPath
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean)
@@ -39,7 +39,7 @@ internal class DatabaseImporterImpl internal constructor(
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
 
-        userDatabaseDriver(platformDatabaseData, filePath).also {
+        userDatabaseDriverByPath(platformDatabaseData, filePath, null, false).also {
             val isMigrated = it.migrate(UserDatabase.Schema)
             it.close()
             if (!isMigrated) throw IllegalStateException("Database is not migrated")
