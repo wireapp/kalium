@@ -19,7 +19,11 @@
 package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.ImportContentQueries
+import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.migrate
+import com.wire.kalium.persistence.db.userDatabaseDriverByPath
 
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean)
@@ -28,11 +32,18 @@ interface DatabaseImporter {
 internal class DatabaseImporterImpl internal constructor(
     private val localDatabase: UserDatabaseBuilder,
     private val importContentQueries: ImportContentQueries,
-    private val isDataEncrypted: Boolean
+    private val isDataEncrypted: Boolean,
+    private val platformDatabaseData: PlatformDatabaseData
 ) : DatabaseImporter {
     private val localDBDriver = localDatabase.sqlDriver
 
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
+
+        userDatabaseDriverByPath(platformDatabaseData, filePath, null, false).also {
+            val isMigrated = it.migrate(UserDatabase.Schema)
+            it.close()
+            if (!isMigrated) throw IllegalStateException("Database is not migrated")
+        }
 
         localDatabase.database.transaction {
             attachBackupDB(filePath)

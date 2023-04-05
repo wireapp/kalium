@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
@@ -91,6 +92,13 @@ expect fun userDatabaseBuilder(
     enableWAL: Boolean = true
 ): UserDatabaseBuilder
 
+internal expect fun userDatabaseDriverByPath(
+    platformDatabaseData: PlatformDatabaseData,
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
+): SqlDriver
+
 class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     internal val sqlDriver: SqlDriver,
@@ -156,7 +164,7 @@ class UserDatabaseBuilder internal constructor(
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
-        get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted)
+        get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted, platformDatabaseData)
 
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)
@@ -219,3 +227,21 @@ internal expect fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
 ): String?
+
+@Suppress("TooGenericExceptionCaught")
+fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
+    val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
+        it.next()
+        it.getLong(0)
+    }, 0).value?.toInt() ?: return false
+
+    val newVersion = sqlSchema.version
+    return try {
+        if (oldVersion != newVersion) {
+            sqlSchema.migrate(this, oldVersion, newVersion)
+        }
+        true
+    } catch (e: Exception) {
+        false
+    }
+}

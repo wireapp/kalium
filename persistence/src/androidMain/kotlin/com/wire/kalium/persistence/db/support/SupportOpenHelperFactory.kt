@@ -6,7 +6,7 @@ import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
 import net.zetetic.database.sqlcipher.SQLiteOpenHelper
 
 class SupportOpenHelperFactory(
-    private val password: ByteArray,
+    private val password: ByteArray?,
     private val enableWriteAheadLogging: Boolean = false,
     private val hook: SQLiteDatabaseHook? = null,
     private val minimumSupportedDatabaseVersion: Int = 1
