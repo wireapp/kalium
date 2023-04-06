@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
@@ -266,6 +267,10 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
 
+        @Mock
+        val messageSendFailureHandler = mock(classOf<MessageSendFailureHandler>())
+
+
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
@@ -369,6 +374,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             slowSyncRepository,
             messageSender,
             userPropertyRepository,
+            messageSendFailureHandler,
             testScope,
             testDispatcher
         )
