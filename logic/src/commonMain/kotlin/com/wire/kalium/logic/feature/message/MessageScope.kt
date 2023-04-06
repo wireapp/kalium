@@ -167,6 +167,7 @@ class MessageScope internal constructor(
             slowSyncRepository,
             messageSender,
             userPropertyRepository,
+            messageSendFailureHandler,
             scope,
             dispatcher
         )

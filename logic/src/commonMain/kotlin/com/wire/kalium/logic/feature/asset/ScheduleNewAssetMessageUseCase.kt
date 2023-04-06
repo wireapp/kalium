@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -91,6 +92,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val userPropertyRepository: UserPropertyRepository,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
@@ -196,7 +198,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 )
             }.onSuccess {
                 // Finally we try to send the Asset Message to the recipients of the given conversation
-                prepareAndSendAssetMessage(message, conversationId)
+                prepareAndSendAssetMessage(message, conversationId).onFailure { failure ->
+                    messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, conversationId, message.id, MESSAGE_TYPE)
+                }
             }
         }
 
@@ -221,6 +225,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
+
                     else -> null
                 },
                 remoteData = AssetContent.RemoteData(
@@ -241,6 +246,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     private companion object {
         const val DEFAULT_BYTE_ARRAY_SIZE = 16
+        const val MESSAGE_TYPE = "ASSET"
     }
 }
 
