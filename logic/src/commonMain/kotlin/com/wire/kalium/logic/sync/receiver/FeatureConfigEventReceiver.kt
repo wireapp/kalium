@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.server.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -114,7 +115,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             }
 
             is Event.FeatureConfig.SelfDeletingMessagesConfig -> {
-                handleGuestRoomLinkFeatureConfig(event.model.status)
+                handleSelfDeletingFeatureConfig(event.model.status, event.model.config.enforcedTimeoutSeconds)
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
@@ -154,23 +155,29 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleSelfDeletingFeatureConfig(status: Status) {
-        if (!kaliumConfigs.guestRoomLink) {
-            userConfigRepository.setGuestRoomStatus(false, null)
+    private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Int) {
+        if (!kaliumConfigs.selfDeletingMessages) {
+            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, 0))
         } else {
-            val currentGuestRoomStatus: Boolean = userConfigRepository
-                .getGuestRoomLinkStatus()
-                .fold({ true }, { it.isGuestRoomLinkEnabled ?: true })
+            val currentIsSelfDeletingMessagesEnabled: Boolean = userConfigRepository
+                .getSelfDeletingMessagesStatus()
+                .fold({ true }, { it.isEnabled })
 
             when (status) {
-                Status.ENABLED -> userConfigRepository.setGuestRoomStatus(
-                    status = true,
-                    isStatusChanged = !currentGuestRoomStatus
+                Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
+                    SelfDeletingMessagesStatus(
+                        isEnabled = true,
+                        isStatusChanged = !currentIsSelfDeletingMessagesEnabled,
+                        enforcedTimeoutInSeconds = enforcedTimeoutSeconds
+                    )
                 )
 
-                Status.DISABLED -> userConfigRepository.setGuestRoomStatus(
-                    status = false,
-                    isStatusChanged = currentGuestRoomStatus
+                Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
+                    SelfDeletingMessagesStatus(
+                        isEnabled = false,
+                        isStatusChanged = currentIsSelfDeletingMessagesEnabled,
+                        enforcedTimeoutInSeconds = enforcedTimeoutSeconds
+                    )
                 )
             }
         }

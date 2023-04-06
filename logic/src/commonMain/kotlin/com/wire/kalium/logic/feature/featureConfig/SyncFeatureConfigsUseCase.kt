@@ -130,13 +130,17 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
-        val selfDeletingMessagesEnabled = model.status == Status.ENABLED
-        userConfigRepository.setSelfDeletingMessagesStatus(
-            SelfDeletingMessagesStatus(
-                selfDeletingMessagesEnabled,
-                null,
-                model.config.enforcedTimeoutSeconds
+        if (kaliumConfigs.selfDeletingMessages) {
+            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, 0))
+        } else {
+            val selfDeletingMessagesEnabled = model.status == Status.ENABLED
+            userConfigRepository.setSelfDeletingMessagesStatus(
+                SelfDeletingMessagesStatus(
+                    selfDeletingMessagesEnabled,
+                    null,
+                    model.config.enforcedTimeoutSeconds
+                )
             )
-        )
+        }
     }
 }
