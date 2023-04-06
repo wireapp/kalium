@@ -270,7 +270,6 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         val messageSendFailureHandler = mock(classOf<MessageSendFailureHandler>())
 
-
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
