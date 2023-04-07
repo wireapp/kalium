@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
+import kotlinx.datetime.Instant
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -213,8 +214,10 @@ internal class MessageInsertExtensionImpl(
     }
 
     private fun insertUnreadEvent(message: MessageEntity) {
-        val lastRead = conversationsQueries.getConversationReadDate(message.conversationId).executeAsOneOrNull()
-        if (!message.isSelfMessage && message.date.toEpochMilliseconds() > (lastRead?.toEpochMilliseconds() ?: 0L)) {
+        val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).executeAsOneOrNull()
+            ?: Instant.DISTANT_PAST
+
+        if (!message.isSelfMessage && message.date > lastRead) {
             when (message.content) {
                 is MessageEntityContent.Knock -> unreadEventsQueries.insertEvent(
                     message.id,
