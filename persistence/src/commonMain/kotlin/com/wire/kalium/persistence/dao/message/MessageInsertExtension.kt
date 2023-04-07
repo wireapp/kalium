@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -28,6 +29,7 @@ internal interface MessageInsertExtension {
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
+    private val conversationsQueries: ConversationsQueries,
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
@@ -211,7 +213,8 @@ internal class MessageInsertExtensionImpl(
     }
 
     private fun insertUnreadEvent(message: MessageEntity) {
-        if (!message.isSelfMessage) {
+        val lastRead = conversationsQueries.getConversationReadDate(message.conversationId).executeAsOneOrNull()
+        if (!message.isSelfMessage && message.date.toEpochMilliseconds() > (lastRead?.toEpochMilliseconds() ?: 0L)) {
             when (message.content) {
                 is MessageEntityContent.Knock -> unreadEventsQueries.insertEvent(
                     message.id,
