@@ -108,7 +108,7 @@ UPDATE Conversation
 SET last_modified_date = ?
 WHERE qualified_id = ?;
 
-getConversationReadDate:
+getConversationLastReadDate:
 SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
 
 updateConversationReadDate:
