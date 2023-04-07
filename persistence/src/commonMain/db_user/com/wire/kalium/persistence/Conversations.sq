@@ -108,6 +108,9 @@ UPDATE Conversation
 SET last_modified_date = ?
 WHERE qualified_id = ?;
 
+getConversationReadDate:
+SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
+
 updateConversationReadDate:
 UPDATE Conversation
 SET last_read_date = :last_read_date
