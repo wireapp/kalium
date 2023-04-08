@@ -19,56 +19,55 @@
 package com.wire.kalium.logic.feature.user.guestroomlink
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
 
-    @Mock
-    val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
-
-    lateinit var markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
-
-    @BeforeTest
-    fun setUp() {
-        markGuestLinkFeatureFlagAsNotChanged = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
-    }
-
     @Test
     fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() {
-        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
-            .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        val (arrangement, markGuestLinkFeatureFlagAsNotChanged) = Arrangement()
+            .withMarkGuestLinkFeatureFlagAsNotified(Either.Left(StorageFailure.Generic(RuntimeException())))
+            .arrange()
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify(userConfigRepository).function(userConfigRepository::getGuestRoomLinkStatus)
+        verify(arrangement.userConfigRepository).function(arrangement.userConfigRepository::markGuestRoomLinkFeatureFlagAsNotified)
             .wasInvoked(exactly = once)
-
-        verify(userConfigRepository).function(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasNotInvoked()
     }
 
     @Test
     fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() {
-        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
-            .thenReturn(Either.Right(GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)))
-        given(userConfigRepository).invocation { setGuestRoomStatus(status = false, isStatusChanged = false) }
-            .thenReturn(Either.Right(Unit))
+        val (arrangement, markGuestLinkFeatureFlagAsNotChanged) = Arrangement()
+            .withMarkGuestLinkFeatureFlagAsNotified(Either.Right(Unit))
+            .arrange()
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify(userConfigRepository).function(userConfigRepository::getGuestRoomLinkStatus)
+        verify(arrangement.userConfigRepository).function(arrangement.userConfigRepository::markGuestRoomLinkFeatureFlagAsNotified)
             .wasInvoked(exactly = once)
-        verify(userConfigRepository).function(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasInvoked(once)
+    }
 
+    private class Arrangement {
+        @Mock
+        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+
+        private val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase =
+            MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
+
+        fun withMarkGuestLinkFeatureFlagAsNotified(result: Either<StorageFailure, Unit>) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::markGuestRoomLinkFeatureFlagAsNotified)
+                .whenInvoked()
+                .then { result }
+        }
+
+        fun arrange() = this to markGuestLinkFeatureFlagAsNotChanged
     }
 }
