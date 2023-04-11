@@ -19,6 +19,7 @@
 @file:Suppress("MatchingDeclarationName")
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -31,6 +32,13 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean
 ): UserDatabaseBuilder = TODO("Not yet implemented")
+
+actual fun userDatabaseDriverByPath(
+    platformDatabaseData: PlatformDatabaseData,
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
+): SqlDriver = TODO()
 
 internal actual fun nuke(
     userId: UserIDEntity,
