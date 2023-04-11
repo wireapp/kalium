@@ -18,20 +18,8 @@
 
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CiphersuiteName
-import com.wire.crypto.ClientId
-import com.wire.crypto.ConversationConfiguration
-import com.wire.crypto.ConversationId
-import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCallbacks
-import com.wire.crypto.CustomConfiguration
-import com.wire.crypto.DecryptedMessage
-import com.wire.crypto.Invitee
-import com.wire.crypto.MlsPublicGroupStateEncryptionType
-import com.wire.crypto.MlsRatchetTreeType
-import com.wire.crypto.MlsWirePolicy
-import io.ktor.util.decodeBase64Bytes
-import io.ktor.util.encodeBase64
+import com.wire.crypto.*
+import io.ktor.util.*
 import java.io.File
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
@@ -45,7 +33,12 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun clientIsExistingGroupUser(conversationId: ConversationId, clientId: ClientId, existingClients: List<ClientId>): Boolean {
+    override fun clientIsExistingGroupUser(
+        conversationId: ConversationId,
+        clientId: ClientId,
+        existingClients: List<ClientId>,
+        parentConversationClients: List<ClientId>?
+    ): Boolean {
         // TODO disabled until we have subconversation support in CC
 //         val userId = toClientID(clientId)?.userId ?: return false
 //         return existingClients.find {
@@ -54,7 +47,11 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
+    override fun userAuthorize(
+        conversationId: ConversationId,
+        externalClientId: ClientId,
+        existingClients: List<ClientId>
+    ): Boolean {
         // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
@@ -78,6 +75,7 @@ actual class MLSClientImpl actual constructor(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
+    private val defaultE2EIExpiry: UInt = 90U
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), null)
@@ -207,15 +205,29 @@ actual class MLSClientImpl actual constructor(
             toUByteList(it.toString())
         }
 
-        return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
+        return toCommitBundle(
+            coreCrypto.removeClientsFromConversation(
+                toUByteList(groupId.decodeBase64Bytes()),
+                clientIds
+            )
+        )
     }
 
     override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(): E2EIClient {
-        return E2EIClientImpl(coreCrypto.newAcmeEnrollment(defaultCiphersuiteName))
+
+    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+        return E2EIClientImpl(
+            coreCrypto.newAcmeEnrollment(
+                clientId.toString(),
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuiteName
+            )
+        )
     }
 
     companion object {
