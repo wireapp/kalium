@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.MigrationQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -36,8 +37,14 @@ internal class MigrationDAOImpl(
     private val migrationQueries: MigrationQueries,
     messagesQueries: MessagesQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
+    private val conversationsQueries: ConversationsQueries,
     selfUserIDEntity: UserIDEntity,
-) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(messagesQueries, unreadEventsQueries, selfUserIDEntity) {
+) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(
+    messagesQueries,
+    unreadEventsQueries,
+    conversationsQueries,
+    selfUserIDEntity
+) {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {
         migrationQueries.transaction {
             conversationList.forEach {
