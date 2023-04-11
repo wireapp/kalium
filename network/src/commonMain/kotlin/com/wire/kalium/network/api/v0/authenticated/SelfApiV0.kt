@@ -22,6 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.model.UpdateEmailRequest
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -49,8 +50,16 @@ internal open class SelfApiV0 internal constructor(private val authenticatedNetw
         }
     }
 
+    override suspend fun updateEmailAddress(email: String): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_SELF/$PATH_ACCESS/$PATH_EMAIL") {
+            setBody(UpdateEmailRequest(email))
+        }
+    }
+
     private companion object {
         const val PATH_SELF = "self"
         const val PATH_HANDLE = "handle"
+        const val PATH_ACCESS = "access"
+        const val PATH_EMAIL = "email"
     }
 }
