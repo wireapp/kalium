@@ -265,7 +265,7 @@ class UserConfigStorageImpl(
         kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
 
     override fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity? =
-        kaliumPreferences.getSerializable(GUEST_ROOM_LINK, SelfDeletingMessagesEntity.serializer())
+        kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, SelfDeletingMessagesEntity.serializer())
 
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
         isGuestRoomLinkEnabledFlow
@@ -285,7 +285,7 @@ class UserConfigStorageImpl(
             SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds),
             SelfDeletingMessagesEntity.serializer()
         ).also {
-            isGuestRoomLinkEnabledFlow.tryEmit(Unit)
+            isSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
         }
     }
 
