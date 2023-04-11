@@ -40,7 +40,6 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.v4.authenticated.*
 import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
 import com.wire.kalium.network.api.v4.authenticated.AssetApiV4
 import com.wire.kalium.network.api.v4.authenticated.CallApiV4
@@ -72,7 +71,11 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
     private val ignoreAllSSLErrors: Boolean,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials(), )
+    engine: HttpClientEngine = defaultHttpEngine(
+        sessionManager.serverConfig().links.apiProxy,
+        sessionManager.proxyCredentials(),
+        ignoreAllSSLErrors
+    )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,

@@ -45,7 +45,7 @@ actual fun defaultHttpEngine(
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
 
     val clientBuilder =
-        OkHttpClient.Builder().ignoreAllSSLErrors().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+        OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
 
     if (ignoreAllSSLErrors) clientBuilder.ignoreAllSSLErrors()
 
