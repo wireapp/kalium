@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
@@ -39,12 +40,14 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.v4.authenticated.*
 import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
 import com.wire.kalium.network.api.v4.authenticated.AssetApiV4
 import com.wire.kalium.network.api.v4.authenticated.CallApiV4
 import com.wire.kalium.network.api.v4.authenticated.ClientApiV4
 import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
+import com.wire.kalium.network.api.v4.authenticated.E2EIApiV4
 import com.wire.kalium.network.api.v4.authenticated.FeatureConfigApiV4
 import com.wire.kalium.network.api.v4.authenticated.KeyPackageApiV4
 import com.wire.kalium.network.api.v4.authenticated.LogoutApiV4
@@ -68,7 +71,8 @@ import io.ktor.client.engine.HttpClientEngine
 internal class AuthenticatedNetworkContainerV4 internal constructor(
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
+    private val ignoreAllSSLErrors: Boolean,
+    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials(), )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
@@ -85,6 +89,8 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
     override val messageApi: MessageApi get() = MessageApiV4(networkClient, EnvelopeProtoMapperImpl())
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV4(networkClient)
+
+    override val e2eiApi: E2EIApi get() = E2EIApiV4(networkClient)
 
     override val conversationApi: ConversationApi get() = ConversationApiV4(networkClient)
 
