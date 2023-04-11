@@ -18,16 +18,13 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSClientImpl
-import com.wire.kalium.cryptography.MlsDBSecret
+import com.wire.kalium.cryptography.*
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -38,6 +35,9 @@ import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+
+    suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+
 }
 
 class MLSClientProviderImpl(
@@ -49,6 +49,7 @@ class MLSClientProviderImpl(
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
+    private var e2EIClient: E2EIClient? = null
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
         val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
@@ -80,6 +81,26 @@ class MLSClientProviderImpl(
             CryptoQualifiedClientId(clientId.value, userId)
         )
     }
+
+    override suspend fun getE2EIClient(clientId: ClientId?): Either<CoreFailure, E2EIClient> =
+        withContext(dispatchers.io) {
+            val currentClientId =
+                clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+            val cryptoClientId = CryptoQualifiedClientId(
+                currentClientId.toString(),
+                CryptoQualifiedID(value = userId.value, domain = userId.domain)
+            )
+
+            return@withContext getMLSClient(currentClientId).flatMap {
+                val newE2EIClient = it.newAcmeEnrollment(
+                    cryptoClientId,
+                    "",
+                    ""
+                )
+                e2EIClient = newE2EIClient
+                Either.Right(newE2EIClient)
+            }
+        }
 
     private companion object {
         const val KEYSTORE_NAME = "keystore"

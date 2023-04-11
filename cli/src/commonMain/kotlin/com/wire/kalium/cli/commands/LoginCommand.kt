@@ -45,6 +45,7 @@ class LoginCommand : CliktCommand(name = "login") {
         hideInput = true
     )
     private val environment: String? by option(
+        "-env", "--env",
         help = "Choose backend environment: can be production, staging or an URL to a server configuration"
     )
 

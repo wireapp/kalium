@@ -34,7 +34,7 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
+    override suspend fun getDirectories(): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
             httpClient.get("$TEMP_BASE_URL/$PATH_ACME_DIRECTORIES")
         }

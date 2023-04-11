@@ -155,6 +155,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -382,7 +384,10 @@ class UserSessionScope internal constructor(
 
     private val mlsClientProvider: MLSClientProvider by lazy {
         MLSClientProviderImpl(
-            "${authenticatedDataSourceSet.authenticatedRootDir}/mls", userId, clientIdProvider, globalPreferences.passphraseStorage
+            "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
+            userId,
+            clientIdProvider,
+            globalPreferences.passphraseStorage
         )
     }
 
@@ -403,6 +408,15 @@ class UserSessionScope internal constructor(
             commitBundleEventReceiver,
             epochsFlow
         )
+
+    private val e2eiRepository: E2EIRepository
+        get() = E2EIRepositoryImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.e2eiApi,
+            mlsClientProvider
+        )
+
+    val enrolE2EIUseCase: EnrollE2EIUseCase
+        get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 

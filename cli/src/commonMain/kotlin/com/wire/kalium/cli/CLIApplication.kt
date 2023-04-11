@@ -33,9 +33,10 @@ import kotlinx.coroutines.runBlocking
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.VERBOSE)
     private val logOutputFile by option(help = "output file for logs")
-    private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = false)
+    private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = true)
+    private val ignoreAllSSLErrors by option(help = "ignore all SSL Certificates for Backend api calls").flag(default = true)
     private val encryptProteusStorage by option(help = "use encrypted storage for proteus sessions and identity").flag(default = false)
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
@@ -45,7 +46,8 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
                 rootPath = "$HOME_DIRECTORY/.kalium/accounts",
                 kaliumConfigs = KaliumConfigs(
                     developmentApiEnabled = developmentApiEnabled,
-                    encryptProteusStorage = encryptProteusStorage
+                    encryptProteusStorage = encryptProteusStorage,
+                    ignoreAllSSLErrors = ignoreAllSSLErrors
                 )
             )
         }
