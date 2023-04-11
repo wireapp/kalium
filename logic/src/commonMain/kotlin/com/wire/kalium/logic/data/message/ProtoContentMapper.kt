@@ -133,7 +133,8 @@ class ProtoContentMapperImpl(
                     text.value
                 )
             }
-            is MessageContent.Asset {
+
+            is MessageContent.Asset -> {
                 val asset = packAsset(readableContent, expectsReadConfirmation)
                 Ephemeral.Content.Asset(
                     asset.value
