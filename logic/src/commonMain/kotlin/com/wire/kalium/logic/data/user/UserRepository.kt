@@ -46,7 +46,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -110,7 +109,7 @@ internal interface UserRepository {
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
-    suspend fun updateSelfEmail(email: String): Either<CoreFailure, Unit>
+    suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -221,10 +220,8 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun updateSelfEmail(email: String): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Unit> = wrapApiRequest {
         selfApi.updateEmailAddress(email)
-    }.onSuccess {
-        wrapStorageRequest { userDAO.updateEmail(selfUserId.toDao(), email) }
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
