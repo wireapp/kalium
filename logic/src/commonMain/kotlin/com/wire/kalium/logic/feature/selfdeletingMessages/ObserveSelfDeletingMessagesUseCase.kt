@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.functional.fold
