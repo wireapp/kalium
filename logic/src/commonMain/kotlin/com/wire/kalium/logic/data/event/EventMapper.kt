@@ -332,12 +332,6 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
         )
 
-        is FeatureConfigData.ConversationGuestLinks -> Event.FeatureConfig.GuestRoomLinkUpdated(
-            id,
-            transient,
-            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
-        )
-
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)
     }
 

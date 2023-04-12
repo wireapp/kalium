@@ -137,7 +137,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             userConfigRepository.setSelfDeletingMessagesStatus(
                 SelfDeletingMessagesStatus(
                     selfDeletingMessagesEnabled,
-                    null,
+                    null, // when syncing the initial status, we don't know if the status has changed so we set it to null
                     model.config.enforcedTimeoutSeconds
                 )
             )
