@@ -201,7 +201,7 @@ class UserDatabaseBuilder internal constructor(
 
     val migrationDAO: MigrationDAO
         get() = MigrationDAOImpl(
-            database.migrationQueries, database.messagesQueries, database.unreadEventsQueries, userId
+            database.migrationQueries, database.messagesQueries, database.unreadEventsQueries, database.conversationsQueries, userId
         )
 
     /**
