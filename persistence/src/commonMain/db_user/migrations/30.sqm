@@ -8,7 +8,7 @@ CREATE TABLE UnreadEvent (
     PRIMARY KEY (id, conversation_id)
 );
 
-INSERT INTO UnreadEvent(id, type, conversation_id, creation_date)
+INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
 SELECT id, 'MESSAGE', conversationId, date FROM MessagePreview AS message
 WHERE isUnread AND isSelfMessage = 0
 AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');

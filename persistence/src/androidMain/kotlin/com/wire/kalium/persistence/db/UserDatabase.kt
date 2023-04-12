@@ -21,6 +21,8 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
+import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -28,12 +30,10 @@ import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: UserDBSecret) : DatabaseCredentials
-    object NotSet : DatabaseCredentials
-}
+private const val DEFAULT_CACHE_SIZE = 20
 
 /**
  * Platform-specific data used to create the database
@@ -73,6 +73,23 @@ actual fun userDatabaseBuilder(
         )
     }
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, passphrase != null)
+}
+
+actual fun userDatabaseDriverByPath(
+    platformDatabaseData: PlatformDatabaseData,
+    path: String,
+    passphrase: UserDBSecret?,
+    enableWAL: Boolean
+): SqlDriver {
+    System.loadLibrary("sqlcipher")
+    val db: SupportSQLiteDatabase = SQLiteDatabase.openDatabase(
+        path,
+        passphrase?.value,
+        null,
+        SQLiteDatabase.OPEN_READWRITE,
+        null
+    )
+    return AndroidSqliteDriver(db, DEFAULT_CACHE_SIZE)
 }
 
 fun inMemoryDatabase(

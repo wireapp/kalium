@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -29,18 +30,16 @@ import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
-import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.serialization.json.JsonNull
 
 sealed class Event(open val id: String, open val transient: Boolean) {
@@ -589,13 +588,33 @@ internal fun KaliumLogger.logEventProcessing(
     vararg extraInfo: Pair<String, Any>
 ) {
     val logMap = mapOf("event" to event.toLogMap()) + extraInfo.toMap()
-    val logJson = logMap.toJsonElement()
 
     when (status) {
-        EventLoggingStatus.SUCCESS -> i("Success handling event: $logJson")
-        EventLoggingStatus.FAILURE -> e("Failure handling event: $logJson")
-        EventLoggingStatus.SKIPPED -> w("Skipped handling event: $logJson")
+        EventLoggingStatus.SUCCESS -> {
+            val finalMap = logMap.toMutableMap()
+            finalMap["outcome"] = "success"
+            val logJson = finalMap.toJsonElement()
+            i("Success handling event: $logJson")
+        }
+
+        EventLoggingStatus.FAILURE -> {
+            val finalMap = logMap.toMutableMap()
+            finalMap["outcome"] = "failure"
+            val logJson = finalMap.toJsonElement()
+            e("Failure handling event: $logJson")
+        }
+
+        EventLoggingStatus.SKIPPED -> {
+            val finalMap = logMap.toMutableMap()
+            finalMap["outcome"] = "skipped"
+            val logJson = finalMap.toJsonElement()
+            w("Skipped handling event: $logJson")
+        }
+
         else -> {
+            val finalMap = logMap.toMutableMap()
+            finalMap["outcome"] = "unknown"
+            val logJson = finalMap.toJsonElement()
             w("Unknown outcome of event handling: $logJson")
         }
     }
