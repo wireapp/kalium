@@ -170,20 +170,21 @@ class MessageMapperImpl(
     @Suppress("ComplexMethod")
     override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
         return when (message.content) {
+            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
             is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.ConversationNameChange -> null
             is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
             is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
             is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
             is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
+            is MessagePreviewEntityContent.Ephemeral -> null
+            is MessagePreviewEntityContent.ConversationNameChange -> null
             is MessagePreviewEntityContent.TeamMemberRemoved -> null
-            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.CryptoSessionReset -> null
-            MessagePreviewEntityContent.Unknown -> null
             is MessagePreviewEntityContent.MembersRemoved -> null
             is MessagePreviewEntityContent.MemberJoined -> null
             is MessagePreviewEntityContent.MemberLeft -> null
             is MessagePreviewEntityContent.MembersAdded -> null
+            is MessagePreviewEntityContent.CryptoSessionReset -> null
+            MessagePreviewEntityContent.Unknown -> null
         }
     }
 
@@ -438,6 +439,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+    is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Unknown
 
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)

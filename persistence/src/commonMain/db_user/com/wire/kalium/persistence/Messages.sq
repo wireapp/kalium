@@ -306,6 +306,7 @@ AS SELECT
     Message.creation_date AS date,
     Message.visibility AS visibility,
     Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
     User.name AS senderName,
     User.connection_status AS senderConnectionStatus,
     User.deleted AS senderIsDeleted,
