@@ -159,15 +159,15 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, 0))
         } else {
-            val currentIsSelfDeletingMessagesEnabled: Boolean = userConfigRepository
+            val (currentIsSelfDeletingMessagesEnabled, currentEnforcedTimeout) = userConfigRepository
                 .getSelfDeletingMessagesStatus()
-                .fold({ true }, { it.isEnabled })
+                .fold({ true to 0 }, { it.isEnabled to it.enforcedTimeoutInSeconds })
 
             when (status) {
                 Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
                         isEnabled = true,
-                        isStatusChanged = !currentIsSelfDeletingMessagesEnabled,
+                        isStatusChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
                         enforcedTimeoutInSeconds = enforcedTimeoutSeconds
                     )
                 )
