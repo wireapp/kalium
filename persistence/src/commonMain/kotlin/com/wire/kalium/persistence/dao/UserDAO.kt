@@ -192,5 +192,4 @@ interface UserDAO {
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
-    suspend fun updateEmail(userId: QualifiedIDEntity, email: String)
 }

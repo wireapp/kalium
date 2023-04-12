@@ -610,20 +610,6 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
-    @Test
-    fun givenUser_whenUpdatingEmail_thenEmailIsUpdated() = runTest {
-        // given
-        val expectedEmail = "new email"
-        db.userDAO.insertUser(user1)
-
-        // when
-        db.userDAO.updateEmail(user1.id, expectedEmail)
-
-        // then
-        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(expectedEmail, persistedUser?.email)
-    }
-
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
