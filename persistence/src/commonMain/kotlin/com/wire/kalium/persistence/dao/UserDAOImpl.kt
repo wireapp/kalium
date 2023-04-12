@@ -385,4 +385,8 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
+
+    override suspend fun updateEmail(userId: QualifiedIDEntity, email: String) = withContext(queriesContext) {
+        userQueries.updateEmail(email, userId)
+    }
 }

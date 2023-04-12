@@ -147,3 +147,6 @@ SELECT * FROM User AS user
 
 updateUserDisplayName:
 UPDATE User SET name = ? WHERE qualified_id = ?;
+
+updateEmail:
+UPDATE User SET email = :email WHERE qualified_id = :id;

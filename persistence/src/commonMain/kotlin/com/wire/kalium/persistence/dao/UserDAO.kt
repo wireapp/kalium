@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -191,4 +192,5 @@ interface UserDAO {
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
+    suspend fun updateEmail(userId: QualifiedIDEntity, email: String)
 }

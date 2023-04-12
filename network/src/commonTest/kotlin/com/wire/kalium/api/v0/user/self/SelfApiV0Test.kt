@@ -65,6 +65,46 @@ class SelfApiV0Test : ApiTest {
         assertEquals((response.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
 
+    @Test
+    fun givenUpdateEmailSuccess_whenChangingSelfEmail_thenSuccessIsReturned() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertPut()
+                assertNoQueryParams()
+                assertPathEqual("self/access/email")
+            }
+        )
+        val selfApi = SelfApiV0(networkClient)
+        selfApi.updateEmailAddress("new Email").also {
+            assertTrue(it.isSuccessful())
+        }
+    }
+
+
+    @Test
+    fun givenUpdateEmailFailure_whenChangingSelfEmail_thenFailureIsReturned() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.valid.rawJson,
+            statusCode = HttpStatusCode.BadRequest,
+            assertion = {
+                assertPut()
+                assertNoQueryParams()
+                assertPathEqual("self/access/email")
+            }
+        )
+        val selfApi = SelfApiV0(networkClient)
+        selfApi.updateEmailAddress("new Email").also {
+            assertFalse(it.isSuccessful())
+            assertTrue(it.kException is KaliumException.InvalidRequestError)
+            assertEquals((it.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        }
+    }
+
+
+
+
     private companion object {
         const val PATH_SELF = "/self"
         val VALID_SELF_RESPONSE = UserDTOJson.valid
