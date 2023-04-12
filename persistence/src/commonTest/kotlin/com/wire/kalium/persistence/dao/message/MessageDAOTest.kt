@@ -37,7 +37,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
@@ -382,7 +381,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    @Ignore
     fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -432,7 +430,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    @Ignore
     fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -467,7 +464,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    @Ignore
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -498,14 +494,13 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         // when
         val messageTypes = messageDAO.observeUnreadEvents()
-            .map { it[conversationId]!!.map { event -> event.type } }
+            .map { it[conversationId]?.map { event -> event.type } ?: listOf() }
             .first()
         // then
         assertEquals(0, messageTypes.size)
     }
 
     @Test
-    @Ignore
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -556,7 +551,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    @Ignore
     fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -608,7 +602,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    @Ignore
     fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
@@ -640,6 +633,54 @@ class MessageDAOTest : BaseDatabaseTest() {
             .first()
         // then
         assertContains(messageTypes, UnreadEventTypeEntity.MESSAGE)
+    }
+
+    @Test
+    fun givenUnreadMessages_WhenInsertingSelfMessage_thenReturnZeroUnreadCount() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            )
+        )
+
+        userDAO.insertUser(userEntity1)
+        val unreadMessagesCount = 2
+
+        val message = buildList {
+            // add 9 Message past the lastReadDate
+            repeat(unreadMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "unread$it",
+                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
+                        conversationId = conversationId,
+                        senderUserId = userEntity1.id,
+                    )
+                )
+            }
+            // add self message past the lastReadDate and other messages
+            add(
+                newRegularMessageEntity(
+                    id = "unreadSelf",
+                    date = "2000-01-01T14:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = selfUserId,
+                )
+            )
+        }
+
+        messageDAO.insertOrIgnoreMessages(message)
+
+        // when
+        val messageTypes = messageDAO.observeUnreadEvents()
+            .map { it[conversationId]!!.map { event -> event.type } }
+            .first()
+
+        // then
+        assertEquals(unreadMessagesCount, messageTypes.size)
     }
 
     @Test
