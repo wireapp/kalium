@@ -61,7 +61,7 @@ internal open class SelfApiV0 internal constructor(
     override suspend fun updateEmailAddress(email: String): NetworkResponse<Unit> = sessionManager.session()?.refreshToken?.let {
         wrapKaliumResponse {
             httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
-                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=${it}")
+                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$it")
                 setBody(UpdateEmailRequest(email))
             }
         }
