@@ -269,6 +269,7 @@ sealed class MessagePreviewContent {
         data class MissedCall(override val username: String?) : WithUser(username)
 
     }
+    object Ephemeral : MessagePreviewContent()
 
     object CryptoSessionReset : MessagePreviewContent()
 
