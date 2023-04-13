@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.configuration.server.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow

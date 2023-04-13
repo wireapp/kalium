@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.server.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest

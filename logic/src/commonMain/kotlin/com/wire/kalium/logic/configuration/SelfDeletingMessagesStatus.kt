@@ -15,6 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration.server
+package com.wire.kalium.logic.configuration
 
 data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)
