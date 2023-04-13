@@ -68,6 +68,7 @@ class OnIncomingCallTest {
                 eq(CallStatus.INCOMING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
+                eq(false),
                 eq(false)
             )
             .wasInvoked(exactly = once)
@@ -98,6 +99,7 @@ class OnIncomingCallTest {
                 eq(CallStatus.STILL_ONGOING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
+                eq(false),
                 eq(false)
             )
             .wasInvoked(exactly = once)

@@ -54,8 +54,6 @@ class OnCloseCallTest {
     @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-    val kaliumConfigs = KaliumConfigs()
-
     private lateinit var onCloseCall: OnCloseCall
 
     private val testScope = TestScope()
@@ -65,8 +63,7 @@ class OnCloseCallTest {
         onCloseCall = OnCloseCall(
             callRepository = callRepository,
             scope = testScope,
-            qualifiedIdMapper = qualifiedIdMapper,
-            kaliumConfigs = kaliumConfigs
+            qualifiedIdMapper = qualifiedIdMapper
         )
         given(qualifiedIdMapper).invocation { fromStringToQualifiedID(conversationIdString) }
             .then { conversationId }
@@ -173,6 +170,7 @@ class OnCloseCallTest {
         private val callMetadata = CallMetadata(
             isMuted = false,
             isCameraOn = false,
+            isCbrEnabled = false,
             conversationName = null,
             conversationType = Conversation.Type.GROUP,
             callerName = null,
