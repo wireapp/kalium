@@ -90,7 +90,7 @@ data class MLSConfigDTO(
 @Serializable
 data class SelfDeletingMessagesConfigDTO(
     @SerialName("enforcedTimeoutSeconds")
-    val enforcedTimeoutSeconds: Int
+    val enforcedTimeoutSeconds: Int?
 )
 
 @OptIn(ExperimentalSerializationApi::class)

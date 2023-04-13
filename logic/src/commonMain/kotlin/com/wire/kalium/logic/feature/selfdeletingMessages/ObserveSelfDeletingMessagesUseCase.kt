@@ -40,14 +40,14 @@ class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
             selfDeletingMessagesStatus.fold({
                 when (it) {
                     is StorageFailure.DataNotFound -> {
-                        kaliumLogger.e("Data not found for ObserveSelfDeletingMessagesFeatureFlagUseCase")
+                        kaliumLogger.e("Data not found for ObserveSelfDeletingMessagesUseCase")
                     }
 
                     is StorageFailure.Generic -> {
-                        kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveSelfDeletingMessagesFeatureFlagUseCase", it.rootCause)
+                        kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveSelfDeletingMessagesUseCase", it.rootCause)
                     }
                 }
-                SelfDeletingMessagesStatus(false, null, 0)
+                SelfDeletingMessagesStatus(false, null, null)
             }, {
                 it
             })
