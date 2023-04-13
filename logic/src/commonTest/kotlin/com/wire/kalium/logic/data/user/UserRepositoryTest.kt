@@ -384,7 +384,7 @@ class UserRepositoryTest {
     @Test
     fun givenUpdateEmailSuccess_whenChangingEmail_thenSuccessIsReturned() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withRemoteUpdateEmail(NetworkResponse.Success(Unit, mapOf(), 200))
+            .withRemoteUpdateEmail(NetworkResponse.Success(true, mapOf(), 200))
             .arrange()
 
         val result = userRepository.updateSelfEmail("newEmail")
@@ -539,9 +539,9 @@ class UserRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withRemoteUpdateEmail(result: NetworkResponse<Unit>) = apply {
+        fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
             given(selfApi)
-                .suspendFunction(selfApi::updateSelf)
+                .suspendFunction(selfApi::updateEmailAddress)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

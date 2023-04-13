@@ -39,12 +39,26 @@ import kotlin.test.assertIs
 class UpdateEmailUseCaseTest {
 
     @Test
-    fun givenUpdateEmailSuccess_whenInvoked_thenReturnsSuccess() = runTest {
+    fun givenUpdateEmailSuccess_whenInvoked_thenReturnsVerificationEmailSent() = runTest {
         val (arrange, useCase) = Arrangement()
-            .withUpdateSelfEmailSuccess()
+            .withUpdateSelfEmailSuccess(true)
             .arrange()
         val result = useCase("email")
-        assertIs<UpdateEmailUseCase.Result.Success>(result)
+        assertIs<UpdateEmailUseCase.Result.Success.VerificationEmailSent>(result)
+
+        verify(arrange.userRepository)
+            .suspendFunction(arrange.userRepository::updateSelfEmail)
+            .with(eq("email"))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUpdateEmailSuccess_whenInvoked_thenReturnsSuccess() = runTest {
+        val (arrange, useCase) = Arrangement()
+            .withUpdateSelfEmailSuccess(false)
+            .arrange()
+        val result = useCase("email")
+        assertIs<UpdateEmailUseCase.Result.Success.NoChange>(result)
 
         verify(arrange.userRepository)
             .suspendFunction(arrange.userRepository::updateSelfEmail)
@@ -121,11 +135,11 @@ class UpdateEmailUseCaseTest {
 
         private val useCase = UpdateEmailUseCase(userRepository)
 
-        fun withUpdateSelfEmailSuccess() = apply {
+        fun withUpdateSelfEmailSuccess(isEmailUpdated: Boolean) = apply {
             given(userRepository)
                 .suspendFunction(userRepository::updateSelfEmail)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(isEmailUpdated))
         }
 
         fun withUpdateSelfEmailFailure(error: NetworkFailure) = apply {

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
-import kotlin.String
 
 /**
  * Updates the user's email address.
@@ -41,7 +40,7 @@ class UpdateEmailUseCase internal constructor(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(email: String): Result = userRepository.updateSelfEmail(email)
-        .fold(::onError) { Result.Success }
+        .fold(::onError, ::onSuccess)
 
     private fun onError(error: NetworkFailure): Result.Failure {
         return if (error is NetworkFailure.ServerMiscommunication && error.kaliumException is KaliumException.InvalidRequestError) {
@@ -55,8 +54,19 @@ class UpdateEmailUseCase internal constructor(
         }
     }
 
+    private fun onSuccess(isEmailUpdated: Boolean): Result.Success {
+        return if (isEmailUpdated) {
+            Result.Success.VerificationEmailSent
+        } else {
+            Result.Success.NoChange
+        }
+    }
+
     sealed interface Result {
-        object Success : Result
+        sealed interface Success : Result {
+            object VerificationEmailSent : Success
+            object NoChange : Success
+        }
 
         sealed interface Failure : Result {
             object InvalidEmail : Failure

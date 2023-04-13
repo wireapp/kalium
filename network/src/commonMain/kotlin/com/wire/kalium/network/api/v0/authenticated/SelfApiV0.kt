@@ -31,9 +31,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.preparePut
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 
 internal open class SelfApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -58,13 +60,18 @@ internal open class SelfApiV0 internal constructor(
         }
     }
 
-    override suspend fun updateEmailAddress(email: String): NetworkResponse<Unit> = sessionManager.session()?.refreshToken?.let {
-        wrapKaliumResponse {
-            httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
+    override suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean> = sessionManager.session()?.refreshToken?.let {
+            httpClient.preparePut("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$it")
                 setBody(UpdateEmailRequest(email))
+            }.let {
+                val response = it.execute()
+                when(response.status.value) {
+                    HttpStatusCode.NoContent.value -> NetworkResponse.Success(false, response)
+                    in (200 .. 299) -> NetworkResponse.Success(true, response)
+                    else -> wrapKaliumResponse { response }
+                }
             }
-        }
     } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
 
     private companion object {

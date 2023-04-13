@@ -70,7 +70,7 @@ class SelfApiV0Test : ApiTest {
     fun givenUpdateEmailSuccess_whenChangingSelfEmail_thenSuccessIsReturned() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             "",
-            statusCode = HttpStatusCode.Created,
+            statusCode = HttpStatusCode.Accepted,
             assertion = {
                 assertPut()
                 assertNoQueryParams()
@@ -81,8 +81,29 @@ class SelfApiV0Test : ApiTest {
         val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
         selfApi.updateEmailAddress("new Email").also {
             assertTrue(it.isSuccessful())
+            assertTrue(it.value)
         }
     }
+
+    @Test
+    fun givenUpdateEmailSuccessWith204HttpCode_whenChangingSelfEmail_thenFalse() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertNoQueryParams()
+                assertHeaderEqual(HttpHeaders.Cookie, "zuid=${TEST_SESSION_NAMAGER.session().refreshToken}")
+                assertPathEqual("access/self/email")
+            }
+        )
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+        selfApi.updateEmailAddress("new Email").also {
+            assertTrue(it.isSuccessful())
+            assertFalse(it.value)
+        }
+    }
+
 
 
     @Test
