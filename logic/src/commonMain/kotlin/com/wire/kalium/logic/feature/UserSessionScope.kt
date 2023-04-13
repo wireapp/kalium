@@ -795,7 +795,8 @@ class UserSessionScope internal constructor(
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
-            callMapper = callMapper
+            callMapper = callMapper,
+            kaliumConfigs = kaliumConfigs
         )
     }
 
