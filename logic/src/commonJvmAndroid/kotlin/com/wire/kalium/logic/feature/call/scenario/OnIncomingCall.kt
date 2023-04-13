@@ -39,7 +39,7 @@ class OnIncomingCall(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val scope: CoroutineScope,
     private val kaliumConfigs: KaliumConfigs
-    ) : IncomingCallHandler {
+) : IncomingCallHandler {
     override fun onIncomingCall(
         conversationId: String,
         messageTime: Uint32_t,

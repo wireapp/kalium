@@ -519,7 +519,6 @@ internal class CallDataSource(
         return call
     }
 
-
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
         this.combine(_callMetadataProfile) { calls, metadata ->
             calls.map { call ->
