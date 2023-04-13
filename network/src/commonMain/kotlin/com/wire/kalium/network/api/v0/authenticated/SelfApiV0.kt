@@ -22,15 +22,23 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.UpdateEmailRequest
 import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpHeaders
 
-internal open class SelfApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : SelfApi {
+internal open class SelfApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val sessionManager: SessionManager
+) : SelfApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
@@ -50,11 +58,14 @@ internal open class SelfApiV0 internal constructor(private val authenticatedNetw
         }
     }
 
-    override suspend fun updateEmailAddress(email: String): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.put("$PATH_SELF/$PATH_ACCESS/$PATH_EMAIL") {
-            setBody(UpdateEmailRequest(email))
+    override suspend fun updateEmailAddress(email: String): NetworkResponse<Unit> = sessionManager.session()?.refreshToken?.let {
+        wrapKaliumResponse {
+            httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
+                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=${it}")
+                setBody(UpdateEmailRequest(email))
+            }
         }
-    }
+    } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
 
     private companion object {
         const val PATH_SELF = "self"
