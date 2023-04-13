@@ -45,6 +45,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -239,7 +240,7 @@ internal class MessageSenderImpl internal constructor(
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                        trySendingProteusEnvelope(envelope, message, MessageApi.QualifiedMessageOption.ReportSome(listOf()), messageTarget)
                     }
             })
     }
@@ -298,12 +299,15 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
+        option: MessageApi.QualifiedMessageOption,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
         messageRepository
-            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .sendEnvelope(message.conversationId, envelope, option, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString()) { attemptToSend(message, messageTarget) }
+                handleProteusError(it, "Send", message.toLogString()) {
+                    attemptToSendWithProteus(message, messageTarget)
+                }
             }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
                 handleRecipientsDeliveryFailure(message, messageSent).flatMap {

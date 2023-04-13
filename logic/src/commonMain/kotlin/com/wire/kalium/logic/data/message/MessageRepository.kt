@@ -127,6 +127,7 @@ interface MessageRepository {
     suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
+        option: MessageApi.QualifiedMessageOption,
         messageTarget: MessageTarget
     ): Either<CoreFailure, MessageSent>
 
@@ -331,6 +332,7 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
+        option: MessageApi.QualifiedMessageOption,
         messageTarget: MessageTarget
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
@@ -339,6 +341,7 @@ class MessageDataSource(
             }
         }
 
+        // todo(federation): map here to the correct option using parameter.
         val messageOption = when (messageTarget) {
             is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
             is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
