@@ -235,22 +235,21 @@ class ProtoContentMapperTest {
     }
 
     @Test
-    fun givenExternalMessageInstructions_whenEncodingToProtoAndBack_thenTheResultContentShouldEqualTheOriginal() {
-        val messageUid = TEST_MESSAGE_UUID
-        val otrKey = generateRandomAES256Key()
-        val sha256 = byteArrayOf(0x20, 0x42, 0x31)
-        val encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+    fun givenExpirableTextContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Text("Hello")
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = messageContent,
+            expectsReadConfirmation = false,
+            expiresAfterMillis = 1000
+        )
 
-        val instructions = ProtoContent.ExternalMessageInstructions(messageUid, otrKey.data, sha256, encryptionAlgorithm)
-        val encoded = protoContentMapper.encodeToProtobuf(instructions)
-        val result = protoContentMapper.decodeFromProtobuf(encoded)
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
-        assertIs<ProtoContent.ExternalMessageInstructions>(result)
-        assertEquals(messageUid, result.messageUid)
-        assertContentEquals(otrKey.data, result.otrKey)
-        assertContentEquals(sha256, result.sha256)
-        assertEquals(encryptionAlgorithm, result.encryptionAlgorithm)
+        assertEquals(encoded, decoded)
     }
+
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
