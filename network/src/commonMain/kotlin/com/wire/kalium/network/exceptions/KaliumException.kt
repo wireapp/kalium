@@ -53,36 +53,32 @@ import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException : Exception() {
 
-    class Unauthorized(val errorCode: Int) : KaliumException()
+    data class Unauthorized(val errorCode: Int) : KaliumException()
 
     /**
      * http error 300 .. 399
      */
-    class RedirectError(val errorResponse: ErrorResponse) : KaliumException()
+    data class RedirectError(val errorResponse: ErrorResponse) : KaliumException()
 
     /**
      * http error 400 .. 499
      */
-    open class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException() {
-        override fun toString(): String {
-            return "InvalidRequestError(response = $errorResponse"
-        }
-    }
+    data class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException()
 
     /**
      * http error 500 .. 599
      */
-    class ServerError(val errorResponse: ErrorResponse) : KaliumException()
+    data class ServerError(val errorResponse: ErrorResponse) : KaliumException()
 
     /**
      * Generic errors e.g. Serialization errors
      */
-    class GenericError(override val cause: Throwable) : KaliumException()
+    data class GenericError(override val cause: Throwable) : KaliumException()
 
     /**
      * Federation errors types
      */
-    class FederationError(val errorResponse: ErrorResponse) : KaliumException()
+    data class FederationError(val errorResponse: ErrorResponse) : KaliumException()
 
     sealed class FeatureError : KaliumException()
 }
