@@ -27,10 +27,9 @@ interface PreKeyApi {
      */
     suspend fun getUsersPreKey(
         users: Map<String, Map<String, List<String>>>
-    ): NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>>
+    ): NetworkResponse<DomainToUserIdToClientsToPreKeyMap>
 
     suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>>
-
 }
 
 typealias DomainToUserIdToClientsToPreKeyMap = Map<String, Map<String, Map<String, PreKeyDTO?>>>

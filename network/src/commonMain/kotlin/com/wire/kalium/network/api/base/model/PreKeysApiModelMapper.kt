@@ -15,20 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.model
 
-package com.wire.kalium.network.api.v4.authenticated
-
-import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
-import com.wire.kalium.network.api.v3.authenticated.PreKeyApiV3
-import com.wire.kalium.network.utils.NetworkResponse
 
-internal open class PreKeyApiV4 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : PreKeyApiV3(authenticatedNetworkClient) {
+/**
+ * Mapping between the base API model and the versioned API models.
+ */
+object PreKeysApiModelMapper {
 
-    override suspend fun getUsersPreKey(users: Map<String, Map<String, List<String>>>): NetworkResponse<DomainToUserIdToClientsToPreKeyMap> {
-        return super.getUsersPreKey(users)
-    }
+
 }

@@ -35,8 +35,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 
@@ -97,17 +97,19 @@ class PreKeyDataSource(
         }
 
         return preKeysOfClientsByQualifiedUsers(missingContactClients)
-            .flatMap { preKeyInfoList -> establishProteusSessions(preKeyInfoList) }
+            .flatMap { domainToUserIdToClientsToPreKeyMap ->
+                establishProteusSessions(domainToUserIdToClientsToPreKeyMap)
+            }
     }
 
-    suspend fun preKeysOfClientsByQualifiedUsers(
+    internal suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure, Map<String, Map<String, Map<String, PreKeyDTO?>>>> = wrapApiRequest {
+    ): Either<NetworkFailure, DomainToUserIdToClientsToPreKeyMap> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
     }
 
     private suspend fun establishProteusSessions(
-        preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+        preKeyInfoList: DomainToUserIdToClientsToPreKeyMap
     ): Either<CoreFailure, Unit> =
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
