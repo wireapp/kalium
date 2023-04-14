@@ -50,7 +50,7 @@ class MessageDAOImpl(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext
-) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, selfUserId) {
+) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, conversationsQueries, selfUserId) {
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
 
@@ -76,6 +76,7 @@ class MessageDAOImpl(
             val messageCreationInstant = message.date
             if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(messageCreationInstant, message.conversationId)
+                unreadEventsQueries.deleteUnreadEvents(message.date, message.conversationId)
             }
 
             insertInDB(message)
