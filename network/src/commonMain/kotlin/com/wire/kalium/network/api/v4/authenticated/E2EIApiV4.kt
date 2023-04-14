@@ -61,11 +61,11 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
 
     override suspend fun sendNewAccount(
         newAccountRequestUrl: String,
-        newAccountRequestBody: List<UByte>
+        newAccountRequestBody: ByteArray
     ): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post(newAccountRequestUrl) {
             contentType(ContentType.Application.JoseJson)
-            setBody(ByteArray(newAccountRequestBody.size) { newAccountRequestBody[it].toByte() })
+            setBody(newAccountRequestBody)
         }
     }
 

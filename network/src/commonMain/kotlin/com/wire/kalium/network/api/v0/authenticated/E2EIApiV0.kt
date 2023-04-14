@@ -30,8 +30,8 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
         E2EIApi.getApiNotSupportError(::getNewNonce.name)
 
     override suspend fun sendNewAccount(
-        newAccountRequest: String,
-        newAccountRequestBody: List<UByte>
+        newAccountRequestUrl: String,
+        newAccountRequestBody: ByteArray
     ): NetworkResponse<String> =
         E2EIApi.getApiNotSupportError(::sendNewAccount.name)
 
