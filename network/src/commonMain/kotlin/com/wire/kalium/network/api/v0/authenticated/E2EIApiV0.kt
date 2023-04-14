@@ -23,7 +23,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 internal open class E2EIApiV0 internal constructor() : E2EIApi {
 
-    override suspend fun getDirectories(): NetworkResponse<ByteArray> =
+    override suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
         E2EIApi.getApiNotSupportError(::getDirectories.name)
 
     override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =

@@ -18,6 +18,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.WireE2eIdentity
+import com.wire.kalium.cryptography.MLSClientImpl.Companion.toByteArray
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 
 @Suppress("TooManyFunctions")
@@ -33,9 +34,7 @@ class E2EIClientImpl constructor(
     override fun newAccountRequest(
         previousNonce: String
     ): JsonRawData {
-        return wireE2eIdentity.newAccountRequest(
-            previousNonce
-        ).toUByteArray().asByteArray()
+        return toByteArray(wireE2eIdentity.newAccountRequest(previousNonce))
     }
 
     override fun newAccountResponse(
@@ -45,9 +44,9 @@ class E2EIClientImpl constructor(
     }
 
     override fun newOrderRequest(previousNonce: String): JsonRawData {
-        return wireE2eIdentity.newOrderRequest(
+        return toByteArray(wireE2eIdentity.newOrderRequest(
             previousNonce
-        ).toUByteArray().asByteArray()
+        ))
     }
 
     override fun newOrderResponse(order: JsonRawData): NewAcmeOrder {

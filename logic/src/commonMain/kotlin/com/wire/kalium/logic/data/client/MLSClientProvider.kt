@@ -51,30 +51,37 @@ class MLSClientProviderImpl(
     private var mlsClient: MLSClient? = null
     private var e2EIClient: E2EIClient? = null
 
-    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
-        val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-        val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
+    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> =
+        withContext(dispatchers.io) {
+            val currentClientId =
+                clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+            val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
-        val location = "$rootKeyStorePath/${currentClientId.value}".also {
-            // TODO: migrate to okio solution once assert refactor is merged
-            FileUtil.mkDirs(it)
+            val location = "$rootKeyStorePath/${currentClientId.value}".also {
+                // TODO: migrate to okio solution once assert refactor is merged
+                FileUtil.mkDirs(it)
+            }
+
+            return@withContext mlsClient?.let {
+                Either.Right(it)
+            } ?: run {
+                val newClient = mlsClient(
+                    cryptoUserId,
+                    currentClientId,
+                    location,
+                    SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
+                )
+                mlsClient = newClient
+                Either.Right(newClient)
+            }
         }
 
-        return@withContext mlsClient?.let {
-            Either.Right(it)
-        } ?: run {
-            val newClient = mlsClient(
-                cryptoUserId,
-                currentClientId,
-                location,
-                SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
-            )
-            mlsClient = newClient
-            Either.Right(newClient)
-        }
-    }
-
-    private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
+    private fun mlsClient(
+        userId: CryptoUserID,
+        clientId: ClientId,
+        location: String,
+        passphrase: MlsDBSecret
+    ): MLSClient {
         return MLSClientImpl(
             "$location/$KEYSTORE_NAME",
             passphrase,
@@ -91,14 +98,18 @@ class MLSClientProviderImpl(
                 CryptoQualifiedID(value = userId.value, domain = userId.domain)
             )
 
-            return@withContext getMLSClient(currentClientId).flatMap {
-                val newE2EIClient = it.newAcmeEnrollment(
-                    cryptoClientId,
-                    "",
-                    ""
-                )
-                e2EIClient = newE2EIClient
-                Either.Right(newE2EIClient)
+            return@withContext e2EIClient?.let {
+                Either.Right(it)
+            } ?: run {
+                getMLSClient(currentClientId).flatMap {
+                    val newE2EIClient = it.newAcmeEnrollment(
+                        cryptoClientId,
+                        "",
+                        ""
+                    )
+                    e2EIClient = newE2EIClient
+                    Either.Right(newE2EIClient)
+                }
             }
         }
 

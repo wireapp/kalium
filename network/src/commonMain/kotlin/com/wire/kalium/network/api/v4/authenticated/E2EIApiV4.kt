@@ -22,7 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesRespon
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
-import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -34,7 +34,7 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getDirectories(): NetworkResponse<ByteArray> =
+    override suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
         wrapKaliumResponse {
             httpClient.get("$TEMP_BASE_URL/$PATH_ACME_DIRECTORIES")
         }
@@ -64,8 +64,8 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
         newAccountRequestBody: List<UByte>
     ): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post(newAccountRequestUrl) {
-            contentType(ContentType.Message.Mls)
-            setBody(newAccountRequestBody)
+            contentType(ContentType.Application.JoseJson)
+            setBody(ByteArray(newAccountRequestBody.size) { newAccountRequestBody[it].toByte() })
         }
     }
 

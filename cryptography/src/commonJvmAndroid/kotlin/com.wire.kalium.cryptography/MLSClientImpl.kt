@@ -245,7 +245,6 @@ actual class MLSClientImpl actual constructor(
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
         fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
-
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),

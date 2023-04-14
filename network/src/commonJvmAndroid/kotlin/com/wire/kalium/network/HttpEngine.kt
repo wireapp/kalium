@@ -44,10 +44,11 @@ actual fun defaultHttpEngine(
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
 
-    val clientBuilder =
-        OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+    val clientBuilder = OkHttpClient.Builder()
 
     if (ignoreAllSSLErrors) clientBuilder.ignoreAllSSLErrors()
+
+    clientBuilder.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
 
     if (isProxyRequired(serverConfigDTOApiProxy)) {
         if (serverConfigDTOApiProxy?.needsAuthentication == true) {

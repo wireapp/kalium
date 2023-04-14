@@ -26,14 +26,12 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.tools.KtxSerializer
-import io.ktor.utils.io.core.*
-import kotlinx.serialization.decodeFromString
-
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 interface E2EIRepository {
 
     suspend fun enrollE2EI()
-    suspend fun getACMEDirectories(): Either<NetworkFailure, ByteArray>
+    suspend fun getACMEDirectories(): Either<NetworkFailure, AcmeDirectoriesResponse>
     suspend fun getNewNonce(nonceUrl: String): Either<NetworkFailure, String>
 
     suspend fun createNewAccount(requestUrl: String, previousNonce: String): Either<NetworkFailure, String>
@@ -44,7 +42,7 @@ class E2EIRepositoryImpl(
     private val mlsClientProvider: MLSClientProvider
 ) : E2EIRepository {
 
-    override suspend fun getACMEDirectories(): Either<NetworkFailure, ByteArray> =
+    override suspend fun getACMEDirectories(): Either<NetworkFailure, AcmeDirectoriesResponse> =
         wrapApiRequest {
             e2EIApi.getDirectories()
         }
@@ -52,13 +50,12 @@ class E2EIRepositoryImpl(
     override suspend fun enrollE2EI() {
         getACMEDirectories().onSuccess { directories ->
             mlsClientProvider.getE2EIClient().flatMap { e2eiClient ->
-                e2eiClient.directoryResponse(directories)
+                e2eiClient.directoryResponse(Json.encodeToString(directories).encodeToByteArray())
                 Either.Right(Unit)
             }
-            val dir = KtxSerializer.json.decodeFromString<AcmeDirectoriesResponse>(String(directories))
-            getNewNonce(dir.newNonce).onSuccess {
+            getNewNonce(directories.newNonce).onSuccess {
                 kaliumLogger.d("## newNonce -> $it")
-                createNewAccount(dir.newAccount, it)
+                createNewAccount(directories.newAccount, it)
             }
         }
     }
@@ -72,8 +69,10 @@ class E2EIRepositoryImpl(
     override suspend fun createNewAccount(requestUrl: String, previousNonce: String): Either<NetworkFailure, String> {
         val newAccountRequest = mlsClientProvider.getE2EIClient().flatMap {
             it.newAccountRequest(previousNonce).let {
+                kaliumLogger.d("## \n\n\n\n\n\n\n\n\n ########## new account response -> $it")
+
                 return@flatMap wrapApiRequest {
-                    val response = e2EIApi.sendNewAccount(requestUrl, it.asUByteArray().asList())
+                    val response = e2EIApi.sendNewAccount(requestUrl, it)
                     response
                 }
             }
