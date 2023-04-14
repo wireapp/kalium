@@ -45,6 +45,7 @@ interface UserConfigRepository {
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
+    fun markGuestRoomLinkFeatureFlagAsNotified(): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -120,7 +121,7 @@ class UserConfigDataSource(
         }
 
     override fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
+        wrapStorageRequest<Unit> {
             userConfigStorage.persistGuestRoomLinkFeatureFlag(status, isStatusChanged)
         }
 
@@ -137,4 +138,8 @@ class UserConfigDataSource(
                     GuestRoomLinkStatus(isGuestRoomLinkEnabledEntity.status, isGuestRoomLinkEnabledEntity.isStatusChanged)
                 }
             }
+
+    override fun markGuestRoomLinkFeatureFlagAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.markGuestRoomLinkAsNotified()
+    }
 }

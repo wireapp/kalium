@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.user.guestroomlink
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.onSuccess
 
 /**
  * Mark Guest Link Feature Flag state as not changed
@@ -32,10 +31,6 @@ class MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : MarkGuestLinkFeatureFlagAsNotChangedUseCase {
     override operator fun invoke() {
-        userConfigRepository.getGuestRoomLinkStatus().onSuccess {
-            it.isStatusChanged?.let { isEnabled ->
-                userConfigRepository.setGuestRoomStatus(isEnabled, false)
-            }
-        }
+        userConfigRepository.markGuestRoomLinkFeatureFlagAsNotified()
     }
 }
