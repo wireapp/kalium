@@ -60,6 +60,6 @@ sealed class VerifyExistingClientResult {
 
     sealed class Failure : VerifyExistingClientResult() {
         object ClientNotRegistered : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

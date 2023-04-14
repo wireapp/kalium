@@ -36,7 +36,7 @@ class ObserveServerConfigUseCase internal constructor(
     sealed class Result {
         data class Success(val value: Flow<List<ServerConfig>>) : Result()
         sealed class Failure : Result() {
-            class Generic(val genericFailure: CoreFailure) : Failure()
+            data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 
