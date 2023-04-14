@@ -47,13 +47,14 @@ object MessageMapper {
         isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         isEphemeral: Boolean,
+        isGroupConversation: Boolean,
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return if (isEphemeral) {
-            MessagePreviewEntityContent.Ephemeral
+            MessagePreviewEntityContent.Ephemeral(isGroupConversation)
         } else {
             when (contentType) {
                 MessageEntity.ContentType.TEXT -> when {
@@ -177,6 +178,7 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             isEphemeral = isEphemeral,
+            isGroupConversation = conversationType == ConversationEntity.Type.GROUP,
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,

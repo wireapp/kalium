@@ -378,7 +378,7 @@ sealed class MessagePreviewEntityContent {
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
-    object Ephemeral : MessagePreviewEntityContent()
+    data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     object CryptoSessionReset : MessagePreviewEntityContent()
     object Unknown : MessagePreviewEntityContent()
 
