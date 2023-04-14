@@ -247,9 +247,8 @@ class ProtoContentMapperTest {
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
-        assertEquals(encoded, decoded)
+        assertEquals(protoContent, decoded)
     }
-
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
