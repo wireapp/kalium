@@ -64,6 +64,6 @@ sealed class DeleteClientResult {
     sealed class Failure : DeleteClientResult() {
         object InvalidCredentials : Failure()
         object PasswordAuthRequired : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

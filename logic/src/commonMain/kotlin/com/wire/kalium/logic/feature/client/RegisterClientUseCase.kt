@@ -71,7 +71,7 @@ sealed class RegisterClientResult {
 
         object TooManyClients : Failure()
         object PasswordAuthRequired : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
