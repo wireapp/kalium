@@ -16,14 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v0.prekey
+package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.DomainToUserIdToClientToPreKeyMapJson
 import com.wire.kalium.api.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
+import com.wire.kalium.network.api.v4.authenticated.PreKeyApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -35,8 +35,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class PrekeyApiV0Test : ApiTest {
-
+class PrekeyApiV4Test : ApiTest {
     @Test
     fun givenAValidDomainToUserIdToClientsMap_whenCallingGetUsersPrekeyEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
@@ -48,14 +47,11 @@ class PrekeyApiV0Test : ApiTest {
                 assertPathEqual(PATH_PREKEYS)
             }
         )
-        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
+        val preKeyApi: PreKeyApi = PreKeyApiV4(networkClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertTrue(response.isSuccessful())
-
-        // todo(fed): map to the new type, can this be achieved ? see:ConversationApiV3, but we need the new type
-        // todo(fed): might be possible to extended older class from new one, ie: inversed inheritance?
-        // assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
+        assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
@@ -64,7 +60,7 @@ class PrekeyApiV0Test : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Forbidden,
         )
-        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
+        val preKeyApi: PreKeyApi = PreKeyApiV4(networkClient)
         val errorResponse = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
@@ -73,7 +69,7 @@ class PrekeyApiV0Test : ApiTest {
 
     private companion object {
         val VALID_GET_USERS_PREKEY_REQUEST = DomainToUserIdToClientsMapJson.valid
-        val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.validV4
+        val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val PATH_PREKEYS = "/users/list-prekeys"
     }

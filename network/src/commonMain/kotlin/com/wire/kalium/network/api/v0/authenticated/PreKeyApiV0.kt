@@ -29,7 +29,7 @@ import io.ktor.client.request.setBody
 
 internal open class PreKeyApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : PreKeyApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getUsersPreKey(users: Map<String, Map<String, List<String>>>): NetworkResponse<DomainToUserIdToClientsToPreKeyMap> =
         wrapKaliumResponse {
@@ -42,7 +42,7 @@ internal open class PreKeyApiV0 internal constructor(private val authenticatedNe
         httpClient.get("$PATH_CLIENTS/$clientId/$PATH_PRE_KEY")
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
         const val PATH_PRE_KEY = "prekeys"
