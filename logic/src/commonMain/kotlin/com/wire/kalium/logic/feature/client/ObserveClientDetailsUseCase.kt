@@ -59,6 +59,6 @@ class ObserveClientDetailsUseCaseImpl(
         data class Success(val client: Client, val isCurrentClient: Boolean) : GetClientDetailsResult()
 
         sealed class Failure : GetClientDetailsResult() {
-            class Generic(val genericFailure: CoreFailure) : Failure()
+            data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
