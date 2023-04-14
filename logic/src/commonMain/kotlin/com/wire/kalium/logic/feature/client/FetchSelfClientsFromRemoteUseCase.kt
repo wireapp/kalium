@@ -57,6 +57,6 @@ sealed class SelfClientsResult {
     data class Success(val clients: List<Client>, val currentClientId: ClientId?) : SelfClientsResult()
 
     sealed class Failure : SelfClientsResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

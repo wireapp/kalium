@@ -66,7 +66,7 @@ sealed class AuthenticationResult {
          * The user has entered a text that isn't considered a valid email or handle
          */
         object InvalidUserIdentifier : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
