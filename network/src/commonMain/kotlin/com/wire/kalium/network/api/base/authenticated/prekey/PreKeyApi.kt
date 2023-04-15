@@ -18,7 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.prekey
 
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 interface PreKeyApi {
     /**
@@ -27,10 +30,22 @@ interface PreKeyApi {
      */
     suspend fun getUsersPreKey(
         users: Map<String, Map<String, List<String>>>
-    ): NetworkResponse<DomainToUserIdToClientsToPreKeyMap>
+    ): NetworkResponse<ListPrekeysResponse>
 
     suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>>
 }
 
 typealias DomainToUserIdToClientsToPreKeyMap = Map<String, Map<String, Map<String, PreKeyDTO?>>>
 typealias DomainToUserIdToClientsMap = Map<String, Map<String, List<String>>>
+
+/**
+ * v4 API response type for prekeys
+ * Will extend to older versions of the API, to support backwards compatibility plus versioning
+ */
+@Serializable
+data class ListPrekeysResponse(
+    @SerialName("failed_to_list")
+    val failedToList: List<UserId>? = listOf(),
+    @SerialName("qualified_user_client_prekeys")
+    val qualifiedUserClientPrekeys: DomainToUserIdToClientsToPreKeyMap
+)

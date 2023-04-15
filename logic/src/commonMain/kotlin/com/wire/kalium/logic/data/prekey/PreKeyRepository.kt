@@ -36,6 +36,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -89,6 +90,7 @@ class PreKeyDataSource(
         prekeyDAO.forceInsertOTRLastPrekeyId(newId)
     }
 
+    // TODO: Change this return right to return a list of sessions failed to list
     override suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, Unit> {
@@ -106,7 +108,7 @@ class PreKeyDataSource(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
     ): Either<NetworkFailure, DomainToUserIdToClientsToPreKeyMap> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
-    }
+    }.flatMap { Either.Right(it.qualifiedUserClientPrekeys) }
 
     private suspend fun establishProteusSessions(
         preKeyInfoList: DomainToUserIdToClientsToPreKeyMap

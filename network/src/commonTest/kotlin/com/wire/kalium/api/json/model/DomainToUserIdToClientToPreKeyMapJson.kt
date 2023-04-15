@@ -20,7 +20,9 @@ package com.wire.kalium.api.json.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.model.UserId
 
 object DomainToUserIdToClientToPreKeyMapJson {
 
@@ -35,7 +37,7 @@ object DomainToUserIdToClientToPreKeyMapJson {
     private const val USER_2_CLIENT = "32233lj33j3dfh7u"
     private val USER_2_CLIENT_PREYKEY = PreKeyDTO(key = "preKey2ANWARqEvoQI6l9hw0D", id = 2)
 
-    private const val USER_3 = "user300d0-000b-9c1a-000d-a4130002c121"
+    private val USER_3 = UserId("user300d0-000b-9c1a-000d-a4130002c121", "domain3.example.com")
 
     private val jsonProvider = { _: DomainToUserIdToClientsToPreKeyMap ->
         """
@@ -78,7 +80,7 @@ object DomainToUserIdToClientToPreKeyMapJson {
 
     val validV4 = ValidJsonProvider(
         ListPrekeysResponse(
-            listOf(mapOf(DOMAIN_2 to USER_3)),
+            listOf(USER_3),
             mapOf(
                 DOMAIN_1 to
                         mapOf(
@@ -97,8 +99,8 @@ object DomainToUserIdToClientToPreKeyMapJson {
             |{
             |   "failed_to_list": [
             |       {
-            |           "domain": "${it.failedToList[0].entries.first().key}",
-            |           "id": "${it.failedToList[0].entries.first().value}"
+            |           "domain": "${it.failedToList?.first()?.domain}",
+            |           "id": "${it.failedToList?.first()?.value}"
             |       }
             |   ],
             |   "qualified_user_client_prekeys": {
@@ -123,8 +125,3 @@ object DomainToUserIdToClientToPreKeyMapJson {
         """.trimMargin()
     }
 }
-
-data class ListPrekeysResponse(
-    val failedToList: List<Map<String, String>> = listOf(),
-    val qualifiedUserClientPrekeys: DomainToUserIdToClientsToPreKeyMap
-)
