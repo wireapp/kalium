@@ -19,13 +19,19 @@
 package com.wire.kalium.network.api.base.unbound.configuration
 
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
+import io.ktor.http.ContentType
 import io.ktor.http.Url
+import kotlinx.serialization.decodeFromString
 
 interface ServerConfigApi {
     suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO.Links>
@@ -42,23 +48,32 @@ class ServerConfigApiImpl internal constructor(
      * @param serverConfigUrl the remote config url
      */
     override suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO.Links> =
-        wrapKaliumResponse<ServerConfigResponse> {
+        wrapKaliumResponse<String> {
             httpClient.get {
+                accept(ContentType.Text.Plain)
                 setUrl(Url(serverConfigUrl))
             }
+        }.flatMap{
+            try {
+                NetworkResponse.Success(KtxSerializer.json.decodeFromString<ServerConfigResponse>(it.value), mapOf(), 200)
+            } catch (e: Exception) {
+                NetworkResponse.Error(KaliumException.GenericError(e))
+            }
         }.mapSuccess {
-            ServerConfigDTO.Links(
-                api = it.endpoints.apiBaseUrl,
-                accounts = it.endpoints.accountsBaseUrl,
-                webSocket = it.endpoints.webSocketBaseUrl,
-                blackList = it.endpoints.blackListUrl,
-                website = it.endpoints.websiteUrl,
-                teams = it.endpoints.teamsUrl,
-                title = it.title,
-                isOnPremises = true,
-                apiProxy = it.apiProxy?.let { proxy ->
-                    ServerConfigDTO.ApiProxy(proxy.needsAuthentication, proxy.host, proxy.port)
-                }
-            )
+            with(it) {
+                ServerConfigDTO.Links(
+                    api = endpoints.apiBaseUrl,
+                    accounts = endpoints.accountsBaseUrl,
+                    webSocket = endpoints.webSocketBaseUrl,
+                    blackList = endpoints.blackListUrl,
+                    website = endpoints.websiteUrl,
+                    teams = endpoints.teamsUrl,
+                    title = title,
+                    isOnPremises = true,
+                    apiProxy = apiProxy?.let { proxy ->
+                        ServerConfigDTO.ApiProxy(proxy.needsAuthentication, proxy.host, proxy.port)
+                    }
+                )
+            }
         }
 }
