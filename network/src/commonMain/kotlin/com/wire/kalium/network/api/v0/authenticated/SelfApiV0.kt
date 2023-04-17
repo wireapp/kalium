@@ -22,14 +22,25 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.base.model.UpdateEmailRequest
 import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 
-internal open class SelfApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : SelfApi {
+internal open class SelfApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val sessionManager: SessionManager
+) : SelfApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
@@ -49,8 +60,24 @@ internal open class SelfApiV0 internal constructor(private val authenticatedNetw
         }
     }
 
+    override suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean> =
+        sessionManager.session()?.refreshToken?.let { cookie ->
+            httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
+                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
+                setBody(UpdateEmailRequest(email))
+            }.let { response ->
+                when {
+                    response.status.value == HttpStatusCode.NoContent.value -> NetworkResponse.Success(false, response)
+                    response.status.isSuccess() -> NetworkResponse.Success(true, response)
+                    else -> wrapKaliumResponse { response }
+                }
+            }
+        } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
+
     private companion object {
         const val PATH_SELF = "self"
         const val PATH_HANDLE = "handle"
+        const val PATH_ACCESS = "access"
+        const val PATH_EMAIL = "email"
     }
 }
