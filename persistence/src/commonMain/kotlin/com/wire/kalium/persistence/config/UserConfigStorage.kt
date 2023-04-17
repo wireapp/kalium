@@ -296,9 +296,7 @@ class UserConfigStorageImpl(
             SELF_DELETING_MESSAGES,
             newValue,
             SelfDeletingMessagesEntity.serializer()
-        ).also {
-            isSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
-        }
+        ).also { isSelfDeletingMessagesEnabledFlow.tryEmit(Unit) }
     }
 
     private companion object {
