@@ -50,7 +50,7 @@ interface PreKeyRepository {
     suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, List<UserId>>
 }
 
 class PreKeyDataSource(
@@ -90,25 +90,27 @@ class PreKeyDataSource(
         prekeyDAO.forceInsertOTRLastPrekeyId(newId)
     }
 
-    // TODO: Change this return right to return a list of sessions failed to list
     override suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, List<UserId>> {
         if (missingContactClients.isEmpty()) {
-            return Either.Right(Unit)
+            return Either.Right(emptyList())
         }
 
         return preKeysOfClientsByQualifiedUsers(missingContactClients)
-            .flatMap { domainToUserIdToClientsToPreKeyMap ->
-                establishProteusSessions(domainToUserIdToClientsToPreKeyMap)
+            .flatMap { listUserPrekeysResponse ->
+                establishProteusSessions(listUserPrekeysResponse.qualifiedUserClientPrekeys)
+                    .flatMap {
+                        Either.Right(preKeyListMapper.fromListPrekeyResponseToFailedToList(listUserPrekeysResponse))
+                    }
             }
     }
 
     internal suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure, DomainToUserIdToClientsToPreKeyMap> = wrapApiRequest {
+    ): Either<NetworkFailure, ListPrekeysResponse> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
-    }.flatMap { Either.Right(it.qualifiedUserClientPrekeys) }
+    }
 
     private suspend fun establishProteusSessions(
         preKeyInfoList: DomainToUserIdToClientsToPreKeyMap

@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 
 class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
@@ -51,4 +53,8 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
                 QualifiedUserPreKeyInfo(entry.key, clientsInfo)
             }
         }
+
+    fun fromListPrekeyResponseToFailedToList(listPrekeysResponse: ListPrekeysResponse) = listPrekeysResponse.failedToList
+        ?.map { it.toModel() }
+        ?: listOf()
 }

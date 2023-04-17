@@ -46,7 +46,7 @@ internal interface SessionEstablisher {
      */
     suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, List<UserId>>
 }
 
 internal class SessionEstablisherImpl internal constructor(
@@ -56,10 +56,10 @@ internal class SessionEstablisherImpl internal constructor(
 ) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, List<UserId>> =
         getAllMissingClients(recipients).flatMap {
             if (it.isEmpty()) {
-                return@flatMap Either.Right(Unit)
+                return@flatMap Either.Right(emptyList())
             }
             preKeyRepository.establishSessions(it)
         }

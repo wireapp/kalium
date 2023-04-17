@@ -229,7 +229,9 @@ internal class MessageSenderImpl internal constructor(
             .flatMap { recipients ->
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
-                    .map { recipients }
+                    .map { failedToList ->
+                        recipients
+                    }
                 // TODO(federation) filter clients with failed to get prekeys and add persist in db
             }.fold({
                 // TODO(federation) if (it is NetworkFailure.FederatedBackendError)
@@ -259,7 +261,7 @@ internal class MessageSenderImpl internal constructor(
 
             sessionEstablisher
                 .prepareRecipientsForNewOutgoingMessage(recipients)
-                .flatMap {
+                .flatMap { _ ->
                     messageEnvelopeCreator
                         .createOutgoingBroadcastEnvelope(recipients, message)
                         .flatMap { envelope -> tryBroadcastProteusEnvelope(envelope, message, option, target) }
