@@ -59,7 +59,7 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
      */
-    suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
+    operator fun invoke(conversationId: QualifiedID, time: Instant) {
         scope.launch {
             sendConfirmation(conversationId)
             conversationRepository.updateConversationReadDate(conversationId, time)
