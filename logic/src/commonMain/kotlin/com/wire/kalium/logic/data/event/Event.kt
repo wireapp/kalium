@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
@@ -438,6 +439,18 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             )
         }
 
+        data class SelfDeletingMessagesConfig(
+            override val id: String,
+            override val transient: Boolean,
+            val model: SelfDeletingMessagesModel,
+        ) : FeatureConfig(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.GuestRoomLinkUpdated",
+                idKey to id.obfuscateId(),
+                "status" to model.status.name,
+            )
+        }
+
         data class UnknownFeatureUpdated(
             override val id: String,
             override val transient: Boolean,
@@ -584,18 +597,21 @@ internal fun KaliumLogger.logEventProcessing(
             val logJson = finalMap.toJsonElement()
             i("Success handling event: $logJson")
         }
+
         EventLoggingStatus.FAILURE -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "failure"
             val logJson = finalMap.toJsonElement()
             e("Failure handling event: $logJson")
         }
+
         EventLoggingStatus.SKIPPED -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "skipped"
             val logJson = finalMap.toJsonElement()
             w("Skipped handling event: $logJson")
         }
+
         else -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "unknown"
