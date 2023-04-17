@@ -43,6 +43,6 @@ sealed class GetServerConfigResult {
     class Success(val serverConfigLinks: ServerConfig.Links) : GetServerConfigResult()
 
     sealed class Failure : GetServerConfigResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

@@ -39,7 +39,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         data class Success(val userId: UserId) : Result()
         sealed class Failure : Result() {
             object UserAlreadyExists : Failure()
-            class Generic(val genericFailure: CoreFailure) : Failure()
+            data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 
