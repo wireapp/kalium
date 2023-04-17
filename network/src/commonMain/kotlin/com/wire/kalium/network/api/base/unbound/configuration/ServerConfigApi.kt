@@ -31,6 +31,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.Url
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 
 interface ServerConfigApi {
@@ -53,10 +54,14 @@ class ServerConfigApiImpl internal constructor(
                 accept(ContentType.Text.Plain)
                 setUrl(Url(serverConfigUrl))
             }
-        }.flatMap{
+        }.flatMap {
             try {
-                NetworkResponse.Success(KtxSerializer.json.decodeFromString<ServerConfigResponse>(it.value), mapOf(), 200)
-            } catch (e: Exception) {
+                NetworkResponse.Success(
+                    KtxSerializer.json.decodeFromString<ServerConfigResponse>(it.value),
+                    it.headers,
+                    it.httpCode
+                )
+            } catch (e: SerializationException) {
                 NetworkResponse.Error(KaliumException.GenericError(e))
             }
         }.mapSuccess {
