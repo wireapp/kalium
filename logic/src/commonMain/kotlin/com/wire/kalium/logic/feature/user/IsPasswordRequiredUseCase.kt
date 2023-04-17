@@ -29,6 +29,7 @@ import com.wire.kalium.logic.functional.map
  * Checks if the current requires password to authenticate operations.
  * In case the user doesn't have a password, means is an SSO user.
  */
+// TODO: rename to HasSAMLCredentialsUseCase
 class IsPasswordRequiredUseCase internal constructor(
     private val selfUserId: UserId,
     private val sessionRepository: SessionRepository,
@@ -43,7 +44,7 @@ class IsPasswordRequiredUseCase internal constructor(
     })
 
     internal suspend fun eitherInvoke(): Either<StorageFailure, Boolean> = sessionRepository.ssoId(selfUserId).map {
-        it?.subject == null
+        it?.subject.isNullOrBlank()
     }
 
     sealed class Result {
