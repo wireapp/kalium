@@ -26,6 +26,6 @@ sealed class SearchUsersResult {
     sealed class Failure : SearchUsersResult() {
         object InvalidQuery : Failure()
         object InvalidRequest : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
