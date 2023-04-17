@@ -766,7 +766,7 @@ class MessageSenderTest {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(listOf()))
         }
 
         fun withCommitPendingProposals(failing: Boolean = false) = apply {
