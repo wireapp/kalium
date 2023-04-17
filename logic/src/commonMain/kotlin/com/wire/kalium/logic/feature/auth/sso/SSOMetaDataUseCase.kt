@@ -26,7 +26,7 @@ sealed class SSOMetaDataResult {
     data class Success(val metaData: String) : SSOMetaDataResult()
 
     sealed class Failure : SSOMetaDataResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

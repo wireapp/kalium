@@ -36,7 +36,7 @@ sealed class SSOLoginSessionResult {
 
     sealed class Failure : SSOLoginSessionResult() {
         object InvalidCookie : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

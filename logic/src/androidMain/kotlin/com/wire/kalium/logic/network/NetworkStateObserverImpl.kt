@@ -40,11 +40,6 @@ actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserve
                 networkStateFlow.tryEmit(networkCapabilities.toState())
             }
 
-            override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
-                super.onBlockedStatusChanged(network, blocked)
-                networkStateFlow.tryEmit(if (blocked) NetworkState.ConnectedWithoutInternet else NetworkState.ConnectedWithInternet)
-            }
-
             override fun onLost(network: Network) {
                 networkStateFlow.tryEmit(NetworkState.NotConnected)
                 super.onLost(network)
