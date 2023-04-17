@@ -535,8 +535,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val label: String?
         ) : User(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                "id" to id.obfuscateId(),
-                "clientId" to clientId.value.obfuscateId(),
+                typeKey to "User.NewClient",
+                idKey to id.obfuscateId(),
+                clientIdKey to clientId.value.obfuscateId(),
                 "registrationTime" to registrationTime,
                 "model" to (model ?: ""),
                 "clientType" to clientType,

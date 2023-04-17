@@ -34,7 +34,7 @@ sealed class SSOInitiateLoginResult {
         object InvalidCodeFormat : Failure()
         object InvalidCode : Failure()
         object InvalidRedirect : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
