@@ -118,7 +118,7 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
 
 sealed class StorageFailure : CoreFailure() {
     object DataNotFound : StorageFailure()
-    class Generic(val rootCause: Throwable) : StorageFailure()
+    data class Generic(val rootCause: Throwable) : StorageFailure()
 }
 
 private const val SOCKS_EXCEPTION = "socks"
