@@ -91,7 +91,7 @@ class ProtoContentMapperImpl(
         }
     }
 
-    @Suppres("ComplexMethod")
+    @Suppress("ComplexMethod")
     private fun mapNormalContent(
         readableContent: MessageContent.FromProto,
         expectsReadConfirmation: Boolean
