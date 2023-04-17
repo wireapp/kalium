@@ -1015,7 +1015,8 @@ class UserSessionScope internal constructor(
             messages.sendConfirmation,
             renamedConversationHandler,
             qualifiedIdMapper,
-            team.isSelfATeamMember
+            team.isSelfATeamMember,
+            this
         )
 
     val migration get() = MigrationScope(userStorage.database)
