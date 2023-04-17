@@ -22,9 +22,11 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.DomainToUserIdToClientToPreKeyMapJson
 import com.wire.kalium.api.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,12 +52,10 @@ class PrekeyApiV0Test : ApiTest {
         )
         val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
 
-        val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
+        val response: NetworkResponse<ListPrekeysResponse> = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertTrue(response.isSuccessful())
 
-        // todo(fed): map to the new type, can this be achieved ? see:ConversationApiV3, but we need the new type
-        // todo(fed): might be possible to extended older class from new one, ie: inversed inheritance?
-        // assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
+        assertEquals(response.value.qualifiedUserClientPrekeys, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
@@ -73,7 +73,7 @@ class PrekeyApiV0Test : ApiTest {
 
     private companion object {
         val VALID_GET_USERS_PREKEY_REQUEST = DomainToUserIdToClientsMapJson.valid
-        val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.validV4
+        val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val PATH_PREKEYS = "/users/list-prekeys"
     }

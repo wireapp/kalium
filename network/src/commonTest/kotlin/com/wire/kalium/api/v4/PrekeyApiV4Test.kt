@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.DomainToUserIdToClientToPreKeyMapJson
 import com.wire.kalium.api.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.v4.authenticated.PreKeyApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -49,9 +49,9 @@ class PrekeyApiV4Test : ApiTest {
                 assertPathEqual(PATH_PREKEYS)
             }
         )
-        val preKeyApi: PreKeyApiV4 = PreKeyApiV4(networkClient)
+        val preKeyApi = PreKeyApiV4(networkClient)
 
-        val response: NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>> = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
+        val response: NetworkResponse<ListPrekeysResponse> = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
