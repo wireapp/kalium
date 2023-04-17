@@ -127,4 +127,21 @@ class UserConfigStorageTest {
             assertTrue { it }
         }
     }
+
+    @Test
+    fun givenGuestRoomLinkStatus_whenMarkingAsNotified_thenItsValueShouldNotBeChanged() {
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = true)
+        userConfigStorage.markGuestRoomLinkAsNotified()
+        userConfigStorage.isGuestRoomLinkEnabled()?.let {
+            assertTrue { it.status }
+            assertFalse { it.isStatusChanged!! }
+        }
+
+        userConfigStorage.persistGuestRoomLinkFeatureFlag(status = false, isStatusChanged = true)
+        userConfigStorage.markGuestRoomLinkAsNotified()
+        userConfigStorage.isGuestRoomLinkEnabled()?.let {
+            assertFalse { it.status }
+            assertFalse { it.isStatusChanged!! }
+        }
+    }
 }
