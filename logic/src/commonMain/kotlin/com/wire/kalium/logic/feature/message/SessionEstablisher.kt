@@ -44,7 +44,8 @@ internal interface SessionEstablisher {
      * Verifies if this client can send messages to all the client recipients.
      * Will fetch PreKeys and establish cryptographic sessions if needed.
      *
-     * This will return a list of user ids [Either.Right] of [List<UserId>] of not possible to fetch the prekeys.
+     * Since api v4 and up, returns a list of user ids [Either.Right] [List<UserId>] with clients issues
+     * Otherwise, just returns [Either.Right] [emptyList]
      */
     suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
