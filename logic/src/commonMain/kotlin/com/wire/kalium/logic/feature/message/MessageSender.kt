@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
@@ -45,6 +46,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -230,20 +232,33 @@ internal class MessageSenderImpl internal constructor(
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
                     .map { failedToListUserIds ->
-                        recipients
+                        recipients to failedToListUserIds
                     }
-                // TODO(federation) filter clients with failed to get prekeys and add persist in db
-            }.fold({
-                // TODO(federation) if (it is NetworkFailure.FederatedBackendError)
-                // TODO(federation) handle federated failure to filter clients and add to QualifiedMessageOption.IgnoreSome
-                Either.Left(it)
-            }, { recipients ->
+            }.flatMap { (recipients, failedToListUserIds) ->
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                        val messageOption = getMessageOption(conversationId, message, failedToListUserIds, messageTarget)
+                        trySendingProteusEnvelope(envelope, message, messageOption, messageTarget)
                     }
-            })
+            }
+    }
+
+    private suspend fun getMessageOption(
+        conversationId: ConversationId,
+        message: Message,
+        failedToListUserIds: List<UserId>,
+        messageTarget: MessageTarget
+    ) = when (messageTarget) {
+        is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
+        is MessageTarget.Conversation -> {
+            if (failedToListUserIds.isNotEmpty()) {
+                messageRepository.persistNoClientsToDeliverFailure(conversationId, message.id, failedToListUserIds)
+                MessageApi.QualifiedMessageOption.IgnoreSome(failedToListUserIds.map { it.toApi() })
+            } else {
+                MessageApi.QualifiedMessageOption.ReportAll
+            }
+        }
     }
 
     private suspend fun attemptToBroadcastWithProteus(
@@ -300,10 +315,11 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
+        messageOption: MessageApi.QualifiedMessageOption,
         messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
         messageRepository
-            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .sendEnvelope(message.conversationId, envelope, messageOption)
             .fold({
                 handleProteusError(it, "Send", message.toLogString()) {
                     attemptToSendWithProteus(message, messageTarget)

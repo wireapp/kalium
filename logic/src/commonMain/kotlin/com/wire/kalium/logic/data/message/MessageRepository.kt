@@ -36,7 +36,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.BroadcastMessageOption
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -127,7 +126,7 @@ interface MessageRepository {
     suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageOption: MessageApi.QualifiedMessageOption
     ): Either<CoreFailure, MessageSent>
 
     /**
@@ -187,6 +186,12 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit>
+
+    suspend fun persistNoClientsToDeliverFailure(
         conversationId: ConversationId,
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>
@@ -331,18 +336,12 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageOption: MessageApi.QualifiedMessageOption
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }
-        }
-
-        // todo(federation): map here to the correct option using parameter.
-        val messageOption = when (messageTarget) {
-            is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
-            is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
         }
 
         return wrapApiRequest {
@@ -525,6 +524,23 @@ class MessageDataSource(
             conversationId.toDao(),
             usersWithFailedDeliveryList.map { it.toDao() },
             RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
+        )
+    }
+
+    /**
+     * Persist a list of users ids whose clients are missing and could not be retrieved
+     * [RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER]
+     */
+    override suspend fun persistNoClientsToDeliverFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertFailedRecipientDelivery(
+            messageUuid,
+            conversationId.toDao(),
+            usersWithFailedDeliveryList.map { it.toDao() },
+            RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER
         )
     }
 
