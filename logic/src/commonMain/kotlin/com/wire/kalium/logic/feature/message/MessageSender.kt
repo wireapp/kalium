@@ -229,7 +229,7 @@ internal class MessageSenderImpl internal constructor(
             .flatMap { recipients ->
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
-                    .map { failedToList ->
+                    .map { failedToListUserIds ->
                         recipients
                     }
                 // TODO(federation) filter clients with failed to get prekeys and add persist in db
