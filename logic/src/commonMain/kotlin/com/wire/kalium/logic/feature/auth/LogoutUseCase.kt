@@ -113,7 +113,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private suspend fun wipeTokenAndMetadata() {
         // receiving web socket events at the exact time of logging put
         clearClientDataUseCase()
-        logoutRepository.clearClientRelatedLocalMetadata()
+        clientRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearCurrentClientId()
         clientRepository.clearHasRegisteredMLSClient()
         // After logout we need to mark the Firebase token as invalid
