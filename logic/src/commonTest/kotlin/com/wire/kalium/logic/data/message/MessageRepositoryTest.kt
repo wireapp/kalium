@@ -20,14 +20,12 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.BroadcastMessageOption
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.util.shouldSucceed
@@ -144,7 +142,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageApi.QualifiedMessageOption.ReportAll)
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -161,7 +159,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageApi.QualifiedMessageOption.ReportAll)
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -187,14 +185,7 @@ class MessageRepositoryTest {
         messageRepository.sendEnvelope(
             TEST_CONVERSATION_ID,
             messageEnvelope,
-            MessageTarget.Client(
-                recipients = listOf(
-                    Recipient(
-                        id = TEST_USER_ID,
-                        clients = listOf(TEST_CLIENT_ID)
-                    )
-                )
-            )
+            MessageApi.QualifiedMessageOption.IgnoreAll
         ).shouldSucceed()
 
         verify(arrangement.messageApi)
@@ -217,7 +208,7 @@ class MessageRepositoryTest {
             .arrange()
 
         messageRepository
-            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageApi.QualifiedMessageOption.ReportAll)
             .shouldSucceed()
 
         verify(arrangement.messageApi)
