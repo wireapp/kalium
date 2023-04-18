@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.model
 
-package com.wire.kalium.network.api.v3.authenticated
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
-import com.wire.kalium.network.session.SessionManager
-
-internal open class SelfApiV3 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    sessionManager: SessionManager
-) : SelfApiV2(authenticatedNetworkClient, sessionManager)
+@Serializable
+data class UpdateEmailRequest(
+    @SerialName("email") val email: String
+)

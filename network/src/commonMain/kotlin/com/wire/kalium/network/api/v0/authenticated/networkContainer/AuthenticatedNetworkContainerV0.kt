@@ -96,7 +96,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
 
     override val teamsApi: TeamsApi get() = TeamsApiV0(networkClient)
 
-    override val selfApi: SelfApi get() = SelfApiV0(networkClient)
+    override val selfApi: SelfApi get() = SelfApiV0(networkClient, sessionManager)
 
     override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV0(networkClient)
 
