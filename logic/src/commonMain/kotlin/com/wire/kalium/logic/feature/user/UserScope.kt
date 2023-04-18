@@ -130,5 +130,7 @@ class UserScope internal constructor(
 
     val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(userRepository)
 
+    val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(userRepository)
+
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
 }

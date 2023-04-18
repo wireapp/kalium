@@ -49,9 +49,7 @@ data class Client(
     val deviceType: DeviceType?,
     val label: String?,
     val model: String?
-) {
-    val name by lazy { model ?: label ?: "Unknown Client" } // TODO: ask design about the name when model/liable is null
-}
+)
 
 enum class ClientType {
     Temporary,

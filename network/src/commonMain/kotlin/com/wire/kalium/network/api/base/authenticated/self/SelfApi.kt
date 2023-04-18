@@ -31,4 +31,12 @@ interface SelfApi {
     suspend fun getSelfInfo(): NetworkResponse<UserDTO>
     suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit>
     suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit>
+
+    /**
+     * Update the email address of the current user.
+     * @param email The new email address.
+     * @return A [NetworkResponse] with the result of the operation.
+     * true if the email address was updated, it is the same email address
+     */
+    suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean>
 }
