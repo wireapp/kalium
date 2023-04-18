@@ -198,6 +198,7 @@ class CallRepositoryTest {
             callerId = Arrangement.callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.Conference
         )
 
@@ -248,6 +249,7 @@ class CallRepositoryTest {
             callerId = Arrangement.callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.Conference
         )
 
@@ -294,6 +296,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.Conference
         )
 
@@ -349,6 +352,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.Conference
         )
 
@@ -398,6 +402,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.Conference
         )
 
@@ -432,6 +437,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.OneOnOne
         )
 
@@ -470,6 +476,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.OneOnOne
         )
 
@@ -508,6 +515,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.OneOnOne
         )
 
@@ -554,6 +562,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.OneOnOne
         )
 
@@ -591,6 +600,7 @@ class CallRepositoryTest {
             callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
+            isCbrEnabled = false,
             type = ConversationType.OneOnOne
         )
 
@@ -682,6 +692,30 @@ class CallRepositoryTest {
         assertEquals(
             expectedValue,
             callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isMuted
+        )
+    }
+
+    @Test
+    fun givenAnEstablishedCall_whenUpdateIsCbrEnabledIsCalled_thenDoUpdateCbrValue() = runTest {
+        val call = createCallEntity()
+        val (_, callRepository) = Arrangement().givenEstablishedCall(call).arrange()
+        val expectedValue = true
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId to createCallMetadata().copy(
+                        isCbrEnabled = false
+                    )
+                )
+            )
+        )
+
+        callRepository.updateIsCbrEnabled(expectedValue)
+
+        assertEquals(
+            expectedValue,
+            callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.isCbrEnabled
         )
     }
 
@@ -1413,6 +1447,7 @@ class CallRepositoryTest {
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,
+        isCbrEnabled = false,
         maxParticipants = 0,
         conversationName = "ONE_ON_ONE Name",
         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -1435,6 +1470,7 @@ class CallRepositoryTest {
     private fun createCallMetadata() = CallMetadata(
         isMuted = true,
         isCameraOn = false,
+        isCbrEnabled = false,
         conversationName = null,
         conversationType = Conversation.Type.GROUP,
         callerName = null,
@@ -1528,6 +1564,13 @@ class CallRepositoryTest {
         }
 
         fun arrange() = this to callRepository
+
+        fun givenEstablishedCall(callEntity: CallEntity) = apply {
+            given(callDAO)
+                .function(callDAO::getEstablishedCall)
+                .whenInvoked()
+                .thenReturn(callEntity)
+        }
 
         fun givenGetCallConfigResponse(response: NetworkResponse<String>) = apply {
             given(callApi)

@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.CurrentPlatform
 import com.wire.kalium.logic.util.PlatformType
@@ -79,7 +80,8 @@ actual class GlobalCallManager(
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
         qualifiedIdMapper: QualifiedIdMapper,
-        videoStateChecker: VideoStateChecker
+        videoStateChecker: VideoStateChecker,
+        kaliumConfigs: KaliumConfigs
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
@@ -92,7 +94,8 @@ actual class GlobalCallManager(
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
-            videoStateChecker = videoStateChecker
+            videoStateChecker = videoStateChecker,
+            kaliumConfigs = kaliumConfigs
         ).also {
             callManagerHolder[userId] = it
         }
