@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.call.usecase
 
-package com.wire.kalium.network.api.v3.authenticated
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.FlowManagerService
 
-import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
-import com.wire.kalium.network.session.SessionManager
+/**
+ * This use case will flip the camera to back facing
+ */
+class FlipToBackCameraUseCase internal constructor(private val flowManagerService: FlowManagerService) {
 
-internal open class SelfApiV3 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    sessionManager: SessionManager
-) : SelfApiV2(authenticatedNetworkClient, sessionManager)
+    /**
+     * @param conversationId the id of the conversation.
+     */
+    suspend operator fun invoke(conversationId: ConversationId) {
+        flowManagerService.flipToBackCamera(conversationId)
+    }
+}

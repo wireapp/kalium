@@ -30,7 +30,7 @@ sealed class SSOFinalizeLoginResult {
 
     sealed class Failure : SSOFinalizeLoginResult() {
         object InvalidCookie : SSOFinalizeLoginResult.Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

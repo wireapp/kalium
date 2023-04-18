@@ -23,6 +23,8 @@ import com.wire.kalium.logic.util.PlatformView
 
 interface FlowManagerService {
     suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
+    suspend fun flipToFrontCamera(conversationId: ConversationId)
+    suspend fun flipToBackCamera(conversationId: ConversationId)
     fun setUIRotation(rotation: Int)
 }
 
