@@ -231,29 +231,35 @@ internal class MessageSenderImpl internal constructor(
             .flatMap { recipients ->
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
-                    .map { failedToListUserIds ->
-                        recipients to failedToListUserIds
-                    }
-            }.flatMap { (recipients, failedToListUserIds) ->
+                    .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
+                    .map { recipients to getMessageOption(it, messageTarget) }
+            }.flatMap { (recipients, messageOption) ->
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope ->
-                        val messageOption = getMessageOption(conversationId, message, failedToListUserIds, messageTarget)
                         trySendingProteusEnvelope(envelope, message, messageOption, messageTarget)
                     }
             }
     }
 
-    private suspend fun getMessageOption(
+    private suspend fun handleUsersWithNoClientsToDeliver(
         conversationId: ConversationId,
-        message: Message,
+        messageId: String,
+        failedToListUserIds: List<UserId>
+    ): Either<CoreFailure, List<UserId>> = if (failedToListUserIds.isNotEmpty()) {
+        messageRepository.persistNoClientsToDeliverFailure(conversationId, messageId, failedToListUserIds)
+            .flatMap { Either.Right(failedToListUserIds) }
+    } else {
+        Either.Right(emptyList())
+    }
+
+    private fun getMessageOption(
         failedToListUserIds: List<UserId>,
         messageTarget: MessageTarget
-    ) = when (messageTarget) {
+    ): MessageApi.QualifiedMessageOption = when (messageTarget) {
         is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
         is MessageTarget.Conversation -> {
             if (failedToListUserIds.isNotEmpty()) {
-                messageRepository.persistNoClientsToDeliverFailure(conversationId, message.id, failedToListUserIds)
                 MessageApi.QualifiedMessageOption.IgnoreSome(failedToListUserIds.map { it.toApi() })
             } else {
                 MessageApi.QualifiedMessageOption.ReportAll
