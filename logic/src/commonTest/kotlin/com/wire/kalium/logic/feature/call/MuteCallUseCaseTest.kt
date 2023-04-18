@@ -113,6 +113,7 @@ class MuteCallUseCaseTest {
             callerId = "called-id",
             isMuted = false,
             isCameraOn = false,
+            isCbrEnabled = false,
             conversationName = null,
             conversationType = Conversation.Type.GROUP,
             callerName = null,

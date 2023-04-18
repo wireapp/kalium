@@ -98,6 +98,7 @@ interface CallRepository {
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
+    fun getEstablishedCall(): Call
     suspend fun establishedCallConversationId(): ConversationId?
 
     @Suppress("LongParameterList")
@@ -107,10 +108,12 @@ interface CallRepository {
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
-        isCameraOn: Boolean
+        isCameraOn: Boolean,
+        isCbrEnabled: Boolean
     )
     suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus)
     fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
+    fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: ConversationId, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers)
@@ -183,7 +186,8 @@ internal class CallDataSource(
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
-        isCameraOn: Boolean
+        isCameraOn: Boolean,
+        isCbrEnabled: Boolean
     ) {
         val conversation: ConversationDetails =
             conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
@@ -210,6 +214,7 @@ internal class CallDataSource(
             callerTeamName = team?.name,
             isMuted = isMuted,
             isCameraOn = isCameraOn,
+            isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             protocol = conversation.conversation.protocol
         )
@@ -359,6 +364,22 @@ internal class CallDataSource(
         }
     }
 
+    override fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
+        val callMetadataProfile = _callMetadataProfile.value
+        val conversationId = getEstablishedCall().conversationId
+        callMetadataProfile.data[conversationId]?.let { callMetadata ->
+            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
+                this[conversationId] = callMetadata.copy(
+                    isCbrEnabled = isCbrEnabled
+                )
+            }
+
+            _callMetadataProfile.value = callMetadataProfile.copy(
+                data = updatedCallMetaData
+            )
+        }
+    }
+
     override fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -484,6 +505,19 @@ internal class CallDataSource(
             .first()
             .firstOrNull()
             ?.conversationId
+
+    override fun getEstablishedCall(): Call {
+        val callEntity = callDAO.getEstablishedCall()
+        val conversationId = ConversationId(
+            value = callEntity.conversationId.value,
+            domain = callEntity.conversationId.domain
+        )
+        val call = callMapper.toCall(
+            callEntity = callEntity,
+            metadata = _callMetadataProfile.value.data[conversationId]
+        )
+        return call
+    }
 
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
         this.combine(_callMetadataProfile) { calls, metadata ->

@@ -93,6 +93,7 @@ class ObserveOngoingCallsUseCaseTest {
             status = CallStatus.STILL_ONGOING,
             isMuted = false,
             isCameraOn = false,
+            isCbrEnabled = false,
             callerId = "callerId",
             conversationName = null,
             conversationType = Conversation.Type.GROUP,
