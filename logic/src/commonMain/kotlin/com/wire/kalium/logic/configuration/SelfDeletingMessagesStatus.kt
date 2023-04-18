@@ -15,14 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.configuration
 
-package com.wire.kalium.network.api.v3.authenticated
-
-import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
-import com.wire.kalium.network.session.SessionManager
-
-internal open class SelfApiV3 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    sessionManager: SessionManager
-) : SelfApiV2(authenticatedNetworkClient, sessionManager)
+data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)

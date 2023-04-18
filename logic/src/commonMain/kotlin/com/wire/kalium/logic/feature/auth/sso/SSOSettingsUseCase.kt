@@ -27,7 +27,7 @@ sealed class SSOSettingsResult {
     data class Success(val ssoSettings: SSOSettingsResponse) : SSOSettingsResult()
 
     sealed class Failure : SSOSettingsResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

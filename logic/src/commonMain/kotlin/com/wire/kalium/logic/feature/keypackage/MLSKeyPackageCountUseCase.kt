@@ -70,6 +70,6 @@ sealed class MLSKeyPackageCountResult {
     sealed class Failure : MLSKeyPackageCountResult() {
         class NetworkCallFailure(val networkFailure: NetworkFailure) : Failure()
         class FetchClientIdFailure(val genericFailure: CoreFailure) : Failure()
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
