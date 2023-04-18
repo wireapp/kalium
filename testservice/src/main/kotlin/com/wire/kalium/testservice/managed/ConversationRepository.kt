@@ -156,7 +156,7 @@ sealed class ConversationRepository {
                         if (text != null) {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendTextMessage(
-                                conversationId, text, mentions,null, quotedMessageId
+                                conversationId, text, mentions, null, quotedMessageId
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
