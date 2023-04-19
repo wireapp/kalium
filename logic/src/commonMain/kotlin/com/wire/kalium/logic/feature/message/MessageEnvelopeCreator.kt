@@ -80,7 +80,12 @@ class MessageEnvelopeCreatorImpl(
             else -> false
         }
 
-        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
+        val actualMessageContent = ProtoContent.Readable(
+            messageUid = message.id,
+            messageContent = message.content,
+            expectsReadConfirmation = expectsReadConfirmation,
+            expiresAfterMillis = (message as? Message.Regular)?.expirationData?.expireAfter?.inWholeMilliseconds
+        )
 
         return createEnvelope(actualMessageContent, recipients, senderClientId)
     }
