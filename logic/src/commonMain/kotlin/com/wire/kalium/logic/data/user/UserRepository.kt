@@ -109,6 +109,14 @@ internal interface UserRepository {
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
+
+    /**
+     * Updates the self user's email address.
+     * @param email the new email address
+     * @return [Either.Right] with [Boolean] true if the verify email was sent and false if there are no change,
+     * otherwise [Either.Left] with [NetworkFailure]
+     */
+    suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -129,7 +137,7 @@ internal class UserDataSource internal constructor(
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
     /**
@@ -218,6 +226,10 @@ internal class UserDataSource internal constructor(
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+
+    override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {
+        selfApi.updateEmailAddress(email)
+    }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
         val selfUserDomain = selfUserId.domain

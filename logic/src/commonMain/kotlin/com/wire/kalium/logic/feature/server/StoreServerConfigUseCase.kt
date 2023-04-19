@@ -58,6 +58,6 @@ sealed class StoreServerConfigResult {
     class Success(val serverConfig: ServerConfig) : StoreServerConfigResult()
 
     sealed class Failure : StoreServerConfigResult() {
-        class Generic(val genericFailure: CoreFailure) : Failure()
+        data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

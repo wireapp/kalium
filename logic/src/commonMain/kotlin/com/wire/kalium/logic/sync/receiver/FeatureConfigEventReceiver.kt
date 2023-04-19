@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -67,11 +68,10 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     }
                 }
 
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
             }
 
             is Event.FeatureConfig.MLSUpdated -> {
@@ -79,52 +79,56 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 val selfUserIsWhitelisted = event.model.allowedUsers.contains(selfUserId.toPlainID())
                 userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
 
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
             }
 
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> {
                 val classifiedDomainsEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
 
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
             }
 
             is Event.FeatureConfig.ConferenceCallingUpdated -> {
                 val conferenceCallingEnabled = event.model.status == Status.ENABLED
                 userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
 
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
             }
 
             is Event.FeatureConfig.GuestRoomLinkUpdated -> {
                 handleGuestRoomLinkFeatureConfig(event.model.status)
 
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
+            }
+
+            is Event.FeatureConfig.SelfDeletingMessagesConfig -> {
+                handleSelfDeletingFeatureConfig(event.model.status, event.model.config.enforcedTimeoutSeconds)
+
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
             }
 
             is Event.FeatureConfig.UnknownFeatureUpdated -> {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SKIPPED,
-                        event,
-                        Pair("info", "Ignoring unknown feature config update")
-                    )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SKIPPED,
+                    event,
+                    Pair("info", "Ignoring unknown feature config update")
+                )
             }
         }
     }
@@ -146,6 +150,34 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 Status.DISABLED -> userConfigRepository.setGuestRoomStatus(
                     status = false,
                     isStatusChanged = currentGuestRoomStatus
+                )
+            }
+        }
+    }
+
+    private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Int?) {
+        if (!kaliumConfigs.selfDeletingMessages) {
+            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, null))
+        } else {
+            val (currentIsSelfDeletingMessagesEnabled, currentEnforcedTimeout) = userConfigRepository
+                .getSelfDeletingMessagesStatus()
+                .fold({ true to null }, { it.isEnabled to it.enforcedTimeoutInSeconds })
+
+            when (status) {
+                Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
+                    SelfDeletingMessagesStatus(
+                        isEnabled = true,
+                        isStatusChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
+                        enforcedTimeoutInSeconds = if (enforcedTimeoutSeconds == 0) null else enforcedTimeoutSeconds
+                    )
+                )
+
+                Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
+                    SelfDeletingMessagesStatus(
+                        isEnabled = false,
+                        isStatusChanged = currentIsSelfDeletingMessagesEnabled,
+                        enforcedTimeoutInSeconds = enforcedTimeoutSeconds
+                    )
                 )
             }
         }

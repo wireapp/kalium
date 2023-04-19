@@ -64,7 +64,7 @@ internal class DeleteTeamConversationUseCaseImpl(
 sealed class Result {
     object Success : Result()
     sealed class Failure : Result() {
-        class GenericFailure(val coreFailure: CoreFailure) : Failure()
+        data class GenericFailure(val coreFailure: CoreFailure) : Failure()
         object NoTeamFailure : Result()
     }
 

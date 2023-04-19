@@ -39,6 +39,7 @@ data class Call(
     val status: CallStatus,
     val isMuted: Boolean,
     val isCameraOn: Boolean,
+    val isCbrEnabled: Boolean,
     val callerId: String,
     val conversationName: String?,
     val conversationType: Conversation.Type,
