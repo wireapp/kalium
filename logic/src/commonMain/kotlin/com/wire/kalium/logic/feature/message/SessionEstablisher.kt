@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
@@ -44,12 +45,12 @@ internal interface SessionEstablisher {
      * Verifies if this client can send messages to all the client recipients.
      * Will fetch PreKeys and establish cryptographic sessions if needed.
      *
-     * Since api v4 and up, returns a list of user ids [Either.Right] [List<UserId>] with clients issues
-     * Otherwise, just returns [Either.Right] with an empty list.
+     * @return an error or holder [UsersWithoutSessions] with an optional list of users whose sessions are missing.
+     * Useful for sending a message to a partial list of users.
      */
     suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
-    ): Either<CoreFailure, List<UserId>>
+    ): Either<CoreFailure, UsersWithoutSessions>
 }
 
 internal class SessionEstablisherImpl internal constructor(
@@ -59,10 +60,10 @@ internal class SessionEstablisherImpl internal constructor(
 ) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
-    ): Either<CoreFailure, List<UserId>> =
+    ): Either<CoreFailure, UsersWithoutSessions> =
         getAllMissingClients(recipients).flatMap {
             if (it.isEmpty()) {
-                return@flatMap Either.Right(emptyList())
+                return@flatMap Either.Right(UsersWithoutSessions.EMPTY)
             }
             preKeyRepository.establishSessions(it)
         }

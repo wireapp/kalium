@@ -50,7 +50,7 @@ interface PreKeyRepository {
     suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, List<UserId>>
+    ): Either<CoreFailure, UsersWithoutSessions>
 }
 
 class PreKeyDataSource(
@@ -92,16 +92,16 @@ class PreKeyDataSource(
 
     override suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, List<UserId>> {
+    ): Either<CoreFailure, UsersWithoutSessions> {
         if (missingContactClients.isEmpty()) {
-            return Either.Right(emptyList())
+            return Either.Right(UsersWithoutSessions.EMPTY)
         }
 
         return preKeysOfClientsByQualifiedUsers(missingContactClients)
             .flatMap { listUserPrekeysResponse ->
                 establishProteusSessions(listUserPrekeysResponse.qualifiedUserClientPrekeys)
                     .flatMap {
-                        Either.Right(preKeyListMapper.fromListPrekeyResponseToFailedToList(listUserPrekeysResponse))
+                        Either.Right(preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(listUserPrekeysResponse))
                     }
             }
     }
