@@ -21,11 +21,13 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
@@ -63,6 +65,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             handleClassifiedDomainsStatus(it.classifiedDomainsModel)
             handleConferenceCalling(it.conferenceCallingModel)
             handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
+            handleSelfDeletingMessagesStatus(it.selfDeletingMessagesModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -124,5 +127,20 @@ internal class SyncFeatureConfigsUseCaseImpl(
         val mlsEnabled = featureConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+    }
+
+    private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
+        if (!kaliumConfigs.selfDeletingMessages) {
+            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, null))
+        } else {
+            val selfDeletingMessagesEnabled = model.status == Status.ENABLED
+            userConfigRepository.setSelfDeletingMessagesStatus(
+                SelfDeletingMessagesStatus(
+                    selfDeletingMessagesEnabled,
+                    null, // when syncing the initial status, we don't know if the status has changed so we set it to null
+                    model.config.enforcedTimeoutSeconds
+                )
+            )
+        }
     }
 }

@@ -30,6 +30,14 @@ actual class FlowManagerServiceImpl(
         kaliumLogger.w("setVideoPreview for JVM but not supported yet.")
     }
 
+    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+        TODO("Not yet implemented")
+    }
+
     override fun setUIRotation(rotation: Int) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
     }

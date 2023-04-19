@@ -53,6 +53,7 @@ import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class ConversationScope internal constructor(
@@ -74,7 +75,8 @@ class ConversationScope internal constructor(
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val scope: CoroutineScope
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -149,7 +151,8 @@ class ConversationScope internal constructor(
             currentClientIdProvider,
             selfUserId,
             selfConversationIdProvider,
-            sendConfirmation
+            sendConfirmation,
+            scope
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
