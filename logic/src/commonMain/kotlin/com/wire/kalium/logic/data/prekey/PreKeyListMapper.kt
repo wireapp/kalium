@@ -54,7 +54,8 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
             }
         }
 
-    fun fromListPrekeyResponseToFailedToList(listPrekeysResponse: ListPrekeysResponse) = listPrekeysResponse.failedToList
-        ?.map { it.toModel() }
-        ?: listOf()
+    fun fromListPrekeyResponseToUsersWithoutSessions(listPrekeysResponse: ListPrekeysResponse) =
+        UsersWithoutSessions(listPrekeysResponse.failedToList
+            ?.map { it.toModel() }
+            ?: listOf())
 }
