@@ -15,17 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.PlatformView
+import com.wire.kalium.logic.feature.call.FlowManagerService
 
-interface FlowManagerService {
-    suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
-    suspend fun flipToFrontCamera(conversationId: ConversationId)
-    suspend fun flipToBackCamera(conversationId: ConversationId)
-    fun setUIRotation(rotation: Int)
+/**
+ * This use case will flip the camera to front facing
+ */
+class FlipToFrontCameraUseCase internal constructor(private val flowManagerService: FlowManagerService) {
+
+    /**
+     * @param conversationId the id of the conversation.
+     */
+    suspend operator fun invoke(conversationId: ConversationId) {
+        flowManagerService.flipToFrontCamera(conversationId)
+    }
 }
-
-expect class FlowManagerServiceImpl : FlowManagerService
