@@ -52,6 +52,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okio.Path
+import kotlin.time.Duration
 
 fun interface ScheduleNewAssetMessageUseCase {
     /**
@@ -77,7 +78,8 @@ fun interface ScheduleNewAssetMessageUseCase {
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?
+        assetHeight: Int?,
+        expireAfter : Duration?,
     ): ScheduleNewAssetMessageResult
 }
 
@@ -101,7 +103,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?
+        assetHeight: Int?,
+        expireAfter: Duration?
     ): ScheduleNewAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -143,6 +146,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
                 expectsReadConfirmation = expectsReadConfirmation,
+                expirationData = expireAfter?.let{ Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted) },
                 isSelfMessage = true
             )
 
