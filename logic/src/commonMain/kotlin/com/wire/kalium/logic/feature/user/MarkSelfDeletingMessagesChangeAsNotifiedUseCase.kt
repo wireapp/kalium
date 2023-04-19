@@ -15,17 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.user
 
-package com.wire.kalium.logic.feature.call
+import com.wire.kalium.logic.configuration.UserConfigRepository
 
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.PlatformView
-
-interface FlowManagerService {
-    suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
-    suspend fun flipToFrontCamera(conversationId: ConversationId)
-    suspend fun flipToBackCamera(conversationId: ConversationId)
-    fun setUIRotation(rotation: Int)
+/**
+ * Mark the Self Deleting Messages team setting change as notified on the app.
+ * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
+ */
+class MarkSelfDeletingMessagesChangeAsNotifiedUseCase(
+    private val userConfigRepository: UserConfigRepository
+) {
+    operator fun invoke() {
+        userConfigRepository.setSelfDeletingMessagesAsNotified()
+    }
 }
-
-expect class FlowManagerServiceImpl : FlowManagerService

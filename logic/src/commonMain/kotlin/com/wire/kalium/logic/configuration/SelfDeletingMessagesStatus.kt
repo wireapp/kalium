@@ -15,17 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.configuration
 
-package com.wire.kalium.logic.feature.call
-
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.PlatformView
-
-interface FlowManagerService {
-    suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
-    suspend fun flipToFrontCamera(conversationId: ConversationId)
-    suspend fun flipToBackCamera(conversationId: ConversationId)
-    fun setUIRotation(rotation: Int)
-}
-
-expect class FlowManagerServiceImpl : FlowManagerService
+data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)
