@@ -597,7 +597,6 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
-            userStorage.database.metadataDAO,
             userId,
             authenticatedNetworkContainer.clientApi
         )
@@ -1000,7 +999,8 @@ class UserSessionScope internal constructor(
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(
-        authenticatedNetworkContainer.logoutApi
+        authenticatedNetworkContainer.logoutApi,
+        userStorage.database.metadataDAO
     )
 
     val observeSyncState: ObserveSyncStateUseCase
@@ -1024,6 +1024,7 @@ class UserSessionScope internal constructor(
         get() = ClientScope(
             clientRepository,
             pushTokenRepository,
+            logoutRepository,
             preKeyRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,

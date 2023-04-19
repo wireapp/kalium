@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -40,8 +39,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.util.DelicateKaliumApi
@@ -79,11 +76,6 @@ interface ClientRepository {
         clientId: ClientId,
         verified: Boolean
     ): Either<StorageFailure, Unit>
-
-    /**
-     * Clears all client related local metadata.
-     */
-    suspend fun clearClientRelatedLocalMetadata()
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -91,7 +83,6 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val metadataDAO: MetadataDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
@@ -221,16 +212,5 @@ class ClientDataSource(
         verified: Boolean
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
-    }
-
-    override suspend fun clearClientRelatedLocalMetadata() {
-        wrapStorageRequest {
-            metadataDAO.clear(
-                keysToKeep = listOf(
-                    ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY,
-                    UserDataSource.SELF_USER_ID_KEY
-                )
-            )
-        }
     }
 }

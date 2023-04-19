@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -48,6 +49,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,
+    private val logoutRepository: LogoutRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
@@ -128,6 +130,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             pushTokenRepository,
+            logoutRepository,
             register,
             clearClientData,
             verifyExistingClientUseCase,

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
@@ -38,6 +39,7 @@ interface GetOrRegisterClientUseCase {
 class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,
+    private val logoutRepository: LogoutRepository,
     private val registerClient: RegisterClientUseCase,
     private val clearClientData: ClearClientDataUseCase,
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
@@ -73,7 +75,7 @@ class GetOrRegisterClientUseCaseImpl(
 
     private suspend fun clearOldClientRelatedData() {
         clearClientData()
-        clientRepository.clearClientRelatedLocalMetadata()
+        logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
