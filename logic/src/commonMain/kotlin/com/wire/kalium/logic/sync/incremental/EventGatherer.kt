@@ -35,7 +35,10 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.errors.IOException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,10 +47,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.transformWhile
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -73,7 +81,8 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val slowSyncRepository: SlowSyncRepository
+    private val slowSyncRepository: SlowSyncRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
@@ -86,8 +95,10 @@ internal class EventGathererImpl(
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
         eventRepository.lastEventId().flatMap {
+            kaliumLogger.d("KBX flatMap")
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
+            kaliumLogger.d("KBX onSuccess")
             handleWebSocketEventsWhilePolicyAllows(webSocketEventFlow)
         }.onFailure {
             // throw so it is handled by coroutineExceptionHandler
@@ -99,7 +110,20 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
-    ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
+    ) =
+        webSocketEventFlow
+            .scan(Pair(null as WebSocketEvent<Event>?, Instant.DISTANT_PAST)
+            ) { acc, value ->
+                // TODO workaround which I'm not proud of
+                val timeNow = Clock.System.now()
+                kaliumLogger.d("KBX $timeNow")
+                val differenceInMillis = timeNow.minus(acc.second).inWholeMilliseconds
+                if(differenceInMillis < 100) {
+                    delay(100 - differenceInMillis)
+                }
+                Pair(value, timeNow)
+            }.map { it.first }
+            .combine(incrementalSyncRepository.connectionPolicyState)
         .transformWhile { (webSocketEvent, policy) ->
             val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
             val isOpenEvent = webSocketEvent is WebSocketEvent.Open
@@ -113,7 +137,43 @@ internal class EventGathererImpl(
         // Prevent repetition of events, in case the policy changed
         .distinctUntilChanged()
         .cancellable()
-        .collect { handleWebsocketEvent(it) }
+        .collect { if(it!= null) handleWebsocketEvent(it) }
+
+    private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows2(
+        webSocketEventFlow: Flow<WebSocketEvent<Event>>
+    ) {
+        incrementalSyncRepository.connectionPolicyState
+            .flatMapConcat { cp ->
+            webSocketEventFlow
+                .onEach { kaliumLogger.d("KBX webSocketEventFlow") }
+                .map { it as WebSocketEvent<Event>? }
+                .onStart { emit(null) }
+                .map { Pair(it, cp) }
+        }
+            .transformWhile { (webSocketEvent, policy) ->
+                val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
+                val isOpenEvent = webSocketEvent is WebSocketEvent.Open
+                if (isKeepAlivePolicy || isOpenEvent) {
+                    // Emit if keeping alive, always emit if is an Open event
+                    kaliumLogger.d("KBX emit $webSocketEvent")
+                    emit(webSocketEvent)
+                }
+                // Only continue collecting if the Policy allows it
+                isKeepAlivePolicy
+            }
+            .onEach {
+                kaliumLogger.d("KBX onEach handleWebsocketEvent")
+            }
+            // Prevent repetition of events, in case the policy changed
+            .distinctUntilChanged()
+            .cancellable()
+            .collect {
+                kaliumLogger.d("KBX collect handleWebsocketEvent")
+                if (it != null) {
+                    handleWebsocketEvent(it)
+                }
+            }
+    }
 
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()

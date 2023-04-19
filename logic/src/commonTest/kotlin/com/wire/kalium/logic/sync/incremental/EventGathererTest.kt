@@ -38,8 +38,8 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -387,7 +387,7 @@ class EventGathererTest {
                 .thenReturn(either)
         }
 
-        fun withConnectionPolicyReturning(policyStateFlow: StateFlow<ConnectionPolicy>) = apply {
+        fun withConnectionPolicyReturning(policyStateFlow: MutableSharedFlow<ConnectionPolicy>) = apply {
             given(incrementalSyncRepository)
                 .getter(incrementalSyncRepository::connectionPolicyState)
                 .whenInvoked()
