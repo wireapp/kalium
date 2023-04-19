@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -124,7 +125,7 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -245,22 +246,22 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun handleUsersWithNoClientsToDeliver(
         conversationId: ConversationId,
         messageId: String,
-        failedToListUserIds: List<UserId>
-    ): Either<CoreFailure, List<UserId>> = if (failedToListUserIds.isNotEmpty()) {
-        messageRepository.persistNoClientsToDeliverFailure(conversationId, messageId, failedToListUserIds)
-            .flatMap { Either.Right(failedToListUserIds) }
+        usersWithoutSessions: UsersWithoutSessions
+    ): Either<CoreFailure, UsersWithoutSessions> = if (usersWithoutSessions.hasMissingSessions()) {
+        messageRepository.persistNoClientsToDeliverFailure(conversationId, messageId, usersWithoutSessions.users)
+            .flatMap { Either.Right(usersWithoutSessions) }
     } else {
-        Either.Right(emptyList())
+        Either.Right(usersWithoutSessions)
     }
 
     private fun getMessageOption(
-        failedToListUserIds: List<UserId>,
+        usersWithoutSessions: UsersWithoutSessions,
         messageTarget: MessageTarget
     ): MessageApi.QualifiedMessageOption = when (messageTarget) {
         is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
         is MessageTarget.Conversation -> {
-            if (failedToListUserIds.isNotEmpty()) {
-                MessageApi.QualifiedMessageOption.IgnoreSome(failedToListUserIds.map { it.toApi() })
+            if (usersWithoutSessions.hasMissingSessions()) {
+                MessageApi.QualifiedMessageOption.IgnoreSome(usersWithoutSessions.users.map { it.toApi() })
             } else {
                 MessageApi.QualifiedMessageOption.ReportAll
             }
