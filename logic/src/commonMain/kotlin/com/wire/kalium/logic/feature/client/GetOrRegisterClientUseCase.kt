@@ -36,6 +36,7 @@ interface GetOrRegisterClientUseCase {
     ): RegisterClientResult
 }
 
+@Suppress("LongParameterList")
 class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,

@@ -395,7 +395,6 @@ class UserSessionScope internal constructor(
         sessionManager.getProxyCredentials()
     )
 
-
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
 
