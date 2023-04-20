@@ -66,6 +66,7 @@ object TestCall {
     fun oneOnOneCallMetadata() = CallMetadata(
         isMuted = true,
         isCameraOn = false,
+        isCbrEnabled = false,
         conversationName = CONVERSATION_NAME,
         conversationType = Conversation.Type.ONE_ON_ONE,
         callerName = CALLER_NAME,
@@ -79,6 +80,7 @@ object TestCall {
         status = CallStatus.ESTABLISHED,
         isMuted = true,
         isCameraOn = false,
+        isCbrEnabled = false,
         callerId = CALLER_ID.toString(),
         conversationName = CONVERSATION_NAME,
         conversationType = Conversation.Type.ONE_ON_ONE,
@@ -95,6 +97,7 @@ object TestCall {
             CallStatus.INCOMING,
             false,
             false,
+            false,
             "client1",
             "ONE_ON_ONE Name ${convId.value}",
             Conversation.Type.ONE_ON_ONE,
@@ -106,6 +109,7 @@ object TestCall {
         Call(
             convId,
             CallStatus.INCOMING,
+            false,
             false,
             false,
             "client1",

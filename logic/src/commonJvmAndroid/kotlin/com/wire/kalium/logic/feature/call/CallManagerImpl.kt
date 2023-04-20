@@ -26,6 +26,7 @@ import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
@@ -64,6 +65,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
@@ -92,6 +94,7 @@ class CallManagerImpl internal constructor(
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
+    private val kaliumConfigs: KaliumConfigs,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
@@ -127,7 +130,11 @@ class CallManagerImpl internal constructor(
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val constantBitRateStateChangeHandler =
         ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
-            callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
+            callingLogger.i(
+                "$TAG -> constantBitRateStateChangeHandler for userId: ${userId.obfuscateId()} " +
+                        "clientId: ${clientId.obfuscateId()}  isCbrEnabled: $isEnabled"
+            )
+            callRepository.updateIsCbrEnabled(isEnabled)
         }.keepingStrongReference()
 
     private fun startHandleAsync(): Deferred<Handle> {
@@ -160,7 +167,7 @@ class CallManagerImpl internal constructor(
                 ).keepingStrongReference(),
                 sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
                     .keepingStrongReference(),
-                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope)
+                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope, kaliumConfigs)
                     .keepingStrongReference(),
                 missedCallHandler = OnMissedCall,
                 answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper)
@@ -242,6 +249,7 @@ class CallManagerImpl internal constructor(
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
+            isCbrEnabled = isAudioCbr,
             callerId = userId.await().toString()
         )
 
