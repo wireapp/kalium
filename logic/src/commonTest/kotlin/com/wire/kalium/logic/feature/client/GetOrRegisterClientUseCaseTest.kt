@@ -96,6 +96,9 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
+        verify(arrangement.cachedClientIdClearer)
+            .function(arrangement.cachedClientIdClearer::invoke)
+            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -175,7 +178,8 @@ class GetOrRegisterClientUseCaseTest {
         @Mock
         val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
 
-        val cachedClientIdClearer: CachedClientIdClearer = {}
+        @Mock
+        val cachedClientIdClearer = configure(mock(classOf<CachedClientIdClearer>())) { stubsUnitByDefault = true }
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,

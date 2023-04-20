@@ -332,8 +332,10 @@ class UserSessionScope internal constructor(
         }
     }
 
-    private val cachedClientIdClearer: CachedClientIdClearer = {
-        _clientId = null
+    private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
+        override fun invoke() {
+            _clientId = null
+        }
     }
 
     val callMapper: CallMapper get() = MapperProvider.callMapper(userId)
@@ -1277,4 +1279,6 @@ class UserSessionScope internal constructor(
     }
 }
 
-typealias CachedClientIdClearer = () -> Unit
+fun interface CachedClientIdClearer {
+    operator fun invoke()
+}
