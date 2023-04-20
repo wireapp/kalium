@@ -346,6 +346,13 @@ sealed interface Message {
                 expireAfter
             }
         }
+
+        val isExpired = when (selfDeletionStatus) {
+                SelfDeletionStatus.NotStarted -> false
+                is SelfDeletionStatus.Started -> {
+                    timeLeftForDeletion() == Duration.ZERO
+                }
+            }
     }
 
     enum class UploadStatus {

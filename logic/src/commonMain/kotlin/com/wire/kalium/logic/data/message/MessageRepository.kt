@@ -184,6 +184,8 @@ interface MessageRepository {
         deletionStartDate: Instant
     ): Either<CoreFailure, Unit>
 
+    fun markMessageAsExpired(id: String, conversationId: ConversationId): Either<CoreFailure, Unit>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -362,6 +364,7 @@ class MessageDataSource(
             Either.Right(it.time)
         })
     }
+
     override suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
