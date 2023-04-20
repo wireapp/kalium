@@ -59,6 +59,18 @@ actual class FlowManagerServiceImpl(
         }
     }
 
+    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+        withContext(dispatcher) {
+            flowManager.setVideoCaptureDevice(conversationId.toString(), "front")
+        }
+    }
+
+    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+        withContext(dispatcher) {
+            flowManager.setVideoCaptureDevice(conversationId.toString(), "back")
+        }
+    }
+
     override fun setUIRotation(rotation: Int) {
         flowManager.setUIRotation(rotation)
     }

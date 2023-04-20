@@ -29,6 +29,14 @@ actual class FlowManagerServiceImpl(
         TODO("Not yet implemented")
     }
 
+    override suspend fun flipToFrontCamera(conversationId: ConversationId) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun flipToBackCamera(conversationId: ConversationId) {
+        TODO("Not yet implemented")
+    }
+
     override fun setUIRotation(rotation: Int) {
         TODO("Not yet implemented")
     }

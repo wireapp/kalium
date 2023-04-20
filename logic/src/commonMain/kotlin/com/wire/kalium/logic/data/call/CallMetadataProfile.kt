@@ -30,6 +30,7 @@ data class CallMetadataProfile(
 data class CallMetadata(
     val isMuted: Boolean,
     val isCameraOn: Boolean,
+    val isCbrEnabled: Boolean,
     val conversationName: String?,
     val conversationType: Conversation.Type,
     val callerName: String?,

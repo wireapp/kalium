@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -67,6 +68,7 @@ class OnIncomingCallTest {
                 eq(CallStatus.INCOMING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
+                eq(false),
                 eq(false)
             )
             .wasInvoked(exactly = once)
@@ -97,6 +99,7 @@ class OnIncomingCallTest {
                 eq(CallStatus.STILL_ONGOING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
+                eq(false),
                 eq(false)
             )
             .wasInvoked(exactly = once)
@@ -109,6 +112,8 @@ class OnIncomingCallTest {
             stubsUnitByDefault = true
         }
 
+        val kaliumConfigs = KaliumConfigs()
+
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
         val callMapper = CallMapperImpl(qualifiedIdMapper)
@@ -117,7 +122,8 @@ class OnIncomingCallTest {
             callRepository = callRepository,
             callMapper = callMapper,
             scope = testScope,
-            qualifiedIdMapper = qualifiedIdMapper
+            qualifiedIdMapper = qualifiedIdMapper,
+            kaliumConfigs = kaliumConfigs
         )
     }
 }

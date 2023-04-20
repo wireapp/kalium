@@ -252,6 +252,58 @@ class ProtoContentMapperTest {
         assertEquals(encryptionAlgorithm, result.encryptionAlgorithm)
     }
 
+    @Test
+    fun givenExpirableTextContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Text("Hello")
+        val expiresAfterMillis = 1000L
+
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = messageContent,
+            expectsReadConfirmation = false,
+            expiresAfterMillis = expiresAfterMillis
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertEquals(decoded.expiresAfterMillis, expiresAfterMillis)
+        assertEquals(protoContent, decoded)
+    }
+
+    @Test
+    fun givenExpirableAssetContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val assetName = "Mocked-Asset.bin"
+        val mockedAsset = assetName.toByteArray()
+        val defaultRemoteData = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(0),
+            assetId = "",
+            assetDomain = null,
+            assetToken = null,
+            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC
+        )
+        val messageContent = MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = mockedAsset.size.toLong(),
+                name = assetName,
+                mimeType = "file/binary",
+                remoteData = defaultRemoteData,
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+            )
+        )
+        val expiresAfterMillis = 1000L
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false, expiresAfterMillis = expiresAfterMillis)
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertEquals(decoded.expiresAfterMillis, expiresAfterMillis)
+        assertEquals(protoContent, decoded)
+    }
+
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
         val TEST_CONVERSATION_ID = TestConversation.ID
