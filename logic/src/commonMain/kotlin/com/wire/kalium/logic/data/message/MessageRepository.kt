@@ -184,8 +184,6 @@ interface MessageRepository {
         deletionStartDate: Instant
     ): Either<CoreFailure, Unit>
 
-    fun markMessageAsExpired(id: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-
     val extensions: MessageRepositoryExtensions
 }
 
