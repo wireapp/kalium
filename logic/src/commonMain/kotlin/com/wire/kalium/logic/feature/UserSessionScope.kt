@@ -332,6 +332,10 @@ class UserSessionScope internal constructor(
         }
     }
 
+    private val cachedClientIdClearer: CachedClientIdClearer = {
+        _clientId = null
+    }
+
     val callMapper: CallMapper get() = MapperProvider.callMapper(userId)
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
@@ -1038,7 +1042,8 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             userRepository,
             authenticationScope.secondFactorVerificationRepository,
-            slowSyncRepository
+            slowSyncRepository,
+            cachedClientIdClearer
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -1271,3 +1276,5 @@ class UserSessionScope internal constructor(
         cancel()
     }
 }
+
+typealias CachedClientIdClearer = () -> Unit
