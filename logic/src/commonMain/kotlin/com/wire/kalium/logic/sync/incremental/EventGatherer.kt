@@ -38,24 +38,20 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.errors.IOException
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.transformWhile
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -110,18 +106,8 @@ internal class EventGathererImpl(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
     ) =
         webSocketEventFlow
-            .scan(
-                Pair(null as WebSocketEvent<Event>?, Instant.DISTANT_PAST)
-            ) { acc, value ->
-                // TODO workaround which I'm not proud of
-                val timeNow = Clock.System.now()
-                val differenceInMillis = timeNow.minus(acc.second).inWholeMilliseconds
-                if (differenceInMillis < 100) {
-                    delay(100 - differenceInMillis)
-                }
-                Pair(value, timeNow)
-            }.map { it.first }
             .combine(incrementalSyncRepository.connectionPolicyState)
+            .buffer(Channel.UNLIMITED)
             .transformWhile { (webSocketEvent, policy) ->
                 val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
                 val isOpenEvent = webSocketEvent is WebSocketEvent.Open
@@ -135,37 +121,7 @@ internal class EventGathererImpl(
             // Prevent repetition of events, in case the policy changed
             .distinctUntilChanged()
             .cancellable()
-            .collect { if (it != null) handleWebsocketEvent(it) }
-
-    private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows2(
-        webSocketEventFlow: Flow<WebSocketEvent<Event>>
-    ) {
-        incrementalSyncRepository.connectionPolicyState
-            .flatMapConcat { cp ->
-                webSocketEventFlow
-                    .map { it as WebSocketEvent<Event>? }
-                    .onStart { emit(null) }
-                    .map { Pair(it, cp) }
-            }
-            .transformWhile { (webSocketEvent, policy) ->
-                val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
-                val isOpenEvent = webSocketEvent is WebSocketEvent.Open
-                if (isKeepAlivePolicy || isOpenEvent) {
-                    // Emit if keeping alive, always emit if is an Open event
-                    emit(webSocketEvent)
-                }
-                // Only continue collecting if the Policy allows it
-                isKeepAlivePolicy
-            }
-            // Prevent repetition of events, in case the policy changed
-            .distinctUntilChanged()
-            .cancellable()
-            .collect {
-                if (it != null) {
-                    handleWebsocketEvent(it)
-                }
-            }
-    }
+            .collect { handleWebsocketEvent(it) }
 
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()

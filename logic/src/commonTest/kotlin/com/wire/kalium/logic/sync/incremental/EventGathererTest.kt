@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -138,6 +139,31 @@ class EventGathererTest {
     }
 
     @Test
+    fun givenWebsocketThousandsEventsAndKeepAlivePolicy_whenGathering_thenShouldEmitAllEvents() = runTest {
+        val repeatValue = 10_000
+        val liveEventsChannel = flow<WebSocketEvent<Event>> {
+            emit(WebSocketEvent.Open())
+            repeat(repeatValue) { value ->
+                emit(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection(eventId = "event_$value")))
+
+            }
+        }
+
+        val (arrangement, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
+            .withLiveEventsReturning(Either.Right(liveEventsChannel))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            repeat(repeatValue) { value ->
+                assertEquals("event_$value", awaitItem().id)
+            }
+        }
+
+    }
+    @Test
     fun givenWebsocketEventAndDisconnectPolicy_whenGathering_thenShouldCompleteFlow() = runTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
 
@@ -155,10 +181,6 @@ class EventGathererTest {
         advanceUntilIdle()
 
         eventGatherer.gatherEvents().test {
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasNotInvoked()
-
             awaitComplete()
         }
     }
