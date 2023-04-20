@@ -47,6 +47,7 @@ sealed class MessageContent {
      * @see ProtoContentMapper
      */
     sealed class FromProto : MessageContent()
+
     /**
      * Main content of messages created by users/bot,
      * It's expected that this content will form the
@@ -269,7 +270,8 @@ sealed class MessagePreviewContent {
         data class MissedCall(override val username: String?) : WithUser(username)
 
     }
-    data class Ephemeral(val isGroupConversation : Boolean) : MessagePreviewContent()
+
+    data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent()
 
     object CryptoSessionReset : MessagePreviewContent()
 
