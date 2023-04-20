@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
+import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -174,6 +175,8 @@ class GetOrRegisterClientUseCaseTest {
         @Mock
         val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
 
+        val cachedClientIdClearer: CachedClientIdClearer = {}
+
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             pushTokenRepository,
@@ -181,7 +184,8 @@ class GetOrRegisterClientUseCaseTest {
             registerClientUseCase,
             clearClientDataUseCase,
             verifyExistingClientUseCase,
-            upgradeCurrentSessionUseCase
+            upgradeCurrentSessionUseCase,
+            cachedClientIdClearer
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
