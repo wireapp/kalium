@@ -46,6 +46,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -405,7 +406,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .with(eq(message.conversationId), anything(), eq(MessageApi.QualifiedMessageOption.IgnoreAll))
                 .wasInvoked(exactly = once)
         }
     }
@@ -452,7 +453,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .with(eq(message.conversationId), anything(), eq(MessageApi.QualifiedMessageOption.ReportAll))
                 .wasInvoked(exactly = once)
         }
     }
