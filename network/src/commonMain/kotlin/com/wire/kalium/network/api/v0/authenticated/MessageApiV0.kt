@@ -23,7 +23,6 @@ import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMappe
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
@@ -68,69 +67,49 @@ internal open class MessageApiV0 internal constructor(
         priority = this.priority
     )
 
-    // todo: delete me
-    @Deprecated("This endpoint doesn't support federated environments", ReplaceWith("qualifiedSendMessage"))
-    override suspend fun sendMessage(
-        parameters: MessageApi.Parameters.DefaultParameters,
-        conversationId: String,
-        option: MessageApi.MessageOption
-    ): NetworkResponse<SendMessageResponse> {
-
+    override suspend fun qualifiedSendMessage(
+        parameters: MessageApi.Parameters.QualifiedDefaultParameters,
+        conversationId: ConversationId
+    ): NetworkResponse<QualifiedSendMessageResponse> {
         suspend fun performRequest(
             queryParameter: String?,
             queryParameterValue: Any?,
-            body: RequestBody
-        ): NetworkResponse<SendMessageResponse> = wrapKaliumResponse<SendMessageResponse.MessageSent>({
+            body: ByteArray
+        ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
             if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
             else NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = it.body()))
         }) {
-            httpClient.post("$PATH_CONVERSATIONS/$conversationId/$PATH_OTR_MESSAGE") {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
                 if (queryParameter != null) {
                     parameter(queryParameter, queryParameterValue)
                 }
                 setBody(body)
+                contentType(ContentType.Application.XProtoBuf)
             }
         }
 
-        return when (option) {
-            is MessageApi.MessageOption.IgnoreAll -> {
-                val body = parameters.toRequestBody()
+        return when (parameters.messageOption) {
+            is MessageApi.QualifiedMessageOption.IgnoreAll -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
                 performRequest(QUERY_IGNORE_MISSING, true, body)
             }
 
-            is MessageApi.MessageOption.IgnoreSome -> {
-                val body = parameters.toRequestBody()
-                val commaSeparatedList = option.userIDs.joinToString(",")
+            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
                 performRequest(QUERY_IGNORE_MISSING, commaSeparatedList, body)
             }
 
-            is MessageApi.MessageOption.ReportAll -> {
-                val body = parameters.toRequestBody()
+            is MessageApi.QualifiedMessageOption.ReportAll -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
                 performRequest(QUERY_REPORT_MISSING, true, body)
             }
 
-            is MessageApi.MessageOption.ReportSome -> {
-                val body = parameters.toRequestBody()
-                body.reportMissing = option.userIDs
-                performRequest(null, null, body)
+            is MessageApi.QualifiedMessageOption.ReportSome -> {
+                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
+                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
+                performRequest(QUERY_REPORT_MISSING, commaSeparatedList, body)
             }
-        }
-    }
-
-    override suspend fun qualifiedSendMessage(
-        parameters: MessageApi.Parameters.QualifiedDefaultParameters,
-        conversationId: ConversationId
-    ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
-        if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
-        else NetworkResponse.Error(
-            kException = ProteusClientsChangedError(
-                errorBody = it.body()
-            )
-        )
-    }) {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
-            setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
-            contentType(ContentType.Application.XProtoBuf)
         }
     }
 

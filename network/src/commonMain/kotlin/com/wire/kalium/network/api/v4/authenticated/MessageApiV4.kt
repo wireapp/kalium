@@ -20,70 +20,9 @@ package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.v3.authenticated.MessageApiV3
-import com.wire.kalium.network.exceptions.SendMessageError
-import com.wire.kalium.network.serialization.XProtoBuf
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.call.body
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 
 internal open class MessageApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val envelopeProtoMapper: EnvelopeProtoMapper
-) : MessageApiV3(authenticatedNetworkClient, envelopeProtoMapper) {
-
-    override suspend fun qualifiedSendMessage(
-        parameters: MessageApi.Parameters.QualifiedDefaultParameters,
-        conversationId: ConversationId
-    ): NetworkResponse<QualifiedSendMessageResponse> {
-
-        suspend fun performRequest(
-            queryParameter: String?,
-            queryParameterValue: Any?,
-            body: ByteArray
-        ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
-            if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
-            else NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = it.body()))
-        }) {
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
-                if (queryParameter != null) {
-                    parameter(queryParameter, queryParameterValue)
-                }
-                setBody(body)
-                contentType(ContentType.Application.XProtoBuf)
-            }
-        }
-
-        return when (parameters.messageOption) {
-            is MessageApi.QualifiedMessageOption.IgnoreAll -> {
-                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
-                performRequest(QUERY_IGNORE_MISSING, true, body)
-            }
-
-            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
-                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
-                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
-                performRequest(QUERY_IGNORE_MISSING, commaSeparatedList, body)
-            }
-
-            is MessageApi.QualifiedMessageOption.ReportAll -> {
-                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
-                performRequest(QUERY_REPORT_MISSING, true, body)
-            }
-
-            is MessageApi.QualifiedMessageOption.ReportSome -> {
-                val body = envelopeProtoMapper.encodeToProtobuf(parameters)
-                val commaSeparatedList = parameters.messageOption.userIDs.joinToString(",")
-                performRequest(QUERY_REPORT_MISSING, commaSeparatedList, body)
-            }
-        }
-    }
-}
+    envelopeProtoMapper: EnvelopeProtoMapper
+) : MessageApiV3(authenticatedNetworkClient, envelopeProtoMapper)
