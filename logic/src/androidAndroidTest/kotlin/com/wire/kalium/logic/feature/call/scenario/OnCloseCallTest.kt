@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -49,6 +50,7 @@ class OnCloseCallTest {
     private val callRepository: CallRepository = configure(mock(CallRepository::class)) {
         stubsUnitByDefault = true
     }
+
     @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
@@ -168,6 +170,7 @@ class OnCloseCallTest {
         private val callMetadata = CallMetadata(
             isMuted = false,
             isCameraOn = false,
+            isCbrEnabled = false,
             conversationName = null,
             conversationType = Conversation.Type.GROUP,
             callerName = null,

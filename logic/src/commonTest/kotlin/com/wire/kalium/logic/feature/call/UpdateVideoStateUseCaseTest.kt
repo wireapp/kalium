@@ -68,6 +68,7 @@ class UpdateVideoStateUseCaseTest {
             CallStatus.ESTABLISHED,
             isMuted = true,
             isCameraOn = true,
+            isCbrEnabled = false,
             callerId = "caller-id",
             conversationName = "",
             Conversation.Type.ONE_ON_ONE,
