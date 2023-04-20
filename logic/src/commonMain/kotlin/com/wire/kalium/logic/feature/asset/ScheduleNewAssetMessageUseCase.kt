@@ -147,10 +147,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited,
                 expectsReadConfirmation = expectsReadConfirmation,
                 expirationData = expireAfter?.let{ Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted) },
-                isSelfMessage = true,
-                expirationData = expireAfter?.let {
-                    Message.ExpirationData(expireAfter = it, selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted)
-                }
+                isSelfMessage = true
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
