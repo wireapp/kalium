@@ -25,14 +25,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
 
 @Suppress("LongMethod", "ComplexMethod")
