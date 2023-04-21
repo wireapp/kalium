@@ -20,10 +20,14 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.notification.PushTokenRepository
+import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -85,14 +89,28 @@ class GetOrRegisterClientUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .withPersistClientIdResult(Either.Right(Unit))
+            .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
             .arrange()
 
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
+        verify(arrangement.cachedClientIdClearer)
+            .function(arrangement.cachedClientIdClearer::invoke)
+            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasInvoked(exactly = once)
+        verify(arrangement.logoutRepository)
+            .suspendFunction(arrangement.logoutRepository::clearClientRelatedLocalMetadata)
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::clearRetainedClientId)
+            .wasInvoked(exactly = once)
+        verify(arrangement.pushTokenRepository)
+            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+            .with(eq(true))
             .wasInvoked(exactly = once)
         verify(arrangement.registerClientUseCase)
             .suspendFunction(arrangement.registerClientUseCase::invoke)
@@ -143,6 +161,12 @@ class GetOrRegisterClientUseCaseTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
+        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+
+        @Mock
+        val logoutRepository = configure(mock(classOf<LogoutRepository>())) { stubsUnitByDefault = true }
+
+        @Mock
         val registerClientUseCase = mock(classOf<RegisterClientUseCase>())
 
         @Mock
@@ -154,8 +178,18 @@ class GetOrRegisterClientUseCaseTest {
         @Mock
         val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
 
+        @Mock
+        val cachedClientIdClearer = configure(mock(classOf<CachedClientIdClearer>())) { stubsUnitByDefault = true }
+
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase, verifyExistingClientUseCase, upgradeCurrentSessionUseCase
+            clientRepository,
+            pushTokenRepository,
+            logoutRepository,
+            registerClientUseCase,
+            clearClientDataUseCase,
+            verifyExistingClientUseCase,
+            upgradeCurrentSessionUseCase,
+            cachedClientIdClearer
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
@@ -196,6 +230,13 @@ class GetOrRegisterClientUseCaseTest {
         fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
             given(upgradeCurrentSessionUseCase)
                 .suspendFunction(upgradeCurrentSessionUseCase::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withSetUpdateFirebaseTokenFlagResult(result: Either<StorageFailure, Unit>) = apply {
+            given(pushTokenRepository)
+                .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
