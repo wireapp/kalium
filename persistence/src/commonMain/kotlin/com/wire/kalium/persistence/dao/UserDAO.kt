@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

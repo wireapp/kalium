@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 actual class GlobalCallManager {
     @Suppress("LongParameterList")
@@ -44,7 +45,8 @@ actual class GlobalCallManager {
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
         qualifiedIdMapper: QualifiedIdMapper,
-        videoStateChecker: VideoStateChecker
+        videoStateChecker: VideoStateChecker,
+        kaliumConfigs: KaliumConfigs
     ): CallManager {
         return CallManagerImpl()
     }

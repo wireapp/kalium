@@ -69,7 +69,7 @@ class ClientFingerprintUseCase internal constructor(
     private suspend fun onSessionNotFound(userId: UserId, clientId: ClientId): Either<CoreFailure, ByteArray> {
         return prekeyRepository.establishSessions(mapOf(userId to listOf(clientId))).fold(
             { error -> Either.Left(error) },
-            {
+            { _ ->
                 proteusClientProvider.getOrError().flatMap { proteusClient ->
                     wrapCryptoRequest {
                         proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))

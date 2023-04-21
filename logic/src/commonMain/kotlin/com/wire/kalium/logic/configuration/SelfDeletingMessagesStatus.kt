@@ -15,17 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.configuration
 
-package com.wire.kalium.logic.feature
-
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-
-class AuthenticatedDataSourceSet(
-    val authenticatedRootDir: String,
-    val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
-    val authenticationScope: AuthenticationScope,
-    val proteusClientProvider: ProteusClientProvider,
-    val userSessionWorkScheduler: UserSessionWorkScheduler
-)
+data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)

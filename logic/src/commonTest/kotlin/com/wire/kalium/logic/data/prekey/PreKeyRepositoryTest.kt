@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -134,12 +135,15 @@ class PreKeyRepositoryTest {
         val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
 
         val userPreKeysResult = NetworkResponse.Success(
-            mapOf(
-                TEST_USER_ID_1.domain to mapOf(
-                    TEST_USER_ID_1.value to mapOf(
-                        TEST_CLIENT_ID_1.value to preKey,
-                        "invalidClient" to null,
+
+            ListPrekeysResponse(
+                qualifiedUserClientPrekeys = mapOf(
+                    TEST_USER_ID_1.domain to mapOf(
+                        TEST_USER_ID_1.value to mapOf(
+                            TEST_CLIENT_ID_1.value to preKey,
+                            "invalidClient" to null,
                         )
+                    )
                 )
             ),
             emptyMap(),
@@ -284,7 +288,7 @@ class PreKeyRepositoryTest {
             given(preKeyApi)
                 .suspendFunction(preKeyApi::getUsersPreKey)
                 .whenInvokedWith(any())
-                .then { NetworkResponse.Success(preKeyMap, emptyMap(), 200) }
+                .then { NetworkResponse.Success(ListPrekeysResponse(qualifiedUserClientPrekeys = preKeyMap), emptyMap(), 200) }
         }
 
         fun withGetRemoteUsersPreKeyFail(error: NetworkResponse.Error? = null) = apply {
@@ -328,7 +332,7 @@ class PreKeyRepositoryTest {
         }
 
         fun withPreKeysOfClientsByQualifiedUsersSuccess(
-            preKeyMap: NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>>
+            preKeyMap: NetworkResponse<ListPrekeysResponse>
         ) = apply {
             given(preKeyApi)
                 .suspendFunction(preKeyApi::getUsersPreKey)

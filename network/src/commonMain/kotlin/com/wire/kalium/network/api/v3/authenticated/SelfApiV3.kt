@@ -20,7 +20,9 @@ package com.wire.kalium.network.api.v3.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
+import com.wire.kalium.network.session.SessionManager
 
 internal open class SelfApiV3 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : SelfApiV2(authenticatedNetworkClient)
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    sessionManager: SessionManager
+) : SelfApiV2(authenticatedNetworkClient, sessionManager)
