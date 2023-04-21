@@ -25,11 +25,14 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
@@ -46,6 +49,8 @@ import com.wire.kalium.util.DelicateKaliumApi
 @Suppress("LongParameterList")
 class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val clientRepository: ClientRepository,
+    private val pushTokenRepository: PushTokenRepository,
+    private val logoutRepository: LogoutRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
@@ -61,6 +66,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val slowSyncRepository: SlowSyncRepository,
+    private val cachedClientIdClearer: CachedClientIdClearer
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -125,10 +131,13 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
+            pushTokenRepository,
+            logoutRepository,
             register,
             clearClientData,
             verifyExistingClientUseCase,
-            upgradeCurrentSessionUseCase
+            upgradeCurrentSessionUseCase,
+            cachedClientIdClearer
         )
 
     val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCase(proteusClientProvider, preKeyRepository)
