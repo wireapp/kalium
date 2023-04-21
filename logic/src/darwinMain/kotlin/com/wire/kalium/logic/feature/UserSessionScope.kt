@@ -24,26 +24,27 @@ import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
+import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserver
-import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
 internal fun UserSessionScope(
     platformUserStorageProperties: PlatformUserStorageProperties,
     userId: UserId,
-    authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
     globalPreferences: GlobalPrefProvider,
-    sessionManager: SessionManager,
+    authenticationScopeProvider: AuthenticationScopeProvider,
+    userSessionWorkScheduler: UserSessionWorkScheduler,
+    rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
-    featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
@@ -53,14 +54,14 @@ internal fun UserSessionScope(
 
     return UserSessionScope(
         userId,
-        authenticatedDataSourceSet,
         globalScope,
         globalCallManager,
         globalPreferences,
-        sessionManager,
+        authenticationScopeProvider,
+        userSessionWorkScheduler,
+        rootPathsProvider,
         dataStoragePaths,
         kaliumConfigs,
-        featureSupport,
         userSessionScopeProvider,
         userStorageProvider,
         clientConfig,
