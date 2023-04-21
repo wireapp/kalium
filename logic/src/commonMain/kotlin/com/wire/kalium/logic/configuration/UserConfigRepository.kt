@@ -146,8 +146,8 @@ class UserConfigDataSource(
         wrapStorageRequest {
             userConfigStorage.persistSelfDeletingMessagesStatus(
                 selfDeletingMessagesStatus.isEnabled,
-                selfDeletingMessagesStatus.isStatusChanged,
-                selfDeletingMessagesStatus.enforcedTimeoutInSeconds
+                selfDeletingMessagesStatus.hasFlagChanged,
+                selfDeletingMessagesStatus.globalSelfDeletionDuration
             )
         }
 

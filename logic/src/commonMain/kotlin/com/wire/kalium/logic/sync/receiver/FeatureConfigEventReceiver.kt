@@ -161,22 +161,24 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         } else {
             val (currentIsSelfDeletingMessagesEnabled, currentEnforcedTimeout) = userConfigRepository
                 .getSelfDeletingMessagesStatus()
-                .fold({ true to null }, { it.isEnabled to it.enforcedTimeoutInSeconds })
+                .fold({ true to null }, { it.isEnabled to it.globalSelfDeletionDuration })
 
             when (status) {
                 Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
                         isEnabled = true,
-                        isStatusChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
-                        enforcedTimeoutInSeconds = if (enforcedTimeoutSeconds == 0) null else enforcedTimeoutSeconds
+                        hasFlagChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
+                        globalSelfDeletionDuration = if (enforcedTimeoutSeconds == 0) null else enforcedTimeoutSeconds,
+                        isEnforced = true
                     )
                 )
 
                 Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
                         isEnabled = false,
-                        isStatusChanged = currentIsSelfDeletingMessagesEnabled,
-                        enforcedTimeoutInSeconds = enforcedTimeoutSeconds
+                        hasFlagChanged = currentIsSelfDeletingMessagesEnabled,
+                        globalSelfDeletionDuration = enforcedTimeoutSeconds,
+                        isEnforced = false
                     )
                 )
             }

@@ -17,4 +17,9 @@
  */
 package com.wire.kalium.logic.configuration
 
-data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)
+data class SelfDeletingMessagesStatus(
+    val isEnabled: Boolean,
+    val hasFlagChanged: Boolean?,
+    val globalSelfDeletionDuration: Int? = null,
+    val isEnforced: Boolean = false
+)

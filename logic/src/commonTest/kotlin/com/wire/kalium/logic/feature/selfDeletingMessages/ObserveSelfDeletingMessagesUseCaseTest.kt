@@ -21,7 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveGlobalSelfDeletingMessagesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
@@ -45,7 +45,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        observeSelfDeletingMessagesFlag = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+        observeSelfDeletingMessagesFlag = ObserveGlobalSelfDeletingMessagesUseCaseImpl(userConfigRepository)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,14 +57,14 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val result = observeSelfDeletingMessagesFlag()
 
         assertFalse(result.first().isEnabled)
-        assertNull(result.first().isStatusChanged)
-        assertNull(result.first().enforcedTimeoutInSeconds)
+        assertNull(result.first().hasFlagChanged)
+        assertNull(result.first().globalSelfDeletionDuration)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
-        val expectedStatus = SelfDeletingMessagesStatus(isEnabled = true, isStatusChanged = false, enforcedTimeoutInSeconds = null)
+        val expectedStatus = SelfDeletingMessagesStatus(isEnabled = true, hasFlagChanged = false, globalSelfDeletionDuration = null)
 
         given(userConfigRepository).invocation { observeSelfDeletingMessagesStatus() }.thenReturn(flowOf(Either.Right(expectedStatus)))
 

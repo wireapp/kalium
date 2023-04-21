@@ -183,8 +183,8 @@ class FeatureConfigEventReceiverTest {
     fun givenNewSelfDeletingMessagesDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
         val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
             isEnabled = true,
-            enforcedTimeoutInSeconds = 10,
-            isStatusChanged = false
+            globalSelfDeletionDuration = 10,
+            hasFlagChanged = false
         )
         val newSelfDeletingEventModel = SelfDeletingMessagesModel(
             SelfDeletingMessagesConfigModel(
@@ -200,7 +200,7 @@ class FeatureConfigEventReceiverTest {
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
             .with(matching {
-                it.isStatusChanged == true && !it.isEnabled && it.enforcedTimeoutInSeconds == null
+                it.hasFlagChanged == true && !it.isEnabled && it.globalSelfDeletionDuration == null
             })
             .wasInvoked(once)
     }
@@ -210,8 +210,8 @@ class FeatureConfigEventReceiverTest {
         runTest {
             val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
                 isEnabled = false,
-                enforcedTimeoutInSeconds = null,
-                isStatusChanged = false
+                globalSelfDeletionDuration = null,
+                hasFlagChanged = false
             )
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = 0), Status.ENABLED
@@ -225,7 +225,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
                 .with(matching {
-                    it.isStatusChanged == true && it.isEnabled && it.enforcedTimeoutInSeconds == null
+                    it.hasFlagChanged == true && it.isEnabled && it.globalSelfDeletionDuration == null
                 })
                 .wasInvoked(once)
         }
@@ -235,8 +235,8 @@ class FeatureConfigEventReceiverTest {
         runTest {
             val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
                 isEnabled = false,
-                enforcedTimeoutInSeconds = 0,
-                isStatusChanged = false
+                globalSelfDeletionDuration = 0,
+                hasFlagChanged = false
             )
             val newEnforcedTimeoutSeconds = 3600
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -251,7 +251,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
                 .with(matching {
-                    it.isStatusChanged == true && it.isEnabled && it.enforcedTimeoutInSeconds == newEnforcedTimeoutSeconds
+                    it.hasFlagChanged == true && it.isEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
                 .wasInvoked(once)
         }
@@ -272,7 +272,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
                 .with(matching {
-                    it.isStatusChanged == true && it.isEnabled && it.enforcedTimeoutInSeconds == newEnforcedTimeoutSeconds
+                    it.hasFlagChanged == true && it.isEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
                 .wasInvoked(once)
         }
@@ -293,7 +293,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
                 .with(matching {
-                    it.isStatusChanged == true && !it.isEnabled && it.enforcedTimeoutInSeconds == newEnforcedTimeoutSeconds
+                    it.hasFlagChanged == true && !it.isEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
                 .wasInvoked(once)
         }
@@ -313,7 +313,7 @@ class FeatureConfigEventReceiverTest {
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
             .with(matching {
-                it.isStatusChanged == null && !it.isEnabled && it.enforcedTimeoutInSeconds == null
+                it.hasFlagChanged == null && !it.isEnabled && it.globalSelfDeletionDuration == null
             })
             .wasInvoked(once)
     }
