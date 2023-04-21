@@ -21,14 +21,24 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface E2EIApi {
-    suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse>
+
+    suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories>
+
 
     suspend fun getNewNonce(noncePath: String): NetworkResponse<String> // get the data from the reply header
 
-    suspend fun sendNewAccount(
-        newAccountRequestUrl: String,
-        newAccountRequestBody: ByteArray
-    ): NetworkResponse<String>
+    suspend fun postAcmeRequest(
+        requestDir: String, requestBody: ByteArray
+    ): NetworkResponse<AcmeResponse>
+
+    suspend fun getNewAccount(
+        newAccountRequestUrl: String, newAccountRequestBody: ByteArray
+    ): NetworkResponse<AcmeResponse>
+
+    suspend fun getNewOrder(
+        url: String, body: ByteArray
+    ): NetworkResponse<AcmeResponse>
 
     suspend fun sendNewAuthz(): NetworkResponse<Unit>
 

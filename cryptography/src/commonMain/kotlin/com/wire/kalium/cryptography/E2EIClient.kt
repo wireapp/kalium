@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-typealias JsonRawData = ByteArray
 typealias DpopToken = String
 
 data class AcmeDirectory(
@@ -27,12 +26,12 @@ data class AcmeDirectory(
 )
 
 data class NewAcmeOrder(
-    var delegate: JsonRawData,
+    var delegate: ByteArray,
     var authorizations: List<String>
 )
 
 data class AcmeChallenge(
-    var delegate: JsonRawData,
+    var delegate: ByteArray,
     var url: String
 )
 
@@ -59,39 +58,45 @@ data class OidcChallengeRequest(
 
 @Suppress("TooManyFunctions")
 interface E2EIClient {
-    fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(previousNonce: String): JsonRawData
-    fun newAccountResponse(account: JsonRawData)
+    fun directoryResponse(directory: ByteArray): AcmeDirectory
+    fun newAccountRequest(previousNonce: String): ByteArray
+    fun newAccountResponse(account: ByteArray)
 
-    fun newOrderRequest(previousNonce: String): JsonRawData
+    fun newOrderRequest(previousNonce: String): ByteArray
 
-    fun newOrderResponse(order: JsonRawData): NewAcmeOrder
+    fun newOrderResponse(order: ByteArray): NewAcmeOrder
     fun newAuthzRequest(
         url: String,
         previousNonce: String
-    ): JsonRawData
+    ): ByteArray
 
-    fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
+    fun newAuthzResponse(authz: ByteArray): NewAcmeAuthz
 
-    fun createDpopToken(request: DpopTokenRequest): DpopToken
+    fun createDpopToken(
+        accessTokenUrl: String,
+        backendNonce: String
+    ): DpopToken
 
-    fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData
+    fun newDpopChallengeRequest(accessToken: String, previousNonce: String): ByteArray
 
-    fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData
+    fun newOidcChallengeRequest(
+        idToken: String,
+        previousNonce: String
+    ): ByteArray
 
-    fun newChallengeResponse(challenge: JsonRawData)
+    fun newChallengeResponse(challenge: ByteArray)
     fun checkOrderRequest(
         orderUrl: String,
         previousNonce: String
-    ): JsonRawData
+    ): ByteArray
 
-    fun checkOrderResponse(order: JsonRawData)
+    fun checkOrderResponse(order: ByteArray)
     fun finalizeRequest(
         previousNonce: String
-    ): JsonRawData
+    ): ByteArray
 
-    fun finalizeResponse(finalize: JsonRawData)
+    fun finalizeResponse(finalize: ByteArray)
     fun certificateRequest(
         previousNonce: String
-    ): JsonRawData
+    ): ByteArray
 }

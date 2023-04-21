@@ -17,7 +17,10 @@
  */
 package com.wire.kalium.network.api.base.authenticated.e2ei
 
+import io.ktor.utils.io.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class AcmeDirectoriesResponse(
@@ -26,4 +29,26 @@ data class AcmeDirectoriesResponse(
     val newOrder: String,
     val revokeCert: String,
     val keyChange: String
+)
+
+@Serializable
+data class AuthzDirectories @OptIn(ExperimentalSerializationApi::class) constructor(
+    val issuer: String,
+    @JsonNames("authorization_endpoint")
+    val authorizationEndpoint: String,
+    @JsonNames("token_endpoint")
+    val tokenEndpoint: String,
+    @JsonNames("jwks_uri")
+    val jwksUri: String,
+    @JsonNames("userinfo_endpoint")
+    val userinfoEndpoint: String,
+    @JsonNames("device_authorization_endpoint")
+    val deviceAuthorizationEndpoint: String,
+)
+
+
+@Serializable
+data class AcmeResponse(
+    val nonce: String,
+    val response: ByteArray
 )

@@ -18,22 +18,37 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.utils.NetworkResponse
 
 internal open class E2EIApiV0 internal constructor() : E2EIApi {
 
-    override suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
-        E2EIApi.getApiNotSupportError(::getDirectories.name)
+    override suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
+        E2EIApi.getApiNotSupportError(::getAcmeDirectories.name)
+
+    override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories> =
+        E2EIApi.getApiNotSupportError(::getAuhzDirectories.name)
 
     override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
         E2EIApi.getApiNotSupportError(::getNewNonce.name)
 
-    override suspend fun sendNewAccount(
+    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray): NetworkResponse<AcmeResponse> =
+        E2EIApi.getApiNotSupportError(::getNewNonce.name)
+
+
+    override suspend fun getNewAccount(
         newAccountRequestUrl: String,
         newAccountRequestBody: ByteArray
-    ): NetworkResponse<String> =
-        E2EIApi.getApiNotSupportError(::sendNewAccount.name)
+    ): NetworkResponse<AcmeResponse> =
+        E2EIApi.getApiNotSupportError(::getNewAccount.name)
+
+    override suspend fun getNewOrder(
+        url: String,
+        body: ByteArray
+    ): NetworkResponse<AcmeResponse> =
+        E2EIApi.getApiNotSupportError(::getNewOrder.name)
 
     override suspend fun sendNewAuthz(): NetworkResponse<Unit> =
         E2EIApi.getApiNotSupportError(::sendNewAuthz.name)

@@ -19,55 +19,100 @@ package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.NetworkResponse.*
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.util.*
 
 internal open class E2EIApiV4 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
     E2EIApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
+    override suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
         wrapKaliumResponse {
             httpClient.get("$TEMP_BASE_URL/$PATH_ACME_DIRECTORIES")
         }
 
-    override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
-        runCatching {
-            httpClient.prepareHead(noncePath).execute { httpResponse ->
-                if (httpResponse.status.isSuccess() && httpResponse.headers["Replay-Nonce"] != null) {
-                    NetworkResponse.Success(httpResponse.headers["Replay-Nonce"].toString(), httpResponse)
-                } else {
-                    handleUnsuccessfulResponse(httpResponse).also {
-                        if (it.kException is KaliumException.InvalidRequestError &&
-                            it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
-                        ) {
-                            kaliumLogger.d("Nonce error")
-                        }
-                    }
-                }
-            }
-        }.getOrElse { unhandledException ->
-            // since we are handling manually our network exceptions for this endpoint, handle ie: no host exception
-            NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+    override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories> =
+        wrapKaliumResponse {
+            httpClient.get("$TEMP_BASE_URL/$PATH_DEX_CONFIGURATION")
         }
 
-    override suspend fun sendNewAccount(
+    override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
+        httpClient.prepareHead(noncePath).execute { httpResponse ->
+            handleNewNonceResponse(httpResponse)
+        }
+
+    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray): NetworkResponse<AcmeResponse> =
+        httpClient.preparePost(requestDir)
+        {
+            contentType(ContentType.Application.JoseJson)
+            setBody(requestBody)
+        }.execute { httpResponse ->
+            handleAcmeRequestResponse(httpResponse)
+        }
+
+    override suspend fun getNewAccount(
         newAccountRequestUrl: String,
         newAccountRequestBody: ByteArray
-    ): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.post(newAccountRequestUrl) {
-            contentType(ContentType.Application.JoseJson)
-            setBody(newAccountRequestBody)
+    ): NetworkResponse<AcmeResponse> =
+        postAcmeRequest(newAccountRequestUrl, newAccountRequestBody)
+
+     override suspend fun getNewOrder(
+        url: String,
+        body: ByteArray
+    ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, body)
+
+
+    private suspend fun handleNewNonceResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<String> =
+        if (httpResponse.status.isSuccess() && httpResponse.headers["Replay-Nonce"] != null) {
+            Success(httpResponse.headers[NONCE_HEADER_KEY].toString(), httpResponse)
+        } else {
+            handleUnsuccessfulResponse(httpResponse).also {
+                if (it.kException is KaliumException.InvalidRequestError &&
+                    it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
+                ) {
+                    kaliumLogger.d("Nonce error")
+                }
+            }
         }
-    }
+
+    @OptIn(InternalAPI::class)
+    private suspend fun handleAcmeRequestResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<AcmeResponse> =
+        if (httpResponse.status.isSuccess()) {
+            Success(
+                AcmeResponse(
+                    nonce = httpResponse.headers[NONCE_HEADER_KEY].toString(),
+                    response = httpResponse.body()
+                ),
+                httpResponse
+            )
+        } else {
+            handleUnsuccessfulResponse(httpResponse).also {
+                if (it.kException is KaliumException.InvalidRequestError &&
+                    it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
+                ) {
+                    kaliumLogger.d("Nonce error")
+                }
+            }
+        }
+
 
     override suspend fun sendNewAuthz(): NetworkResponse<Unit> {
         TODO("Not yet implemented")
@@ -86,7 +131,9 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     }
 
     private companion object {
-        const val TEMP_BASE_URL = "https://balderdash.hogwash.work:9000/acme"
-        const val PATH_ACME_DIRECTORIES = "acme/directory"
+        const val TEMP_BASE_URL = "https://136.243.148.68:9000/"
+        const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
+        const val PATH_ACME_DIRECTORIES = "acme/wire/directory"
+        const val NONCE_HEADER_KEY = "Replay-Nonce"
     }
 }

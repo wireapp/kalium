@@ -232,7 +232,7 @@ actual class MLSClientImpl actual constructor(
     override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.newAcmeEnrollment(
-                clientId.toString(),
+                "NGM5MzIyYWYxODg3NDk5MWFlNjg1NDM3MjUyOGJiNzI:4b3844d43b3bfc0f@wire.com",
                 displayName,
                 handle,
                 defaultE2EIExpiry,

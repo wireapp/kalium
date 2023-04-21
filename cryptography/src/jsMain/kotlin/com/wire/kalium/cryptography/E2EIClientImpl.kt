@@ -19,67 +19,71 @@ package com.wire.kalium.cryptography
 
 @Suppress("TooManyFunctions")
 class E2EIClientImpl : E2EIClient {
-    override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
+    override fun directoryResponse(directory: ByteArray): AcmeDirectory {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(previousNonce: String): JsonRawData {
+    override fun newAccountRequest(previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountResponse(account: JsonRawData) {
+    override fun newAccountResponse(account: ByteArray) {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(previousNonce: String): JsonRawData {
+    override fun newOrderRequest(previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderResponse(order: JsonRawData): NewAcmeOrder {
+    override fun newOrderResponse(order: ByteArray): NewAcmeOrder {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(url: String, previousNonce: String): JsonRawData {
+    override fun newAuthzRequest(url: String, previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+    override fun newAuthzResponse(authz: ByteArray): NewAcmeAuthz {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(request: DpopTokenRequest): DpopToken {
+    override fun createDpopToken(accessTokenUrl: String,
+                                 backendNonce: String): DpopToken {
         TODO("Not yet implemented")
     }
 
-    override fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData {
+    override fun newDpopChallengeRequest(accessToken: String, previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData {
+    override fun newOidcChallengeRequest(
+        idToken: String,
+        previousNonce: String
+    ): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newChallengeResponse(challenge: JsonRawData) {
+    override fun newChallengeResponse(challenge: ByteArray) {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
+    override fun checkOrderRequest(orderUrl: String, previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderResponse(order: JsonRawData) {
+    override fun checkOrderResponse(order: ByteArray) {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(previousNonce: String): JsonRawData {
+    override fun finalizeRequest(previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeResponse(finalize: JsonRawData) {
+    override fun finalizeResponse(finalize: ByteArray) {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(previousNonce: String): JsonRawData {
+    override fun certificateRequest(previousNonce: String): ByteArray {
         TODO("Not yet implemented")
     }
 }

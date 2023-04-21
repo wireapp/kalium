@@ -97,6 +97,7 @@ class MLSClientProviderImpl(
                 currentClientId.toString(),
                 CryptoQualifiedID(value = userId.value, domain = userId.domain)
             )
+            com.wire.kalium.logic.kaliumLogger.w("################# --->   $cryptoClientId")
 
             return@withContext e2EIClient?.let {
                 Either.Right(it)
@@ -104,8 +105,8 @@ class MLSClientProviderImpl(
                 getMLSClient(currentClientId).flatMap {
                     val newE2EIClient = it.newAcmeEnrollment(
                         cryptoClientId,
-                        "",
-                        ""
+                        "Mojtaba Staging",
+                        "mojtabastaging"
                     )
                     e2EIClient = newE2EIClient
                     Either.Right(newE2EIClient)
