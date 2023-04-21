@@ -42,12 +42,12 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
 
     override suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
         wrapKaliumResponse {
-            httpClient.get("$TEMP_BASE_URL/$PATH_ACME_DIRECTORIES")
+            httpClient.get("$TEMP_BASE_URL:$ACME_PORT/$PATH_ACME_DIRECTORIES")
         }
 
     override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories> =
         wrapKaliumResponse {
-            httpClient.get("$TEMP_BASE_URL/$PATH_DEX_CONFIGURATION")
+            httpClient.get("$TEMP_BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
         }
 
     override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
@@ -131,7 +131,10 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     }
 
     private companion object {
-        const val TEMP_BASE_URL = "https://136.243.148.68:9000/"
+        const val TEMP_BASE_URL = "https://136.243.148.68"
+        const val ACME_PORT = "9000"
+        const val DEX_PORT = "5556"
+
         const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
         const val PATH_ACME_DIRECTORIES = "acme/wire/directory"
         const val NONCE_HEADER_KEY = "Replay-Nonce"
