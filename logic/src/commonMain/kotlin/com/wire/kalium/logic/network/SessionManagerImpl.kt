@@ -22,7 +22,6 @@ import app.cash.sqldelight.internal.Atomic
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -59,10 +58,10 @@ class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val tokenStorage: AuthTokenStorage,
+    private val logout: suspend (LogoutReason) -> Unit,
     private val coroutineContext: CoroutineContext = KaliumDispatcherImpl.default.limitedParallelism(1),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
     private val session: Atomic<SessionDTO?> = Atomic(null)
@@ -137,12 +136,12 @@ class SessionManagerImpl internal constructor(
 
     private suspend fun onSessionExpired() {
         kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.value.obfuscateId()}")
-        sessionRepository.logout(userId, LogoutReason.SESSION_EXPIRED)
+        logout(LogoutReason.SESSION_EXPIRED)
     }
 
     private suspend fun onClientRemoved() {
-        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.value.obfuscateId()}")
-        sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT)
+        kaliumLogger.d("SESSION MANAGER: onClientRemoved is called for user ${userId.value.obfuscateId()}")
+        logout(LogoutReason.REMOVED_CLIENT)
     }
 
     override fun proxyCredentials(): ProxyCredentialsDTO? =

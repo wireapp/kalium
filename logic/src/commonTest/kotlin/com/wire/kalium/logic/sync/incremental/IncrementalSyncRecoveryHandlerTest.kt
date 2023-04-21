@@ -48,7 +48,7 @@ class IncrementalSyncRecoveryHandlerTest {
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
-                .wasNotInvoked()
+                .wasInvoked()
         }
     }
 

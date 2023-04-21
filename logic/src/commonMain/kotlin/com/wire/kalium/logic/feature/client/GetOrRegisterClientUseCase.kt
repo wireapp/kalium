@@ -20,6 +20,9 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.notification.PushTokenRepository
+import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
@@ -34,12 +37,16 @@ interface GetOrRegisterClientUseCase {
     ): RegisterClientResult
 }
 
+@Suppress("LongParameterList")
 class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
+    private val pushTokenRepository: PushTokenRepository,
+    private val logoutRepository: LogoutRepository,
     private val registerClient: RegisterClientUseCase,
     private val clearClientData: ClearClientDataUseCase,
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
+    private val cachedClientIdClearer: CachedClientIdClearer
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
@@ -53,8 +60,7 @@ class GetOrRegisterClientUseCaseImpl(
                         is VerifyExistingClientResult.Success -> RegisterClientResult.Success(result.client)
                         is VerifyExistingClientResult.Failure.Generic -> RegisterClientResult.Failure.Generic(result.genericFailure)
                         is VerifyExistingClientResult.Failure.ClientNotRegistered -> {
-                            clearClientData()
-                            clientRepository.clearRetainedClientId()
+                            clearOldClientRelatedData()
                             null
                         }
                     }
@@ -68,5 +74,13 @@ class GetOrRegisterClientUseCaseImpl(
         }
 
         return result
+    }
+
+    private suspend fun clearOldClientRelatedData() {
+        cachedClientIdClearer()
+        clearClientData()
+        logoutRepository.clearClientRelatedLocalMetadata()
+        clientRepository.clearRetainedClientId()
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
     }
 }
