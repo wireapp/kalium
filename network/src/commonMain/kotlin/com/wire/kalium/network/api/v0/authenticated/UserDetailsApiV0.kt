@@ -35,7 +35,7 @@ internal open class UserDetailsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : UserDetailsApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO> {
         return wrapKaliumResponse<List<UserProfileDTO>> {
@@ -53,7 +53,7 @@ internal open class UserDetailsApiV0 internal constructor(
         }
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_LIST_USERS = "list-users"
         const val PATH_USERS = "users"
     }

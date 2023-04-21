@@ -19,6 +19,7 @@
 package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserId
@@ -27,6 +28,7 @@ object ListUsersResponseJson {
 
     private val USER_1 = UserId("user10d0-000b-9c1a-000d-a4130002c221", "domain1.example.com")
     private val USER_2 = UserId("user20d0-000b-9c1a-000d-a4130002c221", "domain2.example.com")
+
     private val expectedUsersResponse = listOf(
         UserProfileDTO(
             id = USER_1,
@@ -58,38 +60,58 @@ object ListUsersResponseJson {
         ),
     )
 
+    private val validUserInfoProvider = { userInfo: List<UserProfileDTO> ->
+        """
+        |[
+        |   {
+        |    "accent_id": ${userInfo[0].accentId},
+        |    "handle": "${userInfo[0].handle}",
+        |    "legalhold_status": "enabled",
+        |    "name": "${userInfo[0].name}",
+        |    "assets": ${userInfo[0].assets},
+        |    "id": "${userInfo[0].id.value}",
+        |    "deleted": "false",
+        |    "qualified_id": {
+        |      "domain": "${userInfo[0].id.domain}",
+        |      "id": "${userInfo[0].id.value}"
+        |    }
+        |   },
+        |   {
+        |    "accent_id": ${userInfo[1].accentId},
+        |    "handle": "${userInfo[1].handle}",
+        |    "legalhold_status": "enabled",
+        |    "name": "${userInfo[1].name}",
+        |    "assets": ${userInfo[1].assets},
+        |    "id": "${userInfo[1].id.value}",
+        |    "deleted": "false",
+        |    "qualified_id": {
+        |      "domain": "${userInfo[1].id.domain}",
+        |      "id": "${userInfo[1].id.value}"
+        |    }
+        |   }
+        |]
+        """.trimMargin()
+    }
+
     val valid = ValidJsonProvider(
         expectedUsersResponse
     ) {
+        validUserInfoProvider(it)
+    }
+
+    val valid4 = ValidJsonProvider(
+        ListUsersDTO(emptyList(), expectedUsersResponse)
+    ) {
         """
-            |[
-            |   {
-            |    "accent_id": ${it[0].accentId},
-            |    "handle": "${it[0].handle}",
-            |    "legalhold_status": "enabled",
-            |    "name": "${it[0].name}",
-            |    "assets": ${it[0].assets},
-            |    "id": "${it[0].id.value}",
-            |    "deleted": "false",
-            |    "qualified_id": {
-            |      "domain": "${it[0].id.domain}",
-            |      "id": "${it[0].id.value}"
-            |    }
-            |   },
-            |   {
-            |    "accent_id": ${it[1].accentId},
-            |    "handle": "${it[1].handle}",
-            |    "legalhold_status": "enabled",
-            |    "name": "${it[1].name}",
-            |    "assets": ${it[1].assets},
-            |    "id": "${it[1].id.value}",
-            |    "deleted": "false",
-            |    "qualified_id": {
-            |      "domain": "${it[1].id.domain}",
-            |      "id": "${it[1].id.value}"
-            |    }
-            |   }
-            |]
+        |{
+        |    "failed": [
+        |      {
+        |        "domain": "domain3.example.com",
+        |        "id": "99db9768-04e3-4b5d-9268-831b6a25c4ab"
+        |      }
+        |    ],
+        |    "found": ${validUserInfoProvider(it.usersFound)}
+        |}
         """.trimMargin()
     }
 }

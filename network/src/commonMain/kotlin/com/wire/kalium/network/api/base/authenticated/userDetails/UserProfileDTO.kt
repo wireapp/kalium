@@ -44,6 +44,7 @@ data class UserProfileDTO(
     @SerialName("service") val service: ServiceDTO?
 )
 
+@Serializable
 data class ListUsersDTO(
     @SerialName("failed") val usersFailed: List<UserId>,
     @SerialName("found") val usersFound: List<UserProfileDTO>
