@@ -268,13 +268,13 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
-    internal val ephemeralMessageDeletionHandler by lazy {
+    internal val ephemeralMessageDeletionHandler=
         EphemeralMessageDeletionHandlerImpl(
             userSessionCoroutineScope = scope,
             messageRepository = messageRepository,
             deleteMessageUseCase = deleteMessage,
         )
-    }
+
 
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler

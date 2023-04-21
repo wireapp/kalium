@@ -83,6 +83,8 @@ sealed interface Message {
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
 
+        val isEphemeral = expirationData != null
+
         @Suppress("LongMethod")
         override fun toLogString(): String {
             val typeKey = "type"

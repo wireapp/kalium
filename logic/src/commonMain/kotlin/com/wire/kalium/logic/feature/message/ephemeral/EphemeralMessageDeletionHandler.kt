@@ -24,7 +24,8 @@ interface EphemeralMessageDeletionHandler {
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val deleteMessageUseCase: DeleteMessageUseCase,
+    private val selfUserReceiverSelfDeletionUseCase: SelfUserReceiverSelfDeletionUseCase,
+    private val selfUserSenderSelfDeletionUseCase: SelfUserSenderSelfDeletionUseCase,
     userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
@@ -67,9 +68,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.isSelfMessage) {
-            messageRepository.markMessageAsDeleted(message.id, message.conversationId)
+            selfUserSenderSelfDeletionUseCase(message.conversationId, message.id)
         } else {
-//             deleteMessageUseCase(message.conversationId, message.id, true)
+            selfUserReceiverSelfDeletionUseCase(message.conversationId, message.id)
         }
     }
 
