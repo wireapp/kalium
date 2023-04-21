@@ -18,12 +18,12 @@
 
 package com.wire.kalium.network.api.base.authenticated.userDetails
 
-import com.wire.kalium.network.api.base.model.NonQualifiedUserId
-import com.wire.kalium.network.api.base.model.TeamId
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.ServiceDTO
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserAssetDTO
+import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -42,4 +42,9 @@ data class UserProfileDTO(
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") val service: ServiceDTO?
+)
+
+data class ListUsersDTO(
+    @SerialName("failed") val usersFailed: List<UserId>,
+    @SerialName("found") val usersFound: List<UserProfileDTO>
 )
