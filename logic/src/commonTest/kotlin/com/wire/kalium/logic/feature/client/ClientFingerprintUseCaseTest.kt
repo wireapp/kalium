@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -71,7 +72,7 @@ class ClientFingerprintUseCaseTest {
     }
 
     @Test
-    fun givenClientHaveNoSession_thenEstaqablishANewSession() = runTest {
+    fun givenClientHaveNoSession_thenEstablishANewSession() = runTest {
         val fingerprint = byteArrayOf(1, 2, 3, 4, 5)
 
         val userId = TestUser.USER_ID
@@ -79,7 +80,7 @@ class ClientFingerprintUseCaseTest {
 
         val (arrange, userCase) = Arrangement()
             .withSessionNotFound(fingerprint)
-            .withEstablishSession(Either.Right(Unit))
+            .withEstablishSession(Either.Right(UsersWithoutSessions.EMPTY))
             .arrange()
 
         userCase(userId, clientId).also { result ->
@@ -180,7 +181,7 @@ class ClientFingerprintUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withEstablishSession(result: Either<CoreFailure, Unit>) = apply {
+        fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             given(preKeyRepository)
                 .suspendFunction(preKeyRepository::establishSessions)
                 .whenInvokedWith(any())
