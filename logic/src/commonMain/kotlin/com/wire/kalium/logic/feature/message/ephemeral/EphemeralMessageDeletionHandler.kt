@@ -69,7 +69,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         if (message.isSelfMessage) {
             messageRepository.markMessageAsDeleted(message.id, message.conversationId)
         } else {
-            deleteMessageUseCase(message.conversationId, message.id, true)
+//             deleteMessageUseCase(message.conversationId, message.id, true)
         }
     }
 

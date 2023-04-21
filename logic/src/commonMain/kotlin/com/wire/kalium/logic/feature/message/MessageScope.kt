@@ -50,6 +50,9 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -264,4 +267,17 @@ class MessageScope internal constructor(
 
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
+
+    internal val ephemeralMessageDeletionHandler by lazy {
+        EphemeralMessageDeletionHandlerImpl(
+            userSessionCoroutineScope = scope,
+            messageRepository = messageRepository,
+            deleteMessageUseCase = deleteMessage,
+        )
+    }
+
+    val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
+    )
+
 }
