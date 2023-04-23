@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.DeleteMessageUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
@@ -50,7 +51,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 addToOutgoingDeletion(message)
             }
 
-            markAndWaitToDelete(message)
+            markDeletionDateAndWait(message)
             deleteMessage(message)
         }
     }
@@ -80,7 +81,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         }
     }
 
-    private suspend fun markAndWaitToDelete(message: Message.Regular) {
+    private suspend fun markDeletionDateAndWait(message: Message.Regular) {
         message.expirationData?.let { expirationData ->
             with(expirationData) {
                 if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {

@@ -18,9 +18,15 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.MessageRepository
 
-internal class SelfUserSenderSelfDeletionUseCase {
-    operator fun invoke(conversationId: ConversationId, messageId: String) {
-
+/**
+ * When the self user is sender of the self deletion message, we only mark it as deleted because we are relaying on the receiver, telling us
+ * when to delete the message permanently, that is when the message has expired for 1 of the conversation members of GROUP or PRIVATE type
+ * see [com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase]
+ **/
+internal class SelfUserSenderSelfDeletionUseCase(private val messageRepository: MessageRepository) {
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
+        messageRepository.markMessageAsDeleted(messageId, conversationId)
     }
 }
