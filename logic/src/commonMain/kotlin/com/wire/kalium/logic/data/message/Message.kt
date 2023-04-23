@@ -83,8 +83,6 @@ sealed interface Message {
         val expectsReadConfirmation: Boolean = false
     ) : Sendable, Standalone {
 
-        val isEphemeral = expirationData != null
-
         @Suppress("LongMethod")
         override fun toLogString(): String {
             val typeKey = "type"
@@ -349,12 +347,7 @@ sealed interface Message {
             }
         }
 
-        val isExpired = when (selfDeletionStatus) {
-                SelfDeletionStatus.NotStarted -> false
-                is SelfDeletionStatus.Started -> {
-                    timeLeftForDeletion() == Duration.ZERO
-                }
-            }
+        val isExpired = timeLeftForDeletion() == Duration.ZERO
     }
 
     enum class UploadStatus {
