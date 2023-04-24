@@ -28,6 +28,7 @@ object ListUsersResponseJson {
 
     private val USER_1 = UserId("user10d0-000b-9c1a-000d-a4130002c221", "domain1.example.com")
     private val USER_2 = UserId("user20d0-000b-9c1a-000d-a4130002c221", "domain2.example.com")
+    private val USER_3 = UserId("user30d0-000b-9c1a-000d-a4130002c220", "domain3.example.com")
 
     private val expectedUsersResponse = listOf(
         UserProfileDTO(
@@ -93,21 +94,21 @@ object ListUsersResponseJson {
         """.trimMargin()
     }
 
-    val valid = ValidJsonProvider(
+    val v0 = ValidJsonProvider(
         expectedUsersResponse
     ) {
         validUserInfoProvider(it)
     }
 
-    val valid4 = ValidJsonProvider(
-        ListUsersDTO(emptyList(), expectedUsersResponse)
+    val v4 = ValidJsonProvider(
+        ListUsersDTO(listOf(USER_3), expectedUsersResponse)
     ) {
         """
         |{
         |    "failed": [
         |      {
-        |        "domain": "domain3.example.com",
-        |        "id": "99db9768-04e3-4b5d-9268-831b6a25c4ab"
+        |        "domain": "${it.usersFailed[0].domain}",
+        |        "id": "${it.usersFailed[0].value}"
         |      }
         |    ],
         |    "found": ${validUserInfoProvider(it.usersFound)}

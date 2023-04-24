@@ -47,7 +47,7 @@ class UserDetailsApiV0Test : ApiTest {
         val params = ListUserRequest.qualifiedIds(listOf(QualifiedIDSamples.one, QualifiedIDSamples.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersResponseJson.valid.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -62,7 +62,7 @@ class UserDetailsApiV0Test : ApiTest {
         val response: NetworkResponse<ListUsersDTO> = userDetailsApi.getMultipleUsers(params)
         assertTrue(response.isSuccessful())
         assertTrue(response.value.usersFailed.isEmpty())
-        assertEquals(response.value.usersFound, ListUsersResponseJson.valid.serializableData)
+        assertEquals(response.value.usersFound, SUCCESS_RESPONSE.serializableData)
     }
 
     @Test
@@ -70,7 +70,7 @@ class UserDetailsApiV0Test : ApiTest {
         val params = ListUserRequest.qualifiedHandles(listOf(QualifiedHandleSample.one, QualifiedHandleSample.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersResponseJson.valid.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertJsonBodyContent(expectedRequestBody)
@@ -84,7 +84,7 @@ class UserDetailsApiV0Test : ApiTest {
     @Test
     fun givenAValidRequest_whenGettingListOfUsers_thenCorrectHttpHeadersAndMethodShouldBeUsed() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersResponseJson.valid.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -101,7 +101,7 @@ class UserDetailsApiV0Test : ApiTest {
     @Test
     fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
         val httpClient = mockAuthenticatedNetworkClient(
-            ListUsersResponseJson.valid.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -118,5 +118,6 @@ class UserDetailsApiV0Test : ApiTest {
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
         const val PATH_USERS = "/users"
+        private val SUCCESS_RESPONSE = ListUsersResponseJson.v0
     }
 }

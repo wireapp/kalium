@@ -65,6 +65,6 @@ class UserDetailsApiV4Test : ApiTest {
 
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
-        val SUCCESS_RESPONSE = ListUsersResponseJson.valid4
+        val SUCCESS_RESPONSE = ListUsersResponseJson.v4
     }
 }
