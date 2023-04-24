@@ -338,7 +338,7 @@ internal class MessageSenderImpl internal constructor(
                 handleProteusError(it, "Send", message.toLogString()) {
                     attemptToSendWithProteus(
                         message,
-                        messageTarget.resetToInitialIntent()
+                        messageTarget.resetToInitialIntent() // we reset the initial intent to allow re-fetching pre keys if possible.
                     )
                 }
             }, { messageSent ->
