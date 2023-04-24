@@ -31,3 +31,10 @@ sealed class MessageTarget(open val ignoreSome: List<UserId>? = null) {
         override val ignoreSome: List<UserId>? = null
     ) : MessageTarget(ignoreSome)
 }
+
+fun MessageTarget.resetToInitialIntent(): MessageTarget {
+    return when (this) {
+        is MessageTarget.Client -> MessageTarget.Client(recipients, null)
+        is MessageTarget.Conversation -> MessageTarget.Conversation(null)
+    }
+}

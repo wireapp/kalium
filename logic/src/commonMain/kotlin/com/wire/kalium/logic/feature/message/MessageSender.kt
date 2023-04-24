@@ -238,10 +238,30 @@ internal class MessageSenderImpl internal constructor(
             }.flatMap { (recipients, usersWithoutSessions) ->
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
-                    .flatMap { envelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                    .flatMap { envelope: MessageEnvelope ->
+                        trySendingProteusEnvelope(envelope, message, adjustMessageTarget(messageTarget, usersWithoutSessions))
                     }
             }
+    }
+
+    private fun adjustMessageTarget(messageTarget: MessageTarget, usersWithoutSessions: UsersWithoutSessions): MessageTarget {
+        return when (messageTarget) {
+            is MessageTarget.Client -> {
+                if (usersWithoutSessions.hasMissingSessions()) {
+                    MessageTarget.Client(messageTarget.recipients, usersWithoutSessions.users)
+                } else {
+                    messageTarget
+                }
+            }
+
+            is MessageTarget.Conversation -> {
+                if (usersWithoutSessions.hasMissingSessions()) {
+                    MessageTarget.Conversation(usersWithoutSessions.users)
+                } else {
+                    messageTarget
+                }
+            }
+        }
     }
 
     private suspend fun handleUsersWithNoClientsToDeliver(
@@ -315,7 +335,12 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString()) { attemptToSendWithProteus(message, messageTarget) }
+                handleProteusError(it, "Send", message.toLogString()) {
+                    attemptToSendWithProteus(
+                        message,
+                        messageTarget.resetToInitialIntent()
+                    )
+                }
             }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
                 handleRecipientsDeliveryFailure(message, messageSent).flatMap {
