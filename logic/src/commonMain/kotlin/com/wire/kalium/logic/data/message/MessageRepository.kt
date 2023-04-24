@@ -347,12 +347,6 @@ class MessageDataSource(
             }
         }
 
-        // handle [ignoredUsers]
-        val messageOption = when (messageTarget) {
-            is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
-            is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
-        }
-
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
@@ -363,7 +357,7 @@ class MessageDataSource(
                     MessagePriority.HIGH,
                     false,
                     envelope.dataBlob?.data,
-                    messageOption
+                    messageTarget.toOption(ignoredUsers)
                 ),
                 conversationId.toApi(),
             )
@@ -379,6 +373,20 @@ class MessageDataSource(
         }, { response: QualifiedSendMessageResponse ->
             Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
         })
+    }
+
+    private fun MessageTarget.toOption(ignoredUsers: List<UserId>) = when (this) {
+        is MessageTarget.Client -> if (ignoredUsers.isNotEmpty()) {
+            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
+        } else {
+            MessageApi.QualifiedMessageOption.IgnoreAll
+        }
+
+        is MessageTarget.Conversation -> if (ignoredUsers.isNotEmpty()) {
+            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
+        } else {
+            MessageApi.QualifiedMessageOption.ReportAll
+        }
     }
 
     override suspend fun broadcastEnvelope(
