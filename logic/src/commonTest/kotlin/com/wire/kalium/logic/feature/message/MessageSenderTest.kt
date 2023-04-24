@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
@@ -734,7 +735,7 @@ class MessageSenderTest {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(UsersWithoutSessions.EMPTY))
         }
 
         fun withCommitPendingProposals(failing: Boolean = false) = apply {

@@ -20,7 +20,9 @@ package com.wire.kalium.api.json.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
+import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.model.UserId
 
 object DomainToUserIdToClientToPreKeyMapJson {
 
@@ -35,8 +37,10 @@ object DomainToUserIdToClientToPreKeyMapJson {
     private const val USER_2_CLIENT = "32233lj33j3dfh7u"
     private val USER_2_CLIENT_PREYKEY = PreKeyDTO(key = "preKey2ANWARqEvoQI6l9hw0D", id = 2)
 
+    private val USER_3 = UserId("user300d0-000b-9c1a-000d-a4130002c121", "domain3.example.com")
+
     private val jsonProvider = { _: DomainToUserIdToClientsToPreKeyMap ->
-            """
+        """
             |{
             |  "$DOMAIN_1": {
             |    "$USER_1": {
@@ -55,7 +59,7 @@ object DomainToUserIdToClientToPreKeyMapJson {
             |    }
             |  }
             |}
-            """.trimMargin()
+        """.trimMargin()
     }
 
     val valid = ValidJsonProvider(
@@ -73,4 +77,51 @@ object DomainToUserIdToClientToPreKeyMapJson {
         ),
         jsonProvider
     )
+
+    val validV4 = ValidJsonProvider(
+        ListPrekeysResponse(
+            listOf(USER_3),
+            mapOf(
+                DOMAIN_1 to
+                        mapOf(
+                            USER_1 to
+                                    mapOf(USER_1_CLIENT to USER_1_CLIENT_PREYKEY)
+                        ),
+                DOMAIN_2 to
+                        mapOf(
+                            USER_2 to
+                                    mapOf(USER_2_CLIENT to USER_2_CLIENT_PREYKEY)
+                        )
+            )
+        )
+    ) {
+        """
+            |{
+            |   "failed_to_list": [
+            |       {
+            |           "domain": "${it.failedToList?.first()?.domain}",
+            |           "id": "${it.failedToList?.first()?.value}"
+            |       }
+            |   ],
+            |   "qualified_user_client_prekeys": {
+            |       "$DOMAIN_1": {
+            |           "$USER_1": {
+            |               "$USER_1_CLIENT": {
+            |                   "key": "${USER_1_CLIENT_PREYKEY.key}",
+            |                   "id": ${USER_1_CLIENT_PREYKEY.id}
+            |               }
+            |           }
+            |       },
+            |       "$DOMAIN_2": {
+            |           "$USER_2": {
+            |               "$USER_2_CLIENT": {
+            |                   "key": "${USER_2_CLIENT_PREYKEY.key}",
+            |                   "id": "${USER_2_CLIENT_PREYKEY.id}"
+            |               }
+            |           }
+            |       }
+            |  }
+            |}  
+        """.trimMargin()
+    }
 }
