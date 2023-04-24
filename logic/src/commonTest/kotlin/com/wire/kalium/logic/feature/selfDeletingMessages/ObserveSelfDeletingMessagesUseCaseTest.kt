@@ -56,15 +56,15 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletingMessagesFlag()
 
-        assertFalse(result.first().isEnabled)
-        assertNull(result.first().hasFlagChanged)
+        assertFalse(result.first().isFeatureEnabled)
+        assertNull(result.first().hasFeatureChanged)
         assertNull(result.first().globalSelfDeletionDuration)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
-        val expectedStatus = SelfDeletingMessagesStatus(isEnabled = true, hasFlagChanged = false, globalSelfDeletionDuration = null)
+        val expectedStatus = SelfDeletingMessagesStatus(isFeatureEnabled = true, hasFeatureChanged = false, globalSelfDeletionDuration = null)
 
         given(userConfigRepository).invocation { observeSelfDeletingMessagesStatus() }.thenReturn(flowOf(Either.Right(expectedStatus)))
 

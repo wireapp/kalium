@@ -110,7 +110,13 @@ interface UserConfigStorage {
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
     fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity?
     fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?>
-    fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?, enforcedTimeoutInSeconds: Int?)
+    fun persistSelfDeletingMessagesStatus(
+        isEnabled: Boolean,
+        isStatusChanged: Boolean?,
+        enforcedTimeoutInSeconds: Int?,
+        isEnforced: Boolean = false
+    )
+
     fun setSelfDeletingMessagesAsNotified()
 }
 
@@ -136,7 +142,8 @@ data class IsGuestRoomLinkEnabledEntity(
 data class SelfDeletingMessagesEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("isStatusChanged") val isStatusChanged: Boolean?,
-    @SerialName("enforcedTimeout") val enforcedTimeoutInSeconds: Int?,
+    @SerialName("selfDeletionDuration") val selfDeletionDuration: Int?,
+    @SerialName("isEnforced") val isEnforced: Boolean,
 )
 
 @Suppress("TooManyFunctions")
@@ -279,10 +286,15 @@ class UserConfigStorageImpl(
             .onStart { emit(isSelfDeletingMessagesEnabled()) }
             .distinctUntilChanged()
 
-    override fun persistSelfDeletingMessagesStatus(isEnabled: Boolean, isStatusChanged: Boolean?, enforcedTimeoutInSeconds: Int?) {
+    override fun persistSelfDeletingMessagesStatus(
+        isEnabled: Boolean,
+        isStatusChanged: Boolean?,
+        enforcedTimeoutInSeconds: Int?,
+        isEnforced: Boolean
+    ) {
         kaliumPreferences.putSerializable(
             SELF_DELETING_MESSAGES,
-            SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds),
+            SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds, isEnforced),
             SelfDeletingMessagesEntity.serializer()
         ).also {
             isSelfDeletingMessagesEnabledFlow.tryEmit(Unit)

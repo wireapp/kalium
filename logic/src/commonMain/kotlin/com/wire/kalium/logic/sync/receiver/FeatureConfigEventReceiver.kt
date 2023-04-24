@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.isGreaterThan
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -161,22 +162,22 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         } else {
             val (currentIsSelfDeletingMessagesEnabled, currentEnforcedTimeout) = userConfigRepository
                 .getSelfDeletingMessagesStatus()
-                .fold({ true to null }, { it.isEnabled to it.globalSelfDeletionDuration })
+                .fold({ true to null }, { it.isFeatureEnabled to it.globalSelfDeletionDuration })
 
             when (status) {
                 Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
-                        isEnabled = true,
-                        hasFlagChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
+                        isFeatureEnabled = true,
+                        hasFeatureChanged = !currentIsSelfDeletingMessagesEnabled || currentEnforcedTimeout != enforcedTimeoutSeconds,
                         globalSelfDeletionDuration = if (enforcedTimeoutSeconds == 0) null else enforcedTimeoutSeconds,
-                        isEnforced = true
+                        isEnforced = enforcedTimeoutSeconds.isGreaterThan(0)
                     )
                 )
 
                 Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
-                        isEnabled = false,
-                        hasFlagChanged = currentIsSelfDeletingMessagesEnabled,
+                        isFeatureEnabled = false,
+                        hasFeatureChanged = currentIsSelfDeletingMessagesEnabled,
                         globalSelfDeletionDuration = enforcedTimeoutSeconds,
                         isEnforced = false
                     )

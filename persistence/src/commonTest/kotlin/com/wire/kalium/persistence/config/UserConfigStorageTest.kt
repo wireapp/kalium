@@ -139,7 +139,7 @@ class UserConfigStorageTest {
         userConfigStorage.isSelfDeletingMessagesEnabled()?.let {
             assertTrue(it.status)
             assertTrue(it.isStatusChanged == false)
-            assertEquals(it.enforcedTimeoutInSeconds, enforcedTimeout)
+            assertEquals(it.selfDeletionDuration, enforcedTimeout)
         }
     }
 }

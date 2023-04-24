@@ -145,9 +145,10 @@ class UserConfigDataSource(
     override fun setSelfDeletingMessagesStatus(selfDeletingMessagesStatus: SelfDeletingMessagesStatus): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistSelfDeletingMessagesStatus(
-                selfDeletingMessagesStatus.isEnabled,
-                selfDeletingMessagesStatus.hasFlagChanged,
-                selfDeletingMessagesStatus.globalSelfDeletionDuration
+                selfDeletingMessagesStatus.isFeatureEnabled,
+                selfDeletingMessagesStatus.hasFeatureChanged,
+                selfDeletingMessagesStatus.globalSelfDeletionDuration,
+                selfDeletingMessagesStatus.isEnforced
             )
         }
 
@@ -157,7 +158,7 @@ class UserConfigDataSource(
 
     override fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus> =
         wrapStorageRequest { userConfigStorage.isSelfDeletingMessagesEnabled() }.map {
-            with(it) { SelfDeletingMessagesStatus(status, isStatusChanged, enforcedTimeoutInSeconds) }
+            with(it) { SelfDeletingMessagesStatus(status, isStatusChanged, selfDeletionDuration) }
         }
 
     override fun observeSelfDeletingMessagesStatus(): Flow<Either<StorageFailure, SelfDeletingMessagesStatus>> =
@@ -168,7 +169,8 @@ class UserConfigDataSource(
                     SelfDeletingMessagesStatus(
                         isSelfDeletingMessagesEnabledEntity.status,
                         isSelfDeletingMessagesEnabledEntity.isStatusChanged,
-                        isSelfDeletingMessagesEnabledEntity.enforcedTimeoutInSeconds
+                        isSelfDeletingMessagesEnabledEntity.selfDeletionDuration,
+                        isSelfDeletingMessagesEnabledEntity.isEnforced
                     )
                 }
             }

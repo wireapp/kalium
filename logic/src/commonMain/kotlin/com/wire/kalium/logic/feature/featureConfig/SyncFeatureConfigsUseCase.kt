@@ -137,8 +137,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             userConfigRepository.setSelfDeletingMessagesStatus(
                 SelfDeletingMessagesStatus(
-                    isEnabled = selfDeletingMessagesEnabled,
-                    hasFlagChanged = null, // when syncing the initial status, we don't know if the status has changed so we set it to null
+                    isFeatureEnabled = selfDeletingMessagesEnabled,
+                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status has changed so we set it to null
                     globalSelfDeletionDuration = model.config.enforcedTimeoutSeconds,
                     isEnforced = model.config.enforcedTimeoutSeconds.isGreaterThan(0)
                 )
