@@ -32,8 +32,8 @@ import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -108,7 +108,7 @@ class UserRepositoryTest {
             .withGetSelfUserId()
             .withSuccessfulGetUsersInfo()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
-            .withSuccessfulGetMultipleUsersApiRequest(listOf(TestUser.USER_PROFILE_DTO))
+            .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(usersFailed = emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
             .arrange()
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
@@ -525,7 +525,7 @@ class UserRepositoryTest {
                 .thenReturn(NetworkResponse.Success(TestUser.USER_DTO.copy(deleted = true), mapOf(), 200))
         }
 
-        fun withSuccessfulGetMultipleUsersApiRequest(result: List<UserProfileDTO>) = apply {
+        fun withSuccessfulGetMultipleUsersApiRequest(result: ListUsersDTO) = apply {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())

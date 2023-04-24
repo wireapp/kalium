@@ -221,7 +221,7 @@ internal class UserDataSource internal constructor(
         userDetailsApi.getMultipleUsers(
             ListUserRequest.qualifiedIds(qualifiedUsersOnSameDomainList.map { userId -> userId.toApi() })
         )
-    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
+    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO.usersFound) }
 
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
