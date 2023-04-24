@@ -19,8 +19,21 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.v3.authenticated.UserDetailsApiV3
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class UserDetailsApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
-) : UserDetailsApiV3(authenticatedNetworkClient)
+) : UserDetailsApiV3(authenticatedNetworkClient) {
+    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO> =
+        wrapKaliumResponse<ListUsersDTO> {
+            httpClient.post(PATH_LIST_USERS) {
+                setBody(users)
+            }
+        }
+}
