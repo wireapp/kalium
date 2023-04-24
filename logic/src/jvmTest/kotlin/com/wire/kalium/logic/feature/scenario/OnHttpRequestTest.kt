@@ -59,7 +59,7 @@ class OnHttpRequestTest {
             conversationId = Arrangement.conversationId,
             avsSelfUserId = Arrangement.selfUserId,
             avsSelfClientId = Arrangement.selfUserCLientId,
-            messageTarget = MessageTarget.Conversation,
+            messageTarget = MessageTarget.Conversation(),
             sendInSelfConversation = true
         )
         yield()
@@ -68,7 +68,7 @@ class OnHttpRequestTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.selfConversationId },
-                eq(MessageTarget.Conversation)
+                matching { MessageTarget.Conversation()::class == it::class },
             )
             .wasInvoked(exactly = once)
     }
@@ -85,7 +85,7 @@ class OnHttpRequestTest {
             conversationId = Arrangement.conversationId,
             avsSelfUserId = Arrangement.selfUserId,
             avsSelfClientId = Arrangement.selfUserCLientId,
-            messageTarget = MessageTarget.Conversation,
+            messageTarget = MessageTarget.Conversation(),
             sendInSelfConversation = false
         )
         yield()
@@ -94,7 +94,7 @@ class OnHttpRequestTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.conversationId },
-                eq(MessageTarget.Conversation)
+                matching { MessageTarget.Conversation()::class == it::class },
             )
             .wasInvoked(exactly = once)
     }

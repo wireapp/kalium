@@ -429,7 +429,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val messageTarget = MessageTarget.Conversation
+        val messageTarget = MessageTarget.Conversation()
 
         arrangement.testScope.runTest {
             // when

@@ -144,7 +144,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -161,7 +161,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -217,7 +217,7 @@ class MessageRepositoryTest {
             .arrange()
 
         messageRepository
-            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed()
 
         verify(arrangement.messageApi)
