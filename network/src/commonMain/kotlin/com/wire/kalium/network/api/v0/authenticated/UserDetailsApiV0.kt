@@ -20,10 +20,12 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -33,13 +35,15 @@ internal open class UserDetailsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : UserDetailsApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<List<UserProfileDTO>> {
-        return wrapKaliumResponse {
+    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO> {
+        return wrapKaliumResponse<List<UserProfileDTO>> {
             httpClient.post(PATH_LIST_USERS) {
                 setBody(users)
             }
+        }.mapSuccess {
+            ListUsersDTO(usersFailed = emptyList(), usersFound = it)
         }
     }
 
@@ -49,7 +53,7 @@ internal open class UserDetailsApiV0 internal constructor(
         }
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_LIST_USERS = "list-users"
         const val PATH_USERS = "users"
     }

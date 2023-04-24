@@ -36,6 +36,7 @@ import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
@@ -360,7 +361,7 @@ class SearchUserRepositoryTest {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
-                .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
+                .then { NetworkResponse.Success(USER_RESPONSE.copy(usersFound = emptyList()), mapOf(), 200) }
 
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKeyFlow)
@@ -534,20 +535,23 @@ class SearchUserRepositoryTest {
             took = 0,
         )
 
-        val USER_RESPONSE = listOf(
-            UserProfileDTO(
-                accentId = 1,
-                handle = "handle",
-                id = UserIdDTO(value = "value", domain = "domain"),
-                name = "name",
-                legalHoldStatus = LegalHoldStatusResponse.ENABLED,
-                teamId = "team",
-                assets = emptyList(),
-                deleted = null,
-                email = null,
-                expiresAt = null,
-                nonQualifiedId = "value",
-                service = null
+        val USER_RESPONSE = ListUsersDTO(
+            usersFailed = emptyList(),
+            usersFound = listOf(
+                UserProfileDTO(
+                    accentId = 1,
+                    handle = "handle",
+                    id = UserIdDTO(value = "value", domain = "domain"),
+                    name = "name",
+                    legalHoldStatus = LegalHoldStatusResponse.ENABLED,
+                    teamId = "team",
+                    assets = emptyList(),
+                    deleted = null,
+                    email = null,
+                    expiresAt = null,
+                    nonQualifiedId = "value",
+                    service = null
+                )
             )
         )
 
