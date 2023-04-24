@@ -24,22 +24,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface MessageApi {
 
-    sealed class MessageOption {
-        /**
-         * All missing recipients clients will be ignored
-         * The message will be sent regardless if the recipients list is correct or not
-         */
-        object IgnoreAll : MessageOption()
-
-        /**
-         * All missing recipients clients will be reported http error code 412
-         * The message will not be sent unless the list is correct
-         */
-        object ReportAll : MessageOption()
-        data class IgnoreSome(val userIDs: List<String>) : MessageOption()
-        data class ReportSome(val userIDs: List<String>) : MessageOption()
-    }
-
     sealed class QualifiedMessageOption {
         /**
          * All missing recipients clients will be ignored
@@ -96,13 +80,6 @@ interface MessageApi {
             val messageOption: QualifiedMessageOption
         ) : Parameters()
     }
-
-    @Deprecated("This endpoint doesn't support federated environments", ReplaceWith("qualifiedSendMessage"))
-    suspend fun sendMessage(
-        parameters: Parameters.DefaultParameters,
-        conversationId: String,
-        option: MessageOption
-    ): NetworkResponse<SendMessageResponse>
 
     suspend fun qualifiedSendMessage(
         parameters: Parameters.QualifiedDefaultParameters,

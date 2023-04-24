@@ -192,6 +192,12 @@ interface MessageRepository {
         usersWithFailedDeliveryList: List<UserId>
     ): Either<CoreFailure, Unit>
 
+    suspend fun persistNoClientsToDeliverFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -524,6 +530,23 @@ class MessageDataSource(
             conversationId.toDao(),
             usersWithFailedDeliveryList.map { it.toDao() },
             RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
+        )
+    }
+
+    /**
+     * Persist a list of users ids whose clients are missing and could not be retrieved
+     * [RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER]
+     */
+    override suspend fun persistNoClientsToDeliverFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertFailedRecipientDelivery(
+            messageUuid,
+            conversationId.toDao(),
+            usersWithFailedDeliveryList.map { it.toDao() },
+            RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER
         )
     }
 
