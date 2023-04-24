@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -376,9 +377,8 @@ class MessageDataSource(
     }
 
     private fun MessageTarget.toOption(ignoredUsers: List<UserId>) = when (this) {
-        is MessageTarget.Client -> if (ignoredUsers.isNotEmpty()) {
-            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
-        } else {
+        is MessageTarget.Client -> {
+            if (ignoredUsers.isNotEmpty()) kaliumLogger.w("Ignoring specific users is not supported for client targets")
             MessageApi.QualifiedMessageOption.IgnoreAll
         }
 
