@@ -157,7 +157,7 @@ internal class SearchUserRepositoryImpl(
                 if (qualifiedIdList.isEmpty()) Either.Right(listOf())
                 else wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
-                }
+                }.map { listUsersDTO -> listUsersDTO.usersFound }
             response.map { userProfileDTOList ->
                 val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
                     val selfUser = getSelfUser()
