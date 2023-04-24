@@ -19,22 +19,18 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
 
-sealed class MessageTarget(open val ignoreSome: List<UserId>? = null) {
-    class Client(
-        val recipients: List<Recipient>,
-        override val ignoreSome: List<UserId>? = null
-    ) : MessageTarget(ignoreSome)
+/**
+ * Indicates the end target of a message/broadcast.
+ */
+sealed class MessageTarget {
+    /**
+     * A message is intended to be sent to a specific list of recipients.
+     */
+    class Client(val recipients: List<Recipient>) : MessageTarget()
 
-    class Conversation(
-        override val ignoreSome: List<UserId>? = null
-    ) : MessageTarget(ignoreSome)
-}
-
-fun MessageTarget.resetToInitialIntent(): MessageTarget {
-    return when (this) {
-        is MessageTarget.Client -> MessageTarget.Client(recipients, null)
-        is MessageTarget.Conversation -> MessageTarget.Conversation(null)
-    }
+    /**
+     * A message is intended to be sent to all recipients in a conversation.
+     */
+    object Conversation : MessageTarget()
 }

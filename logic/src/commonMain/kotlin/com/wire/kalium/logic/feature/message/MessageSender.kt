@@ -101,7 +101,7 @@ interface MessageSender {
      */
     suspend fun sendMessage(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation
     ): Either<CoreFailure, Unit>
 
     /**
@@ -201,7 +201,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation
     ): Either<CoreFailure, String> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
