@@ -127,7 +127,8 @@ interface MessageRepository {
     suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        ignoredUsers: List<UserId> = emptyList()
     ): Either<CoreFailure, MessageSent>
 
     /**
@@ -337,7 +338,8 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        ignoredUsers: List<UserId>
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
@@ -345,6 +347,7 @@ class MessageDataSource(
             }
         }
 
+        // handle [ignoredUsers]
         val messageOption = when (messageTarget) {
             is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
             is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll

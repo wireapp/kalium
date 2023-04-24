@@ -239,29 +239,9 @@ internal class MessageSenderImpl internal constructor(
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope: MessageEnvelope ->
-                        trySendingProteusEnvelope(envelope, message, adjustMessageTarget(messageTarget, usersWithoutSessions))
+                        trySendingProteusEnvelope(envelope, message, messageTarget, usersWithoutSessions.users)
                     }
             }
-    }
-
-    private fun adjustMessageTarget(messageTarget: MessageTarget, usersWithoutSessions: UsersWithoutSessions): MessageTarget {
-        return when (messageTarget) {
-            is MessageTarget.Client -> {
-                if (usersWithoutSessions.hasMissingSessions()) {
-                    MessageTarget.Client(messageTarget.recipients, usersWithoutSessions.users)
-                } else {
-                    messageTarget
-                }
-            }
-
-            is MessageTarget.Conversation -> {
-                if (usersWithoutSessions.hasMissingSessions()) {
-                    MessageTarget.Conversation(usersWithoutSessions.users)
-                } else {
-                    messageTarget
-                }
-            }
-        }
     }
 
     private suspend fun handleUsersWithNoClientsToDeliver(
@@ -330,16 +310,14 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        ignoredUsers: List<UserId> = emptyList()
     ): Either<CoreFailure, String> =
         messageRepository
-            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .sendEnvelope(message.conversationId, envelope, messageTarget, ignoredUsers)
             .fold({
                 handleProteusError(it, "Send", message.toLogString()) {
-                    attemptToSendWithProteus(
-                        message,
-                        messageTarget.resetToInitialIntent() // we reset the initial intent to allow re-fetching pre keys if possible.
-                    )
+                    attemptToSendWithProteus(message, messageTarget)
                 }
             }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
