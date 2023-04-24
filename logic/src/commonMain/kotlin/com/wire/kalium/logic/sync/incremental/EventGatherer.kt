@@ -35,12 +35,16 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.errors.IOException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
@@ -73,7 +77,8 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val slowSyncRepository: SlowSyncRepository
+    private val slowSyncRepository: SlowSyncRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
@@ -99,21 +104,24 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
-    ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
-        .transformWhile { (webSocketEvent, policy) ->
-            val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
-            val isOpenEvent = webSocketEvent is WebSocketEvent.Open
-            if (isKeepAlivePolicy || isOpenEvent) {
-                // Emit if keeping alive, always emit if is an Open event
-                emit(webSocketEvent)
+    ) =
+        webSocketEventFlow
+            .combine(incrementalSyncRepository.connectionPolicyState)
+            .buffer(Channel.UNLIMITED)
+            .transformWhile { (webSocketEvent, policy) ->
+                val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
+                val isOpenEvent = webSocketEvent is WebSocketEvent.Open
+                if (isKeepAlivePolicy || isOpenEvent) {
+                    // Emit if keeping alive, always emit if is an Open event
+                    emit(webSocketEvent)
+                }
+                // Only continue collecting if the Policy allows it
+                isKeepAlivePolicy
             }
-            // Only continue collecting if the Policy allows it
-            isKeepAlivePolicy
-        }
-        // Prevent repetition of events, in case the policy changed
-        .distinctUntilChanged()
-        .cancellable()
-        .collect { handleWebsocketEvent(it) }
+            // Prevent repetition of events, in case the policy changed
+            .distinctUntilChanged()
+            .cancellable()
+            .collect { handleWebsocketEvent(it) }
 
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()
