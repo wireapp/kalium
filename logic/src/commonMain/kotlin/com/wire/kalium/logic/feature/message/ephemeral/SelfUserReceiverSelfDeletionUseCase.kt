@@ -84,9 +84,8 @@ internal class SelfUserReceiverSelfDeletionUseCase(
         selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
             val regularMessage = Message.Signaling(
                 id = uuid4().toString(),
-                content =
-                MessageContent.DeleteForMe(
-                    messageId,
+                content = MessageContent.DeleteForMe(
+                    messageId = messageId,
                     conversationId = conversationId
                 ),
                 conversationId = selfConversationId,
