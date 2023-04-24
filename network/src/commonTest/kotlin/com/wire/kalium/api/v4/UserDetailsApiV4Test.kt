@@ -45,7 +45,7 @@ class UserDetailsApiV4Test : ApiTest {
         )
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
-            SUCCESS_RESPONSE.rawJson,
+            SUCCESS_RESPONSE_WITH_FAILED_TO_LIST.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -60,11 +60,11 @@ class UserDetailsApiV4Test : ApiTest {
         val response: NetworkResponse<ListUsersDTO> = userDetailsApi.getMultipleUsers(params)
         assertTrue(response.isSuccessful())
         assertTrue(response.value.usersFailed.isNotEmpty())
-        assertEquals(response.value.usersFound, SUCCESS_RESPONSE.serializableData.usersFound)
+        assertEquals(response.value.usersFound, SUCCESS_RESPONSE_WITH_FAILED_TO_LIST.serializableData.usersFound)
     }
 
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
-        val SUCCESS_RESPONSE = ListUsersResponseJson.v4
+        val SUCCESS_RESPONSE_WITH_FAILED_TO_LIST = ListUsersResponseJson.v4
     }
 }
