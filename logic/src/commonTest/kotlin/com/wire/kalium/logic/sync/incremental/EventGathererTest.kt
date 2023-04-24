@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -42,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -138,6 +138,32 @@ class EventGathererTest {
     }
 
     @Test
+    fun givenWebsocketThousandsEventsAndKeepAlivePolicy_whenGathering_thenShouldEmitAllEvents() = runTest {
+        val repeatValue = 10_000
+        val liveEventsChannel = flow<WebSocketEvent<Event>> {
+            emit(WebSocketEvent.Open())
+            repeat(repeatValue) { value ->
+                emit(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection(eventId = "event_$value")))
+
+            }
+        }
+
+        val (arrangement, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
+            .withLiveEventsReturning(Either.Right(liveEventsChannel))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            repeat(repeatValue) { value ->
+                assertEquals("event_$value", awaitItem().id)
+            }
+        }
+
+    }
+
+    @Test
     fun givenWebsocketEventAndDisconnectPolicy_whenGathering_thenShouldCompleteFlow() = runTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
 
@@ -155,10 +181,6 @@ class EventGathererTest {
         advanceUntilIdle()
 
         eventGatherer.gatherEvents().test {
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasNotInvoked()
-
             awaitComplete()
         }
     }
@@ -361,10 +383,7 @@ class EventGathererTest {
         @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
-        @Mock
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository, slowSyncRepository)
+        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
         fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<Event>>>) = apply {
             given(eventRepository)

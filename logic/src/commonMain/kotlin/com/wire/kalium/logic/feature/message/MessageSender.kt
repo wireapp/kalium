@@ -253,7 +253,7 @@ internal class MessageSenderImpl internal constructor(
 
             sessionEstablisher
                 .prepareRecipientsForNewOutgoingMessage(recipients)
-                .flatMap {
+                .flatMap { _ ->
                     messageEnvelopeCreator
                         .createOutgoingBroadcastEnvelope(recipients, message)
                         .flatMap { envelope -> tryBroadcastProteusEnvelope(envelope, message, option, target) }

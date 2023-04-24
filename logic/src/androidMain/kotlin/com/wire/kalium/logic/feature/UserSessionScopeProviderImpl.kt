@@ -30,15 +30,11 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserver
-import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
@@ -55,47 +51,22 @@ internal actual class UserSessionScopeProviderImpl(
 
     override fun create(userId: UserId): UserSessionScope {
         val userIdEntity = userId.toDao()
-        val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
-        val rootProteusPath = rootPathsProvider.rootProteusPath(userId)
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
-        val dbPath = DBFolder(
-            "${appContext.getDatabasePath(FileNameUtil.userDBName(userIdEntity))}"
-        )
+        val dbPath = DBFolder("${appContext.getDatabasePath(FileNameUtil.userDBName(userIdEntity))}")
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
-        val sessionManager = SessionManagerImpl(
-            globalScope.sessionRepository,
-            userId,
-            globalPreferences.authTokenStorage
-        )
-        val networkContainer: AuthenticatedNetworkContainer =
-            AuthenticatedNetworkContainer.create(sessionManager, UserIdDTO(userId.value, userId.domain))
-        val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.serverConfig().metaData.commonApiVersion.version)
-        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
-
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
-
-        val userDataSource = AuthenticatedDataSourceSet(
-            rootAccountPath,
-            networkContainer,
-            authenticationScopeProvider.provide(
-                sessionManager.getServerConfig(),
-                sessionManager.getProxyCredentials()
-            ),
-            proteusClientProvider,
-            userSessionWorkScheduler
-        )
         return UserSessionScope(
             applicationContext = appContext,
             userId = userId,
-            authenticatedDataSourceSet = userDataSource,
             globalScope = globalScope,
             globalCallManager = globalCallManager,
             globalPreferences = globalPreferences,
-            sessionManager = sessionManager,
+            authenticationScopeProvider = authenticationScopeProvider,
+            userSessionWorkScheduler = userSessionWorkScheduler,
+            rootPathsProvider = rootPathsProvider,
             dataStoragePaths = dataStoragePaths,
             kaliumConfigs = kaliumConfigs,
-            featureSupport = featureSupport,
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,

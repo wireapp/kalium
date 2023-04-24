@@ -21,19 +21,23 @@ package com.wire.kalium.api.v0.user.details
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.QualifiedHandleSample
 import com.wire.kalium.api.json.model.QualifiedIDSamples
-import com.wire.kalium.model.ListUsersRequestJson
+import com.wire.kalium.model.ListUsersResponseJson
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedHandles
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.v0.authenticated.UserDetailsApiV0
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class UserDetailsApiV0Test : ApiTest {
@@ -43,7 +47,7 @@ class UserDetailsApiV0Test : ApiTest {
         val params = ListUserRequest.qualifiedIds(listOf(QualifiedIDSamples.one, QualifiedIDSamples.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -55,7 +59,10 @@ class UserDetailsApiV0Test : ApiTest {
         )
         val userDetailsApi: UserDetailsApi = UserDetailsApiV0(networkClient)
 
-        userDetailsApi.getMultipleUsers(params)
+        val response: NetworkResponse<ListUsersDTO> = userDetailsApi.getMultipleUsers(params)
+        assertTrue(response.isSuccessful())
+        assertTrue(response.value.usersFailed.isEmpty())
+        assertEquals(response.value.usersFound, SUCCESS_RESPONSE.serializableData)
     }
 
     @Test
@@ -63,7 +70,7 @@ class UserDetailsApiV0Test : ApiTest {
         val params = ListUserRequest.qualifiedHandles(listOf(QualifiedHandleSample.one, QualifiedHandleSample.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertJsonBodyContent(expectedRequestBody)
@@ -77,7 +84,7 @@ class UserDetailsApiV0Test : ApiTest {
     @Test
     fun givenAValidRequest_whenGettingListOfUsers_thenCorrectHttpHeadersAndMethodShouldBeUsed() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
@@ -94,7 +101,7 @@ class UserDetailsApiV0Test : ApiTest {
     @Test
     fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
         val httpClient = mockAuthenticatedNetworkClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            SUCCESS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -111,5 +118,6 @@ class UserDetailsApiV0Test : ApiTest {
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
         const val PATH_USERS = "/users"
+        private val SUCCESS_RESPONSE = ListUsersResponseJson.v0
     }
 }
