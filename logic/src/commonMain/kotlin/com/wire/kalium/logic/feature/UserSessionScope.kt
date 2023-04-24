@@ -635,7 +635,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository, slowSyncRepository)
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(

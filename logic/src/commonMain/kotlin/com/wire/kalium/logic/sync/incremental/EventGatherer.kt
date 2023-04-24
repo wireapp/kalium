@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMap
@@ -36,11 +35,13 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
@@ -73,7 +74,6 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val slowSyncRepository: SlowSyncRepository
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
@@ -100,6 +100,7 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
     ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
+        .buffer(Channel.UNLIMITED)
         .transformWhile { (webSocketEvent, policy) ->
             val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
             val isOpenEvent = webSocketEvent is WebSocketEvent.Open
