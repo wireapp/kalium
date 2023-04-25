@@ -127,7 +127,7 @@ internal fun provideBaseHttpClient(
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
 
-    install(UserAgent){
+    install(UserAgent) {
         agent = KaliumUserAgentProvider.userAgent
     }
 

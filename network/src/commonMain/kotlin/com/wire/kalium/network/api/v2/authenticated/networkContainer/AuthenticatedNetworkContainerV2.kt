@@ -64,7 +64,6 @@ import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderI
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.UserAgent
 
 internal class AuthenticatedNetworkContainerV2 internal constructor(
     private val sessionManager: SessionManager,

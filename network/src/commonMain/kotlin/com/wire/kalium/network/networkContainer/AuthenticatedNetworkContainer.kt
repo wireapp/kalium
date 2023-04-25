@@ -48,11 +48,9 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
-import kotlin.native.concurrent.ThreadLocal
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {

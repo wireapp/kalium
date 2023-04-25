@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.UserAgent
 
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
