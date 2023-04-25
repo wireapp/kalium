@@ -25,14 +25,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
 
 @Suppress("LongMethod", "ComplexMethod")
@@ -49,57 +46,6 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     id,
                     MessageContent.Text(
                         data.text,
-                    ),
-                    data.expectsReadConfirmation
-                ),
-                encryptedProto = null,
-                null,
-                null,
-                null
-            )
-        }
-        is WebEventContent.Conversation.AssetMessage -> {
-            val mimeType = data.contentType ?: ""
-            MigratedMessage(
-                conversationId = qualifiedConversation,
-                senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
-                senderClientId = ClientId(fromClientId),
-                timestamp = Instant.parse(time).toEpochMilliseconds(),
-                content = "",
-                unencryptedProto = ProtoContent.Readable(
-                    id,
-                    MessageContent.Asset(
-                        AssetContent(
-                            sizeInBytes = data.contentLength ?: 0,
-                            name = data.info?.name,
-                            mimeType = mimeType,
-                            remoteData = AssetContent.RemoteData(
-                                otrKey = data.otrKey?.toString()?.toByteArray() ?: ByteArray(0),
-                                sha256 = data.sha256?.toString()?.toByteArray() ?: ByteArray(0),
-                                assetId = data.key ?: "",
-                                assetToken = data.token,
-                                assetDomain = data.domain,
-                                encryptionAlgorithm = null
-                            ),
-                            metadata = when {
-                                mimeType.contains("image/") -> AssetContent.AssetMetadata.Image(
-                                    width = data.info!!.width!!,
-                                    height = data.info.height!!
-                                )
-                                mimeType.contains("video/") -> AssetContent.AssetMetadata.Video(
-                                    width = null,
-                                    height = null,
-                                    durationMs = null
-                                )
-                                mimeType.contains("audio/") -> AssetContent.AssetMetadata.Audio(
-                                    durationMs = data.meta?.duration,
-                                    normalizedLoudness = data.meta?.loudness?.toString()?.toByteArray() ?: ByteArray(0)
-                                )
-                                else -> null
-                            },
-                            uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                            downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
-                        ),
                     ),
                     data.expectsReadConfirmation
                 ),
