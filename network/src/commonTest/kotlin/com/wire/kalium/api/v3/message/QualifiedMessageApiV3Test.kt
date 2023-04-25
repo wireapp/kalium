@@ -40,7 +40,7 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @IgnoreIOS
-class QualifiedMessageApiV3Test : ApiTest {
+internal class QualifiedMessageApiV3Test : ApiTest() {
     @Test
     fun givenFailedToSentUsersError_whenSendingAMessage_TheCorrectErrorIsPropagate() = errorCaseTest(
         FAILED_ERROR_RESPONSE

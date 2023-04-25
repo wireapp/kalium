@@ -31,7 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class ConnectionApiV0Test : ApiTest {
+internal class ConnectionApiV0Test : ApiTest() {
 
     @Test
     fun givenAGetConnectionsRequest_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {

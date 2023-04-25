@@ -52,7 +52,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-internal interface ApiTest {
+internal abstract class ApiTest {
 
     init {
         KaliumUserAgentProvider.setUserAgent("test/useragent")
@@ -84,7 +84,7 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedNetworkClient(
+    protected fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {}

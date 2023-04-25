@@ -29,7 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class FeatureConfigApiV0Test : ApiTest {
+internal class FeatureConfigApiV0Test : ApiTest() {
 
     @Test
     fun givenValidRequest_WhenCallingTheFileSharingApi_SuccessResponseExpected() = runTest {

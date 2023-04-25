@@ -29,7 +29,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class VerificationCodeApiV0Test : ApiTest {
+internal class VerificationCodeApiV0Test : ApiTest() {
 
     @Test
     fun givenASendCodeRequest_whenExecutingIt_thenThePathShouldBeCorrect() = runTest {
