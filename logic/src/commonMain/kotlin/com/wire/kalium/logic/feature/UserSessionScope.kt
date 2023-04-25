@@ -109,6 +109,8 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -363,7 +365,7 @@ class UserSessionScope internal constructor(
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
+        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, kaliumConfigs)
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -841,7 +843,8 @@ class UserSessionScope internal constructor(
         get() = AssetMessageHandlerImpl(
             messageRepository,
             persistMessage,
-            userConfigRepository
+            userConfigRepository,
+            validateAssetMimeType
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
@@ -1078,6 +1081,8 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
+
+    val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,

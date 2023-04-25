@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -169,7 +170,7 @@ class ApplicationMessageHandlerTest {
                 .thenReturn(
                     Either.Right(
                         FileSharingStatus(
-                            isFileSharingEnabled = true,
+                            state = FileSharingState.EnabledAll,
                             isStatusChanged = false
                         )
                     )

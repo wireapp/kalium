@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.asset
 
-package com.wire.kalium.logic.configuration
-
-data class FileSharingStatus(val state: FileSharingState, val isStatusChanged: Boolean?)
-
-sealed interface FileSharingState {
-    object Disabled : FileSharingState
-    object EnabledAll: FileSharingState
-    data class EnabledSome(val allowedType: List<String>) : FileSharingState
+interface ValidateAssetMimeTypeUseCase {
+    operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean
+}
+internal class ValidateAssetMimeTypeUseCaseImpl: ValidateAssetMimeTypeUseCase {
+    override operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean {
+        val extension = mimeType.split("/").last().lowercase()
+        return allowedExtension.any {
+            it.lowercase() == extension
+        }
+    }
 }
