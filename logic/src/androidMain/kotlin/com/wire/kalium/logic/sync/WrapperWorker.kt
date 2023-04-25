@@ -96,7 +96,11 @@ class WrapperWorkerFactory(
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) : WorkerFactory() {
 
-    override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: WorkerParameters
+    ): ListenableWorker? {
         if (WrapperWorker::class.java.canonicalName != workerClassName) {
             return null // delegate to default factory
         }
@@ -130,7 +134,11 @@ class WrapperWorkerFactory(
         return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
-    private fun createPendingMessageSenderWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker? {
+    private fun createPendingMessageSenderWorker(
+        workerParameters: WorkerParameters,
+        userId: UserId,
+        appContext: Context,
+    ): WrapperWorker? {
         val doesValidSessionExist = runBlocking {
             coreLogic.globalScope {
                 doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
@@ -160,6 +168,7 @@ class WrapperWorkerFactory(
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
         internal const val USER_ID_KEY = "user-id-worker-param"
+        internal const val USER_AGENT_KEY = "user-agent-worker-param"
 
         // TODO: delete not used anymore
         internal const val SERVER_CONFIG_ID_KEY = "server-config-id-worker-param"

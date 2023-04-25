@@ -48,9 +48,11 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
+import kotlin.native.concurrent.ThreadLocal
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
@@ -102,15 +104,19 @@ interface AuthenticatedNetworkContainer {
     companion object {
         fun create(
             sessionManager: SessionManager,
-            selfUserId: UserId
+            selfUserId: UserId,
+            userAgent: String,
         ): AuthenticatedNetworkContainer {
+
+            KaliumUserAgentProvider.setUserAgent(userAgent)
+
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
-                    sessionManager
+                    sessionManager,
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
-                    sessionManager
+                    sessionManager,
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -120,7 +126,7 @@ interface AuthenticatedNetworkContainer {
 
                 3 -> AuthenticatedNetworkContainerV3(
                     sessionManager,
-                    selfUserId
+                    selfUserId,
                 )
 
                 else -> error("Unsupported version: $version")
@@ -134,7 +140,6 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
-
     suspend fun clearCachedToken()
 }
 
@@ -172,9 +177,17 @@ internal class AuthenticatedHttpClientProviderImpl(
         )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, bearerAuthProvider, sessionManager.serverConfig())
+        AuthenticatedWebSocketClient(
+            engine,
+            bearerAuthProvider,
+            sessionManager.serverConfig()
+        )
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager.serverConfig(), bearerAuthProvider, installCompression = false)
+        AuthenticatedNetworkClient(
+            engine,
+            sessionManager.serverConfig(),
+            bearerAuthProvider,
+            installCompression = false)
     }
 }

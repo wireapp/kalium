@@ -33,6 +33,7 @@ import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import io.ktor.client.plugins.UserAgent
 import kotlinx.coroutines.cancel
 
 /**
@@ -40,10 +41,11 @@ import kotlinx.coroutines.cancel
  * and it should only override functions/variables from CoreLogicCommon
  */
 actual class CoreLogic(
+    userAgent: String,
     private val appContext: Context,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-) : CoreLogicCommon(rootPath, kaliumConfigs) {
+) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
         GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
@@ -59,7 +61,7 @@ actual class CoreLogic(
         }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
-        userSessionScopeProvider.value.getOrCreate(userId)
+        userSessionScopeProvider.value.getOrCreate(userId, userAgent)
 
     override fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()

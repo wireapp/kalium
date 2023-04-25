@@ -31,6 +31,7 @@ import com.wire.kalium.network.api.v3.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.UserAgent
 
 @Suppress("MagicNumber")
 interface UnauthenticatedNetworkContainer {
@@ -43,8 +44,12 @@ interface UnauthenticatedNetworkContainer {
     companion object {
         fun create(
             serverConfigDTO: ServerConfigDTO,
-            proxyCredentials: ProxyCredentialsDTO?
+            proxyCredentials: ProxyCredentialsDTO?,
+            userAgent: String,
         ): UnauthenticatedNetworkContainer {
+
+            KaliumUserAgentProvider.setUserAgent(userAgent)
+
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
                     serverConfigDTO,

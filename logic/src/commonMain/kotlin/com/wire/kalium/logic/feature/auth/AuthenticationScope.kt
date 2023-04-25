@@ -37,17 +37,24 @@ import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import io.ktor.client.plugins.UserAgent
 import io.ktor.util.collections.ConcurrentMap
 
 class AuthenticationScopeProvider {
 
-    private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>, AuthenticationScope> by lazy {
+    private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>,
+            AuthenticationScope> by lazy {
         ConcurrentMap()
     }
 
-    fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
+    fun provide(
+        userAgent: String,
+        serverConfig: ServerConfig,
+        proxyCredentials: ProxyCredentials?
+    ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
+                userAgent,
                 serverConfig,
                 proxyCredentials
             )
@@ -55,6 +62,7 @@ class AuthenticationScopeProvider {
 }
 
 class AuthenticationScope(
+    private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
@@ -62,7 +70,8 @@ class AuthenticationScope(
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) }
+            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
+            userAgent
         )
     }
     private val loginRepository: LoginRepository

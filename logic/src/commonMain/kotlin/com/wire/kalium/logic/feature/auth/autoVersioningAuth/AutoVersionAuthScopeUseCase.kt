@@ -37,7 +37,10 @@ class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
 ) {
-    suspend operator fun invoke(proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None): Result =
+    suspend operator fun invoke(
+        userAgent: String,
+        proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None
+    ): Result =
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->

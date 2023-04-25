@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import io.ktor.client.plugins.UserAgent
 import io.ktor.util.collections.ConcurrentMap
 
 interface UserSessionScopeProvider {

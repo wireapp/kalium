@@ -297,11 +297,12 @@ import kotlin.coroutines.CoroutineContext
 
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
+    userAgent: String,
     private val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: GlobalPrefProvider,
-    private val authenticationScopeProvider: AuthenticationScopeProvider,
+    authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
@@ -384,13 +385,15 @@ class UserSessionScope internal constructor(
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         sessionManager,
-        UserIdDTO(userId.value, userId.domain)
+        UserIdDTO(userId.value, userId.domain),
+        userAgent
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
+        userAgent,
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials()
     )
