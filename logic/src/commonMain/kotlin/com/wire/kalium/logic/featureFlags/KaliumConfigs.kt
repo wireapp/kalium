@@ -24,7 +24,7 @@ data class KaliumConfigs(
     val developerFeaturesEnabled: Boolean = false,
     val isLoggingEnabled: Boolean = false,
     val enableBlacklist: Boolean = false,
-    val fileRestrictionEnabled: Boolean = false,
+    val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
     var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: Boolean = true,
@@ -40,3 +40,8 @@ data class KaliumConfigs(
     val wipeOnDeviceRemoval: Boolean = false,
     val wipeOnRootedDevice: Boolean = false
 )
+
+sealed interface BuildFileRestrictionState {
+    object NoRestriction : BuildFileRestrictionState
+    data class RestrictSome(val allowedType: List<String>) : BuildFileRestrictionState
+}

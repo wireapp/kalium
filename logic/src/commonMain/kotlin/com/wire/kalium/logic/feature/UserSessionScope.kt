@@ -110,6 +110,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
@@ -286,7 +288,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -300,6 +301,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
@@ -402,7 +404,7 @@ class UserSessionScope internal constructor(
     )
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
+        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, kaliumConfigs)
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -893,7 +895,8 @@ class UserSessionScope internal constructor(
         get() = AssetMessageHandlerImpl(
             messageRepository,
             persistMessage,
-            userConfigRepository
+            userConfigRepository,
+            validateAssetMimeType
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
@@ -1136,6 +1139,8 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
+
+    val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,

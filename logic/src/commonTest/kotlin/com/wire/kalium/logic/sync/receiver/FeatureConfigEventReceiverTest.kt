@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -100,7 +101,7 @@ class FeatureConfigEventReceiverTest {
     fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingFileSharingEnabledSuccessful()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingState.Disabled, isStatusChanged = false)))
             .arrange()
 
         featureConfigEventReceiver.onEvent(arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)))
@@ -114,7 +115,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = true, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingState.EnabledAll, isStatusChanged = false)))
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 
@@ -131,7 +132,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingState.Disabled, isStatusChanged = false)))
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 

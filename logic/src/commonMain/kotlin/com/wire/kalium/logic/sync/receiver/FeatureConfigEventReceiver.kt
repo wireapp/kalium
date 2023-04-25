@@ -18,14 +18,14 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -34,7 +34,6 @@ internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfi
 
 internal class FeatureConfigEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
-    private val userRepository: UserRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : FeatureConfigEventReceiver {
@@ -47,27 +46,27 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
-                if (kaliumConfigs.fileRestrictionEnabled) {
-                    userConfigRepository.setFileSharingStatus(false, null)
-                } else {
+                val currentFileSharingStatus: Boolean = userConfigRepository
+                    .isFileSharingEnabled()
+                    .fold({ false }, {
+                        when(it.state) {
+                            FileSharingState.Disabled -> false
+                            FileSharingState.EnabledAll -> true
+                            is FileSharingState.EnabledSome -> true
+                        }
+                    })
 
-                    val currentFileSharingStatus: Boolean = userConfigRepository
-                        .isFileSharingEnabled()
-                        .fold({ false }, { it.isFileSharingEnabled ?: false })
+                when (event.model.status) {
+                    Status.ENABLED -> userConfigRepository.setFileSharingStatus(
+                        status = true,
+                        isStatusChanged = !currentFileSharingStatus
+                    )
 
-                    when (event.model.status) {
-                        Status.ENABLED -> userConfigRepository.setFileSharingStatus(
-                            status = true,
-                            isStatusChanged = !currentFileSharingStatus
-                        )
-
-                        Status.DISABLED -> userConfigRepository.setFileSharingStatus(
-                            status = false,
-                            isStatusChanged = currentFileSharingStatus
-                        )
-                    }
+                    Status.DISABLED -> userConfigRepository.setFileSharingStatus(
+                        status = false,
+                        isStatusChanged = currentFileSharingStatus
+                    )
                 }
-
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
                     event
