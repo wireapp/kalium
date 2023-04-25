@@ -25,6 +25,7 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
@@ -53,12 +54,16 @@ import kotlin.test.fail
 
 internal interface ApiTest {
 
+    init {
+        KaliumUserAgentProvider.setUserAgent("test/useragent")
+    }
+
     private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
 
     private val loadToken: suspend () -> BearerTokens?
         get() = {
-            val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
+            val session = TEST_SESSION_NAMAGER.session()
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
 
