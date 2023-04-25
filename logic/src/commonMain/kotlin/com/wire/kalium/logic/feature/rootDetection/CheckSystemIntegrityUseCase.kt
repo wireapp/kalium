@@ -53,7 +53,7 @@ internal class CheckSystemIntegrityUseCaseImpl(
 ) : CheckSystemIntegrityUseCase {
 
     override suspend fun invoke(): CheckSystemIntegrityUseCase.Result {
-        return if (true) {
+        return if (kaliumConfigs.wipeOnRootedDevice && rootDetector.isSystemRooted()) {
             kaliumLogger.w("System appears to have been rooted, deleting all account data...")
             deleteAllSessions()
                 .onSuccess {
