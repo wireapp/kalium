@@ -22,6 +22,9 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * Use case to persist the new self deleting messages status to memory.
+ */
 fun interface PersistNewSelfDeletingStatusUseCase {
     operator fun invoke(newStatus: SelfDeletingMessagesStatus)
 }
@@ -33,4 +36,3 @@ class PersistNewSelfDeletingStatusUseCaseImpl(
         kaliumLogger.e("Failure while persisting new self deleting messages status $it")
     }, { kaliumLogger.d("Successfully updated new self deleting messages status $newStatus") })
 }
-

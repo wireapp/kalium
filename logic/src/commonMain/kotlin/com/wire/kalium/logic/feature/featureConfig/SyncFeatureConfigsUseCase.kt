@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -138,7 +138,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             userConfigRepository.setSelfDeletingMessagesStatus(
                 SelfDeletingMessagesStatus(
                     isFeatureEnabled = selfDeletingMessagesEnabled,
-                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status has changed so we set it to null
+                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null
                     globalSelfDeletionDuration = model.config.enforcedTimeoutSeconds,
                     isEnforced = model.config.enforcedTimeoutSeconds.isGreaterThan(0)
                 )
