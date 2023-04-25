@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 expect class GlobalCallManager {
 
@@ -45,7 +46,8 @@ expect class GlobalCallManager {
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
         qualifiedIdMapper: QualifiedIdMapper,
-        videoStateChecker: VideoStateChecker
+        videoStateChecker: VideoStateChecker,
+        kaliumConfigs: KaliumConfigs
     ): CallManager
 
     fun removeInMemoryCallingManagerForUser(userId: UserId)

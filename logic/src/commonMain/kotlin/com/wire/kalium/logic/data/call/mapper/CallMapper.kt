@@ -162,6 +162,7 @@ class CallMapperImpl(
         status = toCallStatus(callStatus = callEntity.status),
         isMuted = metadata?.isMuted ?: true,
         isCameraOn = metadata?.isCameraOn ?: false,
+        isCbrEnabled = metadata?.isCbrEnabled ?: false,
         callerId = callEntity.callerId,
         conversationName = metadata?.conversationName,
         conversationType = toConversationType(conversationType = callEntity.conversationType),

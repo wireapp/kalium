@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
@@ -86,6 +87,8 @@ class CallManagerTest {
 
     private val callMapper = CallMapperImpl(qualifiedIdMapper)
 
+    val kaliumConfigs = KaliumConfigs()
+
     @BeforeTest
     fun setUp() {
         callManagerImpl = CallManagerImpl(
@@ -100,7 +103,8 @@ class CallManagerTest {
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
-            callMapper = callMapper
+            callMapper = callMapper,
+            kaliumConfigs = kaliumConfigs
         )
     }
 
