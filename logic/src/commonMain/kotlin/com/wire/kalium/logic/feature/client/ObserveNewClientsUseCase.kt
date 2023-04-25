@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.map
  * is no longer logged it on the device.
  */
 interface ObserveNewClientsUseCase {
-    suspend operator fun invoke(userAgent: String): Flow<NewClientResult>
+    suspend operator fun invoke(): Flow<NewClientResult>
 }
 
 class ObserveNewClientsUseCaseImpl internal constructor(
@@ -45,12 +45,12 @@ class ObserveNewClientsUseCaseImpl internal constructor(
     private val newClientManager: NewClientManager
 ) : ObserveNewClientsUseCase {
 
-    override suspend operator fun invoke(userAgent: String): Flow<NewClientResult> = newClientManager.observeNewClients()
+    override suspend operator fun invoke(): Flow<NewClientResult> = newClientManager.observeNewClients()
         .map { (newClient, userId) ->
             sessionRepository.currentSession()
                 .map { currentAccInfo ->
                     if (currentAccInfo.userId == userId) NewClientResult.InCurrentAccount(newClient)
-                    else observeValidAccounts(userAgent).firstOrNull()
+                    else observeValidAccounts().firstOrNull()
                         ?.firstOrNull { (selfUser, _) -> selfUser.id == userId }
                         ?.let { (selfUser, _) ->
                             NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle)

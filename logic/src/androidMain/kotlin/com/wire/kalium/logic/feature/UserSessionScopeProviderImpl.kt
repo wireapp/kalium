@@ -47,9 +47,10 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
+    userAgent: String
+) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
-    override fun create(userId: UserId, userAgent: String): UserSessionScope {
+    override fun create(userId: UserId): UserSessionScope {
         val userIdEntity = userId.toDao()
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
         val dbPath = DBFolder("${appContext.getDatabasePath(FileNameUtil.userDBName(userIdEntity))}")

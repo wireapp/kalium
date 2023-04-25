@@ -54,7 +54,8 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    protected val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
+    protected val authenticationScopeProvider: AuthenticationScopeProvider =
+        AuthenticationScopeProvider(userAgent)
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(
@@ -72,7 +73,7 @@ abstract class CoreLogicCommon internal constructor(
         proxyCredentials: ProxyCredentials? = null
     ): AuthenticationScope =
         // TODO(logic): make it lazier
-        authenticationScopeProvider.provide(this.userAgent, serverConfig, proxyCredentials)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

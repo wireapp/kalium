@@ -33,7 +33,6 @@ import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import io.ktor.client.plugins.UserAgent
 import kotlinx.coroutines.cancel
 
 /**
@@ -61,7 +60,7 @@ actual class CoreLogic(
         }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
-        userSessionScopeProvider.value.getOrCreate(userId, userAgent)
+        userSessionScopeProvider.value.getOrCreate(userId)
 
     override fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
@@ -90,7 +89,8 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
-            networkStateObserver
+            networkStateObserver,
+            userAgent
         )
     }
 }

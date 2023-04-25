@@ -37,10 +37,11 @@ import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import io.ktor.client.plugins.UserAgent
 import io.ktor.util.collections.ConcurrentMap
 
-class AuthenticationScopeProvider {
+class AuthenticationScopeProvider(
+    private val userAgent: String
+) {
 
     private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>,
             AuthenticationScope> by lazy {
@@ -48,7 +49,6 @@ class AuthenticationScopeProvider {
     }
 
     fun provide(
-        userAgent: String,
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?
     ): AuthenticationScope =

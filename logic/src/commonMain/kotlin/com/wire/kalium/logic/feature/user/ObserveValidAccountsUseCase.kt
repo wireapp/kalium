@@ -35,7 +35,7 @@ interface ObserveValidAccountsUseCase {
     /**
      * @return a [Flow] of the list of valid accounts and their associated team.
      */
-    suspend operator fun invoke(userAgent: String): Flow<List<Pair<SelfUser, Team?>>>
+    suspend operator fun invoke(): Flow<List<Pair<SelfUser, Team?>>>
 }
 
 internal class ObserveValidAccountsUseCaseImpl internal constructor(
@@ -44,10 +44,10 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
 ) : ObserveValidAccountsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun invoke(userAgent: String): Flow<List<Pair<SelfUser, Team?>>> =
+    override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
         sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
             val flowsOfSelfUsers = accountList.map { accountInfo ->
-                userSessionScopeProvider.getOrCreate(accountInfo.userId, userAgent).let {
+                userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
                     it.users.getSelfUserWithTeam()
                 }
             }
