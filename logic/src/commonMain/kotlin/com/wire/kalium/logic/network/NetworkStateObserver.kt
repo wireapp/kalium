@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.network
 
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -31,6 +32,7 @@ interface NetworkStateObserver {
     // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
         // Delay for given amount but break it if reconnected again.
+        kaliumLogger.i("$TAG delayUntilConnectedWithInternetAgain")
         withTimeoutOrNull(delay) {
             // Drop the current value, so it will complete only if the connection changed again to connected during that time.
             observeNetworkState()
@@ -38,6 +40,10 @@ interface NetworkStateObserver {
                 .filter { it is NetworkState.ConnectedWithInternet }
                 .firstOrNull()
         }
+    }
+
+    companion object {
+        const val TAG = "NetworkStateObserver"
     }
 }
 
