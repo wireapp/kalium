@@ -168,7 +168,6 @@ class WrapperWorkerFactory(
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
         internal const val USER_ID_KEY = "user-id-worker-param"
-        internal const val USER_AGENT_KEY = "user-agent-worker-param"
 
         // TODO: delete not used anymore
         internal const val SERVER_CONFIG_ID_KEY = "server-config-id-worker-param"
