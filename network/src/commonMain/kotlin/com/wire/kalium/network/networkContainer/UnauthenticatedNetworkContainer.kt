@@ -44,7 +44,7 @@ interface UnauthenticatedNetworkContainer {
         fun create(
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
-            userAgent: String,
+            userAgent: String
         ): UnauthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
