@@ -269,6 +269,7 @@ sealed class ConversationRepository {
                                     fileName,
                                     type,
                                     null,
+                                    null,
                                     null
                                 )
                             }
@@ -347,7 +348,8 @@ sealed class ConversationRepository {
                                 byteArray.size.toLong(),
                                 "image", type,
                                 width,
-                                height
+                                height,
+                                null
                             )
                             if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
