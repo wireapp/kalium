@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -324,15 +323,11 @@ class FeatureConfigEventReceiverTest {
         var kaliumConfigs = KaliumConfigs()
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
                 userConfigRepository,
-                userRepository,
                 kaliumConfigs,
                 TestUser.SELF.id
             )

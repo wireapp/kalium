@@ -991,7 +991,7 @@ class UserSessionScope internal constructor(
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs, userId)
 
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
