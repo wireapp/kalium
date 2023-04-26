@@ -37,16 +37,24 @@ private interface UnboundNetworkClientProvider {
 
 internal class UnboundNetworkClientProviderImpl(
     val developmentApiEnabled: Boolean,
+    userAgent: String,
     engine: HttpClientEngine = defaultHttpEngine()
 ) : UnboundNetworkClientProvider {
+
+    init {
+        KaliumUserAgentProvider.setUserAgent(userAgent)
+    }
+
     override val unboundNetworkClient by lazy {
         UnboundNetworkClient(engine)
     }
 }
 
 class UnboundNetworkContainerCommon(
-    val developmentApiEnabled: Boolean
-) : UnboundNetworkContainer, UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled) {
+    val developmentApiEnabled: Boolean,
+    userAgent: String
+) : UnboundNetworkContainer,
+    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
 }
