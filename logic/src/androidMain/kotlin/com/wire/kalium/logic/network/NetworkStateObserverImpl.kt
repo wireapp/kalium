@@ -22,6 +22,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -37,17 +38,36 @@ actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserve
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                networkStateFlow.tryEmit(networkCapabilities.toState())
+                val networkState = networkCapabilities.toState()
+                kaliumLogger.i("${NetworkStateObserver.TAG} capabilities changed $networkState")
+                networkStateFlow.tryEmit(networkState)
             }
 
             override fun onLost(network: Network) {
+                kaliumLogger.i("${NetworkStateObserver.TAG} lost connection")
                 networkStateFlow.tryEmit(NetworkState.NotConnected)
                 super.onLost(network)
             }
 
             override fun onUnavailable() {
+                kaliumLogger.i("${NetworkStateObserver.TAG} connection unavailable")
                 networkStateFlow.tryEmit(NetworkState.NotConnected)
                 super.onUnavailable()
+            }
+
+            override fun onAvailable(network: Network) {
+                kaliumLogger.i("${NetworkStateObserver.TAG} connection available")
+                super.onAvailable(network)
+            }
+
+            override fun onLosing(network: Network, maxMsToLive: Int) {
+                kaliumLogger.i("${NetworkStateObserver.TAG} losing connection maxMsToLive: $maxMsToLive")
+                super.onLosing(network, maxMsToLive)
+            }
+
+            override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+                kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
+                super.onBlockedStatusChanged(network, blocked)
             }
         }
         connectivityManager.registerDefaultNetworkCallback(callback)

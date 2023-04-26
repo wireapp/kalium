@@ -27,9 +27,20 @@ object ListUsersRequestJson {
 
     private val qualifiedIdsProvider = { serializable: QualifiedUserIdListRequest ->
         val idsArrayContent = serializable.qualifiedIds.joinToString(",") {
-            """{"domain": "${it.domain}", "id":"${it.value}""""
+            """
+                {
+                    "domain": "${it.domain}",
+                    "id": "${it.value}"
+                }
+            """.trimIndent()
         }
-        """{"qualified_ids": [$idsArrayContent]}"""
+        """
+            {
+                "qualified_ids": [
+                    $idsArrayContent
+                ]
+            }
+        """.trimIndent()
     }
     private val qualifiedHandlesProvider = { serializable: QualifiedHandleListRequest ->
         val handlesArrayContent = serializable.qualifiedHandles.joinToString(",") {
