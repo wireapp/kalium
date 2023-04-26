@@ -20,11 +20,11 @@ package com.wire.kalium.api.v3
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
 import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
+import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
@@ -44,7 +44,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ConversationApiV3Test : ApiTest {
+internal class ConversationApiV3Test : ApiTest() {
 
     @Test
     fun givenACreateNewConversationRequest_whenCallingCreateNewConversaton_thenTheRequestShouldBeConfiguredOK() = runTest {

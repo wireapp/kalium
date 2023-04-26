@@ -109,12 +109,13 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     @Suppress("LongMethod", "ThrowsCount")
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
+        val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
         val instancePath = System.getProperty("user.home") +
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
-        val coreLogic = CoreLogic("$instancePath", kaliumConfigs)
+        val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
         val serverConfig = if (instanceRequest.customBackend != null) {

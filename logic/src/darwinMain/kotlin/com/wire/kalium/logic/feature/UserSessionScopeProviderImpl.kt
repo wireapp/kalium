@@ -44,7 +44,8 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
+    userAgent: String
+) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
@@ -66,8 +67,9 @@ internal actual class UserSessionScopeProviderImpl(
             kaliumConfigs,
             userStorageProvider,
             this,
-            networkStateObserver
-        )
+            networkStateObserver,
+            userAgent
+            )
     }
 
 }

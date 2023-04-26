@@ -40,10 +40,11 @@ import kotlinx.coroutines.cancel
  * and it should only override functions/variables from CoreLogicCommon
  */
 actual class CoreLogic(
+    userAgent: String,
     private val appContext: Context,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-) : CoreLogicCommon(rootPath, kaliumConfigs) {
+) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
         GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
@@ -88,7 +89,8 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
-            networkStateObserver
+            networkStateObserver,
+            userAgent
         )
     }
 }

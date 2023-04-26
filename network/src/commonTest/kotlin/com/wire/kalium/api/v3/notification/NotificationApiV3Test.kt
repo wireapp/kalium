@@ -34,7 +34,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class NotificationApiV3Test : ApiTest {
+internal class NotificationApiV3Test : ApiTest() {
 
     /**
      * Doesn't do anything.
