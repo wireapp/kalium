@@ -107,8 +107,12 @@ interface AuthenticatedNetworkContainer {
         fun create(
             sessionManager: SessionManager,
             selfUserId: UserId,
+            userAgent: String,
             ignoreAllSSLErrors: Boolean = false
         ): AuthenticatedNetworkContainer {
+
+            KaliumUserAgentProvider.setUserAgent(userAgent)
+
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
                     sessionManager
@@ -145,7 +149,6 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
-
     suspend fun clearCachedToken()
 }
 
@@ -183,9 +186,17 @@ internal class AuthenticatedHttpClientProviderImpl(
         )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, bearerAuthProvider, sessionManager.serverConfig())
+        AuthenticatedWebSocketClient(
+            engine,
+            bearerAuthProvider,
+            sessionManager.serverConfig()
+        )
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager.serverConfig(), bearerAuthProvider, installCompression = false)
+        AuthenticatedNetworkClient(
+            engine,
+            sessionManager.serverConfig(),
+            bearerAuthProvider,
+            installCompression = false)
     }
 }

@@ -53,7 +53,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ConversationApiV0Test : ApiTest {
+internal class ConversationApiV0Test : ApiTest() {
 
     @Test
     fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
