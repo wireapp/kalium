@@ -137,7 +137,7 @@ class WrapperWorkerFactory(
     private fun createPendingMessageSenderWorker(
         workerParameters: WorkerParameters,
         userId: UserId,
-        appContext: Context,
+        appContext: Context
     ): WrapperWorker? {
         val doesValidSessionExist = runBlocking {
             coreLogic.globalScope {
