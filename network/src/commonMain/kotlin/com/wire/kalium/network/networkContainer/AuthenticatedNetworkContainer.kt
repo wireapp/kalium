@@ -124,7 +124,7 @@ interface AuthenticatedNetworkContainer {
 
                 3 -> AuthenticatedNetworkContainerV3(
                     sessionManager,
-                    selfUserId,
+                    selfUserId
                 )
 
                 else -> error("Unsupported version: $version")
