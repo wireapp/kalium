@@ -56,15 +56,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
         }
     }
 
-    /**
-     * in case we are enqueue the message send by our self, we only mark it as
-     * [com.wire.kalium.persistence.dao.message.MessageEntity.Visibility.DELETED]
-     * and we relay on the receiving side to inform us about the
-     * moment we are ready to delete it completely, that is done by
-     * invoking [DeleteMessageUseCase], which the receiver will do at some point
-     * once [startSelfDeletion] is invoked on his side and this piece of logic will be
-     * reached.
-     **/
     private suspend fun deleteMessage(message: Message.Regular) {
         removeFromOutgoingDeletion(message)
 

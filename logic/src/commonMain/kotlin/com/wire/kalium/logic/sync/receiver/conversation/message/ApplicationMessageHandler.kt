@@ -308,8 +308,7 @@ internal class ApplicationMessageHandlerImpl(
     /**
      * in case of ephemeral messages, we could either receive delete signal because the self user decided to delete the message
      * or when the sender is waiting for the receiver timer to run out, after that happens, the receiver sends the signal to delete the
-     * message see [com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase] deletion when timer runs out for self user receiving the message
-     * and [com.wire.kalium.logic.feature.message.ephemeral.SelfUserSenderSelfDeletionUseCase] for deletion when self user is sending the message
+     * message permanently see [com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase]
      */
     private suspend fun handleEphemeralMessageDeletion(
         messageToRemove: Message.Regular

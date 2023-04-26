@@ -346,8 +346,6 @@ sealed interface Message {
                 expireAfter
             }
         }
-
-        val isExpired = timeLeftForDeletion() == Duration.ZERO
     }
 
     enum class UploadStatus {

@@ -84,7 +84,7 @@ class MessageMapperImpl(
                 selfDeletionStartDate = message.expirationData?.let {
                     when (val status = it.selfDeletionStatus) {
                         is Message.ExpirationData.SelfDeletionStatus.Started -> status.selfDeletionStartDate
-                        else -> null
+                        is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
                     }
                 },
                 visibility = visibility,

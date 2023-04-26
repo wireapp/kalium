@@ -19,6 +19,8 @@ package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -35,12 +37,13 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
 /**
  * When the self user is receiver of the self deletion message,
- * we delete it permamently after expiration and inform the sender by broadcasting a message to delete
- * the self-deleting message
+ * we delete it permanently after expiration and inform the sender by broadcasting a message to delete
+ * for the self-deleting message, before the receiver does it on the sender side, the message is simply marked as deleted
  * see [com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase]
  **/
 internal class SelfUserReceiverSelfDeletionUseCase(
@@ -68,7 +71,7 @@ internal class SelfUserReceiverSelfDeletionUseCase(
                         .flatMap { messageRepository.deleteMessage(messageId, conversationId) }
                 }
             }.onFailure { failure ->
-//             kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
+                kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
                 if (failure is CoreFailure.Unknown) {
                     failure.rootCause?.printStackTrace()
                 }
@@ -126,7 +129,7 @@ internal class SelfUserReceiverSelfDeletionUseCase(
                 assetToRemove.assetToken
             )
                 .onFailure {
-//                     kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
                 }
         }
     }
