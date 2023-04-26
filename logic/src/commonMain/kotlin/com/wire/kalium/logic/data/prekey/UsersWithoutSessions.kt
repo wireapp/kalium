@@ -15,13 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.prekey
 
-package com.wire.kalium.api.json.model
+import com.wire.kalium.logic.data.user.UserId
 
-import com.wire.kalium.network.api.base.model.QualifiedID
+/**
+ * Holder class for an optional list of users ids whose sessions are missing.
+ */
+data class UsersWithoutSessions(val users: List<UserId>) {
+    fun areMissingSessions() = users.isNotEmpty()
 
-object QualifiedIDSamples {
-    val one = QualifiedID("someValue", "someDomain")
-    val two = QualifiedID("anotherValue", "anotherDomain")
-    val three = QualifiedID("anotherValue3", "anotherDomain3")
+    companion object {
+        val EMPTY = UsersWithoutSessions(emptyList())
+    }
 }
