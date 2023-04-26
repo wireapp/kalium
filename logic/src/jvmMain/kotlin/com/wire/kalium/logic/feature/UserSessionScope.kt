@@ -68,6 +68,6 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver,
+        networkStateObserver
     )
 }
