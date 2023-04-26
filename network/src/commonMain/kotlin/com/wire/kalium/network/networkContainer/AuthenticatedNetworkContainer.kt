@@ -114,7 +114,7 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
-                    sessionManager,
+                    sessionManager
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
