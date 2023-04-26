@@ -52,7 +52,7 @@ internal class UnboundNetworkClientProviderImpl(
 
 class UnboundNetworkContainerCommon(
     val developmentApiEnabled: Boolean,
-    userAgent: String,
+    userAgent: String
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
