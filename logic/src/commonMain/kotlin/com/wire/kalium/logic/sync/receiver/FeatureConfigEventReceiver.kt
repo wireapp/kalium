@@ -49,7 +49,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 val currentFileSharingStatus: Boolean = userConfigRepository
                     .isFileSharingEnabled()
                     .fold({ false }, {
-                        when(it.state) {
+                        when (it.state) {
                             FileSharingState.Disabled -> false
                             FileSharingState.EnabledAll -> true
                             is FileSharingState.EnabledSome -> true

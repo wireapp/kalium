@@ -17,10 +17,16 @@
  */
 package com.wire.kalium.logic.feature.asset
 
+/**
+ * Returns true if the mime type is allowed and false otherwise.
+ * @param mimeType the mime type to validate.
+ * @param allowedExtension the list of allowed extension.
+ */
 interface ValidateAssetMimeTypeUseCase {
     operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean
 }
-internal class ValidateAssetMimeTypeUseCaseImpl: ValidateAssetMimeTypeUseCase {
+
+internal class ValidateAssetMimeTypeUseCaseImpl : ValidateAssetMimeTypeUseCase {
     override operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean {
         val extension = mimeType.split("/").last().lowercase()
         return allowedExtension.any {

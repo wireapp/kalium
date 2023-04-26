@@ -22,6 +22,6 @@ data class FileSharingStatus(val state: FileSharingState, val isStatusChanged: B
 
 sealed interface FileSharingState {
     object Disabled : FileSharingState
-    object EnabledAll: FileSharingState
+    object EnabledAll : FileSharingState
     data class EnabledSome(val allowedType: List<String>) : FileSharingState
 }

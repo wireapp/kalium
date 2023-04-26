@@ -95,7 +95,7 @@ class UserConfigDataSource(
             )
         )
 
-        buildConfig is BuildFileRestrictionState.RestrictSome -> Either.Right(
+        buildConfig is BuildFileRestrictionState.AllowSome -> Either.Right(
             FileSharingStatus(
                 isStatusChanged = false,
                 state = FileSharingState.EnabledSome(buildConfig.allowedType)

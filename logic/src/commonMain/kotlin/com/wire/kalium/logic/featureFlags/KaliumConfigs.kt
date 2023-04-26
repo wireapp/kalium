@@ -43,5 +43,5 @@ data class KaliumConfigs(
 
 sealed interface BuildFileRestrictionState {
     object NoRestriction : BuildFileRestrictionState
-    data class RestrictSome(val allowedType: List<String>) : BuildFileRestrictionState
+    data class AllowSome(val allowedType: List<String>) : BuildFileRestrictionState
 }

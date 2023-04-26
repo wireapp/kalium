@@ -465,7 +465,7 @@ class SyncFeatureConfigsUseCaseTest {
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
-            .withBuildConfigFileSharing(BuildFileRestrictionState.RestrictSome(listOf("png", "jpg")))
+            .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -481,7 +481,7 @@ class SyncFeatureConfigsUseCaseTest {
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
-            .withBuildConfigFileSharing(BuildFileRestrictionState.RestrictSome(listOf("png", "jpg")))
+            .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
             .arrange()
 
         syncFeatureConfigsUseCase()
