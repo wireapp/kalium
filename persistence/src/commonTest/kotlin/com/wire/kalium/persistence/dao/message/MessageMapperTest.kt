@@ -29,7 +29,7 @@ class MessageMapperTest {
 
     @Test
     fun givenEphemeralOneOnOneConversation_whenMappingToMessagePreviewEntity_thenMessagePreviewEntityContentIsEphemeral() {
-        val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.ONE_ON_ONE, true)
+        val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.GROUP, true)
 
         val content = messagePreviewEntity.content
         assertIs<MessagePreviewEntityContent.Ephemeral>(content)
@@ -38,7 +38,7 @@ class MessageMapperTest {
 
     @Test
     fun givenEphemeralGroupConversation_whenMappingToMessagePreviewEntity_thenMessagePreviewEntityContentIsEphemeral() {
-        val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.GROUP, true)
+        val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.ONE_ON_ONE, true)
 
         val content = messagePreviewEntity.content
         assertIs<MessagePreviewEntityContent.Ephemeral>(content)
