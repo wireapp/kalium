@@ -28,7 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
-class TeamsApiV0Test : ApiTest {
+internal class TeamsApiV0Test : ApiTest() {
 
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =

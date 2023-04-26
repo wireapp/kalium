@@ -80,6 +80,7 @@ import kotlin.coroutines.CoroutineContext
  */
 
 class GlobalKaliumScope internal constructor(
+    userAgent: String,
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,
@@ -90,7 +91,7 @@ class GlobalKaliumScope internal constructor(
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
-        UnboundNetworkContainerCommon(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
+        UnboundNetworkContainerCommon(kaliumConfigs.developmentApiEnabled, userAgent)
     }
 
     internal val serverConfigRepository: ServerConfigRepository

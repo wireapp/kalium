@@ -44,6 +44,7 @@ expect class CoreLogic : CoreLogicCommon
 
 abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
+    protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
@@ -53,13 +54,24 @@ abstract class CoreLogicCommon internal constructor(
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    protected val authenticationScopeProvider: AuthenticationScopeProvider = AuthenticationScopeProvider()
+    protected val authenticationScopeProvider: AuthenticationScopeProvider =
+        AuthenticationScopeProvider(userAgent)
 
     fun getGlobalScope(): GlobalKaliumScope =
-        GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider, authenticationScopeProvider)
+        GlobalKaliumScope(
+            userAgent,
+            globalDatabase,
+            globalPreferences,
+            kaliumConfigs,
+            userSessionScopeProvider,
+            authenticationScopeProvider
+        )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials? = null): AuthenticationScope =
+    fun getAuthenticationScope(
+        serverConfig: ServerConfig,
+        proxyCredentials: ProxyCredentials? = null
+    ): AuthenticationScope =
         // TODO(logic): make it lazier
         authenticationScopeProvider.provide(serverConfig, proxyCredentials)
 
@@ -74,7 +86,10 @@ abstract class CoreLogicCommon internal constructor(
     inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
         getAuthenticationScope(serverConfig).action()
 
-    inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T): T = getSessionScope(userId).action()
+    inline fun <T> sessionScope(
+        userId: UserId,
+        action: UserSessionScope.() -> T
+    ): T = getSessionScope(userId).action()
 
     protected abstract val globalCallManager: GlobalCallManager
 
