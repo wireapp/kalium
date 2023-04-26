@@ -27,6 +27,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -112,7 +113,7 @@ class SessionEstablisherTest {
 
         val (_, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(false)
-            .withEstablishSessions(Either.Right(Unit))
+            .withEstablishSessions(Either.Right(UsersWithoutSessions.EMPTY))
             .arrange()
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
@@ -160,7 +161,7 @@ class SessionEstablisherTest {
 
         }
 
-        fun withEstablishSessions(result: Either<CoreFailure, Unit>) = apply {
+        fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             given(preKeyRepository)
                 .suspendFunction(preKeyRepository::establishSessions)
                 .whenInvokedWith(any())
