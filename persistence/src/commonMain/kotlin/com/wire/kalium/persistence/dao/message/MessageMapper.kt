@@ -73,6 +73,8 @@ object MessageMapper {
         }
     }
 
+    // refactor this to not suppress it
+    @Suppress("LongMethod", "ComplexMethod")
     private fun mapContentType(
         contentType: MessageEntity.ContentType,
         senderName: String?,
