@@ -110,7 +110,7 @@ interface AuthenticatedNetworkContainer {
 
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
-                    sessionManager,
+                    sessionManager
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
