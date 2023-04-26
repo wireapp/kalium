@@ -40,14 +40,23 @@ actual fun defaultHttpEngine(
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreAllSSLErrors: Boolean
 ): HttpClientEngine = OkHttp.create {
+
+    val okHttpClient = OkHttpClient.Builder()
+        .pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+        .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+        .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+        .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+
     // OkHttp doesn't support configuring ping intervals dynamically,
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
 
     val clientBuilder =
-        OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+        OkHttpClient.Builder()
 
     if (ignoreAllSSLErrors) clientBuilder.ignoreAllSSLErrors()
+
+    clientBuilder.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
 
     if (isProxyRequired(serverConfigDTOApiProxy)) {
         if (serverConfigDTOApiProxy?.needsAuthentication == true) {
@@ -65,12 +74,13 @@ actual fun defaultHttpEngine(
             Proxy.Type.SOCKS,
             InetSocketAddress.createUnresolved(serverConfigDTOApiProxy?.host, serverConfigDTOApiProxy!!.port)
         )
-        clientBuilder.proxy(proxy)
-        val client = clientBuilder.build()
-        preconfigured = client
-        webSocketFactory = KaliumWebSocketFactory(client)
+
+        val clientWithProxy = okHttpClient.proxy(proxy).build()
+        preconfigured = clientWithProxy
+        webSocketFactory = KaliumWebSocketFactory(clientWithProxy)
+
     } else {
-        val client = clientBuilder.build()
+        val client = okHttpClient.build()
         preconfigured = client
         webSocketFactory = KaliumWebSocketFactory(client)
     }
