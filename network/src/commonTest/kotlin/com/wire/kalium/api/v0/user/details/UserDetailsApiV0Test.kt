@@ -40,7 +40,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class UserDetailsApiV0Test : ApiTest {
+internal class UserDetailsApiV0Test : ApiTest() {
 
     @Test
     fun givenListOfQualifiedIds_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {

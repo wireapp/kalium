@@ -44,8 +44,12 @@ interface UnauthenticatedNetworkContainer {
     companion object {
         fun create(
             serverConfigDTO: ServerConfigDTO,
-            proxyCredentials: ProxyCredentialsDTO?
+            proxyCredentials: ProxyCredentialsDTO?,
+            userAgent: String
         ): UnauthenticatedNetworkContainer {
+
+            KaliumUserAgentProvider.setUserAgent(userAgent)
+
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
                     serverConfigDTO,
