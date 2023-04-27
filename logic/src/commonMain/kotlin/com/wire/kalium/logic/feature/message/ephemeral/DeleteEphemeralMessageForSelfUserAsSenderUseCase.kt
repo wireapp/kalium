@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
  * when to delete the message permanently, that is when the message has expired for one of the conversation members of GROUP or ONE_TO_ONE type
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase] for details of when that exactly happens
  **/
-internal class DeleteEphemeralMessageForSelfUserAsSenderUseCase(private val messageRepository: MessageRepository) {
+internal class DeleteEphemeralMessageForSelfUserAsSenderUseCase(
+    private val messageRepository: MessageRepository
+) {
     suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
         messageRepository.markMessageAsDeleted(messageId, conversationId)
     }

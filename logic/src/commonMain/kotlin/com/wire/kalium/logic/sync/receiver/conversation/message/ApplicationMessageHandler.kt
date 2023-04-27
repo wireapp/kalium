@@ -45,6 +45,7 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -270,13 +271,15 @@ internal class ApplicationMessageHandlerImpl(
         senderUserId: UserId
     ) {
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            (messageToRemove as? Message.Regular)?.let { message ->
-                if (message.expirationData != null) {
-                    handleEphemeralMessageDeletion(
-                        messageToRemove = messageToRemove
-                    )
-                }
-            } ?: handleRegularMessageDeletion(messageToRemove, senderUserId)
+            (messageToRemove as? Message.Regular)?.expirationData?.let { expirationData ->
+                handleEphemeralMessageDeletion(
+                    messageToRemove = messageToRemove,
+                    expirationData = expirationData
+                )
+            } ?: handleRegularMessageDeletion(
+                messageToRemove = messageToRemove,
+                senderUserId = senderUserId
+            )
 
             removeAssetIfExists(messageToRemove)
         }
@@ -311,12 +314,15 @@ internal class ApplicationMessageHandlerImpl(
      * message permanently see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
      */
     private suspend fun handleEphemeralMessageDeletion(
-        messageToRemove: Message.Regular
+        messageToRemove: Message.Regular,
+        expirationData: Message.ExpirationData
     ) {
-        messageRepository.deleteMessage(
-            messageUuid = messageToRemove.id,
-            conversationId = messageToRemove.conversationId
-        )
+        if (messageToRemove.isSelfMessage || expirationData.timeLeftForDeletion() == Duration.ZERO) {
+            messageRepository.deleteMessage(
+                messageUuid = messageToRemove.id,
+                conversationId = messageToRemove.conversationId
+            )
+        }
     }
 
     @Suppress("LongParameterList")

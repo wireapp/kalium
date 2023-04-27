@@ -54,7 +54,6 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCase(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) {
-
     suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
         messageRepository.getMessageById(conversationId, messageId).map { message ->
             when (message.status) {
