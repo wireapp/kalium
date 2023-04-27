@@ -3,8 +3,6 @@ package com.wire.kalium.logic.feature.message.ephemeral
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.DeleteMessageUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
@@ -25,8 +23,8 @@ interface EphemeralMessageDeletionHandler {
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val selfUserReceiverSelfDeletionUseCase: SelfUserReceiverSelfDeletionUseCase,
-    private val selfUserSenderSelfDeletionUseCase: SelfUserSenderSelfDeletionUseCase,
+    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
     userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
@@ -60,9 +58,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.isSelfMessage) {
-            selfUserSenderSelfDeletionUseCase(message.conversationId, message.id)
+            deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)
         } else {
-            selfUserReceiverSelfDeletionUseCase(message.conversationId, message.id)
+            deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)
         }
     }
 

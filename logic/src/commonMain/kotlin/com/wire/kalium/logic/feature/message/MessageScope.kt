@@ -53,8 +53,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
-import com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase
-import com.wire.kalium.logic.feature.message.ephemeral.SelfUserSenderSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -270,8 +270,8 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
-    private val selfUserReceiverSelfDeletion: SelfUserReceiverSelfDeletionUseCase
-        get() = SelfUserReceiverSelfDeletionUseCase(
+    private val selfUserReceiverSelfDeletion: DeleteEphemeralMessageForSelfUserAsReceiverUseCase
+        get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCase(
             messageRepository = messageRepository,
             assetRepository = assetRepository,
             currentClientIdProvider = currentClientIdProvider,
@@ -280,15 +280,15 @@ class MessageScope internal constructor(
             selfConversationIdProvider = selfConversationIdProvider
         )
 
-    private val selfUserSenderSelfDeletionUseCase: SelfUserSenderSelfDeletionUseCase
-        get() = SelfUserSenderSelfDeletionUseCase(messageRepository)
+    private val selfUserSenderSelfDeletionUseCase: DeleteEphemeralMessageForSelfUserAsSenderUseCase
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCase(messageRepository)
 
     internal val ephemeralMessageDeletionHandler =
         EphemeralMessageDeletionHandlerImpl(
             userSessionCoroutineScope = scope,
             messageRepository = messageRepository,
-            selfUserReceiverSelfDeletionUseCase = selfUserReceiverSelfDeletion,
-            selfUserSenderSelfDeletionUseCase = selfUserSenderSelfDeletionUseCase,
+            deleteEphemeralMessageForSelfUserAsReceiver = selfUserReceiverSelfDeletion,
+            deleteEphemeralMessageForSelfUserAsSender = selfUserSenderSelfDeletionUseCase,
         )
 
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(

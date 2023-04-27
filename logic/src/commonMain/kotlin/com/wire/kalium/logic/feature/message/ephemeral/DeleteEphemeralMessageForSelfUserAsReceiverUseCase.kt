@@ -44,9 +44,9 @@ import com.wire.kalium.util.DateTimeUtil
  * When the self user is receiver of the self deletion message,
  * we delete it permanently after expiration and inform the sender by broadcasting a message to delete
  * for the self-deleting message, before the receiver does it on the sender side, the message is simply marked as deleted
- * see [com.wire.kalium.logic.feature.message.ephemeral.SelfUserReceiverSelfDeletionUseCase]
+ * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
  **/
-internal class SelfUserReceiverSelfDeletionUseCase(
+internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCase(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
