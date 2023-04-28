@@ -113,7 +113,7 @@ interface UserConfigStorage {
     fun persistSelfDeletingMessagesStatus(
         isEnabled: Boolean,
         isStatusChanged: Boolean?,
-        enforcedTimeoutInSeconds: Int?,
+        enforcedTimeoutInSeconds: Long?,
         isEnforced: Boolean = false
     )
 
@@ -142,7 +142,7 @@ data class IsGuestRoomLinkEnabledEntity(
 data class SelfDeletingMessagesEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("isStatusChanged") val isStatusChanged: Boolean?,
-    @SerialName("selfDeletionDuration") val selfDeletionDuration: Int?,
+    @SerialName("selfDeletionDuration") val selfDeletionDuration: Long?,
     @SerialName("isEnforced") val isEnforced: Boolean,
 )
 
@@ -289,7 +289,7 @@ class UserConfigStorageImpl(
     override fun persistSelfDeletingMessagesStatus(
         isEnabled: Boolean,
         isStatusChanged: Boolean?,
-        enforcedTimeoutInSeconds: Int?,
+        enforcedTimeoutInSeconds: Long?,
         isEnforced: Boolean
     ) {
         kaliumPreferences.putSerializable(

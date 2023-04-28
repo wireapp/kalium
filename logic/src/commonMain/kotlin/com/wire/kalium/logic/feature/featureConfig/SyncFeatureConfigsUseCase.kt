@@ -37,7 +37,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
@@ -140,7 +139,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                     isFeatureEnabled = selfDeletingMessagesEnabled,
                     hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null
                     globalSelfDeletionDuration = model.config.enforcedTimeoutSeconds,
-                    isEnforced = model.config.enforcedTimeoutSeconds.isGreaterThan(0)
+                    isEnforced = (model.config.enforcedTimeoutSeconds ?: 0) > 0
                 )
             )
         }

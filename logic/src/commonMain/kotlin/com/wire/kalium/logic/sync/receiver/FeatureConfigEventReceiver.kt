@@ -30,6 +30,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.isGreaterThan
+import kotlin.time.Duration.Companion.seconds
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -156,7 +157,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Int?) {
+    private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Long?) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, null))
         } else {
@@ -169,8 +170,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     SelfDeletingMessagesStatus(
                         isFeatureEnabled = true,
                         hasFeatureChanged = !currentSelfDeletingMessagesStatus || currentEnforcedTimeout != enforcedTimeoutSeconds,
-                        globalSelfDeletionDuration = if (enforcedTimeoutSeconds == 0) null else enforcedTimeoutSeconds,
-                        isEnforced = enforcedTimeoutSeconds.isGreaterThan(0)
+                        globalSelfDeletionDuration = enforcedTimeoutSeconds,
+                        isEnforced = (enforcedTimeoutSeconds ?: 0) > 0
                     )
                 )
 
