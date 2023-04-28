@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -127,7 +128,8 @@ interface MessageRepository {
     suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        ignoredUsers: List<UserId> = emptyList()
     ): Either<CoreFailure, MessageSent>
 
     /**
@@ -187,6 +189,12 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun persistRecipientsDeliveryFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit>
+
+    suspend fun persistNoClientsToDeliverFailure(
         conversationId: ConversationId,
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>
@@ -331,17 +339,13 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        ignoredUsers: List<UserId>
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }
-        }
-
-        val messageOption = when (messageTarget) {
-            is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
-            is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
         }
 
         return wrapApiRequest {
@@ -354,7 +358,7 @@ class MessageDataSource(
                     MessagePriority.HIGH,
                     false,
                     envelope.dataBlob?.data,
-                    messageOption
+                    messageTarget.toOption(ignoredUsers)
                 ),
                 conversationId.toApi(),
             )
@@ -370,6 +374,19 @@ class MessageDataSource(
         }, { response: QualifiedSendMessageResponse ->
             Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
         })
+    }
+
+    private fun MessageTarget.toOption(ignoredUsers: List<UserId>) = when (this) {
+        is MessageTarget.Client -> {
+            if (ignoredUsers.isNotEmpty()) kaliumLogger.w("Ignoring specific users is not supported for client targets")
+            MessageApi.QualifiedMessageOption.IgnoreAll
+        }
+
+        is MessageTarget.Conversation -> if (ignoredUsers.isNotEmpty()) {
+            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
+        } else {
+            MessageApi.QualifiedMessageOption.ReportAll
+        }
     }
 
     override suspend fun broadcastEnvelope(
@@ -512,18 +529,42 @@ class MessageDataSource(
     }
 
     /**
-     * Persist a list of users ids that failed to receive the message [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
+     * Persist a list of users ids that failed to receive the message
+     * [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
      */
     override suspend fun persistRecipientsDeliveryFailure(
         conversationId: ConversationId,
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>,
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> = wrapStorageRequest({
+        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular: ${it.message.orEmpty()})")
+        Either.Right(Unit)
+    }) {
         messageDAO.insertFailedRecipientDelivery(
             messageUuid,
             conversationId.toDao(),
             usersWithFailedDeliveryList.map { it.toDao() },
             RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
+        )
+    }
+
+    /**
+     * Persist a list of users ids whose clients are missing and could not be retrieved
+     * [RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER]
+     */
+    override suspend fun persistNoClientsToDeliverFailure(
+        conversationId: ConversationId,
+        messageUuid: String,
+        usersWithFailedDeliveryList: List<UserId>
+    ): Either<CoreFailure, Unit> = wrapStorageRequest({
+        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular : ${it.message.orEmpty()})")
+        Either.Right(Unit)
+    }) {
+        messageDAO.insertFailedRecipientDelivery(
+            messageUuid,
+            conversationId.toDao(),
+            usersWithFailedDeliveryList.map { it.toDao() },
+            RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER
         )
     }
 

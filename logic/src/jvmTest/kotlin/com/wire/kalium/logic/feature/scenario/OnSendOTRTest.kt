@@ -81,7 +81,7 @@ class OnSendOTRTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.selfConversationId },
-                eq(MessageTarget.Conversation)
+                matching { it is MessageTarget.Conversation },
             )
             .wasInvoked(exactly = once)
     }
@@ -115,7 +115,7 @@ class OnSendOTRTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.conversationId },
-                eq(MessageTarget.Conversation)
+                matching { it is MessageTarget.Conversation },
             )
             .wasInvoked(exactly = once)
     }

@@ -144,7 +144,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation, listOf())
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -161,7 +161,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation, listOf())
             .shouldSucceed {
                 assertSame(it.time, TEST_DATETIME)
             }
@@ -194,7 +194,8 @@ class MessageRepositoryTest {
                         clients = listOf(TEST_CLIENT_ID)
                     )
                 )
-            )
+            ),
+            listOf()
         ).shouldSucceed()
 
         verify(arrangement.messageApi)
@@ -217,7 +218,7 @@ class MessageRepositoryTest {
             .arrange()
 
         messageRepository
-            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation, listOf())
             .shouldSucceed()
 
         verify(arrangement.messageApi)
@@ -329,6 +330,30 @@ class MessageRepositoryTest {
                 eq(conversationID.toDao()),
                 eq(expectedFailedUsers),
                 eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenPersistingFailedNoClientsRecipients_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toDao() }
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withInsertFailedRecipients()
+            .arrange()
+
+        messageRepository.persistNoClientsToDeliverFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
+            .with(
+                eq(messageID),
+                eq(conversationID.toDao()),
+                eq(expectedFailedUsers),
+                eq(RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER)
             )
             .wasInvoked(exactly = once)
     }

@@ -32,7 +32,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
@@ -68,7 +67,7 @@ class OnHttpRequestTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.selfConversationId },
-                eq(MessageTarget.Conversation)
+                matching { it is MessageTarget.Conversation },
             )
             .wasInvoked(exactly = once)
     }
@@ -94,7 +93,7 @@ class OnHttpRequestTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching { it.conversationId == Arrangement.conversationId },
-                eq(MessageTarget.Conversation)
+                matching { it is MessageTarget.Conversation },
             )
             .wasInvoked(exactly = once)
     }
