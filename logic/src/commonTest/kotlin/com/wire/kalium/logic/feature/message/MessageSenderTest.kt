@@ -529,6 +529,42 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenARemoteProteusConversationPartiallyFails_WithNoClientsWhenSendingAMessage_ThenReturnSuccessAndPersistFailedClientsAndFailedToSend() {
+        // given
+        val failedRecipient = UsersWithoutSessions(listOf(TEST_MEMBER_2))
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = failedRecipient.users
+                    )
+                )
+            )
+            .withFailedClientsPartialSuccess()
+            .withPrepareRecipientsForNewOutgoingMessage(false, failedRecipient)
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistNoClientsToDeliverFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenAllTargets_WhenBroadcastOutgoingMessage_ThenCallBroadcastEnvelopeWithCorrectTargets() {
         // given
         val recipients = listOf(
@@ -763,11 +799,14 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(listOf(TEST_RECIPIENT_1)))
         }
 
-        fun withPrepareRecipientsForNewOutgoingMessage(failing: Boolean = false) = apply {
+        fun withPrepareRecipientsForNewOutgoingMessage(
+            failing: Boolean = false,
+            usersFailing: UsersWithoutSessions = UsersWithoutSessions.EMPTY // only relevant if failing true
+        ) = apply {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(UsersWithoutSessions.EMPTY))
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(usersFailing))
         }
 
         fun withCommitPendingProposals(failing: Boolean = false) = apply {
@@ -888,6 +927,13 @@ class MessageSenderTest {
                 .suspendFunction(messageRepository::persistRecipientsDeliveryFailure)
                 .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
+        }
+
+        fun withFailedClientsPartialSuccess() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistNoClientsToDeliverFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         companion object {
