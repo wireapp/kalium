@@ -165,12 +165,12 @@ class UserConfigDataSource(
         userConfigStorage.getSelfDeletingMessagesTeamSettingsFlow()
             .wrapStorageRequest()
             .map {
-                it.map { areSelfDeletingMessagesEnabledEntity ->
+                it.map { selfDeletingMessagesTeamSettingsEntity ->
                     SelfDeletingMessagesStatus(
-                        areSelfDeletingMessagesEnabledEntity.status,
-                        areSelfDeletingMessagesEnabledEntity.isStatusChanged,
-                        areSelfDeletingMessagesEnabledEntity.selfDeletionDuration,
-                        areSelfDeletingMessagesEnabledEntity.isEnforced
+                        selfDeletingMessagesTeamSettingsEntity.status,
+                        selfDeletingMessagesTeamSettingsEntity.isStatusChanged,
+                        selfDeletingMessagesTeamSettingsEntity.selfDeletionDuration,
+                        selfDeletingMessagesTeamSettingsEntity.isEnforced
                     )
                 }
             }
