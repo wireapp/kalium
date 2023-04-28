@@ -136,7 +136,7 @@ class UserConfigStorageTest {
             isStatusChanged = false,
             enforcedTimeoutInSeconds = enforcedTimeout
         )
-        userConfigStorage.isSelfDeletingMessagesEnabled()?.let {
+        userConfigStorage.areSelfDeletingMessagesEnabled()?.let {
             assertTrue(it.status)
             assertTrue(it.isStatusChanged == false)
             assertEquals(it.selfDeletionDuration, enforcedTimeout)

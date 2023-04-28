@@ -108,8 +108,8 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
-    fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity?
-    fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?>
+    fun areSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity?
+    fun areSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?>
     fun persistSelfDeletingMessagesStatus(
         isEnabled: Boolean,
         isStatusChanged: Boolean?,
@@ -163,7 +163,7 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val isSelfDeletingMessagesEnabledFlow =
+    private val areSelfDeletingMessagesEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -271,7 +271,7 @@ class UserConfigStorageImpl(
     override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
         kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
 
-    override fun isSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity? =
+    override fun areSelfDeletingMessagesEnabled(): SelfDeletingMessagesEntity? =
         kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, SelfDeletingMessagesEntity.serializer())
 
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
@@ -280,10 +280,10 @@ class UserConfigStorageImpl(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
-    override fun isSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?> =
-        isSelfDeletingMessagesEnabledFlow
-            .map { isSelfDeletingMessagesEnabled() }
-            .onStart { emit(isSelfDeletingMessagesEnabled()) }
+    override fun areSelfDeletingMessagesEnabledFlow(): Flow<SelfDeletingMessagesEntity?> =
+        areSelfDeletingMessagesEnabledFlow
+            .map { areSelfDeletingMessagesEnabled() }
+            .onStart { emit(areSelfDeletingMessagesEnabled()) }
             .distinctUntilChanged()
 
     override fun persistSelfDeletingMessagesStatus(
@@ -297,7 +297,7 @@ class UserConfigStorageImpl(
             SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds, isEnforced),
             SelfDeletingMessagesEntity.serializer()
         ).also {
-            isSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
+            areSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
         }
     }
 
@@ -308,7 +308,7 @@ class UserConfigStorageImpl(
             SELF_DELETING_MESSAGES,
             newValue,
             SelfDeletingMessagesEntity.serializer()
-        ).also { isSelfDeletingMessagesEnabledFlow.tryEmit(Unit) }
+        ).also { areSelfDeletingMessagesEnabledFlow.tryEmit(Unit) }
     }
 
     private companion object {
