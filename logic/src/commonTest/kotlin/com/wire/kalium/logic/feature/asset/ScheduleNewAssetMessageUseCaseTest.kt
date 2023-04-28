@@ -86,7 +86,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         // When
         val result = sendAssetUseCase.invoke(
-            conversationId, inputDataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null
+            conversationId, inputDataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null
         )
         advanceUntilIdle()
 
@@ -108,7 +108,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
             advanceUntilIdle()
 
             // Then
@@ -129,7 +129,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             .arrange()
 
         // When
-        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
         advanceUntilIdle()
 
         // Then
@@ -158,7 +158,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
             advanceUntilIdle()
 
             // Then
@@ -186,7 +186,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
             advanceUntilIdle()
 
             // Then
@@ -225,7 +225,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
             advanceUntilIdle()
 
             // Then

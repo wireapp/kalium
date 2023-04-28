@@ -40,21 +40,26 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
+
 /**
  * When the self user is receiver of the self deletion message,
  * we delete it permanently after expiration and inform the sender by broadcasting a message to delete
  * for the self-deleting message, before the receiver does it on the sender side, the message is simply marked as deleted
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
  **/
-internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCase(
+internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase{
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String)
+}
+
+internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider
-) {
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
+) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase{
+   override suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
         messageRepository.getMessageById(conversationId, messageId).map { message ->
             when (message.status) {
                 // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent

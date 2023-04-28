@@ -26,10 +26,15 @@ import com.wire.kalium.logic.data.message.MessageRepository
  * of GROUP or ONE_TO_ONE type
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase] for details
  **/
-internal class DeleteEphemeralMessageForSelfUserAsSenderUseCase(
+
+internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String)
+}
+
+internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
     private val messageRepository: MessageRepository
-) {
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
+) : DeleteEphemeralMessageForSelfUserAsSenderUseCase {
+    override suspend operator fun invoke(conversationId: ConversationId, messageId: String) {
         messageRepository.markMessageAsDeleted(messageId, conversationId)
     }
 }

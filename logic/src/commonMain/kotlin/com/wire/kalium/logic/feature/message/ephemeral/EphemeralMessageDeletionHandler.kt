@@ -49,7 +49,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 addToOutgoingDeletion(message)
             }
 
-            markDeletionDateAndWait(message)
+            markDeletionStartDateAndWait(message)
             deleteMessage(message)
         }
     }
@@ -70,7 +70,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         }
     }
 
-    private suspend fun markDeletionDateAndWait(message: Message.Regular) {
+    private suspend fun markDeletionStartDateAndWait(message: Message.Regular) {
         message.expirationData?.let { expirationData ->
             with(expirationData) {
                 if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
