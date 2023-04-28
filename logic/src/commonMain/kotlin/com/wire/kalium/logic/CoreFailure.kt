@@ -196,12 +196,10 @@ internal inline fun <T : Any> wrapStorageRequest(
     noinline errorHandler: (Exception) -> Either<StorageFailure, T>,
     storageRequest: () -> T?
 ): Either<StorageFailure, T> {
-    errorHandler.let { errorHandler ->
-        return try {
-            storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
-        } catch (exception: Exception) {
-            errorHandler(exception)
-        }
+    return try {
+        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (exception: Exception) {
+        errorHandler(exception)
     }
 }
 
