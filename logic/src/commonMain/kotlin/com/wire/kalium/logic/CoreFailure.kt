@@ -191,6 +191,7 @@ internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Eith
 /**
  * Wrap a storage request with a custom error handler that let's delegate the error handling to the caller.
  */
+@Suppress("TooGenericExceptionCaught")
 internal inline fun <T : Any> wrapStorageRequest(
     noinline errorHandler: (Exception) -> Either<StorageFailure, T>,
     storageRequest: () -> T?
