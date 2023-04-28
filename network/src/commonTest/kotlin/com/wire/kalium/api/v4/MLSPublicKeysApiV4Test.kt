@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MLSPublicKeysApiV4Test : ApiTest {
+internal class MLSPublicKeysApiV4Test : ApiTest() {
 
     @Test
     fun givenWhenGetMLSPublicKeys_theRequestShouldBeConfiguredCorrectly() = runTest {

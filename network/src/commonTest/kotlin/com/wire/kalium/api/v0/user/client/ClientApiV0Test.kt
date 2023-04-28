@@ -39,7 +39,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class ClientApiV0Test : ApiTest {
+internal class ClientApiV0Test : ApiTest() {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {

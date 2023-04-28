@@ -96,7 +96,11 @@ class WrapperWorkerFactory(
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) : WorkerFactory() {
 
-    override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: WorkerParameters
+    ): ListenableWorker? {
         if (WrapperWorker::class.java.canonicalName != workerClassName) {
             return null // delegate to default factory
         }
@@ -130,7 +134,11 @@ class WrapperWorkerFactory(
         return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
-    private fun createPendingMessageSenderWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker? {
+    private fun createPendingMessageSenderWorker(
+        workerParameters: WorkerParameters,
+        userId: UserId,
+        appContext: Context
+    ): WrapperWorker? {
         val doesValidSessionExist = runBlocking {
             coreLogic.globalScope {
                 doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }

@@ -40,7 +40,7 @@ import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 @IgnoreIOS
-class QualifiedMessageApiV0Test : ApiTest {
+internal class QualifiedMessageApiV0Test : ApiTest() {
 
     @Test
     fun givenAValid_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
