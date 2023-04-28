@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -29,9 +29,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.isGreaterThan
 import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -39,7 +37,6 @@ internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfi
 
 internal class FeatureConfigEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
-    private val userRepository: UserRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : FeatureConfigEventReceiver {
