@@ -271,10 +271,9 @@ internal class ApplicationMessageHandlerImpl(
         senderUserId: UserId
     ) {
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            (messageToRemove as? Message.Regular)?.expirationData?.let { expirationData ->
+            (messageToRemove as? Message.Regular)?.expirationData?.let {
                 handleEphemeralMessageDeletion(
-                    messageToRemove = messageToRemove,
-                    expirationData = expirationData
+                    messageToRemove = messageToRemove
                 )
             } ?: handleRegularMessageDeletion(
                 messageToRemove = messageToRemove,
@@ -309,19 +308,28 @@ internal class ApplicationMessageHandlerImpl(
     }
 
     /**
-     * in case of ephemeral messages, we could either receive delete signal because the self user decided to delete the message
-     * or when the sender is waiting for the receiver timer to run out, after that happens, the receiver sends the signal to delete the
-     * message permanently see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
+     * in case of ephemeral messages, we could either receive delete signal because the message expired and we want to delete it from
+     * all the clients, or when the sender is waiting for the receiver timer to run out, after that happens
+     * the receiver sends the signal to delete the message permanently
+     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
      */
     private suspend fun handleEphemeralMessageDeletion(
-        messageToRemove: Message.Regular,
-        expirationData: Message.ExpirationData
+        messageToRemove: Message.Regular
     ) {
-        if (messageToRemove.isSelfMessage || expirationData.timeLeftForDeletion() == Duration.ZERO) {
+        if (messageToRemove.isSelfMessage) {
             messageRepository.deleteMessage(
                 messageUuid = messageToRemove.id,
                 conversationId = messageToRemove.conversationId
             )
+        } else {
+            val isSelfUserSender = messageToRemove.senderUserId == selfUserId
+
+            if (isSelfUserSender) {
+                messageRepository.deleteMessage(
+                    messageUuid = messageToRemove.id,
+                    conversationId = messageToRemove.conversationId
+                )
+            }
         }
     }
 
