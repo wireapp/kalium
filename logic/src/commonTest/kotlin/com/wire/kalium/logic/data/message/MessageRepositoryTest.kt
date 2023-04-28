@@ -334,6 +334,30 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun whenPersistingFailedNoClientsRecipients_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toDao() }
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withInsertFailedRecipients()
+            .arrange()
+
+        messageRepository.persistNoClientsToDeliverFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
+            .with(
+                eq(messageID),
+                eq(conversationID.toDao()),
+                eq(expectedFailedUsers),
+                eq(RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER)
+            )
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
