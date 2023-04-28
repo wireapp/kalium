@@ -270,7 +270,7 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
-    private val selfUserReceiverSelfDeletion: DeleteEphemeralMessageForSelfUserAsReceiverUseCase
+    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase
         get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCase(
             messageRepository = messageRepository,
             assetRepository = assetRepository,
@@ -280,15 +280,15 @@ class MessageScope internal constructor(
             selfConversationIdProvider = selfConversationIdProvider
         )
 
-    private val selfUserSenderSelfDeletionUseCase: DeleteEphemeralMessageForSelfUserAsSenderUseCase
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase
         get() = DeleteEphemeralMessageForSelfUserAsSenderUseCase(messageRepository)
 
     internal val ephemeralMessageDeletionHandler =
         EphemeralMessageDeletionHandlerImpl(
             userSessionCoroutineScope = scope,
             messageRepository = messageRepository,
-            deleteEphemeralMessageForSelfUserAsReceiver = selfUserReceiverSelfDeletion,
-            deleteEphemeralMessageForSelfUserAsSender = selfUserSenderSelfDeletionUseCase,
+            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
+            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
         )
 
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
