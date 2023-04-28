@@ -18,10 +18,13 @@
 package com.wire.kalium.logic.feature.auth.verification
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isTooManyRequests
 
 /**
  * Sends a verification code to an email.
@@ -53,13 +56,31 @@ class RequestSecondFactorVerificationCodeUseCase(
         email: String,
         verifiableAction: VerifiableAction,
     ): Result = secondFactorVerificationRepository.requestVerificationCode(email, verifiableAction).fold({
-        Result.Failure(it)
+        if (it is NetworkFailure.ServerMiscommunication
+            && it.kaliumException is KaliumException.InvalidRequestError
+            && it.kaliumException.isTooManyRequests()
+        ) {
+            Result.Failure.TooManyRequests
+        } else {
+            Result.Failure.Generic(it)
+        }
     }, {
         Result.Success
     })
 
     interface Result {
         object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+
+        interface Failure : Result {
+            data class Generic(val cause: CoreFailure) : Result
+
+            /**
+             * The backend is rejecting this request, as too many were
+             * made for this email recently.
+             * From a UI point of view, you might be able to proceed and request
+             * the 2FA code to the user anyway
+             */
+            object TooManyRequests : Result
+        }
     }
 }
