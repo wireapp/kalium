@@ -21,9 +21,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 
 /**
- * When the self user is the sender of the self deletion message, we only mark it as deleted because we are relaying on the receiver, telling us
- * when to delete the message permanently, that is when the message has expired for one of the conversation members of GROUP or ONE_TO_ONE type
- * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase] for details of when that exactly happens
+ * When the self user is the sender of the self deletion message, we only mark it as deleted because we are relying on the receiver,
+ * telling us when to delete the message permanently, that is when the message has expired for one of the conversation members
+ * of GROUP or ONE_TO_ONE type
+ * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase] for details
  **/
 internal class DeleteEphemeralMessageForSelfUserAsSenderUseCase(
     private val messageRepository: MessageRepository
