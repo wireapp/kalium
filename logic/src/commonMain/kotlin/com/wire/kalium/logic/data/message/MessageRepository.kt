@@ -529,13 +529,17 @@ class MessageDataSource(
     }
 
     /**
-     * Persist a list of users ids that failed to receive the message [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
+     * Persist a list of users ids that failed to receive the message
+     * [RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED]
      */
     override suspend fun persistRecipientsDeliveryFailure(
         conversationId: ConversationId,
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>,
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> = wrapStorageRequest({
+        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular: ${it.message.orEmpty()})")
+        Either.Right(Unit)
+    }) {
         messageDAO.insertFailedRecipientDelivery(
             messageUuid,
             conversationId.toDao(),
@@ -552,7 +556,10 @@ class MessageDataSource(
         conversationId: ConversationId,
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> = wrapStorageRequest({
+        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular : ${it.message.orEmpty()})")
+        Either.Right(Unit)
+    }) {
         messageDAO.insertFailedRecipientDelivery(
             messageUuid,
             conversationId.toDao(),
