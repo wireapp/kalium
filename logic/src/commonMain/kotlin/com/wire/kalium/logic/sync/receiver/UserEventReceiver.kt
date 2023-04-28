@@ -116,6 +116,7 @@ class UserEventReceiverImpl internal constructor(
     }
 
     private suspend fun handleNewClient(event: Event.User.NewClient) {
+        kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
         newClientManager.scheduleNewClientEvent(event, selfUserId)
     }
 

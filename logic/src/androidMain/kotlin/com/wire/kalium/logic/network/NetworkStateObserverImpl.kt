@@ -23,16 +23,18 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 
 actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
     private val connectivityManager: ConnectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager
-    private val networkStateFlow: MutableStateFlow<NetworkState>
+    private val networkStateFlow: MutableStateFlow<Pair<NetworkState, Boolean>>
 
     init {
         val initialState = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState()
-        networkStateFlow = MutableStateFlow(initialState)
+        networkStateFlow = MutableStateFlow(initialState to false)
 
         val callback = object : ConnectivityManager.NetworkCallback() {
 
@@ -40,18 +42,18 @@ actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserve
                 super.onCapabilitiesChanged(network, networkCapabilities)
                 val networkState = networkCapabilities.toState()
                 kaliumLogger.i("${NetworkStateObserver.TAG} capabilities changed $networkState")
-                networkStateFlow.tryEmit(networkState)
+                networkStateFlow.tryEmit(networkStateFlow.value.copy(first = networkState))
             }
 
             override fun onLost(network: Network) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} lost connection")
-                networkStateFlow.tryEmit(NetworkState.NotConnected)
+                networkStateFlow.tryEmit(networkStateFlow.value.copy(first = NetworkState.NotConnected))
                 super.onLost(network)
             }
 
             override fun onUnavailable() {
                 kaliumLogger.i("${NetworkStateObserver.TAG} connection unavailable")
-                networkStateFlow.tryEmit(NetworkState.NotConnected)
+                networkStateFlow.tryEmit(networkStateFlow.value.copy(first = NetworkState.NotConnected))
                 super.onUnavailable()
             }
 
@@ -67,6 +69,7 @@ actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserve
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
+                networkStateFlow.tryEmit(networkStateFlow.value.copy(second = blocked))
                 super.onBlockedStatusChanged(network, blocked)
             }
         }
@@ -85,5 +88,9 @@ actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserve
         }
     }
 
-    override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+    override fun observeNetworkState(): Flow<NetworkState> = networkStateFlow
+        .map { (state, isBlocked) ->
+            if (isBlocked) NetworkState.NotConnected
+            else state
+        }
 }
