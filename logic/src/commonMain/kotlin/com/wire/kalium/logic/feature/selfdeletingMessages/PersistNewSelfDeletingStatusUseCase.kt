@@ -33,6 +33,6 @@ class PersistNewSelfDeletingStatusUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : PersistNewSelfDeletingStatusUseCase {
     override fun invoke(newStatus: SelfDeletingMessagesStatus) = userConfigRepository.setSelfDeletingMessagesStatus(newStatus).fold({
-        kaliumLogger.e("Failure while persisting new self deleting messages status $it")
-    }, { kaliumLogger.d("Successfully updated new self deleting messages status $newStatus") })
+        kaliumLogger.e("Failure while persisting self deleting messages status $it")
+    }, { kaliumLogger.d("Successfully updated self deleting messages status $newStatus") })
 }

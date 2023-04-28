@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.configuration
 
+import kotlin.time.Duration
+
 data class SelfDeletingMessagesStatus(
     val isFeatureEnabled: Boolean,
     val hasFeatureChanged: Boolean?,
-    val globalSelfDeletionDuration: Long? = null,
+    val globalSelfDeletionDuration: Duration,
     val isEnforced: Boolean = false
 )

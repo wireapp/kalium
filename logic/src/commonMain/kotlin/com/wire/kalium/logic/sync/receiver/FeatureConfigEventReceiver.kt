@@ -30,7 +30,10 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.isGreaterThan
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -159,27 +162,31 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
     private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Long?) {
         if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, null))
+            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, ZERO))
         } else {
+            val enforcedDuration = enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
             val (currentSelfDeletingMessagesStatus, currentEnforcedTimeout) = userConfigRepository
                 .getSelfDeletingMessagesStatus()
                 .fold({ true to null }, { it.isFeatureEnabled to it.globalSelfDeletionDuration })
 
             when (status) {
-                Status.ENABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
-                    SelfDeletingMessagesStatus(
-                        isFeatureEnabled = true,
-                        hasFeatureChanged = !currentSelfDeletingMessagesStatus || currentEnforcedTimeout != enforcedTimeoutSeconds,
-                        globalSelfDeletionDuration = enforcedTimeoutSeconds,
-                        isEnforced = (enforcedTimeoutSeconds ?: 0) > 0
+                Status.ENABLED -> {
+                    userConfigRepository.setSelfDeletingMessagesStatus(
+                        SelfDeletingMessagesStatus(
+                            isFeatureEnabled = true,
+                            hasFeatureChanged = !currentSelfDeletingMessagesStatus
+                                    || currentEnforcedTimeout != enforcedDuration,
+                            globalSelfDeletionDuration = enforcedDuration,
+                            isEnforced = (enforcedTimeoutSeconds ?: 0) > 0
+                        )
                     )
-                )
+                }
 
                 Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
                     SelfDeletingMessagesStatus(
                         isFeatureEnabled = false,
                         hasFeatureChanged = currentSelfDeletingMessagesStatus,
-                        globalSelfDeletionDuration = enforcedTimeoutSeconds,
+                        globalSelfDeletionDuration = enforcedDuration,
                         isEnforced = false
                     )
                 )

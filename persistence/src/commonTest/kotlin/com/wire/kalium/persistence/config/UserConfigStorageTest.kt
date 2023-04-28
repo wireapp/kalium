@@ -31,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserConfigStorageTest {
@@ -130,7 +131,7 @@ class UserConfigStorageTest {
 
     @Test
     fun givenSelfDeletingStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() {
-        val enforcedTimeout = 1000
+        val enforcedTimeout = 1000.seconds
         userConfigStorage.persistSelfDeletingMessagesStatus(
             isEnabled = true,
             isStatusChanged = false,

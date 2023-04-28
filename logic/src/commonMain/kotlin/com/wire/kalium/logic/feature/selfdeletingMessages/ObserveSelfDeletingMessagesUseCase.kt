@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Duration
 
 /**
  * Observe self deleting messages feature status
@@ -47,7 +48,7 @@ class ObserveGlobalSelfDeletingMessagesUseCaseImpl internal constructor(
                         kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveSelfDeletingMessagesUseCase", it.rootCause)
                     }
                 }
-                SelfDeletingMessagesStatus(false, null, null)
+                SelfDeletingMessagesStatus(false, null, Duration.ZERO)
             }, {
                 it
             })

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface UserConfigStorage {
@@ -113,7 +114,7 @@ interface UserConfigStorage {
     fun persistSelfDeletingMessagesStatus(
         isEnabled: Boolean,
         isStatusChanged: Boolean?,
-        enforcedTimeoutInSeconds: Long?,
+        enforcedDuration: Duration,
         isEnforced: Boolean = false
     )
 
@@ -142,7 +143,7 @@ data class IsGuestRoomLinkEnabledEntity(
 data class SelfDeletingMessagesEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("isStatusChanged") val isStatusChanged: Boolean?,
-    @SerialName("selfDeletionDuration") val selfDeletionDuration: Long?,
+    @SerialName("selfDeletionDuration") val selfDeletionDuration: Duration,
     @SerialName("isEnforced") val isEnforced: Boolean,
 )
 
@@ -289,12 +290,12 @@ class UserConfigStorageImpl(
     override fun persistSelfDeletingMessagesStatus(
         isEnabled: Boolean,
         isStatusChanged: Boolean?,
-        enforcedTimeoutInSeconds: Long?,
+        enforcedDuration: Duration,
         isEnforced: Boolean
     ) {
         kaliumPreferences.putSerializable(
             SELF_DELETING_MESSAGES,
-            SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedTimeoutInSeconds, isEnforced),
+            SelfDeletingMessagesEntity(isEnabled, isStatusChanged, enforcedDuration, isEnforced),
             SelfDeletingMessagesEntity.serializer()
         ).also {
             areSelfDeletingMessagesEnabledFlow.tryEmit(Unit)
