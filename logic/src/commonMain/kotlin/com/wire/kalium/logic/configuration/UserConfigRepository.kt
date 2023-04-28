@@ -157,12 +157,12 @@ class UserConfigDataSource(
     }
 
     override fun getSelfDeletingMessagesStatus(): Either<StorageFailure, SelfDeletingMessagesStatus> =
-        wrapStorageRequest { userConfigStorage.areSelfDeletingMessagesEnabled() }.map {
+        wrapStorageRequest { userConfigStorage.getSelfDeletingMessagesTeamSettings() }.map {
             with(it) { SelfDeletingMessagesStatus(status, isStatusChanged, selfDeletionDuration) }
         }
 
     override fun observeSelfDeletingMessagesStatus(): Flow<Either<StorageFailure, SelfDeletingMessagesStatus>> =
-        userConfigStorage.areSelfDeletingMessagesEnabledFlow()
+        userConfigStorage.getSelfDeletingMessagesTeamSettingsFlow()
             .wrapStorageRequest()
             .map {
                 it.map { areSelfDeletingMessagesEnabledEntity ->
