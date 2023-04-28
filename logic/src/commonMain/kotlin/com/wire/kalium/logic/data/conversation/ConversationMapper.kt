@@ -195,7 +195,7 @@ internal class ConversationMapperImpl(
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                         unreadEventCount = unreadEventCount ?: mapOf(),
-                        lastMessage = lastMessage,
+                        lastMessage = lastMessage
                     )
                 }
 

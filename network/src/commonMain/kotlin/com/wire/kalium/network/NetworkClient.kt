@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network
 
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
@@ -28,6 +29,7 @@ import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -48,7 +50,10 @@ internal class AuthenticatedNetworkClient(
     bearerAuthProvider: BearerAuthProvider,
     installCompression: Boolean = true
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
+    val httpClient: HttpClient = provideBaseHttpClient(
+        engine,
+        installCompression
+    ) {
         installWireDefaultRequest(serverConfigDTO)
         installAuth(bearerAuthProvider)
         install(ContentNegotiation) {
@@ -78,7 +83,9 @@ internal class UnauthenticatedNetworkClient(
  * Serialization, and Content Negotiation.
  * Unlike others, this one has no strict ties with any API version nor default Base Url
  */
-internal class UnboundNetworkClient(engine: HttpClientEngine) {
+internal class UnboundNetworkClient(
+    engine: HttpClientEngine
+) {
     val httpClient: HttpClient = provideBaseHttpClient(engine)
 }
 
@@ -120,6 +127,10 @@ internal fun provideBaseHttpClient(
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
 
+    install(UserAgent) {
+        agent = KaliumUserAgentProvider.userAgent
+    }
+
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
             level = LogLevel.ALL
@@ -143,3 +154,4 @@ internal fun provideBaseHttpClient(
 internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
 private const val MINIMUM_API_VERSION_TO_ADD = 1
 internal const val WEBSOCKET_PING_INTERVAL_MILLIS = 20_000L
+internal const val WEBSOCKET_TIMEOUT = 30_000L

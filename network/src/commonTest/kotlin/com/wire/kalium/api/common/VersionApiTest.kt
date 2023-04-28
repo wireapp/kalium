@@ -34,7 +34,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class VersionApiTest : ApiTest {
+internal class VersionApiTest : ApiTest() {
 
     @Test
     fun givenSuccessResponse_whenFetchingSupportedRemoteVersion_thenRequestIsConfigureCorrectly() = runTest {

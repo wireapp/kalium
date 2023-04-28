@@ -39,7 +39,8 @@ class KaliumApplication : Application(), Configuration.Provider {
         coreLogic = CoreLogic(
             appContext = applicationContext,
             rootPath = rootDir.absolutePath,
-            kaliumConfigs = KaliumConfigs()
+            kaliumConfigs = KaliumConfigs(),
+            userAgent = "Kalium/android/testApp"
         )
         CoreLogger.setLoggingLevel(
             level = KaliumLogLevel.DEBUG
