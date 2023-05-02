@@ -59,7 +59,7 @@ internal class TeamDataSource(
     private val userDetailsApi: UserDetailsApi,
     private val selfUserId: UserId,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val teamMapper: TeamMapper = MapperProvider.teamMapper()
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
