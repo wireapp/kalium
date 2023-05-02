@@ -20,9 +20,14 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.sync.SyncManager
+import kotlinx.coroutines.flow.first
 
 /**
  * This use case will update the access and access role configuration of a conversation.
@@ -44,13 +49,25 @@ import com.wire.kalium.logic.functional.fold
  */
 
 class UpdateConversationAccessRoleUseCase internal constructor(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(
         conversationId: ConversationId,
         accessRoles: Set<Conversation.AccessRole>,
         access: Set<Conversation.Access>,
     ): Result {
+
+        syncManager.waitUntilLiveOrFailure().flatMap {
+            if (!accessRoles.contains(Conversation.AccessRole.GUEST)
+                && !conversationGroupRepository.observeGuestRoomLink(conversationId).first().isNullOrEmpty()
+            ) {
+                conversationGroupRepository.revokeGuestRoomLink(conversationId)
+            } else {
+                Either.Right(Unit)
+            }
+        }
 
         return conversationRepository
             .updateAccessInfo(conversationId, access, accessRoles)
