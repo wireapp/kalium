@@ -1,16 +1,17 @@
 name: Deploy Dokka docs
 
 on:
-    push:
-        branches:
-            - develop # later on we should stick to main, since there will be the releases
+  push:
+    branches:
+      - develop # later on we should stick to main, since there will be the releases
+  workflow_dispatch:
 
 jobs:
     publish:
-        runs-on: macos-latest
+        runs-on: buildjet-4vcpu-ubuntu-2204
         steps:
             - name: Checkout project
-              uses: actions/checkout@v2
+              uses: actions/checkout@v2 
               with:
                   fetch-depth: 0
 
