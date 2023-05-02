@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -130,6 +131,9 @@ class SessionManagerTest {
 
     @Test
     fun givenClientWithAuth_whenServerReturns401ForAssetDownload_thenShouldTryAgainWithNewToken() = runTest {
+        // setup the user agent provider
+        KaliumUserAgentProvider.setUserAgent("KaliumTest")
+
         val sessionManager = createFakeSessionManager()
 
         val loadToken: suspend () -> BearerTokens? = {

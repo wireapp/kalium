@@ -34,7 +34,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class SelfApiV0Test : ApiTest {
+internal class SelfApiV0Test : ApiTest() {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {

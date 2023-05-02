@@ -44,7 +44,11 @@ internal class SaveNotificationTokenUseCaseImpl(
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) : SaveNotificationTokenUseCase {
 
-    override suspend operator fun invoke(token: String, type: String, applicationId: String): Result =
+    override suspend operator fun invoke(
+        token: String,
+        type: String,
+        applicationId: String
+    ): Result =
         notificationTokenRepository.persistNotificationToken(token, type, applicationId).fold({
             Result.Failure.Generic(it)
         }, {
