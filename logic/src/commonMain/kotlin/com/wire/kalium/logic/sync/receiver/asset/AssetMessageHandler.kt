@@ -31,20 +31,20 @@ internal class AssetMessageHandlerImpl(
         }
         val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
-            when (it.state) {
-                FileSharingState.Disabled -> {
-                    persistRestrictedAssetMessage(message, messageContent)
-                }
-
-                FileSharingState.EnabledAll -> processNonRestrictedAssetMessage(message, messageContent)
-
-                is FileSharingState.EnabledSome -> {
-                    if (validateAssetMimeTypeUseCase(messageContent.value.mimeType, it.state.allowedType)) {
-                        processNonRestrictedAssetMessage(message, messageContent)
-                    } else {
-                        persistRestrictedAssetMessage(message, messageContent)
-                    }
-                }
+            val isThisAssetAllowed = when (it.state) {
+                FileSharingState.Disabled -> false
+                FileSharingState.EnabledAll -> true
+                
+                is FileSharingState.EnabledSome -> validateAssetMimeTypeUseCase(
+                        messageContent.value.mimeType, 
+                        it.state.allowedType)
+                    )
+            }
+            
+            if (isThisAssetAllowed) {
+                processNonRestrictedAssetMessage(message, messageContent)
+            } else {
+                persistRestrictedAssetMessage(message, messageContent)
             }
         }
     }
