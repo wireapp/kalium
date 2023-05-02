@@ -73,6 +73,7 @@ class E2EIClientImpl constructor(
     ): DpopToken {
         return wireE2eIdentity.createDpopToken(
             accessTokenUrl,
+            expirySecs = 30U,
             backendNonce
         )
 

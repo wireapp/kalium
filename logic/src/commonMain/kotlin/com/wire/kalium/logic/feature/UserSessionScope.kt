@@ -189,6 +189,8 @@ import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
@@ -414,7 +416,9 @@ class UserSessionScope internal constructor(
     private val e2eiRepository: E2EIRepository
         get() = E2EIRepositoryImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.e2eiApi,
-            mlsClientProvider
+            mlsClientProvider,
+            clientIdProvider,
+            users.getSelfUser
         )
 
     val enrolE2EIUseCase: EnrollE2EIUseCase

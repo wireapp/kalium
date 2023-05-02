@@ -21,8 +21,11 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.*
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.feature.user.GetUserInfoUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -31,12 +34,14 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
-    suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+    suspend fun getE2EIClient(clientId: ClientId? = null, selfUser: SelfUser): Either<CoreFailure, E2EIClient>
 
 }
 
@@ -45,7 +50,7 @@ class MLSClientProviderImpl(
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val passphraseStorage: PassphraseStorage,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
@@ -89,24 +94,23 @@ class MLSClientProviderImpl(
         )
     }
 
-    override suspend fun getE2EIClient(clientId: ClientId?): Either<CoreFailure, E2EIClient> =
+    override suspend fun getE2EIClient(clientId: ClientId?, selfUser: SelfUser): Either<CoreFailure, E2EIClient> =
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-            val cryptoClientId = CryptoQualifiedClientId(
-                currentClientId.toString(),
+            val e2eiClientId = E2EIQualifiedClientId(
+                currentClientId.value,
                 CryptoQualifiedID(value = userId.value, domain = userId.domain)
             )
-            com.wire.kalium.logic.kaliumLogger.w("################# --->   $cryptoClientId")
 
             return@withContext e2EIClient?.let {
                 Either.Right(it)
             } ?: run {
                 getMLSClient(currentClientId).flatMap {
                     val newE2EIClient = it.newAcmeEnrollment(
-                        cryptoClientId,
-                        "Mojtaba Staging",
-                        "mojtabastaging"
+                        e2eiClientId,
+                        selfUser.name!!,
+                        selfUser.handle!!
                     )
                     e2EIClient = newE2EIClient
                     Either.Right(newE2EIClient)

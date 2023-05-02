@@ -18,6 +18,7 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
@@ -55,11 +56,11 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
             handleNewNonceResponse(httpResponse)
         }
 
-    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray): NetworkResponse<AcmeResponse> =
+    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray?): NetworkResponse<AcmeResponse> =
         httpClient.preparePost(requestDir)
         {
             contentType(ContentType.Application.JoseJson)
-            setBody(requestBody)
+            requestBody?.let { setBody(requestBody) }
         }.execute { httpResponse ->
             handleAcmeRequestResponse(httpResponse)
         }
@@ -70,11 +71,30 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     ): NetworkResponse<AcmeResponse> =
         postAcmeRequest(newAccountRequestUrl, newAccountRequestBody)
 
-     override suspend fun getNewOrder(
+    override suspend fun getNewOrder(
         url: String,
         body: ByteArray
     ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, body)
 
+    override suspend fun getAuthzChallenge(
+        url: String
+    ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, null)
+
+    override suspend fun getWireNonce(clientId: String): NetworkResponse<String> =
+        httpClient.prepareHead("${PATH_CLIENTS}/$clientId/${PATH_NONCE}")
+        {
+            contentType(ContentType.Application.JoseJson)
+        }.execute { httpResponse ->
+            handleNewNonceResponse(httpResponse)
+        }
+
+    override suspend fun getDpopAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
+        wrapKaliumResponse {
+            httpClient.post("${PATH_CLIENTS}/$clientId/${PATH_ACCESS_TOKEN}")
+            {
+                headers.append("dpop", dpopToken)
+            }
+        }
 
     private suspend fun handleNewNonceResponse(
         httpResponse: HttpResponse
@@ -131,6 +151,9 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     }
 
     private companion object {
+        const val PATH_CLIENTS = "clients"
+        const val PATH_NONCE = "nonce"
+        const val PATH_ACCESS_TOKEN = "access-token"
         const val TEMP_BASE_URL = "https://136.243.148.68"
         const val ACME_PORT = "9000"
         const val DEX_PORT = "5556"

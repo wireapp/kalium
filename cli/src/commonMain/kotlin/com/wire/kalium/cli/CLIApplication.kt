@@ -33,7 +33,7 @@ import kotlinx.coroutines.runBlocking
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.VERBOSE)
     private val logOutputFile by option(help = "output file for logs")
     private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = true)
     private val ignoreAllSSLErrors by option(help = "ignore all SSL Certificates for Backend api calls").flag(default = true)

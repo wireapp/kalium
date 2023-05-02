@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.v0.authenticated
 
+import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
@@ -34,9 +35,9 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
     override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
         E2EIApi.getApiNotSupportError(::getNewNonce.name)
 
-    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray): NetworkResponse<AcmeResponse> =
-        E2EIApi.getApiNotSupportError(::getNewNonce.name)
-
+    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray?): NetworkResponse<AcmeResponse> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun getNewAccount(
         newAccountRequestUrl: String,
@@ -50,6 +51,14 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
     ): NetworkResponse<AcmeResponse> =
         E2EIApi.getApiNotSupportError(::getNewOrder.name)
 
+    override suspend fun getAuthzChallenge(
+        url: String
+    ): NetworkResponse<AcmeResponse> =
+        E2EIApi.getApiNotSupportError(::getAuthzChallenge.name)
+
+    override suspend fun getWireNonce(clientId: String): NetworkResponse<String> =
+        E2EIApi.getApiNotSupportError(::getWireNonce.name)
+
     override suspend fun sendNewAuthz(): NetworkResponse<Unit> =
         E2EIApi.getApiNotSupportError(::sendNewAuthz.name)
 
@@ -61,4 +70,7 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
 
     override suspend fun sendAuthzClienId(): NetworkResponse<Unit> =
         E2EIApi.getApiNotSupportError(::sendAuthzClienId.name)
+
+    override suspend fun getDpopAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
+        E2EIApi.getApiNotSupportError(::getDpopAccessToken.name)
 }

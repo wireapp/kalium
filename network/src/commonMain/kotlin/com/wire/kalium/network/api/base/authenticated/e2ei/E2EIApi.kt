@@ -29,7 +29,7 @@ interface E2EIApi {
     suspend fun getNewNonce(noncePath: String): NetworkResponse<String> // get the data from the reply header
 
     suspend fun postAcmeRequest(
-        requestDir: String, requestBody: ByteArray
+        requestDir: String, requestBody: ByteArray?
     ): NetworkResponse<AcmeResponse>
 
     suspend fun getNewAccount(
@@ -39,6 +39,12 @@ interface E2EIApi {
     suspend fun getNewOrder(
         url: String, body: ByteArray
     ): NetworkResponse<AcmeResponse>
+
+    suspend fun getAuthzChallenge(
+        url: String
+    ): NetworkResponse<AcmeResponse>
+    suspend fun getWireNonce(clientId: String): NetworkResponse<String>
+
 
     suspend fun sendNewAuthz(): NetworkResponse<Unit>
 
@@ -53,4 +59,6 @@ interface E2EIApi {
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
         )
     }
+
+    suspend fun getDpopAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse>
 }

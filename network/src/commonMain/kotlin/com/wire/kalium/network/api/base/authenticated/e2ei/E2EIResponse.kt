@@ -52,3 +52,9 @@ data class AcmeResponse(
     val nonce: String,
     val response: ByteArray
 )
+
+data class AccessTokenResponse(
+    val expires_in:String,
+    val token:String,
+    val type:String
+)

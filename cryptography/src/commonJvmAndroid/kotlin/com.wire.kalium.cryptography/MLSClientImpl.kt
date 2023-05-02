@@ -229,10 +229,11 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+        kaliumLogger.w("userInfo: ${clientId.toString()}, $displayName, $handle")
         return E2EIClientImpl(
             coreCrypto.newAcmeEnrollment(
-                "NGM5MzIyYWYxODg3NDk5MWFlNjg1NDM3MjUyOGJiNzI:4b3844d43b3bfc0f@wire.com",
+                clientId.toString(),
                 displayName,
                 handle,
                 defaultE2EIExpiry,
