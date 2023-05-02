@@ -23,14 +23,15 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(
-        directory: AcmeDirectory,
-        previousNonce: String
-    ): JsonRawData {
+    override fun newAccountRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(order: AcmeOrderRequest): JsonRawData {
+    override fun newAccountResponse(account: JsonRawData) {
+        TODO("Not yet implemented")
+    }
+
+    override fun newOrderRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -38,11 +39,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(
-        url: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun newAuthzRequest(url: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -66,39 +63,24 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(
-        orderUrl: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderResponse(order: JsonRawData): AcmeOrder {
+    override fun checkOrderResponse(order: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(
-        order: AcmeOrder,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun finalizeRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeResponse(finalize: JsonRawData): AcmeFinalize {
+    override fun finalizeResponse(finalize: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(
-        finalize: AcmeFinalize,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun certificateRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun certificateResponse(certificateChain: String): List<String> {
-        TODO("Not yet implemented")
-    }
 }

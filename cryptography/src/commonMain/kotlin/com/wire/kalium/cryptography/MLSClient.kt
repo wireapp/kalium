@@ -272,7 +272,11 @@ interface MLSClient {
      *
      * @return wire end to end identity client
      */
-    fun newAcmeEnrollment(): E2EIClient
+    fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String
+    ): E2EIClient
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient
