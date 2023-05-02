@@ -99,7 +99,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
-        val status: Boolean = model.status == Status.ENABLED
+        val newStatus: Boolean = model.status == Status.ENABLED
         val currentStatus = isFileSharingEnabledUseCase().value
         val isStatusChanged = when (currentStatus) {
             FileSharingState.Disabled -> status
