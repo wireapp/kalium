@@ -177,9 +177,6 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
-import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
@@ -286,7 +283,6 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -300,6 +296,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(

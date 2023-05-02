@@ -79,7 +79,7 @@ fun interface ScheduleNewAssetMessageUseCase {
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
-        expireAfter : Duration?,
+        expireAfter: Duration?,
     ): ScheduleNewAssetMessageResult
 }
 
@@ -146,7 +146,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
                 expectsReadConfirmation = expectsReadConfirmation,
-                expirationData = expireAfter?.let{ Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted) },
+                expirationData = expireAfter?.let {
+                    Message.ExpirationData(
+                        expireAfter,
+                        Message.ExpirationData.SelfDeletionStatus.NotStarted
+                    )
+                },
                 isSelfMessage = true
             )
 
@@ -225,6 +230,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
+
                     else -> null
                 },
                 remoteData = AssetContent.RemoteData(
