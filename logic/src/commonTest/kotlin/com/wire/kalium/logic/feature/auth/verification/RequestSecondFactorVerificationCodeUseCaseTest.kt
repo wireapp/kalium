@@ -21,6 +21,10 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -59,8 +63,27 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
             verifiableAction = VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
         )
 
-        assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure>(result)
+        assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure.Generic>(result)
         assertEquals(networkFailure, result.cause)
+    }
+
+    @Test
+    fun givenRepositoryFailsWithTooManyRequests_whenRequesting2FACode_thenShouldFailWithTooManyRequests() = runTest {
+        val networkFailure = NetworkFailure.ServerMiscommunication(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(HttpStatusCode.TooManyRequests.value, "", "too-many-requests")
+            )
+        )
+        val (_, requestSecondFactorVerificationCodeUseCase) = Arrangement()
+            .withRepositoryReturning(Either.Left(networkFailure))
+            .arrange()
+
+        val result = requestSecondFactorVerificationCodeUseCase(
+            email = "email",
+            verifiableAction = VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
+        )
+
+        assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests>(result)
     }
 
     private class Arrangement {
