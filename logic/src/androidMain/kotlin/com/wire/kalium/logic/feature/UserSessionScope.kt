@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 @Suppress("LongParameterList")
 internal fun UserSessionScope(
     applicationContext: Context,
+    userAgent: String,
     userId: UserId,
     globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
@@ -57,6 +58,7 @@ internal fun UserSessionScope(
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 
     return UserSessionScope(
+        userAgent,
         userId,
         globalScope,
         globalCallManager,

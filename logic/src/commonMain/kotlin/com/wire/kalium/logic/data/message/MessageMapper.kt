@@ -48,7 +48,6 @@ interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
-    fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -174,26 +173,6 @@ class MessageMapperImpl(
             isSelfMessage = message.isSelfMessage,
             senderUserId = message.senderUserId.toModel()
         )
-    }
-
-    @Suppress("ComplexMethod")
-    override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
-        return when (message.content) {
-            is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.ConversationNameChange -> null
-            is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
-            is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
-            is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
-            is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
-            is MessagePreviewEntityContent.TeamMemberRemoved -> null
-            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.CryptoSessionReset -> null
-            MessagePreviewEntityContent.Unknown -> null
-            is MessagePreviewEntityContent.MembersRemoved -> null
-            is MessagePreviewEntityContent.MemberJoined -> null
-            is MessagePreviewEntityContent.MemberLeft -> null
-            is MessagePreviewEntityContent.MembersAdded -> null
-        }
     }
 
     @Suppress("ComplexMethod")
@@ -447,7 +426,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
-
+    is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

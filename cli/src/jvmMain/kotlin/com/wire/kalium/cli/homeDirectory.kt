@@ -28,4 +28,4 @@ actual fun homeDirectory(): String {
 actual fun coreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs)
+): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Kalium CLI/JVM/${System.getProperty("http.agent")}")

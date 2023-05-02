@@ -37,7 +37,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class PrekeyApiV4Test : ApiTest {
+internal class PrekeyApiV4Test : ApiTest() {
     @Test
     fun givenAValidDomainToUserIdToClientsMap_whenCallingGetUsersPrekeyEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
