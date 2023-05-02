@@ -183,7 +183,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveGlobalSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -1177,7 +1177,7 @@ class UserSessionScope internal constructor(
         get() = MarkSelfDeletingMessagesChangeAsNotifiedUseCase(userConfigRepository)
 
     val observeSelfDeletingMessagesFeatureFlag: ObserveSelfDeletingMessagesUseCase
-        get() = ObserveGlobalSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+        get() = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
 
     val persistNewSelfDeletingStatusUseCase: PersistNewSelfDeletingStatusUseCaseImpl
         get() = PersistNewSelfDeletingStatusUseCaseImpl(userConfigRepository)

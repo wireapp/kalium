@@ -33,7 +33,7 @@ interface ObserveSelfDeletingMessagesUseCase {
     suspend operator fun invoke(): Flow<SelfDeletingMessagesStatus>
 }
 
-class ObserveGlobalSelfDeletingMessagesUseCaseImpl internal constructor(
+class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : ObserveSelfDeletingMessagesUseCase {
     override suspend fun invoke(): Flow<SelfDeletingMessagesStatus> =

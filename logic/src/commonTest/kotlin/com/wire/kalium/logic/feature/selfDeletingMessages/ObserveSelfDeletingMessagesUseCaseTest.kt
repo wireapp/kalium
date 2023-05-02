@@ -21,7 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveGlobalSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
@@ -45,7 +45,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        observeSelfDeletingMessagesFlag = ObserveGlobalSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+        observeSelfDeletingMessagesFlag = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
