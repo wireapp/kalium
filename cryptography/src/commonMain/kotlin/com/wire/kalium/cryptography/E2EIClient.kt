@@ -18,8 +18,6 @@
 package com.wire.kalium.cryptography
 
 typealias JsonRawData = ByteArray
-typealias AcmeAccount = ByteArray
-typealias AcmeOrder = ByteArray
 typealias DpopToken = String
 
 data class AcmeDirectory(
@@ -44,60 +42,32 @@ data class NewAcmeAuthz(
     var wireOidcChallenge: AcmeChallenge?
 )
 
-data class AcmeFinalize(
-    var delegate: JsonRawData,
-    var certificateUrl: String
-)
-
-data class AcmeOrderRequest(
-    var displayName: String,
-    var domain: String,
-    var clientId: String,
-    var handle: String,
-    var expiryDays: UInt,
-    var directory: AcmeDirectory,
-    var account: AcmeAccount,
-    var previousNonce: String
-)
-
 data class DpopTokenRequest(
     var accessTokenUrl: String,
-    var userId: String,
-    var clientId: ULong,
-    var domain: String,
-    var clientIdChallenge: AcmeChallenge,
     var backendNonce: String,
-    var expiryDays: UInt
 )
 
 data class DpopChallengeRequest(
     val accessToken: String,
-    val dpopChallenge: AcmeChallenge,
-    val account: AcmeAccount,
     val previousNonce: String
 )
 
 data class OidcChallengeRequest(
     val idToken: String,
-    val oidcChallenge: AcmeChallenge,
-    val account: AcmeAccount,
     val previousNonce: String
 )
 
 @Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(
-        directory: AcmeDirectory,
-        previousNonce: String
-    ): JsonRawData
+    fun newAccountRequest(previousNonce: String): JsonRawData
+    fun newAccountResponse(account: JsonRawData)
 
-    fun newOrderRequest(order: AcmeOrderRequest): JsonRawData
+    fun newOrderRequest(previousNonce: String): JsonRawData
 
     fun newOrderResponse(order: JsonRawData): NewAcmeOrder
     fun newAuthzRequest(
         url: String,
-        account: AcmeAccount,
         previousNonce: String
     ): JsonRawData
 
@@ -112,23 +82,16 @@ interface E2EIClient {
     fun newChallengeResponse(challenge: JsonRawData)
     fun checkOrderRequest(
         orderUrl: String,
-        account: AcmeAccount,
         previousNonce: String
     ): JsonRawData
 
-    fun checkOrderResponse(order: JsonRawData): AcmeOrder
+    fun checkOrderResponse(order: JsonRawData)
     fun finalizeRequest(
-        order: AcmeOrder,
-        account: AcmeAccount,
         previousNonce: String
     ): JsonRawData
 
-    fun finalizeResponse(finalize: JsonRawData): AcmeFinalize
+    fun finalizeResponse(finalize: JsonRawData)
     fun certificateRequest(
-        finalize: AcmeFinalize,
-        account: AcmeAccount,
         previousNonce: String
     ): JsonRawData
-
-    fun certificateResponse(certificateChain: String): List<String>
 }

@@ -79,7 +79,7 @@ fun interface ScheduleNewAssetMessageUseCase {
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
-        expireAfter: Duration?,
+        expireAfter: Duration?
     ): ScheduleNewAssetMessageResult
 }
 
@@ -147,10 +147,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited,
                 expectsReadConfirmation = expectsReadConfirmation,
                 expirationData = expireAfter?.let {
-                    Message.ExpirationData(
-                        expireAfter,
-                        Message.ExpirationData.SelfDeletionStatus.NotStarted
-                    )
+                    Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
                 },
                 isSelfMessage = true
             )

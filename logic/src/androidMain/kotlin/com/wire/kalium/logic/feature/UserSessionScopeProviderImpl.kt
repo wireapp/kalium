@@ -47,7 +47,8 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
+    userAgent: String
+) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
     override fun create(userId: UserId): UserSessionScope {
         val userIdEntity = userId.toDao()
@@ -58,6 +59,7 @@ internal actual class UserSessionScopeProviderImpl(
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
         return UserSessionScope(
             applicationContext = appContext,
+            userAgent = userAgent,
             userId = userId,
             globalScope = globalScope,
             globalCallManager = globalCallManager,

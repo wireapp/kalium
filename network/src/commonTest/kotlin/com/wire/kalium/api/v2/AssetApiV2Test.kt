@@ -42,7 +42,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AssetApiV2Test : ApiTest {
+internal class AssetApiV2Test : ApiTest() {
 
     private val userId: UserId = UserId("user_id", "domain")
 
