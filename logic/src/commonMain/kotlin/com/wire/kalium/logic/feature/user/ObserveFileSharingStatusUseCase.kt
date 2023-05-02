@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
@@ -43,11 +42,11 @@ class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: User
                 when (it) {
                     StorageFailure.DataNotFound -> {
                         kaliumLogger.e("Data not found in ObserveFileSharingStatusUseCase")
-                        FileSharingStatus(FileSharingState.Disabled, false)
+                        FileSharingStatus(FileSharingStatus.Value.Disabled, false)
                     }
                     is StorageFailure.Generic -> {
                         kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveFileSharingStatusUseCase", it.rootCause)
-                        FileSharingStatus(FileSharingState.Disabled, false)
+                        FileSharingStatus(FileSharingStatus.Value.Disabled, false)
                     }
                 }
             }, {

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -102,10 +101,10 @@ internal class SyncFeatureConfigsUseCaseImpl(
         val newStatus: Boolean = model.status == Status.ENABLED
         val currentStatus = isFileSharingEnabledUseCase().value
         val isStatusChanged = when (currentStatus) {
-            FileSharingState.Disabled -> status
-            FileSharingState.EnabledAll -> !status
+            FileSharingStatus.Value.Disabled -> status
+            FileSharingStatus.Value.EnabledAll -> !status
             // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
-            is FileSharingState.EnabledSome -> !status
+            is FileSharingStatus.Value.EnabledSome -> !status
         }
         userConfigRepository.setFileSharingStatus(status, isStatusChanged)
     }

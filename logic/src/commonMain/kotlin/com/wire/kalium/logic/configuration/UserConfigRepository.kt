@@ -91,21 +91,21 @@ class UserConfigDataSource(
         !serverSideConfig.value.status -> Either.Right(
             FileSharingStatus(
                 isStatusChanged = serverSideConfig.value.isStatusChanged,
-                state = FileSharingState.Disabled
+                state = FileSharingStatus.Value.Disabled
             )
         )
 
         buildConfig is BuildFileRestrictionState.AllowSome -> Either.Right(
             FileSharingStatus(
                 isStatusChanged = false,
-                state = FileSharingState.EnabledSome(buildConfig.allowedType)
+                state = FileSharingStatus.Value.EnabledSome(buildConfig.allowedType)
             )
         )
 
         buildConfig is BuildFileRestrictionState.NoRestriction -> Either.Right(
             FileSharingStatus(
                 isStatusChanged = serverSideConfig.value.isStatusChanged,
-                state = FileSharingState.EnabledAll
+                state = FileSharingStatus.Value.EnabledAll
             )
         )
 

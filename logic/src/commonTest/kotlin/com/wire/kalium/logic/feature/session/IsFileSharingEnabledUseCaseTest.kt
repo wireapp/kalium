@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
@@ -40,7 +39,7 @@ class IsFileSharingEnabledUseCaseTest {
 
     @Test
     fun givenATrueValue_thenISFileSharingIsEnabled() = runTest {
-        val expectedValue = FileSharingStatus(FileSharingState.EnabledAll, false)
+        val expectedValue = FileSharingStatus(FileSharingStatus.Value.EnabledAll, false)
 
         val (arrangement, isFileSharingEnabledUseCase) = Arrangement()
             .withSuccessfulResponse(expectedValue)

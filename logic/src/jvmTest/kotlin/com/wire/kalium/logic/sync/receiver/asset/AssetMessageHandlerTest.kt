@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.sync.receiver.asset
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -57,7 +56,7 @@ class AssetMessageHandlerTest {
         // Given
         val assetMessage = COMPLETE_ASSET_MESSAGE
         val assetMessageContent = assetMessage.content as MessageContent.Asset
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(null)
@@ -87,7 +86,7 @@ class AssetMessageHandlerTest {
     fun givenAValidPreviewNewGenericAssetMessage_whenHandlingIt_isCorrectlyProcessedAndIsNotVisible() = runTest {
         // Given
         val assetMessage = PREVIEW_ASSET_MESSAGE
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(null)
@@ -124,7 +123,7 @@ class AssetMessageHandlerTest {
                 )
             )
         )
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(null)
@@ -154,7 +153,7 @@ class AssetMessageHandlerTest {
         // Given
         val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
         val updateAssetMessage = COMPLETE_ASSET_MESSAGE
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(previewAssetMessage)
@@ -193,7 +192,7 @@ class AssetMessageHandlerTest {
                 )
             )
         )
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(previewAssetMessage)
@@ -228,7 +227,7 @@ class AssetMessageHandlerTest {
         val updateInvalidSenderIdAssetMessage = COMPLETE_ASSET_MESSAGE.copy(
             senderUserId = UserId("some-impostor-id", "some.domain.com")
         )
-        val isFileSharingEnabled = FileSharingState.EnabledAll
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
         val (arrangement, assetMessageHandler) = Arrangement()
             .withSuccessfulFileSharingFlag(isFileSharingEnabled)
             .withSuccessfulStoredMessage(previewAssetMessage)
@@ -279,11 +278,11 @@ class AssetMessageHandlerTest {
                 .thenReturn(result)
         }
 
-        fun withSuccessfulFileSharingFlag(state: FileSharingState) = apply {
+        fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
-                .thenReturn(Either.Right(FileSharingStatus(state = state, isStatusChanged = false)))
+                .thenReturn(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
         }
 
         fun withSuccessfulPersistMessageUseCase(message: Message) = apply {

@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigDataSource
@@ -172,7 +171,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.EnabledAll, it.state)
+            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
         }
     }
 
@@ -184,7 +183,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.EnabledAll,
+                    state = FileSharingStatus.Value.EnabledAll,
                     isStatusChanged = false
                 )
             )
@@ -208,7 +207,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.Disabled, it.state)
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
@@ -220,7 +219,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.Disabled,
+                    state = FileSharingStatus.Value.Disabled,
                     isStatusChanged = false
                 )
             )
@@ -241,7 +240,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.Disabled,
+                    state = FileSharingStatus.Value.Disabled,
                     isStatusChanged = false
                 )
             )
@@ -252,7 +251,7 @@ class SyncFeatureConfigsUseCaseTest {
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
             assertTrue { it.isStatusChanged!! }
             FileSharingStatus(
-                state = FileSharingState.EnabledAll,
+                state = FileSharingStatus.Value.EnabledAll,
                 isStatusChanged = false
             )
         }
@@ -266,7 +265,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.EnabledAll,
+                    state = FileSharingStatus.Value.EnabledAll,
                     isStatusChanged = false
                 )
             )
@@ -276,7 +275,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
             assertTrue { it.isStatusChanged!! }
-            assertEquals(FileSharingState.Disabled, it.state)
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
@@ -408,7 +407,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.EnabledSome(listOf("png", "jpg")),
+                    state = FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")),
                     isStatusChanged = false
                 )
             )
@@ -417,7 +416,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.EnabledAll, it.state)
+            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
             assertFalse { it.isStatusChanged!! }
         }
     }
@@ -430,7 +429,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.EnabledSome(listOf("png", "jpg")),
+                    state = FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")),
                     isStatusChanged = false
                 )
             )
@@ -455,7 +454,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.EnabledAll, it.state)
+            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
         }
     }
 
@@ -471,7 +470,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.EnabledSome(listOf("png", "jpg")), it.state)
+            assertEquals(FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")), it.state)
         }
     }
 
@@ -487,7 +486,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.Disabled, it.state)
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
@@ -503,7 +502,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingState.Disabled, it.state)
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
@@ -537,7 +536,7 @@ class SyncFeatureConfigsUseCaseTest {
             withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
             withLocalSharingEnabledReturning(
                 FileSharingStatus(
-                    state = FileSharingState.EnabledAll,
+                    state = FileSharingStatus.Value.EnabledAll,
                     isStatusChanged = false
                 )
             )

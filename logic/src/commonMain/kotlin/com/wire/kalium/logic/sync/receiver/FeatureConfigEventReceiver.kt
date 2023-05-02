@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
@@ -50,9 +49,9 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     .isFileSharingEnabled()
                     .fold({ false }, {
                         when (it.state) {
-                            FileSharingState.Disabled -> false
-                            FileSharingState.EnabledAll -> true
-                            is FileSharingState.EnabledSome -> true
+                            FileSharingStatus.Value.Disabled -> false
+                            FileSharingStatus.Value.EnabledAll -> true
+                            is FileSharingStatus.Value.EnabledSome -> true
                         }
                     })
 

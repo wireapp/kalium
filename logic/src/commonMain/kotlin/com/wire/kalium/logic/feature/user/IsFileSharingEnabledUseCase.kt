@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.FileSharingState
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
@@ -39,6 +38,6 @@ class IsFileSharingEnabledUseCaseImpl(
     override operator fun invoke(): FileSharingStatus =
         userConfigRepository.isFileSharingEnabled()
             .fold({
-                FileSharingStatus(FileSharingState.Disabled, false)
+                FileSharingStatus(FileSharingStatus.Value.Disabled, false)
             }, { it })
 }
