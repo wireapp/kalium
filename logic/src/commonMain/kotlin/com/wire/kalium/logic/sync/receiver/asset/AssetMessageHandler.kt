@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.receiver.asset
 
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -33,13 +34,13 @@ internal class AssetMessageHandlerImpl(
             val isThisAssetAllowed = when (it.state) {
                 FileSharingStatus.Value.Disabled -> false
                 FileSharingStatus.Value.EnabledAll -> true
-                
+
                 is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
-                        messageContent.value.mimeType, 
-                        it.state.allowedType)
-                    )
+                    messageContent.value.mimeType,
+                    it.state.allowedType
+                )
             }
-            
+
             if (isThisAssetAllowed) {
                 processNonRestrictedAssetMessage(message, messageContent)
             } else {

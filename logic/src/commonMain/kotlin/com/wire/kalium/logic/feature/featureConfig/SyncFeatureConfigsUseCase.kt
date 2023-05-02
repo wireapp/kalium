@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -99,14 +100,14 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
         val newStatus: Boolean = model.status == Status.ENABLED
-        val currentStatus = isFileSharingEnabledUseCase().value
+        val currentStatus = isFileSharingEnabledUseCase().state
         val isStatusChanged = when (currentStatus) {
-            FileSharingStatus.Value.Disabled -> status
-            FileSharingStatus.Value.EnabledAll -> !status
+            FileSharingStatus.Value.Disabled -> newStatus
+            FileSharingStatus.Value.EnabledAll -> !newStatus
             // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
-            is FileSharingStatus.Value.EnabledSome -> !status
+            is FileSharingStatus.Value.EnabledSome -> !newStatus
         }
-        userConfigRepository.setFileSharingStatus(status, isStatusChanged)
+        userConfigRepository.setFileSharingStatus(newStatus, isStatusChanged)
     }
 
     private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
