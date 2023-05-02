@@ -100,7 +100,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
         val status: Boolean = model.status == Status.ENABLED
-        val isStatusChanged = when (isFileSharingEnabledUseCase().state) {
+        val currentStatus = isFileSharingEnabledUseCase().value
+        val isStatusChanged = when (currentStatus) {
             FileSharingState.Disabled -> status
             FileSharingState.EnabledAll -> !status
             // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
