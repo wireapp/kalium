@@ -26,6 +26,8 @@ class E2EIClientImpl constructor(
     private val wireE2eIdentity: WireE2eIdentity
 ) : E2EIClient {
 
+    private val defaultE2EIDpopExpiryInSeconds: UInt = 30U
+
     override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         return toAcmeDirectory(wireE2eIdentity.directoryResponse(toUByteList(directory)))
     }
@@ -72,6 +74,7 @@ class E2EIClientImpl constructor(
         with(request) {
             return wireE2eIdentity.createDpopToken(
                 accessTokenUrl,
+                defaultE2EIDpopExpiryInSeconds,
                 backendNonce
             )
         }
