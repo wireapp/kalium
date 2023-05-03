@@ -81,6 +81,7 @@ import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.team.ServiceMapper
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -168,5 +169,7 @@ internal object MapperProvider {
 
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
     fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
+
+    fun serviceMapper(): ServiceMapper = ServiceMapper()
 
 }

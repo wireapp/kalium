@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
@@ -58,8 +59,10 @@ internal class TeamDataSource(
     private val teamsApi: TeamsApi,
     private val userDetailsApi: UserDetailsApi,
     private val selfUserId: UserId,
+    private val serviceDAO: ServiceDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
+    private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -161,9 +164,16 @@ internal class TeamDataSource(
         }
     }
 
+    // TODO: there is no documentation about getting the next page in case there is a next page
     override suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
         teamsApi.whiteListedServices(teamId = teamId.value)
+    }.map {
+        it.services.map { service ->
+            serviceMapper.mapToServiceEntity(service, selfUserId)
+        }
     }.flatMap {
-        TODO("update local storage")
+        wrapStorageRequest {
+            serviceDAO.insert(it)
+        }
     }
 }
