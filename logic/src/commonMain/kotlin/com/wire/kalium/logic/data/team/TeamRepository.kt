@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
@@ -49,7 +48,7 @@ interface TeamRepository {
     suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
-
+    suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -61,7 +60,6 @@ internal class TeamDataSource(
     private val selfUserId: UserId,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -161,5 +159,11 @@ internal class TeamDataSource(
         return wrapStorageRequest {
             teamDAO.updateTeam(teamMapper.fromModelToEntity(team))
         }
+    }
+
+    override suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.whiteListedServices(teamId = teamId.value)
+    }.flatMap {
+        TODO("update local storage")
     }
 }

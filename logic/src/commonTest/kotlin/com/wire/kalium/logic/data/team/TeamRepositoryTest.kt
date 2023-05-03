@@ -256,9 +256,6 @@ class TeamRepositoryTest {
         val userMapper = MapperProvider.userMapper()
 
         @Mock
-        val idMapper = MapperProvider.idMapper()
-
-        @Mock
         val teamsApi = mock(classOf<TeamsApi>())
 
         @Mock
@@ -271,7 +268,6 @@ class TeamRepositoryTest {
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             userMapper = userMapper,
-            idMapper = idMapper,
             selfUserId = TestUser.USER_ID
         )
 
