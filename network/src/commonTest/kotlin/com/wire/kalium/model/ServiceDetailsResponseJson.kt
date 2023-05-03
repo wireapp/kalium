@@ -34,7 +34,7 @@ object ServiceDetailsResponseJson {
     private val jsonProvider = { serializable: ServiceDetailResponse ->
         buildJsonObject {
             put("has_more", serializable.hasMore)
-            putJsonArray("service") {
+            putJsonArray("services") {
                 serializable.services.forEach {
                     addJsonObject {
                         put("enabled", it.enabled)
@@ -43,15 +43,17 @@ object ServiceDetailsResponseJson {
                         put("name", it.name)
                         put("description", it.description)
                         put("summary", it.summary)
-                        putJsonArray("assets") {
-                            it.assets?.forEach { asset ->
+                        it.assets?.let { assetsList ->
+                            putJsonArray("assets") {
+                                assetsList.forEach { asset ->
                                 addJsonObject {
-                                    put("type", asset.key)
-                                    put("url", asset.type.name)
+                                    put("key", asset.key)
+                                    put("type", asset.type.toString())
                                     asset.size?.let { size ->
-                                        put("size", size.name)
+                                        put("size", size.toString())
                                     }
                                 }
+                            }
                             }
                         }
                         putJsonArray("tags") {
