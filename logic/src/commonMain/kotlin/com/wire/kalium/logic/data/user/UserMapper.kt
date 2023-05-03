@@ -38,7 +38,7 @@ import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -130,7 +130,7 @@ internal class UserMapperImpl(
             completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.toDao(userProfileDTO.id.domain),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
-            botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
+            botService = userProfileDTO.service?.let { BotIdEntity(it.id, it.provider) },
             deleted = userProfileDTO.deleted ?: false
         )
     }
@@ -285,7 +285,7 @@ internal class UserMapperImpl(
                     otherUserTeamId = teamId,
                     isService = user.service != null
                 ),
-            botService = user.service?.let { BotEntity(it.id, it.provider) },
+            botService = user.service?.let { BotIdEntity(it.id, it.provider) },
             deleted = false
         )
     }
