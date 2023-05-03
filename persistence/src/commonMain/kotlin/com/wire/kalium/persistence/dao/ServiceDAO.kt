@@ -91,6 +91,7 @@ interface ServiceDAO {
     suspend fun byIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): ServiceViewEntity?
     suspend fun observeByIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<ServiceViewEntity?>
     suspend fun searchServicesWithConversation(query: String, conversationId: ConversationIDEntity): Flow<List<ServiceViewEntity>>
+    suspend fun insert(service: ServiceEntity)
 }
 
 internal class ServiceDAOImpl(
@@ -114,4 +115,17 @@ internal class ServiceDAOImpl(
         conversationId: ConversationIDEntity
     ): Flow<List<ServiceViewEntity>> =
         serviceQueries.searchServices(conversationId, query, mapper = ::mapToServiceView).asFlow().flowOn(context).mapToList()
+
+    override suspend fun insert(service: ServiceEntity) = withContext(context) {
+        serviceQueries.insert(
+            id = service.id,
+            name = service.name,
+            description = service.description,
+            summary = service.summary,
+            tags = service.tags,
+            enabled = service.enabled,
+            preview_asset_id = service.previewAssetId,
+            complete_asset_id = service.completeAssetId
+        )
+    }
 }

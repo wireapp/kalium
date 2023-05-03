@@ -14,6 +14,10 @@ CREATE TABLE Service (
     complete_asset_id TEXT AS QualifiedIDEntity
 );
 
+insert:
+INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
+ VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
+
 allServices:
 SELECT * FROM Service;
 
