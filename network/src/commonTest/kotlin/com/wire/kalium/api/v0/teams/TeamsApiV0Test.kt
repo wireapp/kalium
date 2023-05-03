@@ -19,9 +19,11 @@
 package com.wire.kalium.api.v0.teams
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.ServiceDetailsResponseJson
 import com.wire.kalium.model.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import com.wire.kalium.network.exceptions.KaliumException
@@ -91,8 +93,15 @@ internal class TeamsApiV0Test : ApiTest() {
     @Test
     fun givenInvalidTeamId_whenGettingWhitelistedServices_theRequestShouldBeConfiguredCorrectly() =
         runTest {
+            val errorResponse = ErrorResponseJson.valid(
+                ErrorResponse(
+                    code = HttpStatusCode.NotFound.value,
+                    message = "Team not found",
+                    label = "team.not.found"
+                )
+            )
             val networkClient = mockAuthenticatedNetworkClient(
-                "",
+                errorResponse.rawJson,
                 statusCode = HttpStatusCode.NotFound,
                 assertion = {
                     assertGet()
