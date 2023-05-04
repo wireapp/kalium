@@ -18,10 +18,12 @@
 package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
@@ -35,6 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.time.Duration
 
 class ObserveSelfDeletingMessagesUseCaseTest {
 
@@ -50,23 +53,28 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenRepositoryEmitsFailure_whenObservingSelfDeletingFlag_thenEmitStatusWithNullValues() = runTest {
-        given(userConfigRepository).invocation { observeSelfDeletingMessagesStatus() }
+    fun givenRepositoryEmitsFailure_whenObservingSelfDeletingStatus_thenEmitStatusWithNullValues() = runTest {
+        val conversationId = ConversationId("conversationId", "domain")
+        given(userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
             .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
-        val result = observeSelfDeletingMessagesFlag()
+        val result = observeSelfDeletingMessagesFlag(conversationId)
 
-        assertFalse(result.first().isFeatureEnabled)
-        assertNull(result.first().hasFeatureChanged)
-        assertNull(result.first().globalSelfDeletionDuration)
+        assertFalse(result.first().isEnabled)
+        assertNull(result.first().isEnforced)
+        assertNull(result.first().toDuration())
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
-        val expectedStatus = SelfDeletingMessagesStatus(isFeatureEnabled = true, hasFeatureChanged = false, globalSelfDeletionDuration = null)
+        val expectedStatus = TeamSettingsSelfDeletionStatus(
+            hasFeatureChanged = null, enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(
+                Duration.ZERO
+            )
+        )
 
-        given(userConfigRepository).invocation { observeSelfDeletingMessagesStatus() }.thenReturn(flowOf(Either.Right(expectedStatus)))
+        given(userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }.thenReturn(flowOf(Either.Right(expectedStatus)))
 
         val result = observeSelfDeletingMessagesFlag()
 

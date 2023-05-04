@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
+import com.wire.kalium.logic.configuration.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -181,7 +181,7 @@ class FeatureConfigEventReceiverTest {
 
     @Test
     fun givenNewSelfDeletingMessagesDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
-        val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
+        val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
             isFeatureEnabled = true,
             globalSelfDeletionDuration = 10,
             hasFeatureChanged = false
@@ -198,7 +198,7 @@ class FeatureConfigEventReceiverTest {
         featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
             .with(matching {
                 it.hasFeatureChanged == true && !it.isFeatureEnabled && it.globalSelfDeletionDuration == null
             })
@@ -208,7 +208,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenNewSelfDeletingMessagesEnablingEventWithNoEnforcedTimeout_whenProcessingEvent_ThenEnableFeatureOnUserConfigRepository() =
         runTest {
-            val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
+            val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
                 isFeatureEnabled = false,
                 globalSelfDeletionDuration = null,
                 hasFeatureChanged = false
@@ -223,7 +223,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && it.isFeatureEnabled && it.globalSelfDeletionDuration == null
                 })
@@ -233,7 +233,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenNewSelfDeletingMessagesEnablingEventWithEnforcedTimeout_whenProcessingEvent_ThenEnableFeatureOnUserConfigRepository() =
         runTest {
-            val currentSelfDeletingMessagesStatus = SelfDeletingMessagesStatus(
+            val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
                 isFeatureEnabled = false,
                 globalSelfDeletionDuration = 0,
                 hasFeatureChanged = false
@@ -249,7 +249,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && it.isFeatureEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
@@ -270,7 +270,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && it.isFeatureEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
@@ -291,7 +291,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && !it.isFeatureEnabled && it.globalSelfDeletionDuration == newEnforcedTimeoutSeconds
                 })
@@ -311,7 +311,7 @@ class FeatureConfigEventReceiverTest {
         featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
             .with(matching {
                 it.hasFeatureChanged == null && !it.isFeatureEnabled && it.globalSelfDeletionDuration == null
             })
@@ -365,13 +365,13 @@ class FeatureConfigEventReceiverTest {
                 .thenReturn(result)
         }
 
-        fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: SelfDeletingMessagesStatus) = apply {
+        fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus) = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::getSelfDeletingMessagesStatus)
                 .whenInvoked()
                 .thenReturn(Either.Right(currentSelfDeletingMessagesStatus))
             given(userConfigRepository)
-                .function(userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -382,7 +382,7 @@ class FeatureConfigEventReceiverTest {
                 .whenInvoked()
                 .thenReturn(Either.Left(StorageFailure.Generic(RuntimeException("Some Error"))))
             given(userConfigRepository)
-                .function(userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -390,7 +390,7 @@ class FeatureConfigEventReceiverTest {
         fun withDisabledKaliumConfigFlag() = apply {
             kaliumConfigs = kaliumConfigs.copy(selfDeletingMessages = false)
             given(userConfigRepository)
-                .function(userConfigRepository::setSelfDeletingMessagesStatus)
+                .function(userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

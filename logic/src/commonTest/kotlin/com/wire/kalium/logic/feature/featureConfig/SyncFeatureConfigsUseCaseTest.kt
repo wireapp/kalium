@@ -28,7 +28,10 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -40,13 +43,17 @@ import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+
+@OptIn(ExperimentalCoroutinesApi::class)
 
 class SyncFeatureConfigsUseCaseTest {
 
@@ -406,6 +413,103 @@ class SyncFeatureConfigsUseCaseTest {
         // Then
         verify(arrangement.featureConfigRepository)
             .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenTeamSettingsSelfDeletionIsDisabledInKaliumConfigs_whenSyncing_thenItDisablesIt() = runTest {
+        // Given
+        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
+            .withKaliumConfigs { it.copy(selfDeletingMessages = false) }
+            .arrange()
+
+        // When
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
+
+        // Then
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .with(matching {
+                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewEnabledWithNullEnforcedTimeoutTeamSettingsSelfDeletionEvent_whenSyncing_thenItIsJustEnabled() = runTest {
+        // Given
+        val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
+            config = SelfDeletingMessagesConfigModel(null),
+            status = Status.ENABLED
+        )
+        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
+            .withGetFeatureConfigsReturning(
+                Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
+            )
+            .arrange()
+
+        // When
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
+
+        // Then
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .with(matching {
+                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenZeroEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItIsJustEnabled() = runTest {
+        // Given
+        val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
+            config = SelfDeletingMessagesConfigModel(0L),
+            status = Status.ENABLED
+        )
+        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
+            .withGetFeatureConfigsReturning(
+                Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
+            )
+            .arrange()
+
+        // When
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
+
+        // Then
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .with(matching {
+                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItMapsToEnforced() = runTest {
+        // Given
+        val enforcedTimeout = 3600L
+        val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
+            config = SelfDeletingMessagesConfigModel(enforcedTimeout),
+            status = Status.ENABLED
+        )
+        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
+            .withGetFeatureConfigsReturning(
+                Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
+            )
+            .arrange()
+
+        // When
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
+
+        // Then
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .with(matching {
+                it.hasFeatureChanged == null
+                        && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enforced
+                        && (it.enforcedSelfDeletionTimer as SelfDeletionTimer.Enforced).enforcedDuration.inWholeSeconds == enforcedTimeout
+            })
             .wasInvoked(exactly = once)
     }
 

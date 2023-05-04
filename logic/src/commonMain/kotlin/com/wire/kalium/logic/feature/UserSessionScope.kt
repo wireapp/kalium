@@ -181,6 +181,8 @@ import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -1173,8 +1175,11 @@ class UserSessionScope internal constructor(
     val markSelfDeletingMessagesAsNotifiedUseCase: MarkSelfDeletingMessagesChangeAsNotifiedUseCase
         get() = MarkSelfDeletingMessagesChangeAsNotifiedUseCase(userConfigRepository)
 
-    val observeSelfDeletingMessagesFeatureFlag: ObserveSelfDeletingMessagesUseCase
+    val observeSelfDeletingMessages: ObserveSelfDeletingMessagesUseCase
         get() = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+
+    val observeTeamSettingsSelfDeletionStatusFlag: ObserveTeamSettingsSelfDeletingStatusUseCase
+        get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)
 
     val persistNewSelfDeletingStatusUseCase: PersistNewSelfDeletingStatusUseCaseImpl
         get() = PersistNewSelfDeletingStatusUseCaseImpl(userConfigRepository)

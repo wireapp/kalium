@@ -386,6 +386,12 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
     @Mock
     val messageRepository = mock(classOf<MessageRepository>())
 
+    @Mock
+    val deleteEphemeralMessageForSelfUserAsReceiver = mock(classOf<DeleteEphemeralMessageForSelfUserAsReceiverUseCase>())
+
+    @Mock
+    val deleteEphemeralMessageForSelfUserAsSender = mock(classOf<DeleteEphemeralMessageForSelfUserAsSenderUseCase>())
+
     fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
         given(messageRepository)
             .suspendFunction(messageRepository::getMessageById)
@@ -422,6 +428,11 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
         return this
     }
 
-    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(messageRepository, dispatcher, coroutineScope)
+    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(
+        messageRepository,
+        dispatcher,
+        deleteEphemeralMessageForSelfUserAsReceiver,
+        deleteEphemeralMessageForSelfUserAsSender,
+        coroutineScope)
 
 }

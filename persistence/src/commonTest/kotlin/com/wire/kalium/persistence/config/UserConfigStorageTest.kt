@@ -132,12 +132,12 @@ class UserConfigStorageTest {
     @Test
     fun givenSelfDeletingStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() {
         val enforcedTimeout = 1000.seconds
-        userConfigStorage.persistSelfDeletingMessagesStatus(
+        userConfigStorage.persistTeamSettingsSelfDeletionStatus(
             isEnabled = true,
-            isStatusChanged = false,
+            hasFlagChanged = false,
             enforcedTimeoutInSeconds = enforcedTimeout
         )
-        userConfigStorage.getSelfDeletingMessagesTeamSettings()?.let {
+        userConfigStorage.getTeamSettingsSelfDeletionStatusFlow()?.let {
             assertTrue(it.status)
             assertTrue(it.isStatusChanged == false)
             assertEquals(it.selfDeletionDuration, enforcedTimeout)

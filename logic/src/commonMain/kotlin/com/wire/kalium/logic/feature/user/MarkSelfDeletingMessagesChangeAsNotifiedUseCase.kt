@@ -27,6 +27,6 @@ class MarkSelfDeletingMessagesChangeAsNotifiedUseCase(
     private val userConfigRepository: UserConfigRepository
 ) {
     operator fun invoke() {
-        userConfigRepository.setSelfDeletingMessagesAsNotified()
+        userConfigRepository.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
     }
 }

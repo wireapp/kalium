@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.config
 
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -109,13 +110,13 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
-    fun getSelfDeletingMessagesTeamSettings(): SelfDeletingTeamSettingsEntity?
-    fun getSelfDeletingMessagesTeamSettingsFlow(): Flow<SelfDeletingTeamSettingsEntity?>
-    fun persistSelfDeletingMessagesStatus(
-        isEnabled: Boolean,
-        isStatusChanged: Boolean?,
-        enforcedDuration: Duration,
-        isEnforced: Boolean = false
+    fun getTeamSettingsSelfDeletionStatusFlow(): Flow<TeamSettingsSelfDeletionStatusEntity?>
+    fun getConversationSelfDeletionTimerFlow(conversationIDEntity: ConversationIDEntity): Flow<SelfDeletionTimerEntity?>
+    fun persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatusEntity)
+
+    fun persistConversationSelfDeletionTimer(
+        conversationIDEntity: ConversationIDEntity,
+        selfDeletingTimerEntity: SelfDeletionTimerEntity
     )
 
     fun setSelfDeletingMessagesAsNotified()
@@ -140,12 +141,22 @@ data class IsGuestRoomLinkEnabledEntity(
 )
 
 @Serializable
-data class SelfDeletingTeamSettingsEntity(
-    @SerialName("status") val status: Boolean, // TODO: extract status to a sealed class to avoid carrying extra unneeded data when disabled
-    @SerialName("isStatusChanged") val isStatusChanged: Boolean?,
-    @SerialName("selfDeletionDuration") val selfDeletionDuration: Duration,
-    @SerialName("isEnforced") val isEnforced: Boolean,
+data class TeamSettingsSelfDeletionStatusEntity(
+    @SerialName("selfDeletionTimer") val selfDeletionTimerEntity: SelfDeletionTimerEntity,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
 )
+
+@Serializable
+sealed class SelfDeletionTimerEntity {
+    @SerialName("disabled")
+    object Disabled : SelfDeletionTimerEntity()
+
+    @SerialName("enabled")
+    data class Enabled(val userDuration: Duration) : SelfDeletionTimerEntity()
+
+    @SerialName("enforced")
+    data class Enforced(val enforcedDuration: Duration) : SelfDeletionTimerEntity()
+}
 
 @Suppress("TooManyFunctions")
 class UserConfigStorageImpl(
@@ -165,6 +176,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val selfDeletingMessagesTeamSettingsFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val conversationSelfDeletionTimerFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -272,43 +286,55 @@ class UserConfigStorageImpl(
     override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
         kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
 
-    override fun getSelfDeletingMessagesTeamSettings(): SelfDeletingTeamSettingsEntity? =
-        kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, SelfDeletingTeamSettingsEntity.serializer())
-
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
         isGuestRoomLinkEnabledFlow
             .map { isGuestRoomLinkEnabled() }
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
-    override fun getSelfDeletingMessagesTeamSettingsFlow(): Flow<SelfDeletingTeamSettingsEntity?> =
+    override fun getTeamSettingsSelfDeletionStatusFlow(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
         selfDeletingMessagesTeamSettingsFlow
-            .map { getSelfDeletingMessagesTeamSettings() }
-            .onStart { emit(getSelfDeletingMessagesTeamSettings()) }
+            .map { kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer()) }
+            .onStart { emit(kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())) }
             .distinctUntilChanged()
 
-    override fun persistSelfDeletingMessagesStatus(
-        isEnabled: Boolean,
-        isStatusChanged: Boolean?,
-        enforcedDuration: Duration,
-        isEnforced: Boolean
-    ) {
+    override fun getConversationSelfDeletionTimerFlow(conversationIDEntity: ConversationIDEntity): Flow<SelfDeletionTimerEntity?> =
+        conversationSelfDeletionTimerFlow
+            // We use the conversationId value as a key to get the value from the KaliumPreferences
+            .map { kaliumPreferences.getSerializable(conversationIDEntity.value, SelfDeletionTimerEntity.serializer()) }
+            .onStart { emit(kaliumPreferences.getSerializable(conversationIDEntity.value, SelfDeletionTimerEntity.serializer())) }
+            .distinctUntilChanged()
+
+    override fun persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatusEntity) =
         kaliumPreferences.putSerializable(
             SELF_DELETING_MESSAGES,
-            SelfDeletingTeamSettingsEntity(isEnabled, isStatusChanged, enforcedDuration, isEnforced),
-            SelfDeletingTeamSettingsEntity.serializer()
+            teamSettingsSelfDeletionStatus,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        ).also {
+            selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit)
+        }
+
+    override fun persistConversationSelfDeletionTimer(
+        conversationIDEntity: ConversationIDEntity,
+        selfDeletingTimerEntity: SelfDeletionTimerEntity
+    ) {
+        // We use the conversationId value as a key to persist the value to the KaliumPreferences
+        kaliumPreferences.putSerializable(
+            conversationIDEntity.value,
+            selfDeletingTimerEntity,
+            SelfDeletionTimerEntity.serializer()
         ).also {
             selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit)
         }
     }
 
     override fun setSelfDeletingMessagesAsNotified() {
-        val newValue = kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, SelfDeletingTeamSettingsEntity.serializer())
+        val newValue = kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
             ?.copy(isStatusChanged = false) ?: return
         kaliumPreferences.putSerializable(
             SELF_DELETING_MESSAGES,
             newValue,
-            SelfDeletingTeamSettingsEntity.serializer()
+            TeamSettingsSelfDeletionStatusEntity.serializer()
         ).also { selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit) }
     }
 

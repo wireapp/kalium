@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
-import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -26,13 +25,13 @@ import com.wire.kalium.logic.kaliumLogger
  * Use case to persist the new self deleting messages status to memory.
  */
 fun interface PersistNewSelfDeletingStatusUseCase {
-    operator fun invoke(newStatus: SelfDeletingMessagesStatus)
+    operator fun invoke(newStatus: TeamSettingsSelfDeletionStatus)
 }
 
 class PersistNewSelfDeletingStatusUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : PersistNewSelfDeletingStatusUseCase {
-    override fun invoke(newStatus: SelfDeletingMessagesStatus) = userConfigRepository.setSelfDeletingMessagesStatus(newStatus).fold({
+    override fun invoke(newStatus: TeamSettingsSelfDeletionStatus) = userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(newStatus).fold({
         kaliumLogger.e("Failure while persisting self deleting messages status $it")
     }, { kaliumLogger.d("Successfully updated self deleting messages status $newStatus") })
 }

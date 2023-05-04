@@ -18,13 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -116,7 +118,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             }
 
             is Event.FeatureConfig.SelfDeletingMessagesConfig -> {
-                handleSelfDeletingFeatureConfig(event.model.status, event.model.config.enforcedTimeoutSeconds)
+                handleSelfDeletingFeatureConfig(event.model)
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
@@ -156,37 +158,28 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleSelfDeletingFeatureConfig(status: Status, enforcedTimeoutSeconds: Long?) {
+    private fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, ZERO))
-        } else {
-            val enforcedDuration = enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val (currentSelfDeletingMessagesStatus, currentEnforcedTimeout) = userConfigRepository
-                .getSelfDeletingMessagesStatus()
-                .fold({ true to null }, { it.isFeatureEnabled to it.globalSelfDeletionDuration })
-
-            when (status) {
-                Status.ENABLED -> {
-                    userConfigRepository.setSelfDeletingMessagesStatus(
-                        SelfDeletingMessagesStatus(
-                            isFeatureEnabled = true,
-                            hasFeatureChanged = !currentSelfDeletingMessagesStatus
-                                    || currentEnforcedTimeout != enforcedDuration,
-                            globalSelfDeletionDuration = enforcedDuration,
-                            isEnforced = (enforcedTimeoutSeconds ?: 0) > 0
-                        )
-                    )
-                }
-
-                Status.DISABLED -> userConfigRepository.setSelfDeletingMessagesStatus(
-                    SelfDeletingMessagesStatus(
-                        isFeatureEnabled = false,
-                        hasFeatureChanged = currentSelfDeletingMessagesStatus,
-                        globalSelfDeletionDuration = enforcedDuration,
-                        isEnforced = false
-                    )
+            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+                TeamSettingsSelfDeletionStatus(
+                    enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                    hasFeatureChanged = null
                 )
+            )
+        } else {
+            val selfDeletingMessagesEnabled = model.status == Status.ENABLED
+            val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
+            val selfDeletionTimer = when {
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
+                else -> SelfDeletionTimer.Disabled
             }
+            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+                TeamSettingsSelfDeletionStatus(
+                    enforcedSelfDeletionTimer = selfDeletionTimer,
+                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null
+                )
+            )
         }
     }
 }
