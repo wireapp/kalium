@@ -512,6 +512,7 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.teamsApi,
             authenticatedNetworkContainer.userDetailsApi,
             userId,
+            userStorage.database.serviceDAO
         )
 
     private val connectionRepository: ConnectionRepository
