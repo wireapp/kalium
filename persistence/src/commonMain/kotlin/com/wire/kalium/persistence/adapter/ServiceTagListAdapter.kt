@@ -19,7 +19,7 @@ package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
 
-internal object ServiceTagListAdapter: ColumnAdapter<List<String>, String> {
+internal object ServiceTagListAdapter : ColumnAdapter<List<String>, String> {
     override fun decode(databaseValue: String): List<String> {
         return databaseValue.split(SEPARATOR)
     }

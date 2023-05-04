@@ -50,7 +50,7 @@ import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
-import com.wire.kalium.persistence.adapter.ServiceIdAdapter
+import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 
 internal object TableMapper {
@@ -159,7 +159,7 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
-        bot_serviceAdapter = ServiceIdAdapter
+        bot_serviceAdapter = BotServiceAdapter()
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -175,7 +175,7 @@ internal object TableMapper {
     )
 
     val serviceAdapter = Service.Adapter(
-        idAdapter = ServiceIdAdapter,
+        idAdapter = BotServiceAdapter(),
         tagsAdapter = ServiceTagListAdapter,
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter

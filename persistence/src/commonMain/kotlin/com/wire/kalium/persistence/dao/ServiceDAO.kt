@@ -42,6 +42,7 @@ data class ServiceViewEntity(
     val isMember: Boolean
 )
 
+@Suppress("LongParameterList")
 internal fun mapToServiceEntity(
     id: BotIdEntity,
     name: String,
@@ -49,8 +50,8 @@ internal fun mapToServiceEntity(
     summary: String,
     tags: List<String>,
     enabled: Boolean,
-    preview_asset_id: QualifiedIDEntity?,
-    complete_asset_id: QualifiedIDEntity?
+    previewAssetId: QualifiedIDEntity?,
+    completeAssetId: QualifiedIDEntity?
 ): ServiceEntity = ServiceEntity(
     id = id,
     name = name,
@@ -58,10 +59,11 @@ internal fun mapToServiceEntity(
     summary = summary,
     tags = tags,
     enabled = enabled,
-    previewAssetId = preview_asset_id,
-    completeAssetId = complete_asset_id
+    previewAssetId = previewAssetId,
+    completeAssetId = completeAssetId
 )
 
+@Suppress("LongParameterList")
 internal fun mapToServiceView(
     id: BotIdEntity,
     name: String,
@@ -69,9 +71,9 @@ internal fun mapToServiceView(
     summary: String,
     tags: List<String>,
     enabled: Boolean,
-    preview_asset_id: QualifiedIDEntity?,
-    complete_asset_id: QualifiedIDEntity?,
-    is_member: Boolean,
+    previewAssetId: QualifiedIDEntity?,
+    completeAssetId: QualifiedIDEntity?,
+    isMember: Boolean,
 ): ServiceViewEntity = ServiceViewEntity(
     service = mapToServiceEntity(
         id = id,
@@ -80,10 +82,10 @@ internal fun mapToServiceView(
         summary = summary,
         tags = tags,
         enabled = enabled,
-        preview_asset_id = preview_asset_id,
-        complete_asset_id = complete_asset_id
+        previewAssetId = previewAssetId,
+        completeAssetId = completeAssetId
     ),
-    isMember = is_member
+    isMember = isMember
 )
 
 interface ServiceDAO {
