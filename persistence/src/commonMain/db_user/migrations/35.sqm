@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.BotIdEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
 import kotlin.collections.List;
 
 CREATE INDEX user_service_id ON User(bot_service);

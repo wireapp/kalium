@@ -1,7 +1,7 @@
 import com.wire.kalium.persistence.dao.BotIdEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlin.collections.List;
 import kotlin.Boolean;
+import kotlin.collections.List;
 
 CREATE TABLE Service (
     id TEXT AS BotIdEntity PRIMARY KEY,
@@ -18,10 +18,7 @@ insert:
 INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
  VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
 
-allServices:
-SELECT * FROM Service;
-
-searchServices:
+CREATE VIEW IF NOT EXISTS ServiceConversationView AS
 SELECT Service.id,
     Service.name,
     Service.description,
@@ -31,39 +28,21 @@ SELECT Service.id,
     Service.preview_asset_id,
     Service.complete_asset_id,
     Member.user IS NOT NULL AS is_member
- FROM Service
+FROM Service
     LEFT JOIN User ON User.bot_service = Service.id
-    LEFT JOIN Member ON Member.conversation = :conversation AND Member.user = User.qualified_id
-WHERE Service.name LIKE :query;
+    LEFT JOIN Member ON Member.conversation = :conversation AND Member.user = User.qualified_id;
+
+allServices:
+SELECT * FROM Service;
 
 byId:
 SELECT * FROM Service WHERE Service.id = :id;
 
+searchServices:
+SELECT * FROM ServiceConversationView WHERE name LIKE :query;
+
 byIdAndIsMember:
-SELECT Service.id,
-    Service.name,
-    Service.description,
-    Service.summary,
-    Service.tags,
-    Service.enabled,
-    Service.preview_asset_id,
-    Service.complete_asset_id,
-    Member.user IS NOT NULL AS is_member
- FROM Service
-    LEFT JOIN User ON User.bot_service = Service.id
-    LEFT JOIN Member ON Member.conversation = :conversation AND Member.user = User.qualified_id
-WHERE id = :id;
+SELECT * FROM ServiceConversationView WHERE id = :id;
 
 fullListWithIsMember:
-SELECT Service.id,
-    Service.name,
-    Service.description,
-    Service.summary,
-    Service.tags,
-    Service.enabled,
-    Service.preview_asset_id,
-    Service.complete_asset_id,
-    Member.user IS NOT NULL AS is_member
- FROM Service
-    LEFT JOIN User ON User.bot_service = Service.id
-    LEFT JOIN Member ON Member.conversation = :conversation AND Member.user = User.qualified_id;
+SELECT * FROM ServiceConversationView;
