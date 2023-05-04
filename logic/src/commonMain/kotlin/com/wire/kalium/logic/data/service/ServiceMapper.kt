@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.team
+package com.wire.kalium.logic.data.service
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.model.ServiceDetailDTO
