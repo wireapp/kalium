@@ -46,5 +46,3 @@ class ObserveServiceDetailsUseCaseImpl internal constructor(
             conversationId = conversationId
         )
 }
-
-

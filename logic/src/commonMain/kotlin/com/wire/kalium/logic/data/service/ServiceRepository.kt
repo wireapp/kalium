@@ -28,7 +28,7 @@ interface ServiceRepository {
     suspend fun observeServiceDetails(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ) : Flow<ObservedServiceDetails?>
+    ): Flow<ObservedServiceDetails?>
 }
 
 internal class ServiceDataSource internal constructor(
