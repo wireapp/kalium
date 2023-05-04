@@ -35,8 +35,8 @@ fun interface PersistNewSelfDeletionTimerUseCase {
 class PersistNewSelfDeletionTimerUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : PersistNewSelfDeletionTimerUseCase {
-    override fun invoke(conversationId: ConversationId, newStatus: SelfDeletionTimer) =
-        userConfigRepository.setConversationSelfDeletionTimer(conversationId, newStatus).fold({
+    override fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
+        userConfigRepository.setConversationSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
             kaliumLogger.e("Failure while persisting self deleting messages status $it")
-        }, { kaliumLogger.d("Successfully updated self deleting messages status $newStatus") })
+        }, { kaliumLogger.d("Successfully updated self deleting messages status $newSelfDeletionTimer") })
 }

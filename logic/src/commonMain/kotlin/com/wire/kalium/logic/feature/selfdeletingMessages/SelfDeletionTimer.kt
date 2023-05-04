@@ -46,8 +46,8 @@ sealed class SelfDeletionTimer {
     val isEnforced
         get() = this is Enforced
 
-    val isEnabled
-        get() = this is Enabled
+    val isDisabled
+        get() = this is Disabled
 }
 
 data class ConversationSelfDeletingTimer(

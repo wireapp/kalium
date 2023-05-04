@@ -17,17 +17,17 @@
  */
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.combine
-import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlin.time.Duration.Companion.ZERO
 
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
@@ -47,36 +47,31 @@ class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
             .combine(userConfigRepository.observeConversationSelfDeletionTimer(conversationId))
             .distinctUntilChanged()
             .map { (teamSettingsSelfDeletionStatus, conversationSelfDeletionTimer) ->
-                when {
-                    // If both are left, we can't do anything so we default to Disabled
-                    teamSettingsSelfDeletionStatus.isLeft() && conversationSelfDeletionTimer.isLeft() -> {
-                        kaliumLogger.e("There was an error when fetching both team settings and conversation self deletion timer")
-                        SelfDeletionTimer.Disabled
-                    }
-                    // If there is error when fetching team settings, we default to conversation self deletion timer
-                    teamSettingsSelfDeletionStatus.isLeft() && conversationSelfDeletionTimer.isRight() -> {
-                        kaliumLogger.e("There was an error when fetching team settings self deletion timer")
-                        conversationSelfDeletionTimer.value.selfDeletionTimer
-                    }
-                    // If there is error when fetching conversation self deletion timer, we default to team settings
-                    conversationSelfDeletionTimer.isLeft() && teamSettingsSelfDeletionStatus.isRight() -> {
+                teamSettingsSelfDeletionStatus.fold({
+                    kaliumLogger.e("There was an error when fetching team settings self deletion timer")
+                    defaultToConversationTimer(conversationSelfDeletionTimer)
+                }, { teamSettingsStatus ->
+                    conversationSelfDeletionTimer.fold({
                         kaliumLogger.e("There was an error when fetching conversation self deletion timer")
-                        teamSettingsSelfDeletionStatus.value.enforcedSelfDeletionTimer
-                    }
+                        SelfDeletionTimer.Enabled(ZERO)
+                    }, { conversationTimer ->
+                        val teamSettingsTimer = teamSettingsStatus.enforcedSelfDeletionTimer
+                        if (teamSettingsTimer.isDisabled || teamSettingsTimer.isEnforced) {
+                            teamSettingsTimer
+                        } else {
+                            conversationTimer.selfDeletionTimer
 
-                    // If no errors, team settings have priority over conversation self deletion timer
-                    else -> {
-                        var selfDeletionTimer: SelfDeletionTimer = SelfDeletionTimer.Disabled
-                        teamSettingsSelfDeletionStatus.map { teamSettingsStatus ->
-                            val teamSettingsTimer = teamSettingsStatus.enforcedSelfDeletionTimer
-                            selfDeletionTimer = if (!teamSettingsTimer.isEnabled || teamSettingsTimer.isEnforced) {
-                                teamSettingsStatus.enforcedSelfDeletionTimer
-                            } else {
-                                (conversationSelfDeletionTimer as Either.Right).value.selfDeletionTimer
-                            }
                         }
-                        selfDeletionTimer
-                    }
-                }
+                    })
+                })
             }
+
+    private fun defaultToConversationTimer(
+        conversationSelfDeletingTimer: Either<StorageFailure, ConversationSelfDeletingTimer>
+    ): SelfDeletionTimer = conversationSelfDeletingTimer.fold({
+        kaliumLogger.e("There was an error when fetching conversation self deletion timer")
+        SelfDeletionTimer.Enabled(ZERO)
+    }, {
+        it.selfDeletionTimer
+    })
 }

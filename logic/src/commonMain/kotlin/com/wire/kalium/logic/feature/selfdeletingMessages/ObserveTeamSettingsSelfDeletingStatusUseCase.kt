@@ -18,11 +18,9 @@
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 import kotlin.time.Duration
 

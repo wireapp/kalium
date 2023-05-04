@@ -35,8 +35,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -61,7 +61,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletingMessagesFlag(conversationId)
 
-        assertFalse(result.first().isEnabled)
+        assertTrue(result.first().isDisabled)
         assertNull(result.first().isEnforced)
         assertNull(result.first().toDuration())
     }

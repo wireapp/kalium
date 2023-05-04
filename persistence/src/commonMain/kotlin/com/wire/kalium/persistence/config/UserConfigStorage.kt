@@ -149,12 +149,16 @@ data class TeamSettingsSelfDeletionStatusEntity(
 
 @Serializable
 sealed class SelfDeletionTimerEntity {
+
+    @Serializable
     @SerialName("disabled")
     object Disabled : SelfDeletionTimerEntity()
 
+    @Serializable
     @SerialName("enabled")
     data class Enabled(val userDuration: Duration) : SelfDeletionTimerEntity()
 
+    @Serializable
     @SerialName("enforced")
     data class Enforced(val enforcedDuration: Duration) : SelfDeletionTimerEntity()
 }
