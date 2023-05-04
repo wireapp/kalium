@@ -19,9 +19,9 @@ package com.wire.kalium.monkeys
 
 import com.wire.kalium.logic.data.user.UserId
 
-private val userLoggingInOnVitorsDevice = "smoketester+0a53efc224@wire.com"
+private val userLoggingInOnVitorsDevice = "smoketester+16e262cd2d@wire.com"
 val password = "Aqa123456!"
-val domain = ""
+val domain = "anta.wire.link"
 
 data class UserData(val email: String, val password: String, val userId: UserId)
 

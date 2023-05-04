@@ -33,6 +33,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -62,7 +63,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.DEBUG)
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
     private val logOutputFile by option(help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
@@ -92,7 +93,8 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             error("Invalid backend for whatever reason")
         }
 
-        val allUsers = users.take(200).map { accountData ->
+        println("### LOGGING IN ALL USERS")
+        val allUsers = users.take(75).map { accountData ->
             async(Dispatchers.Default) {
                 val email = accountData.email
                 val password = accountData.password
@@ -118,35 +120,38 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             }
         }.awaitAll().toMap()
 
+        println("### REGISTERING ALL CLIENTS")
+
         registerAllClients(allUsers)
 
-        var count = 0
-        val userGroups = allUsers.entries.groupBy {
-            if (count > 50) {
-                count = 0
+        val userGroups = allUsers.entries.chunked(75)
+        println("### CREATING GROUPS")
+
+        val wantedConversations = mutableListOf<ConversationId>()
+//         coroutineScope {
+        for (group in userGroups) {
+//                 launch(Dispatchers.Default) {
+            val groupCreator = group.first()
+            val userScope = groupCreator.value
+
+            val conversationResult = userScope.conversations.createGroupConversation(
+                name = "By Monkey '${groupCreator.key.email}'",
+                userIdList = group.map { it.key.userId },
+                options = ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+            )
+
+            if (conversationResult !is CreateGroupConversationUseCase.Result.Success) {
+                val cause = (conversationResult as? CreateGroupConversationUseCase.Result.UnknownFailure)?.cause
+                error("Failed to create conversation $conversationResult; Cause = $cause")
             }
-            count++
+            wantedConversations.add(conversationResult.conversation.id)
+//                 }
         }
+//         }
 
-        coroutineScope {
-            for (group in userGroups.values) {
-                launch(Dispatchers.Default) {
-                    val groupCreator = group.first()
-                    val userScope = groupCreator.value
+        println("### SENDING MESSAGES")
 
-                    val conversationResult = userScope.conversations.createGroupConversation(
-                        name = "By Monkey '${groupCreator.key.email}'",
-                        userIdList = group.map { it.key.userId },
-                        options = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
-                    )
-
-                    if (conversationResult !is CreateGroupConversationUseCase.Result.Success) {
-                        val cause = (conversationResult as? CreateGroupConversationUseCase.Result.UnknownFailure)?.cause
-                        error("Failed to create conversation $conversationResult; Cause = $cause")
-                    }
-                }
-            }
-        }
+        delay(5.seconds)
 
         var messageCounter = 0
         while (true) {
@@ -158,7 +163,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 error("Failure to get conversations for ${randomUser.key}; $conversationResult")
             }
             val firstConversation = conversationResult.convFlow.first().firstOrNull {
-                it.type == Conversation.Type.GROUP
+                wantedConversations.contains(it.id)
             }
 
             if (firstConversation == null) {

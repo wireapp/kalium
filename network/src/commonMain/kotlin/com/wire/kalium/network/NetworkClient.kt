@@ -33,7 +33,10 @@ import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 
@@ -138,7 +141,7 @@ internal fun provideBaseHttpClient(
 
     if (installCompression) {
         install(ContentEncoding) {
-            gzip()
+//             gzip()
             identity()
         }
     }
