@@ -31,6 +31,8 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -39,15 +41,23 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScop
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
+import com.wire.kalium.logic.feature.conversation.CreateConversationResult
+import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.register.RegisterResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
@@ -76,56 +86,90 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         runMonkey(coreLogic)
     }
 
-    private suspend fun runMonkey(coreLogic: CoreLogic) {
+    private suspend fun runMonkey(coreLogic: CoreLogic) = coroutineScope {
         val result = coreLogic.versionedAuthenticationScope(ANTA_SERVER_CONFIGS).invoke()
         if (result !is AutoVersionAuthScopeUseCase.Result.Success) {
             error("Invalid backend for whatever reason")
         }
 
-        val allUsers = hardCodedUsers.map { accountData ->
-            val email = accountData.email
-            val password = accountData.password
-            val loginResult = result.authenticationScope.login(email, password, false)
-            if (loginResult !is AuthenticationResult.Success) {
-                error("User creds didn't work ($email, $password)")
-            }
-
-            coreLogic.globalScope {
-                val storeResult = addAuthenticatedAccount(
-                    serverConfigId = loginResult.serverConfigId,
-                    ssoId = loginResult.ssoID,
-                    authTokens = loginResult.authData,
-                    proxyCredentials = loginResult.proxyCredentials,
-                    replace = true
-                )
-                if (storeResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                    error("Failed to store user. $storeResult")
+        val allUsers = users.take(200).map { accountData ->
+            async(Dispatchers.Default) {
+                val email = accountData.email
+                val password = accountData.password
+                val loginResult = result.authenticationScope.login(email, password, false)
+                if (loginResult !is AuthenticationResult.Success) {
+                    error("User creds didn't work ($email, $password)")
                 }
-            }
 
-            accountData to coreLogic.getSessionScope(loginResult.authData.userId)
-        }.toMap()
+                coreLogic.globalScope {
+                    val storeResult = addAuthenticatedAccount(
+                        serverConfigId = loginResult.serverConfigId,
+                        ssoId = loginResult.ssoID,
+                        authTokens = loginResult.authData,
+                        proxyCredentials = loginResult.proxyCredentials,
+                        replace = true
+                    )
+                    if (storeResult !is AddAuthenticatedUserUseCase.Result.Success) {
+                        error("Failed to store user. $storeResult")
+                    }
+                }
+
+                accountData to coreLogic.getSessionScope(loginResult.authData.userId)
+            }
+        }.awaitAll().toMap()
 
         registerAllClients(allUsers)
 
+        var count = 0
+        val userGroups = allUsers.entries.groupBy {
+            if (count > 50) {
+                count = 0
+            }
+            count++
+        }
+
+        coroutineScope {
+            for (group in userGroups.values) {
+                launch(Dispatchers.Default) {
+                    val groupCreator = group.first()
+                    val userScope = groupCreator.value
+
+                    val conversationResult = userScope.conversations.createGroupConversation(
+                        name = "By Monkey '${groupCreator.key.email}'",
+                        userIdList = group.map { it.key.userId },
+                        options = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                    )
+
+                    if (conversationResult !is CreateGroupConversationUseCase.Result.Success) {
+                        val cause = (conversationResult as? CreateGroupConversationUseCase.Result.UnknownFailure)?.cause
+                        error("Failed to create conversation $conversationResult; Cause = $cause")
+                    }
+                }
+            }
+        }
+
+        var messageCounter = 0
         while (true) {
+            messageCounter++
             val randomUser = allUsers.entries.random()
             val userScope = randomUser.value
             val conversationResult = randomUser.value.conversations.getConversations()
             if (conversationResult !is GetConversationsUseCase.Result.Success) {
                 error("Failure to get conversations for ${randomUser.key}; $conversationResult")
             }
-            val firstConversation = conversationResult.convFlow.first().firstOrNull()
+            val firstConversation = conversationResult.convFlow.first().firstOrNull {
+                it.type == Conversation.Type.GROUP
+            }
 
             if (firstConversation == null) {
-                echo("User has no conversation")
+                echo("User has no group conversation")
                 continue
             }
             userScope.messages.sendTextMessage(
                 firstConversation.id,
-                "give banana!",
+                "give me $messageCounter bananas!",
             )
-            delay(1.seconds)
+            delay(150.milliseconds)
         }
     }
 
@@ -134,7 +178,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     ) = coroutineScope {
         for (entry in allUsers.entries) {
             val (userData, scope) = entry
-            launch {
+            launch(Dispatchers.Default) {
                 val registerClientParam = RegisterClientUseCase.RegisterClientParam(
                     password = userData.password,
                     capabilities = emptyList(),
