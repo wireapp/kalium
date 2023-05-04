@@ -18,8 +18,8 @@ insert:
 INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
  VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
 
-CREATE VIEW IF NOT EXISTS ServiceConversationView AS
-SELECT Service.id,
+CREATE VIEW IF NOT EXISTS ServiceConversationView
+AS SELECT Service.id,
     Service.name,
     Service.description,
     Service.summary,
@@ -27,10 +27,11 @@ SELECT Service.id,
     Service.enabled,
     Service.preview_asset_id,
     Service.complete_asset_id,
-    Member.user IS NOT NULL AS is_member
+    Member.user IS NOT NULL AS is_member,
+    Member.conversation
 FROM Service
-    LEFT JOIN User ON User.bot_service = Service.id
-    LEFT JOIN Member ON Member.conversation = :conversation AND Member.user = User.qualified_id;
+LEFT JOIN User ON User.bot_service = Service.id
+LEFT JOIN Member ON Member.user = User.qualified_id;
 
 allServices:
 SELECT * FROM Service;
@@ -39,10 +40,10 @@ byId:
 SELECT * FROM Service WHERE Service.id = :id;
 
 searchServices:
-SELECT * FROM ServiceConversationView WHERE name LIKE :query;
+SELECT * FROM ServiceConversationView WHERE conversation = :conversation AND name LIKE :query;
 
 byIdAndIsMember:
-SELECT * FROM ServiceConversationView WHERE id = :id;
+SELECT * FROM ServiceConversationView WHERE conversation = :conversation AND id = :id;
 
 fullListWithIsMember:
 SELECT * FROM ServiceConversationView;

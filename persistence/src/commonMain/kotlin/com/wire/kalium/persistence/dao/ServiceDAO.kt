@@ -74,6 +74,7 @@ internal fun mapToServiceView(
     previewAssetId: QualifiedIDEntity?,
     completeAssetId: QualifiedIDEntity?,
     isMember: Boolean,
+    conversation: QualifiedIDEntity?
 ): ServiceViewEntity = ServiceViewEntity(
     service = mapToServiceEntity(
         id = id,
