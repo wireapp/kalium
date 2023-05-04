@@ -110,6 +110,7 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
+    fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity?
     fun getTeamSettingsSelfDeletionStatusFlow(): Flow<TeamSettingsSelfDeletionStatusEntity?>
     fun getConversationSelfDeletionTimerFlow(conversationIDEntity: ConversationIDEntity): Flow<SelfDeletionTimerEntity?>
     fun persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatusEntity)
@@ -175,7 +176,7 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val selfDeletingMessagesTeamSettingsFlow =
+    private val teamSettingsSelfDeletionStatusFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val conversationSelfDeletionTimerFlow =
@@ -292,8 +293,11 @@ class UserConfigStorageImpl(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
+    override fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
+        kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+
     override fun getTeamSettingsSelfDeletionStatusFlow(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
-        selfDeletingMessagesTeamSettingsFlow
+        teamSettingsSelfDeletionStatusFlow
             .map { kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer()) }
             .onStart { emit(kaliumPreferences.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())) }
             .distinctUntilChanged()
@@ -311,7 +315,7 @@ class UserConfigStorageImpl(
             teamSettingsSelfDeletionStatus,
             TeamSettingsSelfDeletionStatusEntity.serializer()
         ).also {
-            selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit)
+            teamSettingsSelfDeletionStatusFlow.tryEmit(Unit)
         }
 
     override fun persistConversationSelfDeletionTimer(
@@ -324,7 +328,7 @@ class UserConfigStorageImpl(
             selfDeletingTimerEntity,
             SelfDeletionTimerEntity.serializer()
         ).also {
-            selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit)
+            teamSettingsSelfDeletionStatusFlow.tryEmit(Unit)
         }
     }
 
@@ -335,7 +339,7 @@ class UserConfigStorageImpl(
             SELF_DELETING_MESSAGES,
             newValue,
             TeamSettingsSelfDeletionStatusEntity.serializer()
-        ).also { selfDeletingMessagesTeamSettingsFlow.tryEmit(Unit) }
+        ).also { teamSettingsSelfDeletionStatusFlow.tryEmit(Unit) }
     }
 
     private companion object {

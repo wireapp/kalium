@@ -160,24 +160,32 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
     private fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
                     enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
                     hasFeatureChanged = null
                 )
             )
         } else {
+            val storedTeamSettingsSelfDeletionStatus = userConfigRepository.getTeamSettingsSelfDeletionStatus().fold({
+                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO))
+            }, {
+                it
+            })
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val selfDeletionTimer = when {
+            val newEnforcedTimer = when {
                 selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced(enforcedTimeout)
                 selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
                 else -> SelfDeletionTimer.Disabled
             }
-            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = selfDeletionTimer,
-                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null
+                    enforcedSelfDeletionTimer = newEnforcedTimer,
+                    // If there is an error fetching the previously stored value, we will always override it and mark it as changed
+                    hasFeatureChanged = storedTeamSettingsSelfDeletionStatus.hasFeatureChanged == null
+                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newEnforcedTimer
+                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toDuration() != newEnforcedTimer.toDuration()
                 )
             )
         }

@@ -135,7 +135,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
                     enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
                     hasFeatureChanged = null
@@ -149,7 +149,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
                 else -> SelfDeletionTimer.Disabled
             }
-            userConfigRepository.setTeamSettingsSelfDeletingMessagesStatus(
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
                     enforcedSelfDeletionTimer = selfDeletionTimer,
                     hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null

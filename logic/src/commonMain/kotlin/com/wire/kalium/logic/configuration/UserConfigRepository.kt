@@ -46,15 +46,17 @@ interface UserConfigRepository {
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
-    fun setSecondFactorPasswordChallengeStatus(required: Boolean): Either<StorageFailure, Unit>
+    fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
     fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
-    fun setTeamSettingsSelfDeletingMessagesStatus(
-        selfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus
+
+    fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
+    fun setTeamSettingsSelfDeletionStatus(
+        teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit>
 
     fun setConversationSelfDeletionTimer(
@@ -158,14 +160,26 @@ class UserConfigDataSource(
                 }
             }
 
-    override fun setTeamSettingsSelfDeletingMessagesStatus(
-        selfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus
+    override fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
+        userConfigStorage.getTeamSettingsSelfDeletionStatus()
+    }.map {
+        with(it) {
+            TeamSettingsSelfDeletionStatus(
+                hasFeatureChanged = isStatusChanged,
+                enforcedSelfDeletionTimer = selfDeletionTimerEntity.toSelfDeletionTimerStatus()
+            )
+        }
+    }
+
+
+    override fun setTeamSettingsSelfDeletionStatus(
+        teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatusEntity(
-                    selfDeletionTimerEntity = selfDeletingMessagesStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
-                    isStatusChanged = selfDeletingMessagesStatus.hasFeatureChanged,
+                    selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
+                    isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
                 )
             )
         }

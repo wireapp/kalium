@@ -20,10 +20,10 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletingTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
@@ -37,7 +37,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 class ObserveSelfDeletingMessagesUseCaseTest {
 
@@ -68,16 +69,15 @@ class ObserveSelfDeletingMessagesUseCaseTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
-        val expectedStatus = TeamSettingsSelfDeletionStatus(
-            hasFeatureChanged = null, enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(
-                Duration.ZERO
-            )
-        )
+        val conversationId = ConversationId("conversationId", "domain")
+        val newDuration = 3600.toDuration(DurationUnit.SECONDS)
+        val expectedTimer = ConversationSelfDeletingTimer(conversationId, SelfDeletionTimer.Enforced(newDuration))
 
-        given(userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }.thenReturn(flowOf(Either.Right(expectedStatus)))
+        given(userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
+            .thenReturn(flowOf(Either.Right(expectedTimer)))
 
-        val result = observeSelfDeletingMessagesFlag()
+        val result = observeSelfDeletingMessagesFlag(conversationId)
 
-        assertEquals(expectedStatus, result.first())
+        assertEquals(expectedTimer.selfDeletionTimer, result.first())
     }
 }

@@ -428,7 +428,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         // Then
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
                 it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
             })
@@ -453,7 +453,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         // Then
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
                 it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
             })
@@ -478,7 +478,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         // Then
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
                 it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
             })
@@ -504,7 +504,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         // Then
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletingMessagesStatus)
+            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
                 it.hasFeatureChanged == null
                         && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enforced
