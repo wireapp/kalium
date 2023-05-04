@@ -103,5 +103,6 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         userSession = currentContext.findOrSetObject { coreLogic.getSessionScope(userId) }
+        userSession!!.enrolE2EIUseCase.invoke()
     }
 }

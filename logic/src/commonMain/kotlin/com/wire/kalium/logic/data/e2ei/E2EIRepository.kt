@@ -31,17 +31,13 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
+import com.wire.kalium.network.api.base.authenticated.e2ei.ChallengeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.util.int.toByteArray
-import com.wire.kalium.util.long.toByteArray
-import com.wire.kalium.util.string.toHexString
-import com.wire.kalium.util.string.toUTF16BEByteArray
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.util.decodeBase64String
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import pbandk.wkt.FieldDescriptorProto
 
 interface E2EIRepository {
 
@@ -66,6 +62,7 @@ interface E2EIRepository {
 
     suspend fun getWireNonce(clientId: String): Either<NetworkFailure, String>
     suspend fun getDpopAccessToken(clientId: String, dpopToken: String): Either<NetworkFailure, AccessTokenResponse>
+    suspend fun dpopChallenge(requestUrl: String, request: ByteArray): Either<NetworkFailure, ChallengeResponse>
 }
 
 class E2EIRepositoryImpl(
@@ -89,6 +86,7 @@ class E2EIRepositoryImpl(
         val selfUser = getSelfUserUseCase().first()
         mlsClientProvider.getE2EIClient(selfUser = selfUser).flatMap { e2eiClient ->
 
+
             //<editor-fold desc="Get ACME Directories">
             // fetch directories
             val directories = getACMEDirectories().fold({
@@ -106,12 +104,12 @@ class E2EIRepositoryImpl(
 
             //<editor-fold desc="Get New Nonce">
             // get nonce from nonce url
-            val nonce = getNewNonce(directories.newNonce).fold({ "" }, { it })
-            kaliumLogger.w("\nNewNonce from API:>\n$nonce")
+            var prevNonce = getNewNonce(directories.newNonce).fold({ "" }, { it })
+            kaliumLogger.w("\nNewNonce from API:>\n$prevNonce")
             //</editor-fold>
 
             //<editor-fold desc="Create new account">
-            val accountRequest = e2eiClient.newAccountRequest(nonce)
+            val accountRequest = e2eiClient.newAccountRequest(prevNonce)
             kaliumLogger.w("\nNewAccountRequest from CC:>\n${toLog(accountRequest)}")
 
             val accountResponse =
@@ -125,9 +123,9 @@ class E2EIRepositoryImpl(
             kaliumLogger.w("\nNewAccountResponse Passed to CC\n")
 
             //</editor-fold>
-
+            prevNonce = accountResponse.nonce
             //<editor-fold desc="Create New Order">
-            val orderRequest = e2eiClient.newOrderRequest(accountResponse.nonce)
+            val orderRequest = e2eiClient.newOrderRequest(prevNonce)
             kaliumLogger.w("\nNewOrderRequest from CC:>\n${toLog(orderRequest)}")
 
             val orderResponse =
@@ -136,6 +134,8 @@ class E2EIRepositoryImpl(
                     { it })
             kaliumLogger.w("\nNewNonce from API:>\n${orderResponse.nonce}")
             kaliumLogger.w("\nNewOrderResponse from API:>\n${toLog(orderResponse.response)}")
+
+            prevNonce = orderResponse.nonce
 
             val order = e2eiClient.newOrderResponse(orderResponse.response)
 
@@ -148,7 +148,7 @@ class E2EIRepositoryImpl(
 
             //<editor-fold desc="Authz Request">
             val authzRequest =
-                e2eiClient.newAuthzRequest(order.authorizations[0], orderResponse.nonce)
+                e2eiClient.newAuthzRequest(order.authorizations[0], prevNonce)
             kaliumLogger.w("\nNewAuthzRequest from CC:>\n${toLog(authzRequest)}")
 
             val authzResponse =
@@ -158,12 +158,13 @@ class E2EIRepositoryImpl(
             kaliumLogger.w("\nNewNonce from API:>\n${authzResponse.nonce}")
             kaliumLogger.w("\nAuthzResp from API:>\n${toLog(authzResponse.response)}")
 
+            prevNonce = authzResponse.nonce
 
             val authz = e2eiClient.newAuthzResponse(authzResponse.response)
             kaliumLogger.w(
                 "\nAuthzResp from CC :>\n${authz.identifier}" +
-                        "\n${authz.wireHttpChallenge!!.url}" +
-                        "\n${toLog(authz.wireHttpChallenge!!.delegate)}" +
+                        "\n${authz.wireDpopChallenge!!.url}" +
+                        "\n${toLog(authz.wireDpopChallenge!!.delegate)}" +
                         "\n${authz.wireOidcChallenge!!.url}" +
                         "\n${toLog(authz.wireOidcChallenge!!.delegate)}"
             )
@@ -187,16 +188,50 @@ class E2EIRepositoryImpl(
                 val wireNonce = getWireNonce(x.value).fold({ "" }, { it })
                 kaliumLogger.w("\nWireNonce:>\n$wireNonce")
                 val dpopToken =
-                    e2eiClient.createDpopToken("https://staging-nginz-https.zinfra.io/clients/${x.value}/access-token", wireNonce)
+                    e2eiClient.createDpopToken("https://staging.zinfra.io/clients/${x.value}/access-token", wireNonce)
                 kaliumLogger.w("\nclientDpopToken from CC :>\n$dpopToken")
 
-                // create dpop challenge
-//                 val dpopChallengeRequest = e2eiClient.newDpopChallengeRequest(dpopToken, authzResponse.nonce)
-//                 kaliumLogger.w("\nDpopChallengeReq from CC:>\n${toLog(dpopChallengeRequest)}")
 
                 delay(3000)
-                val dpopAccessToken = getDpopAccessToken(x.value, dpopToken)
-                kaliumLogger.w("\nAccessTokenFromWireServer:>\n$dpopAccessToken")
+                val dpopAccessToken = getDpopAccessToken(x.value, dpopToken).fold({
+                    AccessTokenResponse("", "", "")
+                }, {
+                    it
+                })
+                kaliumLogger.w("\nAccessTokenFromWireServer:>\n${dpopAccessToken}")
+
+                // create dpop challenge
+                val dpopChallengeRequest =
+                    e2eiClient.newDpopChallengeRequest(dpopAccessToken.token, prevNonce)
+                kaliumLogger.w("\nDpopChallengeReq from CC:>\n${toLog(dpopChallengeRequest)}")
+
+                // send to the acme server
+                val dpopChallengeResponse = dpopChallenge(authz.wireDpopChallenge!!.url, dpopChallengeRequest).fold({
+                    throw Exception()
+                }, { it })
+
+                kaliumLogger.w("\nDpopChallengeResponse from CC:>\n${dpopChallengeResponse}")
+
+                // e2eiClient.newChallengeResponse(dpopChallengeResponse.token)
+
+                //--oidc-- finish oauth
+
+                // create dpop challenge
+//                 val dpopChallengeRequest = e2eiClient.newOidcChallengeRequest(oidc token, prev nonce from acme nonce)
+//                 kaliumLogger.w("\nDpopChallengeReq from CC:>\n${toLog(dpopChallengeRequest)}")
+//
+//                 // send to the acme server
+//                 send oidc challenge to wireOidcChallenge from authz
+//
+//                 response -> supply to
+//                 e2eiClient.newChallengeResponse()
+
+                // order check is it valid
+
+                // finalize
+
+                // get the certificate
+
 
             }
             //</editor-fold>
@@ -255,6 +290,14 @@ class E2EIRepositoryImpl(
     ): Either<NetworkFailure, AcmeResponse> =
         wrapApiRequest {
             e2EIApi.getNewOrder(requestUrl, request)
+        }
+
+    override suspend fun dpopChallenge(
+        requestUrl: String,
+        request: ByteArray
+    ): Either<NetworkFailure, ChallengeResponse> =
+        wrapApiRequest {
+            e2EIApi.dpopChallenge(requestUrl, request)
         }
 
     override suspend fun getAuthzChallenge(

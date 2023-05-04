@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
+import com.wire.kalium.network.api.base.authenticated.e2ei.ChallengeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
@@ -33,6 +34,7 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.*
 import io.ktor.util.*
 
@@ -75,6 +77,19 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
         url: String,
         body: ByteArray
     ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, body)
+
+    @OptIn(InternalAPI::class)
+    override suspend fun dpopChallenge(
+        url: String,
+        body: ByteArray
+    ): NetworkResponse<ChallengeResponse> =
+        wrapKaliumResponse {
+            httpClient.post(url)
+            {
+                contentType(ContentType.Application.JoseJson)
+                setBody(body)
+            }
+        }
 
     override suspend fun getAuthzChallenge(
         url: String

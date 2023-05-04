@@ -37,8 +37,8 @@ data class AcmeChallenge(
 
 data class NewAcmeAuthz(
     var identifier: String,
-    var wireHttpChallenge: AcmeChallenge?,
-    var wireOidcChallenge: AcmeChallenge?
+    var wireOidcChallenge: AcmeChallenge?,
+    var wireDpopChallenge: AcmeChallenge?
 )
 
 data class DpopTokenRequest(

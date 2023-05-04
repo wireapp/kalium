@@ -40,6 +40,10 @@ interface E2EIApi {
         url: String, body: ByteArray
     ): NetworkResponse<AcmeResponse>
 
+    suspend fun dpopChallenge(
+        url: String, body: ByteArray
+    ): NetworkResponse<ChallengeResponse>
+
     suspend fun getAuthzChallenge(
         url: String
     ): NetworkResponse<AcmeResponse>

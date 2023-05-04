@@ -53,8 +53,18 @@ data class AcmeResponse(
     val response: ByteArray
 )
 
+@Serializable
 data class AccessTokenResponse(
     val expires_in:String,
     val token:String,
     val type:String
+)
+
+
+@Serializable
+data class ChallengeResponse(
+    val type:String,
+    val url:String,
+    val status:String,
+    val token:String
 )

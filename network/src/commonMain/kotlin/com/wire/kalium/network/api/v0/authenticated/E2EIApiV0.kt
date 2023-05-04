@@ -21,6 +21,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
+import com.wire.kalium.network.api.base.authenticated.e2ei.ChallengeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -50,6 +51,10 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
         body: ByteArray
     ): NetworkResponse<AcmeResponse> =
         E2EIApi.getApiNotSupportError(::getNewOrder.name)
+
+    override suspend fun dpopChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
+        E2EIApi.getApiNotSupportError(::dpopChallenge.name)
+
 
     override suspend fun getAuthzChallenge(
         url: String
