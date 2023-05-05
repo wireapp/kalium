@@ -132,9 +132,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         println("### after 120s delay CREATING GROUPS")
 
         val wantedConversations = mutableListOf<ConversationId>()
-//         coroutineScope {
         for (group in userGroups) {
-//                 launch(Dispatchers.Default) {
             val groupCreator = group.first()
             val userScope = groupCreator.value
 
@@ -149,9 +147,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 error("Failed to create conversation $conversationResult; Cause = $cause")
             }
             wantedConversations.add(conversationResult.conversation.id)
-//                 }
         }
-//         }
 
         println("### SENDING MESSAGES")
 
