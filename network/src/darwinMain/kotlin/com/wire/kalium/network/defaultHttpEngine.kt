@@ -22,7 +22,6 @@ import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
-import io.ktor.util.logging.KtorSimpleLogger
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
