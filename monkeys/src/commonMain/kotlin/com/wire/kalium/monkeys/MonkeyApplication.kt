@@ -125,7 +125,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         registerAllClients(allUsers)
 
-        val userGroups = allUsers.entries.chunked(users.size/25)
+        val userGroups = allUsers.entries.chunked(users.size / 25)
 
         delay(60.seconds)
 
@@ -157,30 +157,32 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         delay(5.seconds)
 
-        val emojies = listOf("👀","🦭","😵‍💫","👨‍🍳","🍌","👨‍🌾","🏄‍","🥶","🤤","🙈","🙊","🐒","🙉","🦍","🐵","🦧")
+        val emojies = listOf("👀", "🦭", "😵‍💫", "👨‍🍳", "🍌", "🍆", "👨‍🌾", "🏄‍", "🥶", "🤤", "🙈", "🙊", "🐒", "🙉", "🦍", "🐵", "🦧")
 
         var messageCounter = 0
         while (true) {
             messageCounter++
-            val randomUser = allUsers.entries.random()
-            val userScope = randomUser.value
-            val conversationResult = randomUser.value.conversations.getConversations()
-            if (conversationResult !is GetConversationsUseCase.Result.Success) {
-                error("Failure to get conversations for ${randomUser.key}; $conversationResult")
-            }
-            val firstConversation = conversationResult.convFlow.first().firstOrNull {
-                wantedConversations.contains(it.id)
-            }
+            for (userGroup in userGroups) {
+                val randomUser = userGroup.random()
+                val userScope = randomUser.value
+                val conversationResult = randomUser.value.conversations.getConversations()
+                if (conversationResult !is GetConversationsUseCase.Result.Success) {
+                    error("Failure to get conversations for ${randomUser.key}; $conversationResult")
+                }
+                val firstConversation = conversationResult.convFlow.first().firstOrNull {
+                    wantedConversations.contains(it.id)
+                }
 
-            if (firstConversation == null) {
-                echo("User has no group conversation")
-                continue
+                if (firstConversation == null) {
+                    echo("User has no group conversation")
+                } else {
+                    userScope.messages.sendTextMessage(
+                        firstConversation.id,
+                        "give me $messageCounter bananas! ${emojies.random()}",
+                    )
+                }
+                delay(50.milliseconds)
             }
-            userScope.messages.sendTextMessage(
-                firstConversation.id,
-                "give me $messageCounter bananas! ${emojies.random()}",
-            )
-            delay(150.milliseconds)
         }
     }
 
