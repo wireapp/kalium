@@ -1,0 +1,34 @@
+import com.wire.kalium.persistence.dao.BotIdEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.collections.List;
+
+CREATE TABLE Service (
+    id TEXT AS BotIdEntity PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    tags TEXT AS List<String> NOT NULL,
+    enabled INTEGER AS Boolean NOT NULL,
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity
+);
+
+CREATE INDEX user_service_id ON User(bot_service);
+
+DROP VIEW IF EXISTS ServiceConversationView;
+
+CREATE VIEW IF NOT EXISTS ServiceConversationView
+AS SELECT Service.id,
+    Service.name,
+    Service.description,
+    Service.summary,
+    Service.tags,
+    Service.enabled,
+    Service.preview_asset_id,
+    Service.complete_asset_id,
+    Member.user IS NOT NULL AS is_member,
+    Member.conversation
+FROM Service
+LEFT JOIN User ON User.bot_service = Service.id
+LEFT JOIN Member ON Member.user = User.qualified_id;

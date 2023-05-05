@@ -15,20 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-internal object QualifiedIDAdapter : ColumnAdapter<QualifiedIDEntity, String> {
-
-    override fun decode(databaseValue: String): QualifiedIDEntity {
-        val components = databaseValue.split("@")
-        return QualifiedIDEntity(components.first(), components.last())
+internal object ServiceTagListAdapter : ColumnAdapter<List<String>, String> {
+    override fun decode(databaseValue: String): List<String> {
+        return databaseValue.split(SEPARATOR)
     }
 
-    override fun encode(value: QualifiedIDEntity): String {
-        return "${value.value}@${value.domain}"
+    override fun encode(value: List<String>): String {
+        return value.joinToString(SEPARATOR)
     }
+
+    private const val SEPARATOR = ","
 }

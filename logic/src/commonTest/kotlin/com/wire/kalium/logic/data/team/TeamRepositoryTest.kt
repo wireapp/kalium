@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -261,6 +262,11 @@ class TeamRepositoryTest {
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
 
+        @Mock
+        val serviceDAO = configure(mock(classOf<ServiceDAO>())) {
+            stubsUnitByDefault = true
+        }
+
         val teamRepository: TeamRepository = TeamDataSource(
             teamDAO = teamDAO,
             teamMapper = teamMapper,
@@ -268,7 +274,8 @@ class TeamRepositoryTest {
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             userMapper = userMapper,
-            selfUserId = TestUser.USER_ID
+            selfUserId = TestUser.USER_ID,
+            serviceDAO = serviceDAO
         )
 
         fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
