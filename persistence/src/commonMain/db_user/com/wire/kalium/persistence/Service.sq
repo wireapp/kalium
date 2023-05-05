@@ -16,7 +16,7 @@ CREATE TABLE Service (
 
 insert:
 INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
- VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
+VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
 
 CREATE VIEW IF NOT EXISTS ServiceConversationView
 AS SELECT Service.id,
