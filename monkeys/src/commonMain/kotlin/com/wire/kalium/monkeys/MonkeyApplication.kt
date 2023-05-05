@@ -193,7 +193,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 val registerClientParam = RegisterClientUseCase.RegisterClientParam(
                     password = userData.password,
                     capabilities = emptyList(),
-                    clientType = ClientType.Temporary
+                    clientType = ClientType.Permanent
                 )
                 val registerResult = scope.client.getOrRegister(registerClientParam)
                 if (registerResult !is RegisterClientResult.Success) {
