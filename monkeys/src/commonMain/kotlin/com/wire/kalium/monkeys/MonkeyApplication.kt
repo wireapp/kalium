@@ -63,7 +63,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.VERBOSE)
     private val logOutputFile by option(help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
@@ -94,7 +94,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         }
 
         println("### LOGGING IN ALL USERS")
-        val allUsers = users.take(75).map { accountData ->
+        val allUsers = users.take(50).map { accountData ->
             async(Dispatchers.Default) {
                 val email = accountData.email
                 val password = accountData.password
@@ -124,8 +124,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         registerAllClients(allUsers)
 
-        val userGroups = allUsers.entries.chunked(75)
-        println("### CREATING GROUPS")
+        val userGroups = allUsers.entries.chunked(10)
+
+        delay(60.seconds)
+
+        println("### after 120s delay CREATING GROUPS")
 
         val wantedConversations = mutableListOf<ConversationId>()
 //         coroutineScope {
@@ -137,7 +140,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             val conversationResult = userScope.conversations.createGroupConversation(
                 name = "By Monkey '${groupCreator.key.email}'",
                 userIdList = group.map { it.key.userId },
-                options = ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+                options = ConversationOptions(protocol = GROUP_TYPE)
             )
 
             if (conversationResult !is CreateGroupConversationUseCase.Result.Success) {
@@ -199,6 +202,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
+        val GROUP_TYPE = ConversationOptions.Protocol.MLS
         val ANTA_SERVER_CONFIGS = ServerConfig.Links(
             api = "https://nginz-https.anta.wire.link",
             accounts = "https://account.anta.wire.link/",
