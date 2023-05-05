@@ -93,8 +93,9 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             error("Invalid backend for whatever reason")
         }
 
-        println("### LOGGING IN ALL USERS")
-        val allUsers = users.take(50).map { accountData ->
+        println("### LOGGING IN ALL USERS ${users.size}")
+
+        val allUsers = users.take(users.size).map { accountData ->
             async(Dispatchers.Default) {
                 val email = accountData.email
                 val password = accountData.password
@@ -124,7 +125,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         registerAllClients(allUsers)
 
-        val userGroups = allUsers.entries.chunked(10)
+        val userGroups = allUsers.entries.chunked(users.size/25)
 
         delay(60.seconds)
 
@@ -156,6 +157,8 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         delay(5.seconds)
 
+        val emojies = listOf("👀","🦭","😵‍💫","👨‍🍳","🍌","👨‍🌾","🏄‍","🥶","🤤","🙈","🙊","🐒","🙉","🦍","🐵","🦧")
+
         var messageCounter = 0
         while (true) {
             messageCounter++
@@ -175,7 +178,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             }
             userScope.messages.sendTextMessage(
                 firstConversation.id,
-                "give me $messageCounter bananas!",
+                "give me $messageCounter bananas! ${emojies.random()}",
             )
             delay(150.milliseconds)
         }
