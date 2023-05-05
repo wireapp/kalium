@@ -332,7 +332,7 @@ class UserConfigStorageImpl(
             selfDeletingTimerEntity,
             SelfDeletionTimerEntity.serializer()
         ).also {
-            teamSettingsSelfDeletionStatusFlow.tryEmit(Unit)
+            conversationSelfDeletionTimerFlow.tryEmit(Unit)
         }
     }
 

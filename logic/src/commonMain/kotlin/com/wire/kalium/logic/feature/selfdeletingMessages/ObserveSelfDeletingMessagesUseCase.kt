@@ -60,7 +60,6 @@ class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
                             teamSettingsTimer
                         } else {
                             conversationTimer.selfDeletionTimer
-
                         }
                     })
                 })
