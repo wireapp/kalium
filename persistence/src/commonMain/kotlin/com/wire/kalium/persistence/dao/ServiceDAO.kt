@@ -95,7 +95,7 @@ interface ServiceDAO {
     suspend fun observeByIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<ServiceViewEntity?>
     suspend fun searchServicesWithConversation(query: String, conversationId: ConversationIDEntity): Flow<List<ServiceViewEntity>>
     suspend fun insert(service: ServiceEntity)
-    suspend fun insert(serviceList: List<ServiceEntity>)
+    suspend fun insertMultiple(serviceList: List<ServiceEntity>)
 
 }
 
@@ -134,7 +134,7 @@ internal class ServiceDAOImpl(
         )
     }
 
-    override suspend fun insert(serviceList: List<ServiceEntity>) = withContext(context) {
+    override suspend fun insertMultiple(serviceList: List<ServiceEntity>) = withContext(context) {
         serviceQueries.transaction {
             serviceList.forEach { service ->
                 serviceQueries.insert(
