@@ -416,4 +416,4 @@ private val team_200 = setOf(
     Pair("smoketester+aeb252b103@wire.com", "a810fe49-28f0-4af3-a99b-3c8aecea661d")
 )
 
-val users = team_200.map { UserData(it.first, password, UserId(it.second, domain)) }
+val users = hardcodedUsers.map { UserData(it.first, password, UserId(it.second, domain)) }

@@ -125,7 +125,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         registerAllClients(allUsers)
 
-        val userGroups = allUsers.entries.chunked(users.size / 25)
+        val userGroups = allUsers.entries.chunked(users.size )
 
         delay(60.seconds)
 
