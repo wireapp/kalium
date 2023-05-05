@@ -44,6 +44,7 @@ internal class SyncSelfTeamUseCaseImpl(
                 teamId = teamId,
                 userDomain = user.id.domain
             )
+            teamRepository.syncServices(teamId = teamId)
         } ?: run {
             kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
             Either.Right(Unit)
