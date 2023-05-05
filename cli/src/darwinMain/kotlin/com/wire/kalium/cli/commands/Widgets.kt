@@ -21,7 +21,6 @@ import com.github.ajalt.mordant.rendering.Lines
 import com.github.ajalt.mordant.rendering.OverflowWrap
 import com.github.ajalt.mordant.rendering.TextAlign
 import com.github.ajalt.mordant.rendering.TextColors
-import com.github.ajalt.mordant.rendering.TextStyle
 import com.github.ajalt.mordant.rendering.VerticalAlign
 import com.github.ajalt.mordant.rendering.Whitespace
 import com.github.ajalt.mordant.rendering.Widget
@@ -43,7 +42,7 @@ class CustomScrollRegion(
     private val content: Widget,
     private val height: Int,
     private val contentAlign: VerticalAlign
-): Widget {
+) : Widget {
     override fun measure(t: Terminal, width: Int): WidthRange {
         return content.measure(t, width)
     }
@@ -67,7 +66,6 @@ class CustomScrollRegion(
             content.render(t, width).clip(height, contentAlign)
         }
     }
-
 }
 
 internal fun Lines.clip(
@@ -85,6 +83,7 @@ internal fun Lines.clip(
     }
 }
 
+@Suppress("MagicNumber")
 internal fun conversation(input: String, aux: String?, name: String, messages: List<Message>, height: Int): Widget =
     verticalLayout {
         cell(Text(name, overflowWrap = OverflowWrap.ELLIPSES, whitespace = Whitespace.NOWRAP)) {
@@ -120,7 +119,10 @@ private fun regularContent(message: Message.Regular) =
     when (val content = message.content) {
         is MessageContent.Text -> textMessage(message.senderUserName, content.value)
         is MessageContent.Asset -> textMessage(message.senderUserName, "Shared an asset")
-        is MessageContent.FailedDecryption -> systemMessage(message.senderUserName, "Decryption error (${content.clientId})")
+        is MessageContent.FailedDecryption -> systemMessage(
+            message.senderUserName,
+            "Decryption error (${content.clientId})"
+        )
         is MessageContent.Knock -> textMessage(message.senderUserName, "<ping>")
         is MessageContent.RestrictedAsset -> textMessage(message.senderUserName, "Shared an asset")
         is MessageContent.Unknown -> systemMessage(message.senderUserName, "Unknown message")
@@ -128,17 +130,30 @@ private fun regularContent(message: Message.Regular) =
 
 private fun systemContent(message: Message.System) =
     when (val content = message.content) {
-        is MessageContent.ConversationRenamed -> systemMessage(message.senderUserName, "Conversation was renamed to ${content.conversationName}")
-        is MessageContent.ConversationReceiptModeChanged -> systemMessage(message.senderUserName, "Read receipts was ${if (content.receiptMode) "enabled" else "disabled" }")
-        MessageContent.CryptoSessionReset -> systemMessage(message.senderUserName, "Proteus session as reset")
-        MessageContent.HistoryLost -> systemMessage(null, "You've been offline for a long time and may have lost history")
-        is MessageContent.MemberChange.Added -> systemMessage(message.senderUserName, "${content.members.count()} user(s) was added")
-        is MessageContent.MemberChange.Removed -> systemMessage(message.senderUserName, "${content.members.count()} user(s) were removed")
-        MessageContent.MissedCall -> systemMessage(message.senderUserName, "missed call")
-        is MessageContent.NewConversationReceiptMode -> systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled" }")
-        is MessageContent.TeamMemberRemoved -> systemMessage(null, "${content.userName} was removed from the team")
+        is MessageContent.ConversationRenamed ->
+            systemMessage(message.senderUserName, "Conversation was renamed to ${content.conversationName}")
+        is MessageContent.ConversationReceiptModeChanged ->
+            systemMessage(
+                message.senderUserName,
+                "Read receipts was ${if (content.receiptMode) "enabled" else "disabled" }"
+            )
+        MessageContent.CryptoSessionReset ->
+            systemMessage(message.senderUserName, "Proteus session as reset")
+        MessageContent.HistoryLost ->
+            systemMessage(null, "You've been offline for a long time and may have lost history")
+        is MessageContent.MemberChange.Added ->
+            systemMessage(message.senderUserName, "${content.members.count()} user(s) was added")
+        is MessageContent.MemberChange.Removed ->
+            systemMessage(message.senderUserName, "${content.members.count()} user(s) were removed")
+        MessageContent.MissedCall ->
+            systemMessage(message.senderUserName, "missed call")
+        is MessageContent.NewConversationReceiptMode ->
+            systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled" }")
+        is MessageContent.TeamMemberRemoved ->
+            systemMessage(null, "${content.userName} was removed from the team")
     }
 
+@Suppress("MagicNumber")
 private fun textMessage(author: String?, message: String): Widget =
     horizontalLayout {
         column(0) {

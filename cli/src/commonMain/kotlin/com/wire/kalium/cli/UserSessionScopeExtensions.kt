@@ -18,7 +18,6 @@
 
 package com.wire.kalium.cli
 
-import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.output.TermUi
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -59,13 +58,13 @@ suspend fun UserSessionScope.selectConversation(): Conversation {
     val conversations = listConversations()
 
     val selectedConversationIndex =
-        TermUi.prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+        TermUi.prompt("Enter conversation index", promptSuffix = ": ")?.toInt()
+            ?: throw PrintMessage("Index must be an integer")
 
     return conversations[selectedConversationIndex]
 }
 
 suspend fun UserSessionScope.selectMember(conversationId: ConversationId): User {
-
     val members = conversations.observeConversationMembers(conversationId).first()
 
     members.forEachIndexed { index, member ->
@@ -73,7 +72,8 @@ suspend fun UserSessionScope.selectMember(conversationId: ConversationId): User 
     }
 
     val selectedMemberIndex =
-        TermUi.prompt("Enter member index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+        TermUi.prompt("Enter member index", promptSuffix = ": ")?.toInt()
+            ?: throw PrintMessage("Index must be an integer")
 
     return members[selectedMemberIndex].user
 }
@@ -81,8 +81,10 @@ suspend fun UserSessionScope.selectMember(conversationId: ConversationId): User 
 suspend fun UserSessionScope.selectConnection(): OtherUser {
     val connections = users.getAllKnownUsers().first().let {
         when (it) {
-            is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
-            is GetAllContactsResult.Success -> it.allContacts
+            is GetAllContactsResult.Failure ->
+                throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
+            is GetAllContactsResult.Success ->
+                it.allContacts
         }
     }
 
@@ -90,6 +92,7 @@ suspend fun UserSessionScope.selectConnection(): OtherUser {
         TermUi.echo("$index) ${connection.id.value}  Name: ${connection.name}")
     }
     val selectedConnectionIndex =
-        TermUi.prompt("Enter connection index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+        TermUi.prompt("Enter connection index", promptSuffix = ": ")?.toInt()
+            ?: throw PrintMessage("Index must be an integer")
     return connections[selectedConnectionIndex]
 }

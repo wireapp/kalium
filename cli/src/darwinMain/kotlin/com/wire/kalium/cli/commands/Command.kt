@@ -29,7 +29,7 @@ sealed class Command(
     abstract fun nextResult()
     abstract fun resultDescription(): String
 
-    class Jump(query: String, private val userSession: UserSessionScope): Command(NAME, query) {
+    class Jump(query: String, private val userSession: UserSessionScope) : Command(NAME, query) {
         private var index: Int = 0
         private var conversations: List<ConversationDetails> = emptyList()
         private var filteredConversations: List<ConversationDetails> = emptyList()
@@ -39,21 +39,19 @@ sealed class Command(
 
         override var query: String
             get() = super.query
-            set(value) { super.
-                query = value
+            set(value) {
+                super.query = value
                 updateFilter()
             }
 
         suspend fun prepare() {
-
-
-
             conversations = userSession.conversations.observeConversationListDetails().first()
             updateFilter()
         }
 
         private fun updateFilter() {
-            filteredConversations  = conversations.filter { it.conversation.name?.contains(query, ignoreCase = true) ?: false }
+            filteredConversations = conversations
+                .filter { it.conversation.name?.contains(query, ignoreCase = true) ?: false }
             index = 0
         }
 
@@ -73,8 +71,24 @@ sealed class Command(
                     else -> null
                 }
 
-                "[$index/${filteredConversations.size}] ${it.conversation.name ?: "no name"} ${(unreadCount?.let {" unread = ($it)"}) ?: ""}"
+                "[${indexDescription()}] ${nameDescription()} ${unreadCountDescription()}"
             } ?: "no result"
+
+        private fun indexDescription() = "$index/${filteredConversations.size}"
+
+        private fun nameDescription() = selection?.conversation?.name ?: "no name"
+
+        private fun unreadCountDescription(): String {
+            val unreadCount = selection?.let {
+                when (it) {
+                    is ConversationDetails.Group -> it.unreadEventCount[UnreadEventType.MESSAGE]
+                    is ConversationDetails.OneOne -> it.unreadEventCount[UnreadEventType.MESSAGE]
+                    else -> null
+                }
+            }
+
+            return (unreadCount?.let { " unread = ($it)" }) ?: ""
+        }
 
         companion object {
             const val NAME = "jump"

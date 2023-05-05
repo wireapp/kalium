@@ -23,9 +23,10 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 
+@Suppress("ComplexMethod", "LongMethod")
 internal fun actionFlow(userSession: UserSessionScope): Flow<InputAction> {
     var command: Command? = null
-    var draftBuffer = StringBuilder()
+    val draftBuffer = StringBuilder()
     var cursorPosition = 0
 
     return merge(
@@ -48,9 +49,7 @@ internal fun actionFlow(userSession: UserSessionScope): Flow<InputAction> {
                     }
 
                     Input.Character('\t') -> {
-                        command?.let { command ->
-                            command.nextResult()
-                        }
+                        command?.nextResult()
                         InputAction.UpdateDraft(draftBuffer.toString(), cursorPosition, command?.resultDescription())
                     }
 

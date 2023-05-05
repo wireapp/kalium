@@ -22,15 +22,15 @@ sealed class InputAction {
         var draft: String,
         var cursorPosition: Int,
         var description: String? = null
-    ): InputAction()
+    ) : InputAction()
 
     data class SendText(
         var draft: String
-    ): InputAction()
+    ) : InputAction()
 
     data class RunCommand(
         val command: Command
     ) : InputAction()
 
-    object Quit: InputAction()
+    object Quit : InputAction()
 }

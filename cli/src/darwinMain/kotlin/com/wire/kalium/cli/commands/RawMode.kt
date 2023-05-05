@@ -30,7 +30,6 @@ import platform.posix.tcgetattr
 import platform.posix.tcsetattr
 import platform.posix.termios
 
-
 fun Terminal.setRawMode(enabled: Boolean) = memScoped {
     val termios = alloc<termios>()
     if (tcgetattr(STDOUT_FILENO, termios.ptr) != 0) {
@@ -39,11 +38,9 @@ fun Terminal.setRawMode(enabled: Boolean) = memScoped {
 
     if (enabled) {
         termios.c_lflag = termios.c_lflag and ICANON.inv().convert()
-//        termios.c_oflag = termios.c_oflag and OPOST.inv().convert()
         termios.c_lflag = termios.c_lflag and ECHO.inv().convert()
     } else {
         termios.c_lflag = termios.c_lflag or ICANON.convert()
-//        termios.c_oflag = termios.c_oflag or OPOST.convert()
         termios.c_lflag = termios.c_lflag or ECHO.convert()
     }
 

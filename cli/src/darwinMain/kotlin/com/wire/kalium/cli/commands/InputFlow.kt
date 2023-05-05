@@ -33,36 +33,24 @@ import platform.posix.STDIN_FILENO
 import platform.posix.read
 import platform.posix.ssize_t
 
-sealed class Input {
-    data class Character(val char: Char): Input()
-    object ArrowUp : Input()
-    object ArrowDown: Input()
-    object ArrowLeft: Input()
-    object ArrowRight: Input()
-    object HomeKey: Input()
-    object EndKey: Input()
-    object DeleteKey: Input()
-    object PageUp: Input()
-    object PageDown: Input()
-    object Backspace: Input()
-}
-
+@Suppress("MagicNumber")
 fun inputFlow(): Flow<Input> = flow {
     while (true) {
         emit(readChar())
-        delay(100) // TODO avoid this hack
+        delay(100) // TODO jacob avoid this hack by enabling read timeout
     }
 }.flowOn(Dispatchers.Default)
 
+@Suppress("ComplexMethod", "TooGenericExceptionThrown", "MagicNumber")
 fun readChar(): Input =
     memScoped {
         val byte = alloc<ByteVar>()
         var numBytesRead: ssize_t
-        while (read(STDIN_FILENO, byte.ptr, 1).also { numBytesRead = it  } != 1L) {
-            if (numBytesRead == -1L) { throw RuntimeException() }
+        while (read(STDIN_FILENO, byte.ptr, 1).also { numBytesRead = it } != 1L) {
+            if (numBytesRead == -1L) { throw RuntimeException("Failed to read input") }
         }
 
-        val char  = byte.value.toInt().toChar()
+        val char = byte.value.toInt().toChar()
         if (char == '\u001b') {
             val sequence = ByteArray(3)
             sequence.usePinned {
@@ -94,9 +82,23 @@ fun readChar(): Input =
             }
         }
 
+        @Suppress("MagicNumber")
         when (char.code) {
             127 -> return Input.Backspace
             else -> return Input.Character(char)
         }
     }
 
+sealed class Input {
+    data class Character(val char: Char) : Input()
+    object ArrowUp : Input()
+    object ArrowDown : Input()
+    object ArrowLeft : Input()
+    object ArrowRight : Input()
+    object HomeKey : Input()
+    object EndKey : Input()
+    object DeleteKey : Input()
+    object PageUp : Input()
+    object PageDown : Input()
+    object Backspace : Input()
+}

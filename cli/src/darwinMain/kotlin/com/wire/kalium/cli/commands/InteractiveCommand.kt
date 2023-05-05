@@ -32,6 +32,7 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.set
 import kotlinx.cinterop.staticCFunction
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.cancel
@@ -55,7 +56,7 @@ import platform.posix.tcsetattr
 import platform.posix.termios
 
 sealed class PosixSignal {
-    object WindowChanged: PosixSignal()
+    object WindowChanged : PosixSignal()
 }
 
 private val signalFlow = MutableSharedFlow<PosixSignal>()
@@ -76,24 +77,43 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
     private var finished = false
 
     private fun render(viewState: ViewState) {
-        print(buildString {
-            append(terminal.cursor.getMoves {
-                setPosition(0, 0)
-            })
-            append(terminal.render(conversation(viewState.input, viewState.inputInfo, viewState.title, viewState.messages, terminal.info.height)))
-            append(terminal.cursor.getMoves {
-                startOfLine()
-                right(viewState.cursorPosition + 2)
-            })
-        })
+        print(
+            buildString {
+                append(
+                    terminal.cursor.getMoves {
+                        setPosition(0, 0)
+                    }
+                )
+                append(
+                    terminal.render(
+                        conversation(
+                            viewState.input,
+                            viewState.inputInfo,
+                            viewState.title,
+                            viewState.messages,
+                            terminal.info.height
+                        )
+                    )
+                )
+                append(
+                    terminal.cursor.getMoves {
+                        startOfLine()
+                        right(viewState.cursorPosition + 2)
+                    }
+                )
+            }
+        )
     }
 
     override fun run() = runBlocking {
-        signal(SIGWINCH, staticCFunction<Int, Unit> {
-            runBlocking {
-                signalFlow.emit(PosixSignal.WindowChanged)
+        signal(
+            SIGWINCH,
+            staticCFunction<Int, Unit> {
+                runBlocking {
+                    signalFlow.emit(PosixSignal.WindowChanged)
+                }
             }
-        })
+        )
 
         while (!finished) {
             displayConversation(currentConversationId ?: userSession.selectConversation().id)
@@ -104,11 +124,13 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         syncManager.waitUntilLive()
         val conversations = listConversations()
         val selectedConversationIndex =
-            terminal.prompt("Enter conversation index", promptSuffix = ": ")?.also { println("input: ($it)") }?.toInt() ?: throw PrintMessage("Index must be an integer")
+            terminal.prompt("Enter conversation index", promptSuffix = ": ")
+                ?.toInt() ?: throw PrintMessage("Index must be an integer")
 
         return conversations[selectedConversationIndex]
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private suspend fun displayConversation(conversationId: ConversationId) {
         terminal.withRawMode {
             terminal.cursor.move {
@@ -119,7 +141,8 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
             GlobalScope.launch(Dispatchers.Default) {
                 combine(
                     userSession.messages.getRecentMessages(conversationId, limit = 100),
-                    userSession.conversations.getConversationDetails(conversationId).mapNotNull { if (it is GetConversationUseCase.Result.Success) it.conversation.name else null },
+                    userSession.conversations.getConversationDetails(conversationId)
+                        .mapNotNull { if (it is GetConversationUseCase.Result.Success) it.conversation.name else null },
                     actionFlow(userSession)
                         .onEach {
                             when (it) {
@@ -127,7 +150,10 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                                     finished = true
                                     cancel()
                                 }
-                                is InputAction.SendText -> userSession.messages.sendTextMessage(conversationId, it.draft)
+                                is InputAction.SendText -> userSession.messages.sendTextMessage(
+                                    conversationId,
+                                    it.draft
+                                )
                                 is InputAction.RunCommand -> {
                                     when (it.command) {
                                         is Command.Jump -> {
@@ -142,11 +168,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                             }
                         }
                         .map { if (it is InputAction.SendText) InputAction.UpdateDraft("", 0) else it }
-                        .filterIsInstance<InputAction.UpdateDraft>(),
-//                 signalFlow.filterIsInstance<PosixSignal.WindowChanged>()
-//                     .onEach {
-//                         terminal.info.updateTerminalSize()
-//                     }
+                        .filterIsInstance<InputAction.UpdateDraft>()
                 ) { messages, conversationName, updateDraft ->
                     render(
                         ViewState(
@@ -162,6 +184,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         }
     }
 
+    @Suppress("UnusedPrivateMember")
     private fun enableReadTimeout() = memScoped {
         val termios = alloc<termios>()
         if (tcgetattr(STDIN_FILENO, termios.ptr) != 0) {
