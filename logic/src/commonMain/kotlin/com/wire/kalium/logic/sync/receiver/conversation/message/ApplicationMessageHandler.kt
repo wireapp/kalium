@@ -309,7 +309,7 @@ internal class ApplicationMessageHandlerImpl(
      * in case of ephemeral messages, we could either receive delete signal because the message expired and we want to delete it from
      * all the clients, or when the sender is waiting for the receiver timer to run out, after that happens
      * the receiver sends the signal to delete the message permanently
-     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase]
+     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
      */
     private suspend fun handleEphemeralMessageDeletion(
         messageToRemove: Message.Regular

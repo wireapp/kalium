@@ -185,8 +185,8 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenNewTeamSettingsSelfDeletingDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
         val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-            enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
-            hasFeatureChanged = true
+            enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO),
+            hasFeatureChanged = false
         )
         val newSelfDeletingEventModel = SelfDeletingMessagesModel(
             SelfDeletingMessagesConfigModel(

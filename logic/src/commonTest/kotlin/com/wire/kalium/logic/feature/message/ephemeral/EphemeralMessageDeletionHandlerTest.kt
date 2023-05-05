@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestMessage
@@ -15,7 +14,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +21,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -411,6 +408,14 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
     }
 
     fun withDeletingMessage(): Arrangement {
+        given(deleteEphemeralMessageForSelfUserAsReceiver)
+            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+            .whenInvokedWith(any(), any())
+            .then { _, _ -> Either.Right(Unit) }
+        given(deleteEphemeralMessageForSelfUserAsSender)
+            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+            .whenInvokedWith(any(), any())
+            .then { _, _ -> Either.Right(Unit) }
         given(messageRepository)
             .suspendFunction(messageRepository::deleteMessage)
             .whenInvokedWith(any(), any())
@@ -433,6 +438,6 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
         dispatcher,
         deleteEphemeralMessageForSelfUserAsReceiver,
         deleteEphemeralMessageForSelfUserAsSender,
-        coroutineScope)
-
+        coroutineScope
+    )
 }
