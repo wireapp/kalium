@@ -21,7 +21,7 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletingTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerStatus
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
@@ -66,7 +66,7 @@ interface UserConfigRepository {
 
     fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
     fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    fun observeConversationSelfDeletionTimer(conversationId: ConversationId): Flow<Either<StorageFailure, ConversationSelfDeletingTimer>>
+    fun observeConversationSelfDeletionTimer(conversationId: ConversationId): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>>
 }
 
 @Suppress("TooManyFunctions")
@@ -171,7 +171,6 @@ class UserConfigDataSource(
         }
     }
 
-
     override fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit> =
@@ -209,12 +208,12 @@ class UserConfigDataSource(
 
     override fun observeConversationSelfDeletionTimer(
         conversationId: ConversationId
-    ): Flow<Either<StorageFailure, ConversationSelfDeletingTimer>> =
+    ): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>> =
         userConfigStorage.getConversationSelfDeletionTimerFlow(conversationId.toDao())
             .wrapStorageRequest()
             .map {
                 it.map { conversationSelfDeletionStatus ->
-                    ConversationSelfDeletingTimer(
+                    ConversationSelfDeletionStatus(
                         conversationId = conversationId,
                         selfDeletionTimer = conversationSelfDeletionStatus.toSelfDeletionTimerStatus()
                     )

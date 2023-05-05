@@ -50,7 +50,7 @@ sealed class SelfDeletionTimer {
         get() = this is Disabled
 }
 
-data class ConversationSelfDeletingTimer(
+data class ConversationSelfDeletionStatus(
     val conversationId: ConversationId,
     val selfDeletionTimer: SelfDeletionTimer
 )

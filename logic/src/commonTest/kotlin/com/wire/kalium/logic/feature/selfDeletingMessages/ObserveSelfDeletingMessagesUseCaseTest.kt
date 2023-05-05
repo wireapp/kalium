@@ -20,64 +20,146 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletingTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 class ObserveSelfDeletingMessagesUseCaseTest {
 
-    @Mock
-    val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenErrorWhenFetchingTeamSettings_whenObservingSelfDeletingStatus_thenFinalTimerMatchesTheStoredConversationOne() = runTest {
+        val conversationId = ConversationId("conversationId", "domain")
+        val conversationDuration = 3600.toDuration(DurationUnit.SECONDS)
+        val storedConversationStatus = ConversationSelfDeletionStatus(
+            conversationId = conversationId,
+            selfDeletionTimer = SelfDeletionTimer.Enabled(conversationDuration)
+        )
+        val storedTeamSettingsFlow = flowOf(Either.Left(StorageFailure.Generic(RuntimeException("DB failed"))))
+        val storedConversationStatusFlow = flowOf(Either.Right(storedConversationStatus))
 
-    lateinit var observeSelfDeletingMessagesFlag: ObserveSelfDeletingMessagesUseCase
+        val expectedSelfDeletionStatus =
+            ConversationSelfDeletionStatus(conversationId, SelfDeletionTimer.Enabled(conversationDuration))
 
-    @BeforeTest
-    fun setUp() {
-        observeSelfDeletingMessagesFlag = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement()
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
+            .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
+            .arrange()
+
+        val result = observeSelfDeletionMessagesFlag(conversationId)
+
+        verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
+            .wasInvoked(exactly = once)
+        assertEquals(expectedSelfDeletionStatus.selfDeletionTimer, result.first())
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenRepositoryEmitsFailure_whenObservingSelfDeletingStatus_thenEmitStatusWithNullValues() = runTest {
+    fun givenTeamSettingsEnabledButNotEnforcedValue_whenObserving_thenFinalTimerMatchesTheStoredConversationOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
-        given(userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
-            .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        val storedTeamSettingsSelfDeletionStatus = TeamSettingsSelfDeletionStatus(
+            hasFeatureChanged = null,
+            enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO)
+        )
+        val conversationDuration = 3600.toDuration(DurationUnit.SECONDS)
+        val storedConversationStatus = ConversationSelfDeletionStatus(
+            conversationId = conversationId,
+            selfDeletionTimer = SelfDeletionTimer.Enabled(conversationDuration)
+        )
+        val storedTeamSettingsFlow = flowOf(Either.Right(storedTeamSettingsSelfDeletionStatus))
+        val storedConversationStatusFlow = flowOf(Either.Right(storedConversationStatus))
 
-        val result = observeSelfDeletingMessagesFlag(conversationId)
+        val expectedSelfDeletionStatus = ConversationSelfDeletionStatus(conversationId, SelfDeletionTimer.Enabled(conversationDuration))
 
-        assertTrue(result.first().isDisabled)
-        assertNull(result.first().isEnforced)
-        assertNull(result.first().toDuration())
+        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement()
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
+            .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
+            .arrange()
+
+        val result = observeSelfDeletionMessagesFlag(conversationId)
+
+        verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
+            .wasInvoked(exactly = once)
+        assertEquals(expectedSelfDeletionStatus.selfDeletionTimer, result.first())
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
+    fun givenEnforcedStoredValueForTeamSettingsAndConversation_whenObserving_thenFinalTimerMatchesTheStoredTeamSettingsOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
-        val newDuration = 3600.toDuration(DurationUnit.SECONDS)
-        val expectedTimer = ConversationSelfDeletingTimer(conversationId, SelfDeletionTimer.Enforced(newDuration))
+        val storedTeamSettingsDuration = 7.toDuration(DurationUnit.DAYS)
+        val storedTeamSettingsSelfDeletionStatus = TeamSettingsSelfDeletionStatus(
+            hasFeatureChanged = null,
+            enforcedSelfDeletionTimer = SelfDeletionTimer.Enforced(storedTeamSettingsDuration)
+        )
+        val conversationDuration = 1.toDuration(DurationUnit.HOURS)
+        val storedConversationStatus = ConversationSelfDeletionStatus(
+            conversationId = conversationId,
+            selfDeletionTimer = SelfDeletionTimer.Enabled(conversationDuration)
+        )
+        val storedTeamSettingsFlow = flowOf(Either.Right(storedTeamSettingsSelfDeletionStatus))
+        val storedConversationStatusFlow = flowOf(Either.Right(storedConversationStatus))
 
-        given(userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
-            .thenReturn(flowOf(Either.Right(expectedTimer)))
 
-        val result = observeSelfDeletingMessagesFlag(conversationId)
+        val (arrangement, observeSelfDeletionTimer) = Arrangement()
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
+            .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
+            .arrange()
 
-        assertEquals(expectedTimer.selfDeletionTimer, result.first())
+        val result = observeSelfDeletionTimer(conversationId)
+
+        verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
+            .wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
+            .wasInvoked(exactly = once)
+        assertEquals(storedTeamSettingsDuration, result.first().toDuration())
+    }
+
+    private class Arrangement {
+        @Mock
+        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+
+        val observeSelfDeletionStatus: ObserveSelfDeletionTimerForConversationUseCase by lazy {
+            ObserveSelfDeletionTimerForConversationUseCaseImpl(userConfigRepository)
+        }
+
+        fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) = apply {
+            given(userConfigRepository)
+                .invocation { observeTeamSettingsSelfDeletingStatus() }
+                .thenReturn(eitherFlow)
+        }
+
+        fun withObserveConversationSelfDeletionStatus(
+            eitherFlow: Flow<Either<StorageFailure, ConversationSelfDeletionStatus>>,
+            conversationId: ConversationId
+        ) = apply {
+            given(userConfigRepository)
+                .invocation { userConfigRepository.observeConversationSelfDeletionTimer(conversationId) }
+                .thenReturn(eitherFlow)
+        }
+
+        fun arrange() = this to observeSelfDeletionStatus
     }
 }

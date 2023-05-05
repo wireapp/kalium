@@ -32,16 +32,16 @@ import kotlin.time.Duration.Companion.ZERO
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
  */
-interface ObserveSelfDeletingMessagesUseCase {
+interface ObserveSelfDeletionTimerForConversationUseCase {
     /**
      * @param conversationId the conversation id to observe
      */
     suspend operator fun invoke(conversationId: ConversationId): Flow<SelfDeletionTimer>
 }
 
-class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
+class ObserveSelfDeletionTimerForConversationUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
-) : ObserveSelfDeletingMessagesUseCase {
+) : ObserveSelfDeletionTimerForConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId): Flow<SelfDeletionTimer> =
         userConfigRepository.observeTeamSettingsSelfDeletingStatus()
             .combine(userConfigRepository.observeConversationSelfDeletionTimer(conversationId))
@@ -66,8 +66,8 @@ class ObserveSelfDeletingMessagesUseCaseImpl internal constructor(
             }
 
     private fun defaultToConversationTimer(
-        conversationSelfDeletingTimer: Either<StorageFailure, ConversationSelfDeletingTimer>
-    ): SelfDeletionTimer = conversationSelfDeletingTimer.fold({
+        conversationSelfDeletionStatus: Either<StorageFailure, ConversationSelfDeletionStatus>
+    ): SelfDeletionTimer = conversationSelfDeletionStatus.fold({
         kaliumLogger.e("There was an error when fetching conversation self deletion timer")
         SelfDeletionTimer.Enabled(ZERO)
     }, {
