@@ -28,6 +28,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
+import javax.ws.rs.Consumes
 import javax.ws.rs.GET
 import javax.ws.rs.POST
 import javax.ws.rs.Path
@@ -46,6 +47,7 @@ class ClientResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/availability")
     @Operation(summary = "Set a user's availability")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Suppress("MagicNumber")
     fun availability(@PathParam("id") id: String, @Valid request: AvailabilityRequest): Response {
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")

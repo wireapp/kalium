@@ -18,6 +18,7 @@
 
 package com.wire.kalium.testservice.models
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.wire.kalium.logic.CoreLogic
 
 data class Instance(
@@ -25,6 +26,7 @@ data class Instance(
     val clientId: String?,
     val instanceId: String,
     val name: String?,
+    @JsonIgnore
     val coreLogic: CoreLogic,
     val instancePath: String?,
     val password: String,
