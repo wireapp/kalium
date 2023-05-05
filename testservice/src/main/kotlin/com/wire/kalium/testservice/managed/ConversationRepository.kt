@@ -175,6 +175,39 @@ sealed class ConversationRepository {
             }
         }
 
+        @Suppress("LongParameterList")
+        suspend fun updateTextMessage(
+            instance: Instance,
+            conversationId: ConversationId,
+            text: String?,
+            mentions: List<MessageMention>,
+            firstMessageId: String
+        ): Response = instance.coreLogic.globalScope {
+            return when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        if (text != null) {
+                            log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            messages.sendEditTextMessage(
+                                conversationId, firstMessageId, text, mentions
+                            ).fold({
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                            }, {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            })
+                        } else {
+                            Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
         suspend fun sendPing(instance: Instance, conversationId: ConversationId): Response = instance.coreLogic.globalScope {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
