@@ -332,9 +332,9 @@ class ConversationDAOImpl(
             conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel).executeAsOneOrNull()
         }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity =
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity? =
         withContext(coroutineContext) {
-            conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
+            conversationQueries.selectByQualifiedId(qualifiedID).executeAsOneOrNull()?.let {
                 conversationMapper.toModel(it)
             }
         }
@@ -347,9 +347,9 @@ class ConversationDAOImpl(
             .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
 
-    override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo =
+    override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
         withContext(coroutineContext) {
-            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOne()
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
@@ -361,7 +361,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
-        conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
+        conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
     }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
