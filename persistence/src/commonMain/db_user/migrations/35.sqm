@@ -1,0 +1,134 @@
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+-- update qualified_id for conversations corrupt conversations
+-- the ignore part is incase the correct ID is already there
+UPDATE OR IGNORE Conversation
+SET qualified_id = (qualified_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE qualified_id LIKE '%@';
+
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+-- update qualified_id for conversations corrupt conversations
+-- the ignore part is incase the correct ID is already there
+UPDATE OR IGNORE User
+SET qualified_id = (qualified_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE qualified_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE Message
+SET
+sender_user_id = CASE WHEN sender_user_id LIKE '%@' THEN (sender_user_id || s.self_domain) ELSE sender_user_id END,
+conversation_id = CASE WHEN conversation_id LIKE '%@' THEN (conversation_id || s.self_domain) ELSE conversation_id END
+FROM self_domain_cte AS s;
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageMention
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageTextContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageRestrictedAssetContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageAssetContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageMemberChangeContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageUnknownContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageFailedToDecryptContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageMissedCallContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageConversationChangedContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageNewConversationReceiptModeContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- get self domain
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE MessageConversationReceiptModeChangedContent
+SET conversation_id = (conversation_id || s.self_domain)
+FROM self_domain_cte AS s
+WHERE conversation_id LIKE '%@';
+
+-- delete corrupt conversations that remain after the fix
+DELETE FROM User WHERE qualified_id LIKE '%@';
+-- delete corrupt conversations that remain after the fix
+DELETE FROM Conversation WHERE qualified_id LIKE '%@';
