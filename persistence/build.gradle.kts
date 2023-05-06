@@ -36,20 +36,22 @@ dependencies {
 }
 
 sqldelight {
-    database("UserDatabase") {
-        dialect(libs.sqldelight.dialect.get().toString())
-        packageName = "com.wire.kalium.persistence"
-        val sourceFolderName = "db_user"
-        sourceFolders = listOf(sourceFolderName)
-        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
-    }
+    databases {
+        create("UserDatabase") {
+            dialect(libs.sqldelight.dialect.get().toString())
+            packageName.set("com.wire.kalium.persistence")
+            val sourceFolderName = "db_user"
+            sourceFolders.set(listOf(sourceFolderName))
+            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+        }
 
-    database("GlobalDatabase") {
-        dialect(libs.sqldelight.dialect.get().toString())
-        packageName = "com.wire.kalium.persistence"
-        val sourceFolderName = "db_global"
-        sourceFolders = listOf(sourceFolderName)
-        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
+        create("GlobalDatabase") {
+            dialect(libs.sqldelight.dialect.get().toString())
+            packageName.set("com.wire.kalium.persistence")
+            val sourceFolderName = "db_global"
+            sourceFolders.set(listOf(sourceFolderName))
+            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+        }
     }
 }
 
