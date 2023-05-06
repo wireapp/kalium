@@ -97,6 +97,8 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
+import com.wire.kalium.logic.data.service.ServiceDataSource
+import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -514,6 +516,9 @@ class UserSessionScope internal constructor(
             userId,
             userStorage.database.serviceDAO
         )
+
+    private val serviceRepository: ServiceRepository
+        get() = ServiceDataSource(serviceDAO = userStorage.database.serviceDAO)
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
@@ -1205,7 +1210,13 @@ class UserSessionScope internal constructor(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
+    val team: TeamScope get() = TeamScope(
+        userRepository,
+        teamRepository,
+        conversationRepository,
+        serviceRepository,
+        selfTeamId
+    )
 
     val calls: CallsScope
         get() = CallsScope(

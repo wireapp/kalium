@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.service
 
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.model.ServiceDetailDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
@@ -24,6 +25,7 @@ import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceEntity
+import com.wire.kalium.persistence.dao.ServiceViewEntity
 
 internal class ServiceMapper {
     fun mapToServiceEntity(
@@ -39,6 +41,30 @@ internal class ServiceMapper {
             enabled = enabled,
             previewAssetId = assets?.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, selfId.domain) },
             completeAssetId = assets?.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, selfId.domain) }
+        )
+    }
+
+    fun fromDaoViewToObservedModel(
+        dao: ServiceViewEntity
+    ): ObservedServiceDetails = with(dao) {
+        ObservedServiceDetails(
+            service = fromDaoToModel(service),
+            isMember = isMember
+        )
+    }
+
+    fun fromDaoToModel(
+        service: ServiceEntity
+    ): ServiceDetails = with(service) {
+        ServiceDetails(
+            id = ServiceId(id = id.id, provider = id.provider),
+            name = name,
+            description = description,
+            summary = summary,
+            enabled = enabled,
+            tags = tags,
+            previewAssetId = previewAssetId?.toModel(),
+            completeAssetId = completeAssetId?.toModel()
         )
     }
 }
