@@ -174,7 +174,7 @@ internal class TeamDataSource(
         }
     }.flatMap {
         wrapStorageRequest {
-            serviceDAO.insert(it)
+            serviceDAO.insertMultiple(it)
         }
     }
 }

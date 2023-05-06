@@ -30,6 +30,8 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.ServiceDetailDTO
+import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -237,7 +239,25 @@ class TeamRepositoryTest {
             .suspendFunction(arrangement.userDAO::insertUser)
             .with(any())
             .wasInvoked(once)
+    }
 
+    @Test
+    fun givenTeamId_whenSyncingWhitelistedServices_thenInsertIntoDatabase() = runTest {
+        // given
+        val (arrangement, teamRepository) = Arrangement()
+            .withFetchWhiteListedServicesSuccess()
+            .arrange()
+
+        // when
+        val result = teamRepository.syncServices(teamId = TeamId(value = "teamId"))
+
+        result.shouldSucceed()
+
+        // then
+        verify(arrangement.serviceDAO)
+            .suspendFunction(arrangement.serviceDAO::insertMultiple)
+            .with(any())
+            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -299,7 +319,31 @@ class TeamRepositoryTest {
                 .thenReturn(NetworkResponse.Success(value = teamMemberDTO, headers = mapOf(), httpCode = 200))
         }
 
+        fun withFetchWhiteListedServicesSuccess() = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::whiteListedServices)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Success(value = SERVICE_DETAILS_RESPONSE, headers = mapOf(), httpCode = 200))
+        }
+
         fun arrange() = this to teamRepository
+
+        companion object {
+            val SERVICE_DTO = ServiceDetailDTO(
+                enabled = true,
+                assets = null,
+                id = "serviceId",
+                provider = "providerId",
+                name = "Service Name",
+                description = "Service Description",
+                summary = "Service Summary",
+                tags = listOf()
+            )
+            val SERVICE_DETAILS_RESPONSE = ServiceDetailResponse(
+                hasMore = false,
+                services = listOf(SERVICE_DTO)
+            )
+        }
     }
 
 }
