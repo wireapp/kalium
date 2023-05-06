@@ -22,7 +22,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingState
 import app.cash.paging.PagingSource
-import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import kotlin.coroutines.CoroutineContext
@@ -65,6 +64,7 @@ actual class MessageExtensionsImpl actual constructor(
             }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MessageEntity> {
             val page = params.key ?: 0
             return try {

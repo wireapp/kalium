@@ -74,19 +74,23 @@ class SessionManagerImpl internal constructor(
         session.value ?: run {
             wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
                 .map { sessionMapper.fromEntityToSessionDTO(it) }
-                .onSuccess { session.update { it }}
-                .onFailure { kaliumLogger.e("""SESSION MANAGER: 
+                .onSuccess { session.update { it } }
+                .onFailure {
+                    kaliumLogger.e(
+                        """SESSION MANAGER: 
                     |"error": "missing user session",
-                    |"cause": "$it" """.trimMargin()) }
+                    |"cause": "$it" """.trimMargin()
+                    )
+                }
             session.value
         }
     }
 
     override fun serverConfig(): ServerConfigDTO = serverConfig.updateAndGet {
-        it ?:
-            serverConfigMapper.toDTO(sessionRepository.fullAccountInfo(userId)
+        it ?: serverConfigMapper.toDTO(
+            sessionRepository.fullAccountInfo(userId)
                 .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it.serverConfig })
-            )
+        )
     }!!
 
     override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
