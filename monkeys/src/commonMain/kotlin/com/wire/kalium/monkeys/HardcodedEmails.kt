@@ -19,11 +19,13 @@ package com.wire.kalium.monkeys
 
 import com.wire.kalium.logic.data.user.UserId
 
-private val userLoggingInOnVitorsDevice = "smoketester+16e262cd2d@wire.com"
 val password = "Aqa123456!"
 val domain = "anta.wire.link"
 
 data class UserData(val email: String, val password: String, val userId: UserId)
+
+// TODO: Replace with a proper user importing mechanism.
+//       Like importing from a specified CSV file or similar.
 
 private val hardcodedUsers = setOf(
     Pair("smoketester+80bcb20c42@wire.com", "3fcadd87-76b0-4d43-9d54-5146252749df"),

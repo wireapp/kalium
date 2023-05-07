@@ -19,6 +19,11 @@ package com.wire.kalium.monkeys
 
 import com.wire.kalium.logic.feature.UserSessionScope
 
+/**
+ * A monkey is a user puppeteered by the test framework.
+ * It contains the basic [user] data and provides
+ * the [operationScope] which we can use to perform actions.
+ */
 class Monkey(
     val user: UserData,
     val operationScope: UserSessionScope

@@ -24,10 +24,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlin.time.Duration.Companion.milliseconds
 
-class BananaPerGroupCommand(val amountOfMessages: Int) : MonkeyCommand {
-    private val emoji = listOf("👀", "🦭", "😵‍💫", "👨‍🍳", "🍌", "🍆", "👨‍🌾", "🏄‍", "🥶", "🤤", "🙈", "🙊", "🐒", "🙉", "🦍", "🐵", "🦧")
+/**
+ * Sends messages to each provided conversation.
+ * The amount of messages is defined by [amountOfMessages].
+ */
+class BananaPerGroupCommand(private val amountOfMessages: Int) : MonkeyCommand {
 
-    override suspend fun invoke(monkeyConversations: List<MonkeyConversation>) = repeat(amountOfMessages) { currentMessage ->
+    override suspend fun invoke(
+        monkeyConversations: List<MonkeyConversation>
+    ) = repeat(amountOfMessages) { currentMessage ->
         for (monkeyTalk in monkeyConversations) {
             val userGroup = monkeyTalk.allMonkeys
             val randomUser = userGroup.random()
@@ -48,5 +53,14 @@ class BananaPerGroupCommand(val amountOfMessages: Int) : MonkeyCommand {
             }
             delay(50.milliseconds)
         }
+    }
+
+    private companion object {
+        private val emoji = listOf(
+            "👀", "🦭", "😵‍💫", "👨‍🍳",
+            "🍌", "🍆", "👨‍🌾", "🏄‍",
+            "🥶", "🤤", "🙈", "🙊",
+            "🐒", "🙉", "🦍", "🐵"
+        )
     }
 }

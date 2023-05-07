@@ -20,22 +20,40 @@ package com.wire.kalium.monkeys
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.conversation.Conversation
 
+/**
+ * Splits the list of users into chunks.
+ */
 fun interface SplitStep {
     suspend operator fun invoke(allUsers: List<UserData>): List<List<UserData>>
 }
 
+/**
+ * Sets up the test environment, by logging in all users and registering all clients.
+ */
 fun interface SetupStep {
-    suspend operator fun invoke(coreLogic: CoreLogic, accountGroups: List<List<UserData>>): List<List<Monkey>>
+    suspend operator fun invoke(
+        coreLogic: CoreLogic,
+        accountGroups: List<List<UserData>>
+    ): List<List<Monkey>>
 }
 
+/**
+ * Executes a command on a list of [MonkeyConversation].
+ */
 fun interface MonkeyCommand {
     suspend operator fun invoke(monkeyConversations: List<MonkeyConversation>)
 }
 
+/**
+ * Creates a conversation between a watch monkey and a list of monkeys.
+ */
 fun interface ConversationCreation {
     suspend operator fun invoke(monkeyGroups: List<List<Monkey>>): List<MonkeyConversation>
 }
 
+/**
+ * A [conversation] created by the [watchMonkey] containing all monkeys in the list [allMonkeys].
+ */
 data class MonkeyConversation(
     val watchMonkey: Monkey,
     val allMonkeys: List<Monkey>,

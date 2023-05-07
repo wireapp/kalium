@@ -19,11 +19,14 @@ package com.wire.kalium.monkeys
 
 import com.wire.kalium.monkeys.command.BananaPerGroupCommand
 
-class WIPTestSequence : TestSequence {
-    override val setup: SetupStep = DefaultSetup(setupParallelism = 2)
+/**
+ * Basic test sequence that setups the monkeys and runs the [BananaPerGroupCommand].
+ */
+class SimpleTestSequence : TestSequence {
     override val split: SplitStep = DefaultChunkSplit(chunkSize = 50, maxChunks = 2)
+    override val setup: SetupStep = DefaultSetup(setupParallelism = 2)
     override val createConversations: ConversationCreation = DefaultConversationCreation()
     override val commands: List<MonkeyCommand> = listOf(
-        BananaPerGroupCommand(100)
+        BananaPerGroupCommand(amountOfMessages = 100)
     )
 }

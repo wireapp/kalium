@@ -56,7 +56,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         }
 
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
-        runMonkeys(coreLogic, WIPTestSequence())
+        runMonkeys(coreLogic, SimpleTestSequence())
     }
 
     private suspend fun runMonkeys(coreLogic: CoreLogic, testSequence: TestSequence) = with(testSequence) {
