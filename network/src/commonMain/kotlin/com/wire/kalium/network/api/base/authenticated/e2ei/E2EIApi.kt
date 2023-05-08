@@ -21,48 +21,31 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface E2EIApi {
-    suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse>
 
-    suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories>
+    suspend fun getACMENonce(url: String): NetworkResponse<String>
 
+    suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
 
-    suspend fun getNewNonce(noncePath: String): NetworkResponse<String> // get the data from the reply header
+    suspend fun getNewAccount(url: String, body: ByteArray): NetworkResponse<ACMEResponse>
 
-    suspend fun postAcmeRequest(
-        requestDir: String, requestBody: ByteArray?
-    ): NetworkResponse<AcmeResponse>
+    suspend fun getNewOrder(url: String, body: ByteArray): NetworkResponse<ACMEResponse>
 
-    suspend fun getNewAccount(
-        newAccountRequestUrl: String, newAccountRequestBody: ByteArray
-    ): NetworkResponse<AcmeResponse>
+    suspend fun dpopChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
 
-    suspend fun getNewOrder(
-        url: String, body: ByteArray
-    ): NetworkResponse<AcmeResponse>
+    suspend fun oidcChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
 
-    suspend fun dpopChallenge(
-        url: String, body: ByteArray
-    ): NetworkResponse<ChallengeResponse>
+    suspend fun getAuthzChallenge(url: String): NetworkResponse<ACMEResponse>
 
-    suspend fun getAuthzChallenge(
-        url: String
-    ): NetworkResponse<AcmeResponse>
+    suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectoriesResponse>
+
+    suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse>
+
     suspend fun getWireNonce(clientId: String): NetworkResponse<String>
-
-
-    suspend fun sendNewAuthz(): NetworkResponse<Unit>
-
-    suspend fun sendNewOrder(): NetworkResponse<Unit>
-
-    suspend fun sendAuthzHandle(): NetworkResponse<Unit>
-
-    suspend fun sendAuthzClienId(): NetworkResponse<Unit>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
         )
     }
-
-    suspend fun getDpopAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse>
 }

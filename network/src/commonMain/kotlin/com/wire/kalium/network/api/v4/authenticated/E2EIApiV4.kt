@@ -20,161 +20,140 @@ package com.wire.kalium.network.api.v4.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.base.authenticated.e2ei.AcmeResponse
-import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectories
+import com.wire.kalium.network.api.base.authenticated.e2ei.ACMEResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.AuthzDirectoriesResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.ChallengeResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.serialization.JoseJson
+import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.NetworkResponse.*
+import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.http.*
-import io.ktor.util.*
 
-internal open class E2EIApiV4 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
-    E2EIApi {
+internal open class E2EIApiV4 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : E2EIApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getAcmeDirectories(): NetworkResponse<AcmeDirectoriesResponse> =
-        wrapKaliumResponse {
-            httpClient.get("$TEMP_BASE_URL:$ACME_PORT/$PATH_ACME_DIRECTORIES")
-        }
+    override suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
+        httpClient.get("$ACME_BASE_URL:$ACME_PORT/$PATH_ACME_DIRECTORIES")
+    }
 
-    override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectories> =
-        wrapKaliumResponse {
-            httpClient.get("$TEMP_BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
-        }
+    override suspend fun getACMENonce(url: String): NetworkResponse<String> = httpClient.prepareHead(url).execute { httpResponse ->
+        handleACMENonceResponse(httpResponse)
+    }
 
-    override suspend fun getNewNonce(noncePath: String): NetworkResponse<String> =
-        httpClient.prepareHead(noncePath).execute { httpResponse ->
-            handleNewNonceResponse(httpResponse)
-        }
-
-    override suspend fun postAcmeRequest(requestDir: String, requestBody: ByteArray?): NetworkResponse<AcmeResponse> =
-        httpClient.preparePost(requestDir)
-        {
-            contentType(ContentType.Application.JoseJson)
-            requestBody?.let { setBody(requestBody) }
-        }.execute { httpResponse ->
-            handleAcmeRequestResponse(httpResponse)
-        }
-
-    override suspend fun getNewAccount(
-        newAccountRequestUrl: String,
-        newAccountRequestBody: ByteArray
-    ): NetworkResponse<AcmeResponse> =
-        postAcmeRequest(newAccountRequestUrl, newAccountRequestBody)
-
-    override suspend fun getNewOrder(
-        url: String,
-        body: ByteArray
-    ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, body)
-
-    @OptIn(InternalAPI::class)
-    override suspend fun dpopChallenge(
-        url: String,
-        body: ByteArray
-    ): NetworkResponse<ChallengeResponse> =
-        wrapKaliumResponse {
-            httpClient.post(url)
-            {
-                contentType(ContentType.Application.JoseJson)
-                setBody(body)
-            }
-        }
+    override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectoriesResponse> = wrapKaliumResponse {
+        httpClient.get("$ACME_BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
+    }
 
     override suspend fun getAuthzChallenge(
         url: String
-    ): NetworkResponse<AcmeResponse> = postAcmeRequest(url, null)
+    ): NetworkResponse<ACMEResponse> = sendACMERequest(url)
+
+    override suspend fun getNewAccount(
+        url: String, body: ByteArray
+    ): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
+
+    override suspend fun getNewOrder(
+        url: String, body: ByteArray
+    ): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
+
+    override suspend fun dpopChallenge(
+        url: String, body: ByteArray
+    ): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
+
+    override suspend fun oidcChallenge(
+        url: String, body: ByteArray
+    ): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
 
     override suspend fun getWireNonce(clientId: String): NetworkResponse<String> =
-        httpClient.prepareHead("${PATH_CLIENTS}/$clientId/${PATH_NONCE}")
-        {
+        httpClient.prepareHead("${PATH_CLIENTS}/$clientId/${PATH_NONCE}") {
             contentType(ContentType.Application.JoseJson)
         }.execute { httpResponse ->
-            handleNewNonceResponse(httpResponse)
+            handleACMENonceResponse(httpResponse)
         }
 
-    override suspend fun getDpopAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
-        wrapKaliumResponse {
-            httpClient.post("${PATH_CLIENTS}/$clientId/${PATH_ACCESS_TOKEN}")
-            {
-                headers.append("dpop", dpopToken)
-            }
+    override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> = wrapKaliumResponse {
+        httpClient.post("${PATH_CLIENTS}/$clientId/${PATH_ACCESS_TOKEN}") {
+            headers.append(DPOP_HEADER_KEY, dpopToken)
         }
+    }
 
-    private suspend fun handleNewNonceResponse(
+    private suspend fun handleACMENonceResponse(
         httpResponse: HttpResponse
-    ): NetworkResponse<String> =
-        if (httpResponse.status.isSuccess() && httpResponse.headers["Replay-Nonce"] != null) {
-            Success(httpResponse.headers[NONCE_HEADER_KEY].toString(), httpResponse)
-        } else {
-            handleUnsuccessfulResponse(httpResponse).also {
-                if (it.kException is KaliumException.InvalidRequestError &&
-                    it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
-                ) {
-                    kaliumLogger.d("Nonce error")
-                }
-            }
-        }
+    ): NetworkResponse<String> = if (httpResponse.status.isSuccess()) httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
+        Success(nonce, httpResponse)
+    } ?: run {
+        CustomErrors.MISSING_NONCE
+    }
+    else {
+        handleUnsuccessfulResponse(httpResponse)
+    }
 
-    @OptIn(InternalAPI::class)
-    private suspend fun handleAcmeRequestResponse(
+    override suspend fun sendACMERequest(url: String, body: ByteArray?): NetworkResponse<ACMEResponse> = httpClient.preparePost(url) {
+        contentType(ContentType.Application.JoseJson)
+        body?.let { setBody(body) }
+    }.execute { httpResponse ->
+        handleACMERequestResponse(httpResponse)
+    }
+
+    private suspend fun handleACMERequestResponse(
         httpResponse: HttpResponse
-    ): NetworkResponse<AcmeResponse> =
-        if (httpResponse.status.isSuccess()) {
+    ): NetworkResponse<ACMEResponse> = if (httpResponse.status.isSuccess()) {
+        httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
             Success(
-                AcmeResponse(
-                    nonce = httpResponse.headers[NONCE_HEADER_KEY].toString(),
-                    response = httpResponse.body()
-                ),
-                httpResponse
+                ACMEResponse(
+                    nonce, response = httpResponse.body()
+                ), httpResponse
             )
-        } else {
-            handleUnsuccessfulResponse(httpResponse).also {
-                if (it.kException is KaliumException.InvalidRequestError &&
-                    it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
-                ) {
-                    kaliumLogger.d("Nonce error")
-                }
+        } ?: run {
+            CustomErrors.MISSING_NONCE
+        }
+    } else {
+        handleUnsuccessfulResponse(httpResponse)
+    }
+
+    private suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
+        wrapKaliumResponse<ChallengeResponse> {
+            httpClient.post(url) {
+                contentType(ContentType.Application.JoseJson)
+                setBody(body)
+            }
+        }.flatMap { challengeResponse ->
+            challengeResponse.headers[NONCE_HEADER_KEY.lowercase()]?.let { nonce ->
+                Success(
+                    ChallengeResponse(
+                        type = challengeResponse.value.type,
+                        url = challengeResponse.value.url,
+                        status = challengeResponse.value.status,
+                        token = challengeResponse.value.token,
+                        nonce = nonce
+                    ), challengeResponse.headers, challengeResponse.httpCode
+                )
+
+            } ?: run {
+                CustomErrors.MISSING_NONCE
             }
         }
-
-
-    override suspend fun sendNewAuthz(): NetworkResponse<Unit> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun sendNewOrder(): NetworkResponse<Unit> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun sendAuthzHandle(): NetworkResponse<Unit> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun sendAuthzClienId(): NetworkResponse<Unit> {
-        TODO("Not yet implemented")
-    }
 
     private companion object {
-        const val PATH_CLIENTS = "clients"
-        const val PATH_NONCE = "nonce"
-        const val PATH_ACCESS_TOKEN = "access-token"
-        const val TEMP_BASE_URL = "https://136.243.148.68"
+        const val ACME_BASE_URL = "https://balderdash.hogwash.work"
         const val ACME_PORT = "9000"
         const val DEX_PORT = "5556"
 
         const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
         const val PATH_ACME_DIRECTORIES = "acme/wire/directory"
+        const val PATH_CLIENTS = "clients"
+        const val PATH_NONCE = "nonce"
+        const val PATH_ACCESS_TOKEN = "access-token"
+
+        const val DPOP_HEADER_KEY = "dpop"
         const val NONCE_HEADER_KEY = "Replay-Nonce"
     }
 }
