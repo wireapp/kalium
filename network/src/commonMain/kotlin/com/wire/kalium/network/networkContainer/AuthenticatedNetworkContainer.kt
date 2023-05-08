@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
@@ -76,6 +77,8 @@ interface AuthenticatedNetworkContainer {
 
     val keyPackageApi: KeyPackageApi
 
+    val e2eiApi: E2EIApi
+
     val preKeyApi: PreKeyApi
 
     val assetApi: AssetApi
@@ -104,8 +107,7 @@ interface AuthenticatedNetworkContainer {
         fun create(
             sessionManager: SessionManager,
             selfUserId: UserId,
-            userAgent: String,
-            ignoreAllSSLErrors: Boolean = false
+            userAgent: String
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -131,8 +133,7 @@ interface AuthenticatedNetworkContainer {
 
                 4 -> AuthenticatedNetworkContainerV4(
                     sessionManager,
-                    selfUserId,
-                    ignoreAllSSLErrors
+                    selfUserId
                 )
 
                 else -> error("Unsupported version: $version")

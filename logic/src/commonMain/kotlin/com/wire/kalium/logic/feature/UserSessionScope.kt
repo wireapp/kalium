@@ -392,8 +392,7 @@ class UserSessionScope internal constructor(
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent,
-        kaliumConfigs.ignoreAllSSLErrors
+        userAgent
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
