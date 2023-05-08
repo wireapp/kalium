@@ -25,7 +25,8 @@ import io.ktor.client.engine.darwin.Darwin
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?
+    proxyCredentials: ProxyCredentialsDTO?,
+    ignoreAllSSLErrors: Boolean
 ): HttpClientEngine {
     return Darwin.create {
         pipelining = true
