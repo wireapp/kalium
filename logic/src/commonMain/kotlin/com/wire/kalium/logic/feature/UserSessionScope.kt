@@ -1172,7 +1172,7 @@ class UserSessionScope internal constructor(
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
-    val markSelfDeletingMessagesAsNotifiedUseCase: MarkSelfDeletingMessagesChangeAsNotifiedUseCase
+    val markSelfDeletingMessagesAsNotified: MarkSelfDeletingMessagesChangeAsNotifiedUseCase
         get() = MarkSelfDeletingMessagesChangeAsNotifiedUseCase(userConfigRepository)
 
     val observeSelfDeletingMessages: ObserveSelfDeletionTimerForConversationUseCase
