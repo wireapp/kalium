@@ -1,3 +1,6 @@
+ALTER TABLE Message ADD COLUMN expire_after_millis INTEGER DEFAULT(NULL);
+ALTER TABLE Message ADD COLUMN self_deletion_start_date INTEGER AS Instant DEFAULT(NULL);
+
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -88,7 +91,7 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
-TextContent.quoted_message_id AS quotedMessageId,
+QuotedMessage.id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
 QuotedSender.name AS quotedSenderName,
@@ -121,3 +124,4 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
+-- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
