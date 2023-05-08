@@ -1188,7 +1188,7 @@ class UserSessionScope internal constructor(
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
-        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, mlsPublicKeysRepository)
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
