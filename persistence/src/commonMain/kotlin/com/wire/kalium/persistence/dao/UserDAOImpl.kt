@@ -385,4 +385,10 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
+
+    override suspend fun getUsersWithoutMetadata() = withContext(queriesContext) {
+        userQueries.selectUsersWithoutMetadata()
+            .executeAsList()
+            .map(mapper::toModel)
+    }
 }

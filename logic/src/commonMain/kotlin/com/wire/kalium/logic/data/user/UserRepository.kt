@@ -117,6 +117,11 @@ internal interface UserRepository {
      * otherwise [Either.Left] with [NetworkFailure]
      */
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
+
+    /**
+     * Updates users without metadata from the server.
+     */
+    suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -462,6 +467,13 @@ internal class UserDataSource internal constructor(
                 }
             )
         }
+
+    override suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.getUsersWithoutMetadata()
+    }.flatMap { usersWithoutMetadata ->
+        val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
+        fetchUsersByIds(userIds)
+    }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
