@@ -1,4 +1,5 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+ALTER TABLE Message ADD COLUMN expire_after_millis INTEGER DEFAULT(NULL);
+ALTER TABLE Message ADD COLUMN self_deletion_start_date INTEGER AS Instant DEFAULT(NULL);
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
@@ -14,6 +15,8 @@ Message.status AS status,
 Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
+Message.expire_after_millis AS expireAfterMillis,
+Message.self_deletion_start_date AS selfDeletionStartDate,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -88,7 +91,7 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
-TextContent.quoted_message_id AS quotedMessageId,
+QuotedMessage.id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
 QuotedSender.name AS quotedSenderName,
