@@ -15,25 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.service
+package com.wire.kalium.logic.feature.service
 
-import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.persistence.dao.BotIdEntity
+import com.wire.kalium.logic.data.service.ServiceRepository
 
-data class ServiceDetails(
-    val id: ServiceId,
-    val name: String,
-    val description: String,
-    val summary: String,
-    val enabled: Boolean,
-    val tags: List<String>,
-    val previewAssetId: UserAssetId?,
-    val completeAssetId: UserAssetId?
-)
-
-data class ServiceId(
-    val id: String,
-    val provider: String
+class ServiceScope internal constructor(
+    private val serviceRepository: ServiceRepository
 ) {
-    fun toDao(): BotIdEntity = BotIdEntity(id = id, provider = provider)
+
+    val getServiceById: GetServiceByIdUseCase
+        get() = GetServiceByIdUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
+
+    val observeIsServiceMember: ObserveIsServiceMemberUseCase
+        get() = ObserveIsServiceMemberUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
 }

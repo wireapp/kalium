@@ -18,14 +18,10 @@
 package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.service.ObservedServiceDetails
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
-import com.wire.kalium.network.api.base.model.ServiceDetailDTO
-import com.wire.kalium.persistence.dao.BotIdEntity
-import com.wire.kalium.persistence.dao.ServiceEntity
-import com.wire.kalium.persistence.dao.ServiceViewEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -41,13 +37,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ObserveServiceDetailsUseCaseTest {
+class ObserveIsServiceMemberUseCaseTest {
 
     @Test
     fun givenServiceIdAndConversationId_whenObservingServiceDetails_thenResultIsObservedServiceDetails() = runTest {
         // given
-        val (arrangement, observeServiceDetails) = Arrangement()
-            .withObservedServiceDetails(
+        val (_, observeServiceDetails) = Arrangement()
+            .withObserveIsServiceMemberSuccess(
                 serviceId = Arrangement.serviceId,
                 conversationId = Arrangement.conversationId
             )
@@ -60,8 +56,8 @@ class ObserveServiceDetailsUseCaseTest {
         ).first()
 
         // then
-        assertIs<ObservedServiceDetails>(result)
-        assertEquals(Arrangement.observedServiceDetails, result)
+        assertIs<QualifiedID>(result)
+        assertEquals(Arrangement.userId, result)
     }
 
     private class Arrangement {
@@ -71,30 +67,30 @@ class ObserveServiceDetailsUseCaseTest {
             stubsUnitByDefault = true
         }
 
-        private val observeServiceDetails = ObserveServiceDetailsUseCaseImpl(
+        private val observeIsServiceMember = ObserveIsServiceMemberUseCaseImpl(
             serviceRepository = serviceRepository
         )
 
-        fun arrange() = this to observeServiceDetails
+        fun arrange() = this to observeIsServiceMember
 
-        fun withObservedServiceDetails(
+        fun withObserveIsServiceMemberSuccess(
             serviceId: ServiceId,
             conversationId: ConversationId
         ) = apply {
             given(serviceRepository)
-                .suspendFunction(serviceRepository::observeServiceDetails)
+                .suspendFunction(serviceRepository::observeIsServiceMember)
                 .whenInvokedWith(eq(serviceId), eq(conversationId))
-                .thenReturn(flowOf(observedServiceDetails))
+                .thenReturn(flowOf(userId))
         }
 
         companion object {
             const val SERVICE_ID = "serviceId"
             const val PROVIDER_ID = "providerId"
-            const val SERVICE_NAME = "Service Name"
-            const val SERVICE_DESCRIPTION = "Service Description"
-            const val SERVICE_SUMMARY = "Service Summary"
-            const val SERVICE_ENABLED = true
-            val SERVICE_TAGS = emptyList<String>()
+
+            val userId = QualifiedID(
+                value = "userValue",
+                domain = "userDomain"
+            )
 
             val serviceId = ServiceId(
                 id = SERVICE_ID,
@@ -104,23 +100,6 @@ class ObserveServiceDetailsUseCaseTest {
             val conversationId = ConversationId(
                 value = "conversationValue",
                 domain = "conversationDomain"
-            )
-
-
-            val serviceDetails = ServiceDetails(
-                id = serviceId,
-                name = SERVICE_NAME,
-                description = SERVICE_DESCRIPTION,
-                summary = SERVICE_SUMMARY,
-                enabled = SERVICE_ENABLED,
-                tags = SERVICE_TAGS,
-                previewAssetId = null,
-                completeAssetId = null
-            )
-
-            val observedServiceDetails = ObservedServiceDetails(
-                service = serviceDetails,
-                isMember = true
             )
         }
     }

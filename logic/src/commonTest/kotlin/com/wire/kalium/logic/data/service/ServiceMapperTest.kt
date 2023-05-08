@@ -61,21 +61,6 @@ class ServiceMapperTest {
         assertEquals(Arrangement.serviceDetails, result)
     }
 
-    @Test
-    fun givenServiceViewEntity_whenMappingToObservedServiceDetailsModel_thenReturnObservedServiceDetails() = runTest {
-        // given
-        val (_, serviceMapper) = Arrangement()
-            .arrange()
-
-        // when
-        val result = serviceMapper.fromDaoViewToObservedModel(
-            dao = Arrangement.serviceViewEntity
-        )
-
-        // then
-        assertEquals(Arrangement.observedServiceDetails, result)
-    }
-
     private class Arrangement {
 
         private val serviceMapper = ServiceMapper()
@@ -133,16 +118,6 @@ class ServiceMapperTest {
                 tags = SERVICE_TAGS,
                 previewAssetId = null,
                 completeAssetId = null
-            )
-
-            val serviceViewEntity = ServiceViewEntity(
-                service = serviceEntity,
-                isMember = true
-            )
-
-            val observedServiceDetails = ObservedServiceDetails(
-                service = serviceDetails,
-                isMember = true
             )
         }
     }

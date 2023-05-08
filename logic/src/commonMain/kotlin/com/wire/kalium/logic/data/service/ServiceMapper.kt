@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceEntity
-import com.wire.kalium.persistence.dao.ServiceViewEntity
 
 internal class ServiceMapper {
     fun mapToServiceEntity(
@@ -41,15 +40,6 @@ internal class ServiceMapper {
             enabled = enabled,
             previewAssetId = assets?.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, selfId.domain) },
             completeAssetId = assets?.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, selfId.domain) }
-        )
-    }
-
-    fun fromDaoViewToObservedModel(
-        dao: ServiceViewEntity
-    ): ObservedServiceDetails = with(dao) {
-        ObservedServiceDetails(
-            service = fromDaoToModel(service),
-            isMember = isMember
         )
     }
 

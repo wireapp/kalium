@@ -17,18 +17,24 @@
  */
 package com.wire.kalium.logic.data.service
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface ServiceRepository {
-    suspend fun observeServiceDetails(
+    suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?>
+    suspend fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<ObservedServiceDetails?>
+    ): Flow<QualifiedID?>
 }
 
 internal class ServiceDataSource internal constructor(
@@ -36,16 +42,20 @@ internal class ServiceDataSource internal constructor(
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : ServiceRepository {
 
-    override suspend fun observeServiceDetails(
+    override suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?> =
+        wrapStorageNullableRequest {
+            serviceDAO.byId(id = serviceId.toDao())
+                ?.let { serviceEntity ->
+                    serviceMapper.fromDaoToModel(service = serviceEntity)
+                }
+        }
+
+    override suspend fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<ObservedServiceDetails?> =
-        serviceDAO.observeByIdAndConversation(
+    ): Flow<QualifiedID?> =
+        serviceDAO.observeIsServiceMember(
             id = serviceId.toDao(),
             conversationId = conversationId.toDao()
-        ).map {
-            it?.let {
-                serviceMapper.fromDaoViewToObservedModel(dao = it)
-            }
-        }
+        ).map { it?.toModel() }
 }

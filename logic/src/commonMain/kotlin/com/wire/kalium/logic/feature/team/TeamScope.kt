@@ -23,8 +23,6 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.service.ObserveServiceDetailsUseCase
-import com.wire.kalium.logic.feature.service.ObserveServiceDetailsUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 
@@ -46,11 +44,6 @@ class TeamScope internal constructor(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository,
             conversationRepository = conversationRepository,
-        )
-
-    val observeServiceDetailsUseCase: ObserveServiceDetailsUseCase
-        get() = ObserveServiceDetailsUseCaseImpl(
-            serviceRepository = serviceRepository
         )
 
     val isSelfATeamMember: IsSelfATeamMemberUseCase get() = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)

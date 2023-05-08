@@ -18,30 +18,30 @@
 package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.service.ObservedServiceDetails
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
- * This use case is responsible for observing service details
- * and verifying if it is a member of given conversation
- * @param serviceId contains service ID and Provider
+ * This use case is responsible for observing if a service is member of given conversation.
+ * @param serviceId contains service ID and Provider.
  * @param conversationId ID of the conversation service will be seen, added or removed.
+ * @return Qualified ID of Service in User table or NULL.
  */
-interface ObserveServiceDetailsUseCase {
+interface ObserveIsServiceMemberUseCase {
     suspend operator fun invoke(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<ObservedServiceDetails?>
+    ): Flow<QualifiedID?>
 }
 
-class ObserveServiceDetailsUseCaseImpl internal constructor(
+class ObserveIsServiceMemberUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
-) : ObserveServiceDetailsUseCase {
+) : ObserveIsServiceMemberUseCase {
 
-    override suspend fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<ObservedServiceDetails?> =
-        serviceRepository.observeServiceDetails(
+    override suspend fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<QualifiedID?> =
+        serviceRepository.observeIsServiceMember(
             serviceId = serviceId,
             conversationId = conversationId
         )
