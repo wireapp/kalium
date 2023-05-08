@@ -46,13 +46,11 @@ interface E2EIRepository {
     suspend fun getNewNonce(nonceUrl: String): Either<NetworkFailure, String>
 
     suspend fun getNewAccount(
-        requestUrl: String,
-        request: ByteArray
+        requestUrl: String, request: ByteArray
     ): Either<NetworkFailure, ACMEResponse>
 
     suspend fun getNewOrder(
-        requestUrl: String,
-        request: ByteArray
+        requestUrl: String, request: ByteArray
     ): Either<NetworkFailure, ACMEResponse>
 
     suspend fun getAuthzChallenge(
@@ -72,15 +70,13 @@ class E2EIRepositoryImpl(
     private val getSelfUserUseCase: GetSelfUserUseCase
 ) : E2EIRepository {
 
-    override suspend fun getACMEDirectories(): Either<NetworkFailure, AcmeDirectoriesResponse> =
-        wrapApiRequest {
-            e2EIApi.getACMEDirectories()
-        }
+    override suspend fun getACMEDirectories(): Either<NetworkFailure, AcmeDirectoriesResponse> = wrapApiRequest {
+        e2EIApi.getACMEDirectories()
+    }
 
-    override suspend fun getAuthzDirectories(): Either<NetworkFailure, AuthzDirectoriesResponse> =
-        wrapApiRequest {
-            e2EIApi.getAuhzDirectories()
-        }
+    override suspend fun getAuthzDirectories(): Either<NetworkFailure, AuthzDirectoriesResponse> = wrapApiRequest {
+        e2EIApi.getAuhzDirectories()
+    }
 
     override suspend fun enrollE2EI() {
         val selfUser = getSelfUserUseCase().first()
@@ -91,9 +87,7 @@ class E2EIRepositoryImpl(
             // fetch directories
             val directories = getACMEDirectories().fold({
                 AcmeDirectoriesResponse("", "", "", "", "")
-            },
-                { it }
-            )
+            }, { it })
             kaliumLogger.w("\nDirectories from API:>\n$directories")
 
             // Set directories to E2EIClient
@@ -109,73 +103,59 @@ class E2EIRepositoryImpl(
             //</editor-fold>
 
             //<editor-fold desc="Create new account">
-            val accountRequest = e2eiClient.newAccountRequest(prevNonce)
+            val accountRequest = e2eiClient.getNewAccountRequest(prevNonce)
             kaliumLogger.w("\nNewAccountRequest from CC:>\n${toLog(accountRequest)}")
 
-            val accountResponse =
-                getNewAccount(directories.newAccount, accountRequest).fold(
-                    { ACMEResponse("", byteArrayOf()) },
-                    { it })
+            val accountResponse = getNewAccount(directories.newAccount, accountRequest).fold({ ACMEResponse("", byteArrayOf()) }, { it })
             kaliumLogger.w("\nNewNonce from API:>\n${accountResponse.nonce}")
             kaliumLogger.w("\nNewAccountResponse from API:>\n${toLog(accountResponse.response)}")
 
-            e2eiClient.newAccountResponse(accountResponse.response)
+            e2eiClient.setAccountResponse(accountResponse.response)
             kaliumLogger.w("\nNewAccountResponse Passed to CC\n")
 
             //</editor-fold>
             prevNonce = accountResponse.nonce
             //<editor-fold desc="Create New Order">
-            val orderRequest = e2eiClient.newOrderRequest(prevNonce)
+            val orderRequest = e2eiClient.getNewOrderRequest(prevNonce)
             kaliumLogger.w("\nNewOrderRequest from CC:>\n${toLog(orderRequest)}")
 
-            val orderResponse =
-                getNewOrder(directories.newOrder, orderRequest).fold(
-                    { ACMEResponse("", byteArrayOf()) },
-                    { it })
+            val orderResponse = getNewOrder(directories.newOrder, orderRequest).fold({ ACMEResponse("", byteArrayOf()) }, { it })
             kaliumLogger.w("\nNewNonce from API:>\n${orderResponse.nonce}")
             kaliumLogger.w("\nNewOrderResponse from API:>\n${toLog(orderResponse.response)}")
 
             prevNonce = orderResponse.nonce
 
-            val order = e2eiClient.newOrderResponse(orderResponse.response)
+            val order = e2eiClient.setOrderResponse(orderResponse.response)
 
             // todo: get the location from api response
             kaliumLogger.w(
-                "\nOrderResponse from CC :>\n${order.authorizations}" +
-                        "\n${toLog(order.delegate)}"
+                "\nOrderResponse from CC :>\n${order.authorizations}" + "\n${toLog(order.delegate)}"
             )
             //</editor-fold>
 
             //<editor-fold desc="Authz Request">
-            val authzRequest =
-                e2eiClient.newAuthzRequest(order.authorizations[0], prevNonce)
+            val authzRequest = e2eiClient.getNewAuthzRequest(order.authorizations[0], prevNonce)
             kaliumLogger.w("\nNewAuthzRequest from CC:>\n${toLog(authzRequest)}")
 
-            val authzResponse =
-                getNewOrder(order.authorizations[0], authzRequest).fold(
-                    { ACMEResponse("", byteArrayOf()) },
-                    { it })
+            val authzResponse = getNewOrder(order.authorizations[0], authzRequest).fold({ ACMEResponse("", byteArrayOf()) }, { it })
             kaliumLogger.w("\nNewNonce from API:>\n${authzResponse.nonce}")
             kaliumLogger.w("\nAuthzResp from API:>\n${toLog(authzResponse.response)}")
 
             prevNonce = authzResponse.nonce
 
-            val authz = e2eiClient.newAuthzResponse(authzResponse.response)
+            val authz = e2eiClient.setAuthzResponse(authzResponse.response)
             kaliumLogger.w(
-                "\nAuthzResp from CC :>\n${authz.identifier}" +
-                        "\n${authz.wireDpopChallenge!!.url}" +
-                        "\n${toLog(authz.wireDpopChallenge!!.delegate)}" +
-                        "\n${authz.wireOidcChallenge!!.url}" +
-                        "\n${toLog(authz.wireOidcChallenge!!.delegate)}"
+                "\nAuthzResp from CC :>\n${authz.identifier}" + "\n${authz.wireDpopChallenge!!.url}" + "\n${toLog(authz.wireDpopChallenge!!.delegate)}" + "\n${authz.wireOidcChallenge!!.url}" + "\n${
+                    toLog(
+                        authz.wireOidcChallenge!!.delegate
+                    )
+                }"
             )
 
             //</editor-fold>
 
             //<editor-fold desc="getAuthzDirectories">
-            val authzDirectoriesResponse =
-                getAuthzDirectories().fold(
-                    { AuthzDirectoriesResponse("", "", "", "", "", "") },
-                    { it })
+            val authzDirectoriesResponse = getAuthzDirectories().fold({ AuthzDirectoriesResponse("", "", "", "", "", "") }, { it })
             kaliumLogger.w("\nAuthzDirectories from API:>\n$authzDirectoriesResponse")
 
 
@@ -187,8 +167,7 @@ class E2EIRepositoryImpl(
                 kaliumLogger.w("\nclientID :>\n${x.value}")
                 val wireNonce = getWireNonce(x.value).fold({ "" }, { it })
                 kaliumLogger.w("\nWireNonce:>\n$wireNonce")
-                val dpopToken =
-                    e2eiClient.createDpopToken("https://staging.zinfra.io/clients/${x.value}/access-token", wireNonce)
+                val dpopToken = e2eiClient.createDpopToken("https://staging.zinfra.io/clients/${x.value}/access-token", wireNonce)
                 kaliumLogger.w("\nclientDpopToken from CC :>\n$dpopToken")
 
 
@@ -201,8 +180,7 @@ class E2EIRepositoryImpl(
                 kaliumLogger.w("\nAccessTokenFromWireServer:>\n${dpopAccessToken}")
 
                 // create dpop challenge
-                val dpopChallengeRequest =
-                    e2eiClient.newDpopChallengeRequest(dpopAccessToken.token, prevNonce)
+                val dpopChallengeRequest = e2eiClient.getNewDpopChallengeRequest(dpopAccessToken.token, prevNonce)
                 kaliumLogger.w("\nDpopChallengeReq from CC:>\n${toLog(dpopChallengeRequest)}")
 
                 // send to the acme server
@@ -217,8 +195,10 @@ class E2EIRepositoryImpl(
                 delay(3000)
 
 //                 // create oidc challenge
-                val oidcChallengeRequest =
-                    e2eiClient.newOidcChallengeRequest("eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJhdF9oYXNoIjoiRzYzYmhTTUw2aVdSWjJvY1M0aTFCdyIsIm5vbmNlIjoiWVhLTU96Y1V2VmZLVUJvZHh0eml5dyIsImlhdCI6MTY4MzQ2Nzk3NywiZXhwIjoxNjgzNDcxNTc3fQ.a47Wc09I4mshf3nkk6S6w-bAcfbavvaZV7iWGjDOEPQijG1Lj_yFg5bH-xSPVvVd-Spk5kFRWjxgjPROkAHsJ_Gsv-UzZV1UQyWLyfjus7kdkd2Ko7NcO8nOGvi57u3uzH4H9geAs8AG8Y_oDQVehbXIrXnZlNiYX_9LyniackzO_PzvyV6TqJUHrghuuoL1bUOLrCgLOzCBe1-XaXKRFZCqABX6z01C04Jy_u-xeyDBtaPaJNGsoLYERVFprSP_zBFSbHU967x5xfIwHTOAty-gG1Rfey75qCf6MkPg3rDhtZV_RzN0Rq3rp8WLFhYct2jdvprFTnOG-IHj8FQD4Q", dpopChallengeResponse.nonce)
+                val oidcChallengeRequest = e2eiClient.getNewOidcChallengeRequest(
+                    "eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJhdF9oYXNoIjoiRzYzYmhTTUw2aVdSWjJvY1M0aTFCdyIsIm5vbmNlIjoiWVhLTU96Y1V2VmZLVUJvZHh0eml5dyIsImlhdCI6MTY4MzQ2Nzk3NywiZXhwIjoxNjgzNDcxNTc3fQ.a47Wc09I4mshf3nkk6S6w-bAcfbavvaZV7iWGjDOEPQijG1Lj_yFg5bH-xSPVvVd-Spk5kFRWjxgjPROkAHsJ_Gsv-UzZV1UQyWLyfjus7kdkd2Ko7NcO8nOGvi57u3uzH4H9geAs8AG8Y_oDQVehbXIrXnZlNiYX_9LyniackzO_PzvyV6TqJUHrghuuoL1bUOLrCgLOzCBe1-XaXKRFZCqABX6z01C04Jy_u-xeyDBtaPaJNGsoLYERVFprSP_zBFSbHU967x5xfIwHTOAty-gG1Rfey75qCf6MkPg3rDhtZV_RzN0Rq3rp8WLFhYct2jdvprFTnOG-IHj8FQD4Q",
+                    dpopChallengeResponse.nonce
+                )
                 kaliumLogger.w("\noidcChallengeRequest from CC:>\n${toLog(dpopChallengeRequest)}")
                 delay(3000)
                 // send to the acme server
@@ -280,15 +260,13 @@ class E2EIRepositoryImpl(
         it.toByte().toChar().toString()
     }
 
-    override suspend fun getNewNonce(nonceUrl: String): Either<NetworkFailure, String> =
-        wrapApiRequest {
-            e2EIApi.getACMENonce(nonceUrl)
-        }
+    override suspend fun getNewNonce(nonceUrl: String): Either<NetworkFailure, String> = wrapApiRequest {
+        e2EIApi.getACMENonce(nonceUrl)
+    }
 
-    override suspend fun getWireNonce(clientId: String): Either<NetworkFailure, String> =
-        wrapApiRequest {
-            e2EIApi.getWireNonce(clientId)
-        }
+    override suspend fun getWireNonce(clientId: String): Either<NetworkFailure, String> = wrapApiRequest {
+        e2EIApi.getWireNonce(clientId)
+    }
 
     override suspend fun getDpopAccessToken(clientId: String, dpopToken: String): Either<NetworkFailure, AccessTokenResponse> =
         wrapApiRequest {
@@ -296,41 +274,32 @@ class E2EIRepositoryImpl(
         }
 
     override suspend fun getNewAccount(
-        requestUrl: String,
-        request: ByteArray
-    ): Either<NetworkFailure, ACMEResponse> =
-        wrapApiRequest {
-            e2EIApi.getNewAccount(requestUrl, request)
-        }
+        requestUrl: String, request: ByteArray
+    ): Either<NetworkFailure, ACMEResponse> = wrapApiRequest {
+        e2EIApi.getNewAccount(requestUrl, request)
+    }
 
     override suspend fun getNewOrder(
-        requestUrl: String,
-        request: ByteArray
-    ): Either<NetworkFailure, ACMEResponse> =
-        wrapApiRequest {
-            e2EIApi.getNewOrder(requestUrl, request)
-        }
+        requestUrl: String, request: ByteArray
+    ): Either<NetworkFailure, ACMEResponse> = wrapApiRequest {
+        e2EIApi.getNewOrder(requestUrl, request)
+    }
 
     override suspend fun dpopChallenge(
-        requestUrl: String,
-        request: ByteArray
-    ): Either<NetworkFailure, ChallengeResponse> =
-        wrapApiRequest {
-            e2EIApi.dpopChallenge(requestUrl, request)
-        }
+        requestUrl: String, request: ByteArray
+    ): Either<NetworkFailure, ChallengeResponse> = wrapApiRequest {
+        e2EIApi.dpopChallenge(requestUrl, request)
+    }
 
     override suspend fun oidcChallenge(
-        requestUrl: String,
-        request: ByteArray
-    ): Either<NetworkFailure, ChallengeResponse> =
-        wrapApiRequest {
-            e2EIApi.oidcChallenge(requestUrl, request)
-        }
+        requestUrl: String, request: ByteArray
+    ): Either<NetworkFailure, ChallengeResponse> = wrapApiRequest {
+        e2EIApi.oidcChallenge(requestUrl, request)
+    }
 
     override suspend fun getAuthzChallenge(
         requestUrl: String
-    ): Either<NetworkFailure, ACMEResponse> =
-        wrapApiRequest {
-            e2EIApi.getAuthzChallenge(requestUrl)
-        }
+    ): Either<NetworkFailure, ACMEResponse> = wrapApiRequest {
+        e2EIApi.getAuthzChallenge(requestUrl)
+    }
 }

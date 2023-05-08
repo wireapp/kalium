@@ -23,7 +23,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(previousNonce: String): ByteArray {
+    override fun newAccountRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -31,7 +31,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(previousNonce: String):  ByteArray {
+    override fun newOrderRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -39,7 +39,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(url: String, previousNonce: String): ByteArray {
+    override fun newAuthzRequest(url: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -52,14 +52,14 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newDpopChallengeRequest(accessToken: String, previousNonce: String): ByteArray {
+    override fun newDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
     override fun newOidcChallengeRequest(
         idToken: String,
         previousNonce: String
-    ): ByteArray {
+    ): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -67,7 +67,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(orderUrl: String, previousNonce: String): ByteArray {
+    override fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -75,7 +75,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(previousNonce: String): ByteArray {
+    override fun finalizeRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
@@ -83,7 +83,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(previousNonce: String): ByteArray {
+    override fun certificateRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
