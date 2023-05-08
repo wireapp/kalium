@@ -22,11 +22,17 @@ import com.android.build.gradle.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 
+private const val BASE_NAMESPACE = "com.wire.kalium"
+
 fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
     /** NO-OP. Nothing to do here for now **/
 }
 
-fun LibraryExtension.commonAndroidLibConfig(includeNativeInterop: Boolean) {
+fun LibraryExtension.commonAndroidLibConfig(
+    includeNativeInterop: Boolean,
+    namespaceSuffix: String
+) {
+    namespace = "$BASE_NAMESPACE.$namespaceSuffix"
     compileSdk = Android.Sdk.compile
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
