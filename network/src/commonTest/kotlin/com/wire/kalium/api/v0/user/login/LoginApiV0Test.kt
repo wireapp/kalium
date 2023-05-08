@@ -43,11 +43,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-class LoginApiV0Test : ApiTest {
+internal class LoginApiV0Test : ApiTest() {
 
     @Test
     fun givenAValidLoginRequest_whenCallingTheLoginEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val expectedLoginRequest = ApiTest.TestRequestHandler(
+        val expectedLoginRequest = TestRequestHandler(
             path = PATH_LOGIN,
             responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,

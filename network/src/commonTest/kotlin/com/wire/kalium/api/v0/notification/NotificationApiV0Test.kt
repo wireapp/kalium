@@ -42,7 +42,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class NotificationApiV0Test : ApiTest {
+internal class NotificationApiV0Test : ApiTest() {
 
     /**
      * Doesn't do anything.

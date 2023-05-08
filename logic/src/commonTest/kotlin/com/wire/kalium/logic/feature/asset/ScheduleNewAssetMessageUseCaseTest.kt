@@ -86,7 +86,14 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         // When
         val result = sendAssetUseCase.invoke(
-            conversationId, inputDataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null
+            conversationId = conversationId,
+            assetDataPath = inputDataPath,
+            assetDataSize = assetToSend.size.toLong(),
+            assetName = assetName,
+            assetMimeType = "text/plain",
+            assetWidth = null,
+            assetHeight = null,
+            expireAfter = null, null
         )
         advanceUntilIdle()
 
@@ -108,7 +115,16 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
+            val result = sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
             advanceUntilIdle()
 
             // Then
@@ -129,7 +145,16 @@ class ScheduleNewAssetMessageUseCaseTest {
             .arrange()
 
         // When
-        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
+        sendAssetUseCase.invoke(
+            conversationId = conversationId,
+            assetDataPath = dataPath,
+            assetDataSize = assetToSend.size.toLong(),
+            assetName = assetName,
+            assetMimeType = "text/plain",
+            assetWidth = null,
+            assetHeight = null,
+            expireAfter = null
+        )
         advanceUntilIdle()
 
         // Then
@@ -158,7 +183,16 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
             advanceUntilIdle()
 
             // Then
@@ -186,7 +220,16 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
             advanceUntilIdle()
 
             // Then
@@ -225,7 +268,16 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null, null)
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
             advanceUntilIdle()
 
             // Then

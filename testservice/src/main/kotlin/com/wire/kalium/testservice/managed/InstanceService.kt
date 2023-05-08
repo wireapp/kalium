@@ -109,12 +109,13 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     @Suppress("LongMethod", "ThrowsCount")
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
+        val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
         val instancePath = System.getProperty("user.home") +
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
-        val kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
-        val coreLogic = CoreLogic("$instancePath", kaliumConfigs)
+        val kaliumConfigs = KaliumConfigs(developmentApiEnabled = false)
+        val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
@@ -139,13 +140,33 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
         log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
         val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig)
-            .login(instanceRequest.email, instanceRequest.password, true).let {
-                if (it !is AuthenticationResult.Success) {
-                    throw WebApplicationException("Instance $instanceId: Login failed, check your credentials")
-                } else {
-                    it
-                }
+            .login(
+                instanceRequest.email, instanceRequest.password, true,
+                secondFactorVerificationCode = instanceRequest.verificationCode
+            )
+        when (loginResult) {
+            is AuthenticationResult.Failure.Generic ->
+                throw WebApplicationException("Instance $instanceId: Login failed, error!")
+
+            AuthenticationResult.Failure.InvalidCredentials.Invalid2FA ->
+                throw WebApplicationException("Instance $instanceId: Login failed, invalid 2FA verification code!")
+
+            AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination ->
+                throw WebApplicationException("Instance $instanceId: Login failed, check your credentials!")
+
+            AuthenticationResult.Failure.InvalidCredentials.Missing2FA ->
+                throw WebApplicationException("Instance $instanceId: Login failed, missing 2FA verification code!")
+
+            AuthenticationResult.Failure.InvalidUserIdentifier ->
+                throw WebApplicationException("Instance $instanceId: Login failed, invalid user!")
+
+            AuthenticationResult.Failure.SocketError ->
+                throw WebApplicationException("Instance $instanceId: Login failed, socket error!")
+
+            is AuthenticationResult.Success -> {
+                log.info("Instance $instanceId: Login successful")
             }
+        }
 
         log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
@@ -172,7 +193,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
-                            log.info("Instance $instanceId: Login with new device $clientId successful")
+                            log.info("Instance $instanceId: Device $clientId successfully registered")
                             syncManager.waitUntilLive()
                         }
                     }
