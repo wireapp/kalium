@@ -56,6 +56,16 @@ data class ConversationSelfDeletionStatus(
 )
 
 data class TeamSettingsSelfDeletionStatus(
+    /**
+     * This value is used to inform the user that the team settings were changed. When true, an informative dialog will be shown. Once the
+     * user acknowledges or dismisses it, the value will be set again to false. When null, this means that we still don't know the real
+     * value of the flag, i.e. on initial sync
+     * */
     val hasFeatureChanged: Boolean?,
+    /**
+     * The enforced self deletion timer for the whole team. Depending on the team settings, this value will override any the conversation or
+     * user settings (aka, if the team settings timer is set to [SelfDeletionTimer.Enforced] or [SelfDeletionTimer.Disabled] then the user
+     * won't be able to change the timer for any conversation
+     * */
     val enforcedSelfDeletionTimer: SelfDeletionTimer
 )
