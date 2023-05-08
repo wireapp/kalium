@@ -63,37 +63,10 @@ internal fun mapToServiceEntity(
     completeAssetId = completeAssetId
 )
 
-@Suppress("LongParameterList")
-internal fun mapToServiceView(
-    id: BotIdEntity,
-    name: String,
-    description: String,
-    summary: String,
-    tags: List<String>,
-    enabled: Boolean,
-    previewAssetId: QualifiedIDEntity?,
-    completeAssetId: QualifiedIDEntity?,
-    isMember: Boolean,
-    conversation: QualifiedIDEntity?
-): ServiceViewEntity = ServiceViewEntity(
-    service = mapToServiceEntity(
-        id = id,
-        name = name,
-        description = description,
-        summary = summary,
-        tags = tags,
-        enabled = enabled,
-        previewAssetId = previewAssetId,
-        completeAssetId = completeAssetId
-    ),
-    isMember = isMember
-)
-
 interface ServiceDAO {
     suspend fun byId(id: BotIdEntity): ServiceEntity?
-    suspend fun byIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): ServiceViewEntity?
-    suspend fun observeByIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<ServiceViewEntity?>
-    suspend fun searchServicesWithConversation(query: String, conversationId: ConversationIDEntity): Flow<List<ServiceViewEntity>>
+    suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
+    suspend fun searchServices(query: String): Flow<List<ServiceEntity>>
     suspend fun insert(service: ServiceEntity)
     suspend fun insertMultiple(serviceList: List<ServiceEntity>)
 
@@ -107,19 +80,13 @@ internal class ServiceDAOImpl(
         serviceQueries.byId(id, mapper = ::mapToServiceEntity).executeAsOneOrNull()
     }
 
-    override suspend fun byIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): ServiceViewEntity? =
-        withContext(context) {
-            serviceQueries.byIdAndIsMember(conversationId, id, mapper = ::mapToServiceView).executeAsOneOrNull()
-        }
+    override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
+        serviceQueries.getUserIdFromMember(conversationId, id).asFlow().flowOn(context).mapToOneOrNull(context)
 
-    override suspend fun observeByIdAndConversation(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<ServiceViewEntity?> =
-        serviceQueries.byIdAndIsMember(conversationId, id, mapper = ::mapToServiceView).asFlow().flowOn(context).mapToOneOrNull(context)
-
-    override suspend fun searchServicesWithConversation(
-        query: String,
-        conversationId: ConversationIDEntity
-    ): Flow<List<ServiceViewEntity>> =
-        serviceQueries.searchServices(conversationId, query, mapper = ::mapToServiceView).asFlow().flowOn(context).mapToList()
+    override suspend fun searchServices(
+        query: String
+    ): Flow<List<ServiceEntity>> =
+        serviceQueries.searchServices(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
 
     override suspend fun insert(service: ServiceEntity) = withContext(context) {
         serviceQueries.insert(

@@ -18,32 +18,37 @@ insert:
 INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
 VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
 
-CREATE VIEW IF NOT EXISTS ServiceConversationView
-AS SELECT Service.id,
+allServices:
+SELECT * FROM Service;
+
+byId:
+SELECT
+    Service.id,
     Service.name,
     Service.description,
     Service.summary,
     Service.tags,
     Service.enabled,
     Service.preview_asset_id,
-    Service.complete_asset_id,
-    Member.user IS NOT NULL AS is_member,
-    Member.conversation
+    Service.complete_asset_id
 FROM Service
-LEFT JOIN User ON User.bot_service = Service.id
-LEFT JOIN Member ON Member.user = User.qualified_id;
+WHERE Service.id = :id;
 
-allServices:
-SELECT * FROM Service;
-
-byId:
-SELECT * FROM Service WHERE Service.id = :id;
+getUserIdFromMember:
+SELECT User.qualified_id
+FROM User
+JOIN Member ON Member.user = User.qualified_id AND Member.conversation = :conversation
+WHERE User.bot_service = :id;
 
 searchServices:
-SELECT * FROM ServiceConversationView WHERE conversation = :conversation AND name LIKE :query;
-
-byIdAndIsMember:
-SELECT * FROM ServiceConversationView WHERE conversation = :conversation AND id = :id;
-
-fullListWithIsMember:
-SELECT * FROM ServiceConversationView;
+SELECT
+    Service.id,
+    Service.name,
+    Service.description,
+    Service.summary,
+    Service.tags,
+    Service.enabled,
+    Service.preview_asset_id,
+    Service.complete_asset_id
+FROM Service
+WHERE Service.name LIKE :query;
