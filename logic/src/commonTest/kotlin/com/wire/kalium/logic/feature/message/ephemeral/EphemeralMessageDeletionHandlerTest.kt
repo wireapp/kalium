@@ -158,9 +158,9 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
 
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.id), eq(oneSecondEphemeralMessage.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
                 .wasInvoked(exactly = once)
         }
 
@@ -192,9 +192,9 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration - 1.milliseconds)
 
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.id), eq(oneSecondEphemeralMessage.conversationId))
                 .wasNotInvoked()
         }
 
@@ -237,9 +237,9 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(oneOf("1", "2", "3", "4"), eq(oneSecondEphemeralMessage.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))
                 .wasInvoked(Times(4))
         }
 
@@ -260,7 +260,8 @@ class EphemeralMessageDeletionHandlerTest {
                 expirationData = Message.ExpirationData(
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                )
+                ),
+                isSelfMessage = true
             )
 
             val threeSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -300,30 +301,30 @@ class EphemeralMessageDeletionHandlerTest {
             // then
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(twoSecondEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsSender)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsSender::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(threeSecondsEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(fourSecondsEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))
                 .wasInvoked(once)
         }
 
@@ -367,11 +368,14 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(1.seconds + 500.milliseconds)
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(oneOf("1", "2"), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("1", "2"))
                 .wasInvoked(Times(pendingMessagesToDeletePastTheTime.size))
-
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsSender)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsSender::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("3", "4"))
+                .wasNotInvoked()
         }
 
     private fun TestScope.advanceTimeBy(duration: Duration) = advanceTimeBy(duration.inWholeMilliseconds)
