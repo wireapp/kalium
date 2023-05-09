@@ -139,5 +139,4 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                 }
         }
     }
-
 }

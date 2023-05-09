@@ -281,9 +281,7 @@ class MessageScope internal constructor(
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
-            messageRepository = messageRepository
-        )
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
 
     internal val ephemeralMessageDeletionHandler =
         EphemeralMessageDeletionHandlerImpl(
