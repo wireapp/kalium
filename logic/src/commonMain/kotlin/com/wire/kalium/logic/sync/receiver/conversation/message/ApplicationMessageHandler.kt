@@ -45,7 +45,6 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
-import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -263,7 +262,6 @@ internal class ApplicationMessageHandlerImpl(
             quotedReference.copy(isVerified = false)
         }
     }
-
 
     private suspend fun handleDeleteMessage(
         content: MessageContent.DeleteMessage,

@@ -40,7 +40,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
-
 /**
  * When the self user is receiver of the self deletion message,
  * we delete it permanently after expiration and inform the sender by broadcasting a message to delete
@@ -142,4 +141,3 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     }
 
 }
-
