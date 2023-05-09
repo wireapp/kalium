@@ -20,19 +20,23 @@ package com.wire.kalium.logic.feature.publicuser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Refresh users without metadata, only if necessary.
  */
 interface RefreshUsersWithoutMetadataUseCase {
-    suspend fun syncUsersWithoutMetadata()
+    suspend operator fun invoke()
 }
 
 internal class RefreshUsersWithoutMetadataUseCaseImpl(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshUsersWithoutMetadataUseCase {
 
-    override suspend fun syncUsersWithoutMetadata() {
+    override suspend fun invoke() = withContext(dispatchers.io) {
         kaliumLogger.d("Started syncing users without metadata")
         userRepository.syncUsersWithoutMetadata()
             .fold({
