@@ -93,7 +93,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            expireAfter = null, null
+            expireAfter = null
         )
         advanceUntilIdle()
 
