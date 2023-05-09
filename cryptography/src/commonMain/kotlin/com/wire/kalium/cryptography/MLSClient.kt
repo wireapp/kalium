@@ -273,7 +273,7 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
+        clientId: E2EIQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
