@@ -218,6 +218,8 @@ class ConversationScope internal constructor(
 
     val updateMessageTimer: UpdateMessageTimerUseCase
         get() = UpdateMessageTimerUseCaseImpl(
-            conversationGroupRepository
+            conversationGroupRepository,
+            persistMessage,
+            selfUserId
         )
 }

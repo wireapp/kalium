@@ -64,7 +64,7 @@ interface ConversationGroupRepository {
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
-    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long): Either<NetworkFailure, Unit>
+    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -247,9 +247,10 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 
-    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long): Either<NetworkFailure, Unit> = wrapApiRequest {
-        conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer)
-    }
-        .onSuccess { conversationDAO.updateMessageTimer(conversationId.toDao(), messageTimer) }
-        .map { }
+    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer)
+        }
+            .onSuccess { conversationDAO.updateMessageTimer(conversationId.toDao(), messageTimer) }
+            .map { }
 }

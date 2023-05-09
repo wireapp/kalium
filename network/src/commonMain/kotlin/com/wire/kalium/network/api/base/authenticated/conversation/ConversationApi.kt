@@ -139,5 +139,5 @@ interface ConversationApi {
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 
-    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long): NetworkResponse<Unit>
+    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): NetworkResponse<Unit>
 }

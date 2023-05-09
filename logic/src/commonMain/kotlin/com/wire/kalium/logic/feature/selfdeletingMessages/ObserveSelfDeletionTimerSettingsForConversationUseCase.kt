@@ -17,14 +17,13 @@
  */
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -51,29 +50,37 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
     override suspend fun invoke(conversationId: ConversationId, includeSelfSettings: Boolean): Flow<SelfDeletionTimer> =
         userConfigRepository.observeTeamSettingsSelfDeletingStatus()
             .flatMapRightWithEither {
+                kaliumLogger.d("KBX ${it.enforcedSelfDeletionTimer}")
                 when (it.enforcedSelfDeletionTimer) {
                     SelfDeletionTimer.Disabled -> flowOf(
                         Either.Right(
                             SelfDeletionTimer.Disabled
                         )
                     )
+
                     is SelfDeletionTimer.Enforced -> flowOf(Either.Right(it.enforcedSelfDeletionTimer))
                     is SelfDeletionTimer.Enabled -> conversationRepository.observeById(conversationId)
-                        .flatMapRightWithEither { conversation ->
+                        .flatMapRight { conversation ->
                             if (conversation.messageTimer != null) {
+                                kaliumLogger.d("KBX timer group ${conversation.messageTimer}")
                                 flowOf(
-                                    Either.Right(
-                                        SelfDeletionTimer.Enforced.ByGroup(
-                                            conversation.messageTimer.toDuration(DurationUnit.MILLISECONDS)
-                                        )
+                                    SelfDeletionTimer.Enforced.ByGroup(
+                                        conversation.messageTimer.toDuration(DurationUnit.MILLISECONDS)
                                     )
                                 )
                             } else if (includeSelfSettings) {
-                                userConfigRepository.observeConversationSelfDeletionTimer(conversationId).mapRight { selfDeletingTimer ->
-                                    selfDeletingTimer.selfDeletionTimer
-                                }
+                                kaliumLogger.d("KBX user")
+                                userConfigRepository.observeConversationSelfDeletionTimer(conversationId)
+                                    .map { selfDeletionStatusEither ->
+                                        selfDeletionStatusEither.fold({
+                                            SelfDeletionTimer.Enabled(ZERO)
+                                        }, { selfDeletionStatus ->
+                                            selfDeletionStatus.selfDeletionTimer
+                                        })
+                                    }
                             } else {
-                                flowOf(Either.Right(SelfDeletionTimer.Enabled(ZERO)))
+                                kaliumLogger.d("KBX enabled")
+                                flowOf(SelfDeletionTimer.Enabled(ZERO))
                             }
                         }
                 }
