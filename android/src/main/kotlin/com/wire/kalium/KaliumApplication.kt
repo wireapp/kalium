@@ -26,6 +26,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ForegroundNotificationDetailsProvider
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
+import com.wire.kalium.android.R
 import java.io.File
 
 class KaliumApplication : Application(), Configuration.Provider {

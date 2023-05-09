@@ -23,43 +23,43 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(previousNonce: String): JsonRawData {
+    override fun getNewAccountRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountResponse(account: JsonRawData) {
+    override fun setAccountResponse(account: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(previousNonce: String): JsonRawData {
+    override fun getNewOrderRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderResponse(order: JsonRawData): NewAcmeOrder {
+    override fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(url: String, previousNonce: String): JsonRawData {
+    override fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+    override fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(request: DpopTokenRequest): DpopToken {
+    override fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken {
         TODO("Not yet implemented")
     }
 
-    override fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData {
+    override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData {
+    override fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newChallengeResponse(challenge: JsonRawData) {
+    override fun setChallengeResponse(challenge: JsonRawData) {
         TODO("Not yet implemented")
     }
 

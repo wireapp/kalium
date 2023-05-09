@@ -33,7 +33,8 @@ fun Project.configureDefaultMultiplatform(
     enableDarwin: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
-    includeNativeInterop: Boolean
+    includeNativeInterop: Boolean,
+    androidNamespaceSuffix: String = this.name
 ) {
     val kotlinExtension = extensions.findByName("kotlin") as? KotlinMultiplatformExtension
     check(kotlinExtension != null) {
@@ -55,7 +56,7 @@ fun Project.configureDefaultMultiplatform(
 
     (this as org.gradle.api.plugins.ExtensionAware).extensions
         .configure<com.android.build.gradle.LibraryExtension>("android") {
-            commonAndroidLibConfig(includeNativeInterop)
+            commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
         }
 
     // Add common runner and rules to Android Instrumented Tests
