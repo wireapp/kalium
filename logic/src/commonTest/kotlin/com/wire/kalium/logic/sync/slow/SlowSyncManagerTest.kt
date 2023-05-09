@@ -331,7 +331,7 @@ class SlowSyncManagerTest {
             .withSatisfiedCriteria()
             .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
             .withRecoveringFromFailure()
-            .withNextExponentialDuration(10.seconds)
+            .withNextExponentialDuration(1.seconds)
             .arrange()
 
         advanceUntilIdle()
@@ -365,7 +365,7 @@ class SlowSyncManagerTest {
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
-            withNextExponentialDuration(10.seconds)
+            withNextExponentialDuration(1.seconds)
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {

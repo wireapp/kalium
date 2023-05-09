@@ -156,7 +156,7 @@ class ConversationScope internal constructor(
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
-        get() = UpdateConversationAccessRoleUseCase(conversationRepository)
+        get() = UpdateConversationAccessRoleUseCase(conversationRepository, conversationGroupRepository, syncManager)
 
     val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)

@@ -28,15 +28,24 @@ import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
 import java.net.Proxy
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?
+    proxyCredentials: ProxyCredentialsDTO?,
+    ignoreAllSSLErrors: Boolean
 ): HttpClientEngine = OkHttp.create {
 
     val okHttpClient = OkHttpClient.Builder()
-        .pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+
+    if (ignoreAllSSLErrors) okHttpClient.ignoreAllSSLErrors()
+
+    okHttpClient.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
         .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
         .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
         .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -70,4 +79,22 @@ actual fun defaultHttpEngine(
         preconfigured = client
         webSocketFactory = KaliumWebSocketFactory(client)
     }
+}
+
+fun OkHttpClient.Builder.ignoreAllSSLErrors(): OkHttpClient.Builder {
+    val naiveTrustManager = @Suppress("CustomX509TrustManager")
+    object : X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) = Unit
+        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) = Unit
+    }
+
+    val insecureSocketFactory = SSLContext.getInstance("SSL").apply {
+        val trustAllCerts = arrayOf<TrustManager>(naiveTrustManager)
+        init(null, trustAllCerts, SecureRandom())
+    }.socketFactory
+
+    sslSocketFactory(insecureSocketFactory, naiveTrustManager)
+    hostnameVerifier { _, _ -> true }
+    return this
 }
