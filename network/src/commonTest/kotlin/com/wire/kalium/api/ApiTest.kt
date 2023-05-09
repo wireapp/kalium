@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
@@ -87,20 +88,27 @@ internal abstract class ApiTest {
     protected fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: suspend (HttpRequestData.() -> Unit) = {}
-    ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
+        assertion: suspend (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String> = mutableMapOf()
+    ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
     fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
-        assertion: suspend (HttpRequestData.() -> Unit) = {}
+        assertion: suspend (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>?
     ): AuthenticatedNetworkClient {
+        val head: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
                 content = responseBody,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
+                headers = HeadersImpl(head)
             )
         }
         return AuthenticatedNetworkContainerV0(
@@ -311,6 +319,7 @@ internal abstract class ApiTest {
 
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json.withParameter("charset", "UTF-8"))
+    fun HttpRequestData.assertJsonJose() = assertContentType(ContentType.Application.JoseJson.withParameter("charset", "UTF-8"))
     fun HttpRequestData.assertContentType(contentType: ContentType) =
         assertTrue(
             contentType.match(this.body.contentType ?: ContentType.Any),
