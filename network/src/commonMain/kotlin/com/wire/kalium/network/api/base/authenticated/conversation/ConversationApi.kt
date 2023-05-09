@@ -68,6 +68,11 @@ interface ConversationApi {
         conversationId: ConversationId
     ): NetworkResponse<ConversationMemberAddedResponse>
 
+    suspend fun addService(
+        addServiceRequest: AddServiceRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberAddedResponse>
+
     suspend fun removeMember(
         userId: UserId,
         conversationId: ConversationId
