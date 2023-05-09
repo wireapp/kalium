@@ -189,6 +189,8 @@ interface ConversationRepository {
         conversationId: ConversationId,
         receiptMode: Conversation.ReceiptMode
     ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -366,7 +368,18 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeGetConversationByQualifiedID(conversationID.toDao())
             .wrapStorageRequest()
             // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
-            .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
+            .mapRight {
+//                 val unreadEvents = unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
+//                     when (it.key) {
+//                         UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
+//                         UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
+//                         UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
+//                         UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
+//                         UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
+//                     }
+//                 }
+                conversationMapper.fromDaoModelToDetails(it, null, mapOf())
+            }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
@@ -599,6 +612,7 @@ internal class ConversationDataSource internal constructor(
                             conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                         }
                     }
+
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                 }
@@ -685,6 +699,9 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
+        wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

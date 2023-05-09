@@ -213,4 +213,7 @@ class ConversationScope internal constructor(
         get() = ObserveGuestRoomLinkUseCaseImpl(
             conversationGroupRepository
         )
+
+    val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
+        get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
 }
