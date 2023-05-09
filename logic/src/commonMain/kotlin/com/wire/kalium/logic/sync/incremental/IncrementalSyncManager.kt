@@ -160,7 +160,7 @@ internal class IncrementalSyncManager(
     }
 
     private companion object {
-        val MIN_RETRY_DELAY = 10.seconds
+        val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
         private const val TAG = "IncrementalSyncManager"
     }

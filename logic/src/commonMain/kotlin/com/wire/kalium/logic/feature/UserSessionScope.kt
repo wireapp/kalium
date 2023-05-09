@@ -179,13 +179,13 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
-import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletingMessagesUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -198,7 +198,8 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkSelfDeletingMessagesChangeAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -998,7 +999,7 @@ class UserSessionScope internal constructor(
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs, userId)
 
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
@@ -1180,11 +1181,17 @@ class UserSessionScope internal constructor(
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
-    val markSelfDeletingMessagesAsNotifiedUseCase: MarkSelfDeletingMessagesChangeAsNotifiedUseCase
-        get() = MarkSelfDeletingMessagesChangeAsNotifiedUseCase(userConfigRepository)
+    val markSelfDeletingMessagesAsNotified: MarkSelfDeletionStatusAsNotifiedUseCase
+        get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)
 
-    val observeSelfDeletingMessagesFeatureFlag: ObserveSelfDeletingMessagesUseCase
-        get() = ObserveSelfDeletingMessagesUseCaseImpl(userConfigRepository)
+    val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase
+        get() = ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository)
+
+    val observeTeamSettingsSelfDeletionStatus: ObserveTeamSettingsSelfDeletingStatusUseCase
+        get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)
+
+    val persistNewSelfDeletionStatus: PersistNewSelfDeletionTimerUseCaseImpl
+        get() = PersistNewSelfDeletionTimerUseCaseImpl(userConfigRepository)
 
     val observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
         get() = ObserveGuestRoomLinkFeatureFlagUseCaseImpl(userConfigRepository)
@@ -1203,24 +1210,10 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
-    private val ephemeralMessageDeletionHandler = EphemeralMessageDeletionHandlerImpl(
-        userSessionCoroutineScope = this,
-        messageRepository = messageRepository
-    )
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
-    val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
-        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
-    )
-
-    val team: TeamScope get() = TeamScope(
-        userRepository,
-        teamRepository,
-        conversationRepository,
-        serviceRepository,
-        selfTeamId
-    )
-
-    val service: ServiceScope get() = ServiceScope(
+    val service: ServiceScope
+        get() = ServiceScope(
         serviceRepository
     )
 
@@ -1289,8 +1282,9 @@ class UserSessionScope internal constructor(
         launch {
             conversationsRecoveryManager.invoke()
         }
+
         launch {
-            ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+            messages.ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
         }
     }
 
