@@ -22,11 +22,25 @@ import com.android.build.gradle.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 
+private const val BASE_NAMESPACE = "com.wire.kalium"
+
 fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
     /** NO-OP. Nothing to do here for now **/
 }
 
-fun LibraryExtension.commonAndroidLibConfig(includeNativeInterop: Boolean) {
+/**
+ * @param includeNativeInterop if true, this android library
+ * will have the Android NDK and cmake enabled.
+ * @param namespaceSuffix the suffix added to [BASE_NAMESPACE]
+ * that this Kalium library will use for generating R and BuildConfig classes.
+ * Invalid characters like "-" are replaced with a dot (.).
+ */
+fun LibraryExtension.commonAndroidLibConfig(
+    includeNativeInterop: Boolean,
+    namespaceSuffix: String
+) {
+    val sanitizedSuffix = namespaceSuffix.replace('-','.')
+    namespace = "$BASE_NAMESPACE.$sanitizedSuffix"
     compileSdk = Android.Sdk.compile
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
