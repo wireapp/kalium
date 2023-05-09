@@ -100,7 +100,7 @@ object ListUsersResponseJson {
         validUserInfoProvider(it)
     }
 
-    val v4 = ValidJsonProvider(
+    val v4_withFailedUsers = ValidJsonProvider(
         ListUsersDTO(listOf(USER_3), expectedUsersResponse)
     ) {
         """
@@ -111,6 +111,16 @@ object ListUsersResponseJson {
         |        "id": "${it.usersFailed[0].value}"
         |      }
         |    ],
+        |    "found": ${validUserInfoProvider(it.usersFound)}
+        |}
+        """.trimMargin()
+    }
+
+    val v4 = ValidJsonProvider(
+        ListUsersDTO(listOf(USER_3), expectedUsersResponse)
+    ) {
+        """
+        |{
         |    "found": ${validUserInfoProvider(it.usersFound)}
         |}
         """.trimMargin()

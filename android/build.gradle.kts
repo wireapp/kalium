@@ -24,6 +24,8 @@ plugins {
 
 android {
     setCompileSdkVersion(Android.Sdk.target)
+    namespace = "com.wire.kalium.android"
+
     defaultConfig {
         applicationId = "com.wire.kalium.sample"
         targetSdk = Android.Sdk.target

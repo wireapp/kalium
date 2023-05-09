@@ -268,19 +268,67 @@ internal class ApplicationMessageHandlerImpl(
         conversationId: ConversationId,
         senderUserId: UserId
     ) {
-        if (isSenderVerified(content.messageId, conversationId, senderUserId)) {
-            messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-                (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-                    assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
-                        .onFailure {
-                            logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
-                        }
-                }
-            }
-            messageRepository.markMessageAsDeleted(
-                messageUuid = content.messageId, conversationId = conversationId
+        messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
+            (messageToRemove as? Message.Regular)?.expirationData?.let {
+                handleEphemeralMessageDeletion(
+                    messageToRemove = messageToRemove
+                )
+            } ?: handleRegularMessageDeletion(
+                messageToRemove = messageToRemove,
+                senderUserId = senderUserId
             )
-        } else logger.i(message = "Delete message sender is not verified: $content")
+
+            removeAssetIfExists(messageToRemove)
+        }
+    }
+
+    private suspend fun removeAssetIfExists(messageToRemove: Message) {
+        (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+            assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
+                .onFailure {
+                    logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
+                }
+        }
+    }
+
+    private suspend fun handleRegularMessageDeletion(
+        messageToRemove: Message,
+        senderUserId: UserId
+    ) {
+        if (isSenderVerified(messageToRemove.id, messageToRemove.conversationId, senderUserId)) {
+            messageRepository.markMessageAsDeleted(
+                messageUuid = messageToRemove.id,
+                conversationId = messageToRemove.conversationId
+            )
+        } else {
+            logger.i(message = "Delete message sender is not verified: ${messageToRemove.content}")
+        }
+    }
+
+    /**
+     * in case of ephemeral messages, we could either receive delete signal because the message expired and we want to delete it from
+     * all the clients, or when the sender is waiting for the receiver timer to run out, after that happens
+     * the receiver sends the signal to delete the message permanently
+     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
+     */
+    private suspend fun handleEphemeralMessageDeletion(
+        messageToRemove: Message.Regular
+    ) {
+        if (messageToRemove.isSelfMessage) {
+            messageRepository.deleteMessage(
+                messageUuid = messageToRemove.id,
+                conversationId = messageToRemove.conversationId
+            )
+        } else {
+            val isSelfUserSender = messageToRemove.senderUserId == selfUserId
+
+            if (isSelfUserSender) {
+                messageRepository.deleteMessage(
+                    messageUuid = messageToRemove.id,
+                    conversationId = messageToRemove.conversationId
+                )
+            }
+        }
     }
 
     @Suppress("LongParameterList")

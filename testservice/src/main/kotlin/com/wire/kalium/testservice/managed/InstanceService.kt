@@ -114,7 +114,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         val instancePath = System.getProperty("user.home") +
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
-        val kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
+        val kaliumConfigs = KaliumConfigs(developmentApiEnabled = false)
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
