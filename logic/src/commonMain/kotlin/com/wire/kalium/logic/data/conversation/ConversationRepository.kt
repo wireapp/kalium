@@ -416,7 +416,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.getConversationProtocolInfo(conversationId.toDao()).let {
+            conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {
                 protocolInfoMapper.fromEntity(it)
             }
         }
