@@ -105,6 +105,7 @@ interface AuthenticatedNetworkContainer {
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
+            ignoreAllSSLErrors: Boolean = false
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -130,7 +131,8 @@ interface AuthenticatedNetworkContainer {
 
                 4 -> AuthenticatedNetworkContainerV4(
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    ignoreAllSSLErrors
                 )
 
                 else -> error("Unsupported version: $version")

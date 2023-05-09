@@ -38,60 +38,26 @@ data class AcmeChallenge(
 
 data class NewAcmeAuthz(
     var identifier: String,
-    var wireHttpChallenge: AcmeChallenge?,
-    var wireOidcChallenge: AcmeChallenge?
-)
-
-data class DpopTokenRequest(
-    var accessTokenUrl: String,
-    var backendNonce: String,
-)
-
-data class DpopChallengeRequest(
-    val accessToken: String,
-    val previousNonce: String
-)
-
-data class OidcChallengeRequest(
-    val idToken: String,
-    val previousNonce: String
+    var wireOidcChallenge: AcmeChallenge?,
+    var wireDpopChallenge: AcmeChallenge?
 )
 
 @Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(previousNonce: String): JsonRawData
-    fun newAccountResponse(account: JsonRawData)
-
-    fun newOrderRequest(previousNonce: String): JsonRawData
-
-    fun newOrderResponse(order: JsonRawData): NewAcmeOrder
-    fun newAuthzRequest(
-        url: String,
-        previousNonce: String
-    ): JsonRawData
-
-    fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
-
-    fun createDpopToken(request: DpopTokenRequest): DpopToken
-
-    fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData
-
-    fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData
-
-    fun newChallengeResponse(challenge: JsonRawData)
-    fun checkOrderRequest(
-        orderUrl: String,
-        previousNonce: String
-    ): JsonRawData
-
+    fun getNewAccountRequest(previousNonce: String): JsonRawData
+    fun setAccountResponse(account: JsonRawData)
+    fun getNewOrderRequest(previousNonce: String): JsonRawData
+    fun setOrderResponse(order: JsonRawData): NewAcmeOrder
+    fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
+    fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
+    fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken
+    fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
+    fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
+    fun setChallengeResponse(challenge: JsonRawData)
+    fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
     fun checkOrderResponse(order: JsonRawData)
-    fun finalizeRequest(
-        previousNonce: String
-    ): JsonRawData
-
+    fun finalizeRequest(previousNonce: String): JsonRawData
     fun finalizeResponse(finalize: JsonRawData)
-    fun certificateRequest(
-        previousNonce: String
-    ): JsonRawData
+    fun certificateRequest(previousNonce: String): JsonRawData
 }
