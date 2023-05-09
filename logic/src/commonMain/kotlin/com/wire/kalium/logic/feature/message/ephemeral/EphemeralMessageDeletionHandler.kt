@@ -12,7 +12,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
 interface EphemeralMessageDeletionHandler {
@@ -24,6 +23,8 @@ interface EphemeralMessageDeletionHandler {
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
     userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
@@ -45,29 +46,48 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
                 if (isSelfDeletionOutgoing) return@launch
 
-                ongoingSelfDeletionMessages[message.conversationId to message.id] = Unit
+                addToOutgoingDeletion(message)
             }
 
-            message.expirationData?.let { expirationData ->
-                with(expirationData) {
-                    if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-                        messageRepository.markSelfDeletionStartDate(
-                            conversationId = message.conversationId,
-                            messageUuid = message.id,
-                            deletionStartDate = Clock.System.now()
-                        )
-                    }
+            markDeletionDateAndWait(message)
+            deleteMessage(message)
+        }
+    }
 
-                    delay(timeLeftForDeletion())
+    private suspend fun deleteMessage(message: Message.Regular) {
+        removeFromOutgoingDeletion(message)
+
+        if (message.isSelfMessage) {
+            deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)
+        } else {
+            deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)
+        }
+    }
+
+    private suspend fun removeFromOutgoingDeletion(message: Message.Regular) {
+        ongoingSelfDeletionMessagesMutex.withLock {
+            ongoingSelfDeletionMessages - message.conversationId to message.id
+        }
+    }
+
+    private suspend fun markDeletionDateAndWait(message: Message.Regular) {
+        message.expirationData?.let { expirationData ->
+            with(expirationData) {
+                if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
+                    messageRepository.markSelfDeletionStartDate(
+                        conversationId = message.conversationId,
+                        messageUuid = message.id,
+                        deletionStartDate = kotlinx.datetime.Clock.System.now()
+                    )
                 }
 
-                ongoingSelfDeletionMessagesMutex.withLock {
-                    ongoingSelfDeletionMessages - message.conversationId to message.id
-                }
-
-                messageRepository.deleteMessage(message.id, message.conversationId)
+                delay(timeLeftForDeletion())
             }
         }
+    }
+
+    private fun addToOutgoingDeletion(message: Message.Regular) {
+        ongoingSelfDeletionMessages[message.conversationId to message.id] = Unit
     }
 
     override fun enqueuePendingSelfDeletionMessages() {
