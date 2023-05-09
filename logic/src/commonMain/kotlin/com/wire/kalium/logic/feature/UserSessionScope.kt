@@ -389,7 +389,8 @@ class UserSessionScope internal constructor(
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent
+        userAgent,
+        kaliumConfigs.ignoreAllSSLErrors
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -1185,7 +1186,7 @@ class UserSessionScope internal constructor(
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
-        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, featureConfigRepository, userId)
+        get() = IsAllowedToRegisterMLSClientUseCaseImpl(featureSupport, mlsPublicKeysRepository)
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
