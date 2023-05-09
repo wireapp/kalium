@@ -21,8 +21,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.functional.Either
@@ -141,8 +141,8 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
-        val observeSelfDeletionStatus: ObserveSelfDeletionTimerForConversationUseCase by lazy {
-            ObserveSelfDeletionTimerForConversationUseCaseImpl(userConfigRepository)
+        val observeSelfDeletionStatus: ObserveSelfDeletionTimerSettingsForConversationUseCase by lazy {
+            ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository)
         }
 
         fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) = apply {

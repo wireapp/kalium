@@ -179,8 +179,8 @@ import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerForConversationUseCaseImpl
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
@@ -195,7 +195,8 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkSelfDeletingMessagesChangeAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -1172,16 +1173,16 @@ class UserSessionScope internal constructor(
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
-    val markSelfDeletingMessagesAsNotified: MarkSelfDeletingMessagesChangeAsNotifiedUseCase
-        get() = MarkSelfDeletingMessagesChangeAsNotifiedUseCase(userConfigRepository)
+    val markSelfDeletingMessagesAsNotified: MarkSelfDeletionStatusAsNotifiedUseCase
+        get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)
 
-    val observeSelfDeletingMessages: ObserveSelfDeletionTimerForConversationUseCase
-        get() = ObserveSelfDeletionTimerForConversationUseCaseImpl(userConfigRepository)
+    val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase
+        get() = ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository)
 
-    val observeTeamSettingsSelfDeletionStatusFlag: ObserveTeamSettingsSelfDeletingStatusUseCase
+    val observeTeamSettingsSelfDeletionStatus: ObserveTeamSettingsSelfDeletingStatusUseCase
         get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)
 
-    val persistNewSelfDeletingStatusUseCase: PersistNewSelfDeletionTimerUseCaseImpl
+    val persistNewSelfDeletionStatus: PersistNewSelfDeletionTimerUseCaseImpl
         get() = PersistNewSelfDeletionTimerUseCaseImpl(userConfigRepository)
 
     val observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase

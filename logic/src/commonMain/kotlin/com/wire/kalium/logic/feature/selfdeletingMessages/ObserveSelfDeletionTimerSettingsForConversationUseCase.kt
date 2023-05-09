@@ -32,16 +32,16 @@ import kotlin.time.Duration.Companion.ZERO
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
  */
-interface ObserveSelfDeletionTimerForConversationUseCase {
+interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
     /**
      * @param conversationId the conversation id to observe
      */
     suspend operator fun invoke(conversationId: ConversationId): Flow<SelfDeletionTimer>
 }
 
-class ObserveSelfDeletionTimerForConversationUseCaseImpl internal constructor(
+class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
-) : ObserveSelfDeletionTimerForConversationUseCase {
+) : ObserveSelfDeletionTimerSettingsForConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId): Flow<SelfDeletionTimer> =
         userConfigRepository.observeTeamSettingsSelfDeletingStatus()
             .combine(userConfigRepository.observeConversationSelfDeletionTimer(conversationId))
