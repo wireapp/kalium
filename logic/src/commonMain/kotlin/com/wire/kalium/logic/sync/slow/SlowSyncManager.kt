@@ -149,7 +149,7 @@ internal class SlowSyncManager(
     }
 
     private companion object {
-        val MIN_RETRY_DELAY = 10.seconds
+        val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
     }
