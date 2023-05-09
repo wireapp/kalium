@@ -32,7 +32,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
-
 internal open class E2EIApiV4 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : E2EIApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
