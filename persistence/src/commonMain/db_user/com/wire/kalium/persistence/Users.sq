@@ -3,8 +3,8 @@ import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import com.wire.kalium.persistence.dao.UserTypeEntity;
-import kotlin.Int;
 import kotlin.Boolean;
+import kotlin.Int;
 
 CREATE TABLE User (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -150,5 +150,5 @@ UPDATE User SET name = ? WHERE qualified_id = ?;
 
 selectUsersWithoutMetadata:
 SELECT * FROM User AS user
-WHERE connection_status = "ACCEPTED"
+WHERE connection_status = "ACCEPTED" AND deleted = 0
 AND (name IS NULL OR name = '' OR handle IS NULL OR handle = '');
