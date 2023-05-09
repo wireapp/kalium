@@ -118,35 +118,26 @@ WITH self_domain_cte AS (
     SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
 )
 -- update corrupt conversations read dates
-UPDATE Conversation
-SET last_read_date = (
-        SELECT
-            CASE WHEN Conversation.last_read_date > c2.last_read_date
-                THEN Conversation.last_read_date
-                ELSE c2.last_read_date
-            END
-        FROM Conversation AS c2
-        WHERE Conversation.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
-    ),
-last_modified_date = (
-        SELECT
-            CASE WHEN Conversation.last_modified_date > c2.last_modified_date
-                THEN Conversation.last_modified_date
-                ELSE c2.last_modified_date
-            END
-        FROM Conversation AS c2
-        WHERE Conversation.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
-    ),
-last_notified_date = (
-        SELECT
-            CASE WHEN Conversation.last_notified_date > c2.last_notified_date
-                THEN Conversation.last_notified_date
-                ELSE c2.last_notified_date
-            END
-        FROM Conversation AS c2
-        WHERE Conversation.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
-    )
-WHERE Conversation.qualified_id NOT LIKE '%@';
+UPDATE Conversation AS c1
+SET last_read_date =
+    CASE WHEN c1.last_read_date > c2.last_read_date
+        THEN c1.last_read_date
+        ELSE c2.last_read_date
+    END,
+    last_modified_date =
+    CASE WHEN c1.last_modified_date > c2.last_modified_date
+        THEN c1.last_modified_date
+        ELSE c2.last_modified_date
+    END,
+    last_notified_date =
+    CASE WHEN c1.last_notified_date > c2.last_notified_date
+        THEN c1.last_notified_date
+        ELSE c2.last_notified_date
+    END
+FROM Conversation AS c2
+WHERE c1.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
+  AND c2.qualified_id LIKE '%@';
+
 
 -- delete corrupt conversations that remain after the fix
 DELETE FROM User WHERE qualified_id LIKE '%@';
