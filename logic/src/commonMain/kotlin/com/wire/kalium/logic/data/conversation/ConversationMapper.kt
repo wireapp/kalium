@@ -108,7 +108,8 @@ internal class ConversationMapperImpl(
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
-        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
+        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
+        messageTimer = apiModel.messageTimer
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -134,7 +135,8 @@ internal class ConversationMapperImpl(
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
-            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer
         )
     }
 
@@ -155,7 +157,8 @@ internal class ConversationMapperImpl(
             access = access.map { it.toDAO() },
             accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
-            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer
         )
     }
 
@@ -343,7 +346,8 @@ internal class ConversationMapperImpl(
             lastReadDate = conversation.lastReadDate.toInstant(),
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
-            receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)
+            receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
+            messageTimer = messageTimer
         )
     }
 

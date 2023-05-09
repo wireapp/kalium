@@ -252,7 +252,8 @@ internal class ConnectionDataSource(
                         lastReadDate = connection.lastUpdate.toInstant(),
                         access = emptyList(),
                         accessRole = emptyList(),
-                        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+                        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+                        messageTimer = null
                     )
                 )
             }

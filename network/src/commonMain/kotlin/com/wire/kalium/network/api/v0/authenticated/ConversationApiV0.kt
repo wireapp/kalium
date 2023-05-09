@@ -37,6 +37,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
@@ -330,6 +331,12 @@ internal open class ConversationApiV0 internal constructor(
         httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
     }
 
+    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MESSAGE_TIMER") {
+            setBody(ConversationMessageTimerDTO(messageTimer))
+        }
+    }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -343,6 +350,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_JOIN = "join"
         const val PATH_RECEIPT_MODE = "receipt-mode"
         const val PATH_CODE = "code"
+        const val PATH_MESSAGE_TIMER = "message-timer"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"

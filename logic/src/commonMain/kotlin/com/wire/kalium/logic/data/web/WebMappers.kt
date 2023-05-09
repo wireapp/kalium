@@ -149,7 +149,8 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             lastModifiedDate = lastEventTime,
             lastNotificationDate = lastEventTime,
             creatorId = creator,
-            receiptMode = fromScalaReceiptMode(receiptMode)
+            receiptMode = fromScalaReceiptMode(receiptMode),
+            messageTimer = messageTimer
         )
     }
 }

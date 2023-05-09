@@ -251,6 +251,8 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -964,6 +966,12 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage
         )
 
+    private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
+        get() = ConversationMessageTimerEventHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO,
+            persistMessage = persistMessage
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -974,7 +982,8 @@ class UserSessionScope internal constructor(
             memberChangeHandler,
             mlsWelcomeHandler,
             renamedConversationHandler,
-            receiptModeUpdateEventHandler
+            receiptModeUpdateEventHandler,
+            conversationMessageTimerEventHandler
         )
     }
 
@@ -1178,7 +1187,7 @@ class UserSessionScope internal constructor(
         get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)
 
     val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase
-        get() = ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository)
+        get() = ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository)
 
     val observeTeamSettingsSelfDeletionStatus: ObserveTeamSettingsSelfDeletingStatusUseCase
         get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)

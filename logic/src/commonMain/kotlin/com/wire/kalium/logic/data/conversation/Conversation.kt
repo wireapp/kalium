@@ -47,6 +47,7 @@ data class Conversation(
     val accessRole: List<AccessRole>,
     val creatorId: String?,
     val receiptMode: ReceiptMode,
+    val messageTimer: Long?
 ) {
 
     companion object {
@@ -270,7 +271,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             access = access,
             accessRole = accessRole,
             creatorId = null,
-            receiptMode = Conversation.ReceiptMode.DISABLED
+            receiptMode = Conversation.ReceiptMode.DISABLED,
+            messageTimer = null
         )
     )
 }

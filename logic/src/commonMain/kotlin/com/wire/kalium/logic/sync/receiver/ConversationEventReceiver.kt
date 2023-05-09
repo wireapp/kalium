@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
@@ -44,6 +45,7 @@ internal class ConversationEventReceiverImpl(
     private val mlsWelcomeHandler: MLSWelcomeEventHandler,
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler,
+    private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -58,6 +60,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.RenamedConversation -> renamedConversationHandler.handle(event)
             is Event.Conversation.ConversationReceiptMode -> receiptModeUpdateEventHandler.handle(event)
             is Event.Conversation.AccessUpdate -> TODO()
+            is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
         }
     }
 }
