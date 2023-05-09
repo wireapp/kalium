@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestMessage
@@ -15,7 +14,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +21,6 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -161,9 +158,9 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
 
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.id), eq(oneSecondEphemeralMessage.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
                 .wasInvoked(exactly = once)
         }
 
@@ -195,9 +192,9 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration - 1.milliseconds)
 
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.id), eq(oneSecondEphemeralMessage.conversationId))
                 .wasNotInvoked()
         }
 
@@ -240,9 +237,9 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(oneOf("1", "2", "3", "4"), eq(oneSecondEphemeralMessage.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))
                 .wasInvoked(Times(4))
         }
 
@@ -263,7 +260,8 @@ class EphemeralMessageDeletionHandlerTest {
                 expirationData = Message.ExpirationData(
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                )
+                ),
+                isSelfMessage = true
             )
 
             val threeSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -303,30 +301,30 @@ class EphemeralMessageDeletionHandlerTest {
             // then
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(oneSecondEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(twoSecondEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsSender)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsSender::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(threeSecondsEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))
                 .wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(eq(fourSecondsEphemeralMessage.id), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))
                 .wasInvoked(once)
         }
 
@@ -370,11 +368,14 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(1.seconds + 500.milliseconds)
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::deleteMessage)
-                .with(oneOf("1", "2"), eq(TestMessage.TEXT_MESSAGE.conversationId))
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("1", "2"))
                 .wasInvoked(Times(pendingMessagesToDeletePastTheTime.size))
-
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsSender)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsSender::invoke)
+                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("3", "4"))
+                .wasNotInvoked()
         }
 
     private fun TestScope.advanceTimeBy(duration: Duration) = advanceTimeBy(duration.inWholeMilliseconds)
@@ -385,6 +386,12 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
 
     @Mock
     val messageRepository = mock(classOf<MessageRepository>())
+
+    @Mock
+    val deleteEphemeralMessageForSelfUserAsReceiver = mock(classOf<DeleteEphemeralMessageForSelfUserAsReceiverUseCase>())
+
+    @Mock
+    val deleteEphemeralMessageForSelfUserAsSender = mock(classOf<DeleteEphemeralMessageForSelfUserAsSenderUseCase>())
 
     fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
         given(messageRepository)
@@ -405,6 +412,14 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
     }
 
     fun withDeletingMessage(): Arrangement {
+        given(deleteEphemeralMessageForSelfUserAsReceiver)
+            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+            .whenInvokedWith(any(), any())
+            .then { _, _ -> Either.Right(Unit) }
+        given(deleteEphemeralMessageForSelfUserAsSender)
+            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+            .whenInvokedWith(any(), any())
+            .then { _, _ -> Either.Right(Unit) }
         given(messageRepository)
             .suspendFunction(messageRepository::deleteMessage)
             .whenInvokedWith(any(), any())
@@ -422,6 +437,11 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
         return this
     }
 
-    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(messageRepository, dispatcher, coroutineScope)
-
+    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(
+        messageRepository,
+        dispatcher,
+        deleteEphemeralMessageForSelfUserAsReceiver,
+        deleteEphemeralMessageForSelfUserAsSender,
+        coroutineScope
+    )
 }

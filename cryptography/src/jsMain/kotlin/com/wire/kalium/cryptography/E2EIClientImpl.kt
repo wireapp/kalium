@@ -23,82 +23,63 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun newAccountRequest(
-        directory: AcmeDirectory,
-        previousNonce: String
-    ): JsonRawData {
+    override fun getNewAccountRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderRequest(order: AcmeOrderRequest): JsonRawData {
+    override fun setAccountResponse(account: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun newOrderResponse(order: JsonRawData): NewAcmeOrder {
+    override fun getNewOrderRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzRequest(
-        url: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
         TODO("Not yet implemented")
     }
 
-    override fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+    override fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(request: DpopTokenRequest): DpopToken {
+    override fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         TODO("Not yet implemented")
     }
 
-    override fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData {
+    override fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken {
         TODO("Not yet implemented")
     }
 
-    override fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData {
+    override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun newChallengeResponse(challenge: JsonRawData) {
+    override fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(
-        orderUrl: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun setChallengeResponse(challenge: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderResponse(order: JsonRawData): AcmeOrder {
+    override fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(
-        order: AcmeOrder,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun checkOrderResponse(order: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeResponse(finalize: JsonRawData): AcmeFinalize {
+    override fun finalizeRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(
-        finalize: AcmeFinalize,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData {
+    override fun finalizeResponse(finalize: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun certificateResponse(certificateChain: String): List<String> {
+    override fun certificateRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 }
