@@ -77,7 +77,7 @@ class InstanceService(
     private val maximumRuntime: Duration = Duration.ofMinutes(configuration.getInstanceMaximumRuntimeInMinutes())
     private val deleteLocalFilesTimeoutInMinutes: Duration = Duration.ofMinutes(2)
     private val cleanupPeriod: Duration = Duration.ofMinutes(configuration.getInstanceCleanupPeriodInMinutes())
-    private var cleanupFuture: ScheduledFuture<*>? = null
+    private var cleanupTask: ScheduledFuture<*>? = null
 
     override fun start() {
         log.info("Instance service started.")
@@ -95,7 +95,7 @@ class InstanceService(
             }
         )
 
-        cleanupFuture = cleanupPool.scheduleAtFixedRate({
+        cleanupTask = cleanupPool.scheduleAtFixedRate({
             log.info("Stop instances that exist longer than ${maximumRuntime.toMinutes()} minutes")
             instances.forEach { instance ->
                 if (System.currentTimeMillis() - instance.value.startTime > maximumRuntime.toMillis()) {
@@ -114,7 +114,7 @@ class InstanceService(
         }
         log.info("Instance service stopped.")
         log.info("Run cleanup to delete files...")
-        cleanupFuture?.cancel(true)
+        cleanupTask?.cancel(true)
         log.info("Cleanup done.")
     }
 
