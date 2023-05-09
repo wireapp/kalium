@@ -53,7 +53,7 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
                 }, { teamSettingsStatus ->
                     conversationSelfDeletionTimer.fold({
                         kaliumLogger.e("There was an error when fetching conversation self deletion timer")
-                        SelfDeletionTimer.Enabled(ZERO)
+                        teamSettingsStatus.enforcedSelfDeletionTimer
                     }, { conversationTimer ->
                         val teamSettingsTimer = teamSettingsStatus.enforcedSelfDeletionTimer
                         if (teamSettingsTimer.isDisabled || teamSettingsTimer.isEnforced) {
