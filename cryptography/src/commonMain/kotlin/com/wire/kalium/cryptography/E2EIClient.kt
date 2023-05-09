@@ -18,8 +18,6 @@
 package com.wire.kalium.cryptography
 
 typealias JsonRawData = ByteArray
-typealias AcmeAccount = ByteArray
-typealias AcmeOrder = ByteArray
 typealias DpopToken = String
 
 data class AcmeDirectory(
@@ -40,95 +38,26 @@ data class AcmeChallenge(
 
 data class NewAcmeAuthz(
     var identifier: String,
-    var wireHttpChallenge: AcmeChallenge?,
-    var wireOidcChallenge: AcmeChallenge?
-)
-
-data class AcmeFinalize(
-    var delegate: JsonRawData,
-    var certificateUrl: String
-)
-
-data class AcmeOrderRequest(
-    var displayName: String,
-    var domain: String,
-    var clientId: String,
-    var handle: String,
-    var expiryDays: UInt,
-    var directory: AcmeDirectory,
-    var account: AcmeAccount,
-    var previousNonce: String
-)
-
-data class DpopTokenRequest(
-    var accessTokenUrl: String,
-    var userId: String,
-    var clientId: ULong,
-    var domain: String,
-    var clientIdChallenge: AcmeChallenge,
-    var backendNonce: String,
-    var expiryDays: UInt
-)
-
-data class DpopChallengeRequest(
-    val accessToken: String,
-    val dpopChallenge: AcmeChallenge,
-    val account: AcmeAccount,
-    val previousNonce: String
-)
-
-data class OidcChallengeRequest(
-    val idToken: String,
-    val oidcChallenge: AcmeChallenge,
-    val account: AcmeAccount,
-    val previousNonce: String
+    var wireOidcChallenge: AcmeChallenge?,
+    var wireDpopChallenge: AcmeChallenge?
 )
 
 @Suppress("TooManyFunctions")
 interface E2EIClient {
     fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun newAccountRequest(
-        directory: AcmeDirectory,
-        previousNonce: String
-    ): JsonRawData
-
-    fun newOrderRequest(order: AcmeOrderRequest): JsonRawData
-
-    fun newOrderResponse(order: JsonRawData): NewAcmeOrder
-    fun newAuthzRequest(
-        url: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
-
-    fun newAuthzResponse(authz: JsonRawData): NewAcmeAuthz
-
-    fun createDpopToken(request: DpopTokenRequest): DpopToken
-
-    fun newDpopChallengeRequest(request: DpopChallengeRequest): JsonRawData
-
-    fun newOidcChallengeRequest(request: OidcChallengeRequest): JsonRawData
-
-    fun newChallengeResponse(challenge: JsonRawData)
-    fun checkOrderRequest(
-        orderUrl: String,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
-
-    fun checkOrderResponse(order: JsonRawData): AcmeOrder
-    fun finalizeRequest(
-        order: AcmeOrder,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
-
-    fun finalizeResponse(finalize: JsonRawData): AcmeFinalize
-    fun certificateRequest(
-        finalize: AcmeFinalize,
-        account: AcmeAccount,
-        previousNonce: String
-    ): JsonRawData
-
-    fun certificateResponse(certificateChain: String): List<String>
+    fun getNewAccountRequest(previousNonce: String): JsonRawData
+    fun setAccountResponse(account: JsonRawData)
+    fun getNewOrderRequest(previousNonce: String): JsonRawData
+    fun setOrderResponse(order: JsonRawData): NewAcmeOrder
+    fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
+    fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
+    fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken
+    fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
+    fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
+    fun setChallengeResponse(challenge: JsonRawData)
+    fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
+    fun checkOrderResponse(order: JsonRawData)
+    fun finalizeRequest(previousNonce: String): JsonRawData
+    fun finalizeResponse(finalize: JsonRawData)
+    fun certificateRequest(previousNonce: String): JsonRawData
 }

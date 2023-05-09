@@ -1,6 +1,19 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
+import kotlin.collections.List;
 
 DROP VIEW IF EXISTS MessageDetailsView;
+
+CREATE TABLE MessageRecipientFailure (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      recipient_failure_list TEXT AS List<QualifiedIDEntity> NOT NULL, -- list of user ids that have failed to receive the message
+      recipient_failure_type TEXT AS RecipientFailureTypeEntity NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
+);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -14,6 +27,8 @@ Message.status AS status,
 Message.last_edit_date AS lastEditTimestamp,
 Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
+Message.expire_after_millis AS expireAfterMillis,
+Message.self_deletion_start_date AS selfDeletionStartDate,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -100,7 +115,9 @@ QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
-ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
+FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -111,6 +128,8 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
 -- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
@@ -121,4 +140,3 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull

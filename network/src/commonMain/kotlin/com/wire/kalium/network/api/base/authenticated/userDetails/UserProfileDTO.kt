@@ -46,6 +46,6 @@ data class UserProfileDTO(
 
 @Serializable
 data class ListUsersDTO(
-    @SerialName("failed") val usersFailed: List<UserId>,
+    @SerialName("failed") val usersFailed: List<UserId> = emptyList(),
     @SerialName("found") val usersFound: List<UserProfileDTO>
 )
