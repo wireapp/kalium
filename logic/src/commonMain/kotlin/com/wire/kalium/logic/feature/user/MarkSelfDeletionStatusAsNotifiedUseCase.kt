@@ -26,9 +26,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 interface MarkSelfDeletionStatusAsNotifiedUseCase {
     operator fun invoke()
 }
+
 class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-): MarkSelfDeletionStatusAsNotifiedUseCase {
+) : MarkSelfDeletionStatusAsNotifiedUseCase {
     override operator fun invoke() {
         userConfigRepository.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
     }
