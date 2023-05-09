@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Confirmation
@@ -273,7 +272,7 @@ class ProtoContentMapperTest {
     }
 
     @Test
-    fun givenExpirableAssetContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+    fun givenExpiringAssetContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val assetName = "Mocked-Asset.bin"
         val mockedAsset = assetName.toByteArray()
         val defaultRemoteData = AssetContent.RemoteData(

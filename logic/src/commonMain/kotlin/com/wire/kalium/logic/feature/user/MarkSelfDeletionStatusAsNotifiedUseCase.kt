@@ -15,6 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.feature.user
 
-data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)
+import com.wire.kalium.logic.configuration.UserConfigRepository
+
+/**
+ * Mark the Self Deleting Messages team setting change as notified on the app.
+ * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
+ */
+interface MarkSelfDeletionStatusAsNotifiedUseCase {
+    operator fun invoke()
+}
+
+class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : MarkSelfDeletionStatusAsNotifiedUseCase {
+    override operator fun invoke() {
+        userConfigRepository.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
+    }
+}
