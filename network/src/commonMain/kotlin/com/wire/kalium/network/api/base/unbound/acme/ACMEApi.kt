@@ -52,7 +52,7 @@ interface ACMEApi {
 
     suspend fun getAuthzChallenge(url: String): NetworkResponse<ACMEResponse>
 
-    suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectoriesResponse>
+    suspend fun getAuthzDirectories(): NetworkResponse<AuthzDirectoriesResponse>
 }
 
 class ACMEApiImpl internal constructor(
@@ -68,7 +68,7 @@ class ACMEApiImpl internal constructor(
             handleACMENonceResponse(httpResponse)
         }
 
-    override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectoriesResponse> = wrapKaliumResponse {
+    override suspend fun getAuthzDirectories(): NetworkResponse<AuthzDirectoriesResponse> = wrapKaliumResponse {
         httpClient.get("$BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
     }
 
