@@ -21,6 +21,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class AcmeDirectoriesResponse(
     val newNonce: String,
@@ -30,6 +31,7 @@ data class AcmeDirectoriesResponse(
     val keyChange: String
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class AuthzDirectoriesResponse @OptIn(ExperimentalSerializationApi::class) constructor(
     @JsonNames("issuer")
@@ -46,17 +48,19 @@ data class AuthzDirectoriesResponse @OptIn(ExperimentalSerializationApi::class) 
     val deviceAuthorizationEndpoint: String,
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class ACMEResponse(
     val nonce: String,
     val response: ByteArray
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class ChallengeResponse(
-    val type:String,
-    val url:String,
-    val status:String,
-    val token:String,
-    val nonce:String = ""
+    val type: String,
+    val url: String,
+    val status: String,
+    val token: String,
+    val nonce: String = ""
 )

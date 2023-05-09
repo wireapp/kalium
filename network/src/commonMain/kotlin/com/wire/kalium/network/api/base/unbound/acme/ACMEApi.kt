@@ -57,73 +57,63 @@ interface ACMEApi {
 
 class ACMEApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
-) : ACMEApi{
+) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
     override suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("${BASE_URL}:${ACME_PORT}/${PATH_ACME_DIRECTORIES}")
+        httpClient.get("$BASE_URL:$ACME_PORT/$PATH_ACME_DIRECTORIES")
     }
 
-    override suspend fun getACMENonce(url: String): NetworkResponse<String> = httpClient.prepareHead(url).execute { httpResponse ->
-        handleACMENonceResponse(httpResponse)
-    }
+    override suspend fun getACMENonce(url: String): NetworkResponse<String> =
+        httpClient.prepareHead(url).execute { httpResponse ->
+            handleACMENonceResponse(httpResponse)
+        }
 
     override suspend fun getAuhzDirectories(): NetworkResponse<AuthzDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("${BASE_URL}:${DEX_PORT}/${PATH_DEX_CONFIGURATION}")
+        httpClient.get("$BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
     }
 
-    override suspend fun getAuthzChallenge(
-        url: String
-    ): NetworkResponse<ACMEResponse> = sendACMERequest(url)
+    override suspend fun getAuthzChallenge(url: String): NetworkResponse<ACMEResponse> = sendACMERequest(url)
 
-    override suspend fun getNewAccount(
-        url: String, body: ByteArray
-    ): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
+    override suspend fun getNewAccount(url: String, body: ByteArray): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
 
-    override suspend fun getNewOrder(
-        url: String, body: ByteArray
-    ): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
+    override suspend fun getNewOrder(url: String, body: ByteArray): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
 
-    override suspend fun dpopChallenge(
-        url: String, body: ByteArray
-    ): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
+    override suspend fun dpopChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
 
-    override suspend fun oidcChallenge(
-        url: String, body: ByteArray
-    ): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
+    override suspend fun oidcChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
 
-    private suspend fun handleACMENonceResponse(
-        httpResponse: HttpResponse
-    ): NetworkResponse<String> = if (httpResponse.status.isSuccess()) httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
-        NetworkResponse.Success(nonce, httpResponse)
-    } ?: run {
-        CustomErrors.MISSING_NONCE
-    }
-    else {
-        handleUnsuccessfulResponse(httpResponse)
-    }
-
-    override suspend fun sendACMERequest(url: String, body: ByteArray?): NetworkResponse<ACMEResponse> = httpClient.preparePost(url) {
-        contentType(ContentType.Application.JoseJson)
-        body?.let { setBody(body) }
-    }.execute { httpResponse ->
-        handleACMERequestResponse(httpResponse)
-    }
-
-    private suspend fun handleACMERequestResponse(
-        httpResponse: HttpResponse
-    ): NetworkResponse<ACMEResponse> = if (httpResponse.status.isSuccess()) {
-        httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
-            NetworkResponse.Success(
-                ACMEResponse(
-                    nonce, response = httpResponse.body()
-                ), httpResponse
-            )
+    private suspend fun handleACMENonceResponse(httpResponse: HttpResponse): NetworkResponse<String> =
+        if (httpResponse.status.isSuccess()) httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
+            NetworkResponse.Success(nonce, httpResponse)
         } ?: run {
             CustomErrors.MISSING_NONCE
         }
-    } else {
-        handleUnsuccessfulResponse(httpResponse)
-    }
+        else {
+            handleUnsuccessfulResponse(httpResponse)
+        }
+
+    override suspend fun sendACMERequest(url: String, body: ByteArray?): NetworkResponse<ACMEResponse> =
+        httpClient.preparePost(url) {
+            contentType(ContentType.Application.JoseJson)
+            body?.let { setBody(body) }
+        }.execute { httpResponse ->
+            handleACMERequestResponse(httpResponse)
+        }
+
+    private suspend fun handleACMERequestResponse(httpResponse: HttpResponse): NetworkResponse<ACMEResponse> =
+        if (httpResponse.status.isSuccess()) {
+            httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
+                NetworkResponse.Success(
+                    ACMEResponse(
+                        nonce, response = httpResponse.body()
+                    ), httpResponse
+                )
+            } ?: run {
+                CustomErrors.MISSING_NONCE
+            }
+        } else {
+            handleUnsuccessfulResponse(httpResponse)
+        }
 
     private suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
         wrapKaliumResponse<ChallengeResponse> {

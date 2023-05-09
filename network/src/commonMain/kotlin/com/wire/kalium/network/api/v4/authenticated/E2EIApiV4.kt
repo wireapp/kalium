@@ -25,16 +25,20 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.request.post
+import io.ktor.client.request.prepareHead
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+
 
 internal open class E2EIApiV4 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : E2EIApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getWireNonce(clientId: String): NetworkResponse<String> =
-        httpClient.prepareHead("${PATH_CLIENTS}/$clientId/${PATH_NONCE}") {
+        httpClient.prepareHead("$PATH_CLIENTS/$clientId/$PATH_NONCE") {
             contentType(ContentType.Application.JoseJson)
         }.execute { httpResponse ->
             handleNonceResponse(httpResponse)
@@ -53,7 +57,7 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     }
 
     override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> = wrapKaliumResponse {
-        httpClient.post("${PATH_CLIENTS}/$clientId/${PATH_ACCESS_TOKEN}") {
+        httpClient.post("$PATH_CLIENTS/$clientId/$PATH_ACCESS_TOKEN") {
             headers.append(DPOP_HEADER_KEY, dpopToken)
         }
     }

@@ -58,7 +58,7 @@ class UnboundNetworkContainerCommon(
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
-    ) : UnboundNetworkContainer,
+) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent, ignoreSSLCertificates) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
