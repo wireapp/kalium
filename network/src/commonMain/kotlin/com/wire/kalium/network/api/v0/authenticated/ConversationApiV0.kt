@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
@@ -146,7 +147,7 @@ internal open class ConversationApiV0 internal constructor(
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_BOTS") {
             setBody(addServiceRequest)
         }.let { response ->
-            handleConversationMemberAddedResponse(response)
+            handleServiceAddedResponse(response)
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
@@ -305,6 +306,20 @@ internal open class ConversationApiV0 internal constructor(
 
             HttpStatusCode.NoContent -> {
                 NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, httpResponse)
+            }
+
+            else -> {
+                wrapKaliumResponse { httpResponse }
+            }
+        }
+
+    private suspend fun handleServiceAddedResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<ConversationMemberAddedResponse> =
+        when (httpResponse.status) {
+            HttpStatusCode.OK -> {
+                wrapKaliumResponse<AddServiceResponse> { httpResponse }
+                    .mapSuccess { ConversationMemberAddedResponse.Changed(it.event) }
             }
 
             else -> {
