@@ -91,7 +91,11 @@ class GlobalKaliumScope internal constructor(
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
-        UnboundNetworkContainerCommon(kaliumConfigs.developmentApiEnabled, userAgent)
+        UnboundNetworkContainerCommon(
+            kaliumConfigs.developmentApiEnabled,
+            userAgent,
+            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls
+        )
     }
 
     internal val serverConfigRepository: ServerConfigRepository
