@@ -34,6 +34,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Suppress("LongMethod", "ComplexMethod")
 fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? {
@@ -150,7 +152,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             lastNotificationDate = lastEventTime,
             creatorId = creator,
             receiptMode = fromScalaReceiptMode(receiptMode),
-            messageTimer = messageTimer
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 }

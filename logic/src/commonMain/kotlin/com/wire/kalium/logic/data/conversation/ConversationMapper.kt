@@ -51,6 +51,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
@@ -136,7 +138,7 @@ internal class ConversationMapperImpl(
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
-            messageTimer = messageTimer
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -158,7 +160,7 @@ internal class ConversationMapperImpl(
             accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
-            messageTimer = messageTimer
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -347,7 +349,7 @@ internal class ConversationMapperImpl(
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
-            messageTimer = messageTimer
+            messageTimer = messageTimer?.inWholeMilliseconds
         )
     }
 

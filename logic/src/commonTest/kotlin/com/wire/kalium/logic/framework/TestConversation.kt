@@ -70,7 +70,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -87,7 +88,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -104,7 +106,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -121,7 +124,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -158,7 +162,8 @@ object TestConversation {
         mutedTime = 0L,
         removedBy = null,
         selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
-        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -175,7 +180,8 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -251,6 +257,7 @@ object TestConversation {
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -284,7 +291,8 @@ object TestConversation {
         mutedTime = 0L,
         removedBy = null,
         selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
-        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     val CONVERSATION = Conversation(
@@ -301,7 +309,8 @@ object TestConversation {
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -324,7 +333,8 @@ object TestConversation {
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         lastReadDate = "2022-03-30T15:36:00.000Z",
         creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null
     )
 
     val LIMITED_CONVERSATION_INFO: LimitedConversationInfo = LimitedConversationInfo("conv_id_value", "name")

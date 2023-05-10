@@ -19,14 +19,17 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -64,7 +67,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
             .arrange()
 
-        val result = observeSelfDeletionMessagesFlag(conversationId)
+        val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
         verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
             .wasInvoked(exactly = once)
@@ -96,7 +99,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
             .arrange()
 
-        val result = observeSelfDeletionMessagesFlag(conversationId)
+        val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
         verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
             .wasInvoked(exactly = once)
@@ -112,7 +115,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val storedTeamSettingsDuration = 7.toDuration(DurationUnit.DAYS)
         val storedTeamSettingsSelfDeletionStatus = TeamSettingsSelfDeletionStatus(
             hasFeatureChanged = null,
-            enforcedSelfDeletionTimer = SelfDeletionTimer.Enforced(storedTeamSettingsDuration)
+            enforcedSelfDeletionTimer = SelfDeletionTimer.Enforced.ByTeam(storedTeamSettingsDuration)
         )
         val conversationDuration = 1.toDuration(DurationUnit.HOURS)
         val storedConversationStatus = ConversationSelfDeletionStatus(
@@ -128,7 +131,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             .withObserveConversationSelfDeletionStatus(storedConversationStatusFlow, conversationId)
             .arrange()
 
-        val result = observeSelfDeletionTimer(conversationId)
+        val result = observeSelfDeletionTimer(conversationId, true)
 
         verify(arrangement.userConfigRepository).invocation { observeTeamSettingsSelfDeletingStatus() }
             .wasInvoked(exactly = once)
@@ -141,8 +144,18 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
+        @Mock
+        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+
         val observeSelfDeletionStatus: ObserveSelfDeletionTimerSettingsForConversationUseCase by lazy {
-            ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository)
+            ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository)
+        }
+
+        init {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeById)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(Either.Right(TestConversation.CONVERSATION)))
         }
 
         fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) = apply {
