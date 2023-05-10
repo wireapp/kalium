@@ -97,6 +97,8 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
+import com.wire.kalium.logic.data.service.ServiceDataSource
+import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -184,6 +186,7 @@ import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
 import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
+import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
@@ -513,7 +516,11 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.teamsApi,
             authenticatedNetworkContainer.userDetailsApi,
             userId,
+            userStorage.database.serviceDAO
         )
+
+    private val serviceRepository: ServiceRepository
+        get() = ServiceDataSource(serviceDAO = userStorage.database.serviceDAO)
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
@@ -1203,6 +1210,11 @@ class UserSessionScope internal constructor(
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
+
+    val service: ServiceScope
+        get() = ServiceScope(
+        serviceRepository
+    )
 
     val calls: CallsScope
         get() = CallsScope(

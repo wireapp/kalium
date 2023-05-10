@@ -36,6 +36,8 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.MigrationDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
+import com.wire.kalium.persistence.dao.ServiceDAO
+import com.wire.kalium.persistence.dao.ServiceDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
@@ -131,7 +133,8 @@ class UserDatabaseBuilder internal constructor(
         UserAdapter = TableMapper.userAdapter,
         MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter,
         MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
-        UnreadEventAdapter = TableMapper.unreadEventAdapter
+        UnreadEventAdapter = TableMapper.unreadEventAdapter,
+        ServiceAdapter = TableMapper.serviceAdapter
     )
 
     init {
@@ -202,6 +205,8 @@ class UserDatabaseBuilder internal constructor(
         get() = MigrationDAOImpl(
             database.migrationQueries, database.messagesQueries, database.unreadEventsQueries, database.conversationsQueries, userId
         )
+
+    val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
 
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist

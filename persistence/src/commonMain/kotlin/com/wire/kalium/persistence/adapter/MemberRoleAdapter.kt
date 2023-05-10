@@ -21,7 +21,7 @@ package com.wire.kalium.persistence.adapter
 import app.cash.sqldelight.ColumnAdapter
 import com.wire.kalium.persistence.dao.Member
 
-internal class MemberRoleAdapter : ColumnAdapter<Member.Role, String> {
+internal object MemberRoleAdapter : ColumnAdapter<Member.Role, String> {
     override fun decode(databaseValue: String): Member.Role = when (databaseValue) {
         ADMIN -> Member.Role.Admin
         MEMBER -> Member.Role.Member
@@ -34,8 +34,6 @@ internal class MemberRoleAdapter : ColumnAdapter<Member.Role, String> {
         is Member.Role.Unknown -> value.name
     }
 
-    private companion object {
-        const val ADMIN = "wire_admin"
-        const val MEMBER = "wire_member"
-    }
+    private const val ADMIN = "wire_admin"
+    private const val MEMBER = "wire_member"
 }
