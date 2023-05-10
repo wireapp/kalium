@@ -33,4 +33,15 @@ object CustomErrors {
                 )
             )
         )
+
+    val MISSING_NONCE =
+        NetworkResponse.Error(
+            KaliumException.ServerError(
+                ErrorResponse(
+                    500,
+                    "no nonce found",
+                    NetworkErrorLabel.KaliumCustom.MISSING_NONCE
+                )
+            )
+        )
 }
