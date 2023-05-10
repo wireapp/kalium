@@ -138,12 +138,6 @@ FROM Conversation AS c2
 WHERE c1.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
   AND c2.qualified_id LIKE '%@';
 
-
--- delete corrupt conversations that remain after the fix
-DELETE FROM User WHERE qualified_id LIKE '%@';
--- delete corrupt conversations that remain after the fix
-DELETE FROM Conversation WHERE qualified_id LIKE '%@';
-
 DELETE FROM MessageMention WHERE conversation_id LIKE '%@';
 DELETE FROM MessageTextContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageRestrictedAssetContent WHERE conversation_id LIKE '%@';
@@ -156,3 +150,8 @@ DELETE FROM MessageConversationChangedContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageNewConversationReceiptModeContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageConversationReceiptModeChangedContent WHERE conversation_id LIKE '%@';
 DELETE FROM Message WHERE conversation_id LIKE '%@' OR sender_user_id LIKE '%@';
+
+-- delete corrupt conversations that remain after the fix
+DELETE FROM User WHERE qualified_id LIKE '%@';
+-- delete corrupt conversations that remain after the fix
+DELETE FROM Conversation WHERE qualified_id LIKE '%@';
