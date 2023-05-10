@@ -199,4 +199,4 @@ LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = Memb
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id;
