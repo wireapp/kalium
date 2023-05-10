@@ -47,6 +47,7 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
@@ -143,7 +144,7 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun addService(
         addServiceRequest: AddServiceRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+    ): NetworkResponse<ServiceAddedResponse> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_BOTS") {
             setBody(addServiceRequest)
         }.let { response ->
@@ -315,11 +316,15 @@ internal open class ConversationApiV0 internal constructor(
 
     private suspend fun handleServiceAddedResponse(
         httpResponse: HttpResponse
-    ): NetworkResponse<ConversationMemberAddedResponse> =
+    ): NetworkResponse<ServiceAddedResponse> =
         when (httpResponse.status) {
             HttpStatusCode.OK -> {
                 wrapKaliumResponse<AddServiceResponse> { httpResponse }
-                    .mapSuccess { ConversationMemberAddedResponse.Changed(it.event) }
+                    .mapSuccess { ServiceAddedResponse.Changed(it.event) }
+            }
+
+            HttpStatusCode.NoContent -> {
+                NetworkResponse.Success(ServiceAddedResponse.Unchanged, httpResponse)
             }
 
             else -> {

@@ -26,3 +26,12 @@ data class AddServiceResponse(
     @SerialName("event")
     val event: EventContentDTO.Conversation.MemberJoinDTO
 )
+
+sealed class ServiceAddedResponse {
+    /**
+     * The service requested to be added were already members
+     */
+    object Unchanged : ServiceAddedResponse()
+
+    data class Changed(val event: EventContentDTO.Conversation.MemberJoinDTO) : ServiceAddedResponse()
+}
