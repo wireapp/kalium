@@ -40,7 +40,7 @@ FROM User
 JOIN Member ON Member.user = User.qualified_id AND Member.conversation = :conversation
 WHERE User.bot_service = :id;
 
-searchServices:
+getServicesByName:
 SELECT
     Service.id,
     Service.name,
