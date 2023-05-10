@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.service
 
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.persistence.dao.BotIdEntity
 
 data class ServiceDetails(
     val id: ServiceId,
@@ -34,6 +33,4 @@ data class ServiceDetails(
 data class ServiceId(
     val id: String,
     val provider: String
-) {
-    fun toDao(): BotIdEntity = BotIdEntity(id = id, provider = provider)
-}
+)

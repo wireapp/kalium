@@ -44,7 +44,7 @@ internal class ServiceDataSource internal constructor(
 
     override suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?> =
         wrapStorageNullableRequest {
-            serviceDAO.byId(id = serviceId.toDao())
+            serviceDAO.byId(id = serviceMapper.fromModelToDao(serviceId = serviceId))
                 ?.let { serviceEntity ->
                     serviceMapper.fromDaoToModel(service = serviceEntity)
                 }
@@ -55,7 +55,7 @@ internal class ServiceDataSource internal constructor(
         conversationId: ConversationId
     ): Flow<QualifiedID?> =
         serviceDAO.observeIsServiceMember(
-            id = serviceId.toDao(),
+            id = serviceMapper.fromModelToDao(serviceId = serviceId),
             conversationId = conversationId.toDao()
         ).map { it?.toModel() }
 }

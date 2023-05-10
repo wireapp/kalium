@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.model.ServiceDetailDTO
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ServiceEntity
-import com.wire.kalium.persistence.dao.ServiceViewEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -61,6 +60,21 @@ class ServiceMapperTest {
         assertEquals(Arrangement.serviceDetails, result)
     }
 
+    @Test
+    fun givenServiceIdModel_whenMappingToDaoEntity_thenReturnBotIdEntity() = runTest {
+        // given
+        val (_, serviceMapper) = Arrangement()
+            .arrange()
+
+        // when
+        val result = serviceMapper.fromModelToDao(
+            serviceId = Arrangement.serviceId
+        )
+
+        // then
+        assertEquals(Arrangement.botIdEntity, result)
+    }
+
     private class Arrangement {
 
         private val serviceMapper = ServiceMapper()
@@ -81,6 +95,16 @@ class ServiceMapperTest {
                 domain = "userDomain"
             )
 
+            val serviceId = ServiceId(
+                id = SERVICE_ID,
+                provider = PROVIDER_ID
+            )
+
+            val botIdEntity = BotIdEntity(
+                id = SERVICE_ID,
+                provider = PROVIDER_ID
+            )
+
             val serviceDetailDTO = ServiceDetailDTO(
                 enabled = SERVICE_ENABLED,
                 assets = null,
@@ -93,10 +117,7 @@ class ServiceMapperTest {
             )
 
             val serviceEntity = ServiceEntity(
-                id = BotIdEntity(
-                    id = SERVICE_ID,
-                    provider = PROVIDER_ID
-                ),
+                id = botIdEntity,
                 name = SERVICE_NAME,
                 description = SERVICE_DESCRIPTION,
                 summary = SERVICE_SUMMARY,
@@ -107,10 +128,7 @@ class ServiceMapperTest {
             )
 
             val serviceDetails = ServiceDetails(
-                id = ServiceId(
-                    id = SERVICE_ID,
-                    provider = PROVIDER_ID
-                ),
+                id = serviceId,
                 name = SERVICE_NAME,
                 description = SERVICE_DESCRIPTION,
                 summary = SERVICE_SUMMARY,

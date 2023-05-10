@@ -57,4 +57,11 @@ internal class ServiceMapper {
             completeAssetId = completeAssetId?.toModel()
         )
     }
+
+    fun fromModelToDao(
+        serviceId: ServiceId
+    ): BotIdEntity = BotIdEntity(
+        id = serviceId.id,
+        provider = serviceId.provider
+    )
 }
