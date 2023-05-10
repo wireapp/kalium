@@ -67,7 +67,7 @@ class UserMapper {
         completeAssetId: QualifiedIDEntity?,
         userAvailabilityStatus: UserAvailabilityStatusEntity,
         userType: UserTypeEntity,
-        botService: BotEntity?,
+        botService: BotIdEntity?,
         deleted: Boolean,
         id: String?,
         teamName: String?,

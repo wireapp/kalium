@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -34,57 +33,62 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AddMemberToConversationUseCaseTest {
+class AddServiceToConversationUseCaseTest {
 
     @Test
     fun givenMemberAndConversation_WhenAddMemberIsSuccessful_ThenReturnSuccess() = runTest {
-        val (arrangement, addMemberUseCase) = Arrangement()
-            .withAddMembers(Either.Right(Unit))
+        val serviceId = ServiceId("serviceId", "provider")
+        val (arrangement, addService) = Arrangement()
+            .withAddService(Either.Right(Unit))
             .arrange()
 
-        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = addService(TestConversation.ID, serviceId)
 
-        assertIs<AddMemberToConversationUseCase.Result.Success>(result)
+        assertIs<AddServiceToConversationUseCase.Result.Success>(result)
 
         verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
-            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .suspendFunction(arrangement.conversationGroupRepository::addService)
+            .with(eq(serviceId), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenMemberAndConversation_WhenAddMemberFailed_ThenReturnFailure() = runTest {
-        val (arrangement, addMemberUseCase) = Arrangement()
-            .withAddMembers(Either.Left(StorageFailure.DataNotFound))
+        val serviceId = ServiceId("serviceId", "provider")
+
+        val (arrangement, addService) = Arrangement()
+            .withAddService(Either.Left(MLSFailure(UnsupportedOperationException())))
             .arrange()
 
-        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
-        assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
+        val result = addService(TestConversation.ID, serviceId)
+        assertIs<AddServiceToConversationUseCase.Result.Failure>(result)
+        assertIs<MLSFailure>(result.cause)
 
         verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
-            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .suspendFunction(arrangement.conversationGroupRepository::addService)
+            .with(eq(serviceId), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+        val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
-        private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
+        private val addService = AddServiceToConversationUseCase(
             conversationGroupRepository
         )
 
-        fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
+        fun withAddService(either: Either<CoreFailure, Unit>) = apply {
             given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::addMembers)
+                .suspendFunction(conversationGroupRepository::addService)
                 .whenInvokedWith(any(), any())
                 .thenReturn(either)
         }
 
-        fun arrange() = this to addMemberUseCase
+        fun arrange() = this to addService
     }
 }
