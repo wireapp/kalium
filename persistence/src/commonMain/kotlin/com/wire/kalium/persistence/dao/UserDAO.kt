@@ -51,7 +51,7 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
-    val botService: BotEntity?,
+    val botService: BotIdEntity?,
     val deleted: Boolean
 )
 
@@ -62,7 +62,7 @@ data class UserEntityMinimized(
     val userType: UserTypeEntity,
 )
 
-data class BotEntity(
+data class BotIdEntity(
     val id: String,
     val provider: String
 )

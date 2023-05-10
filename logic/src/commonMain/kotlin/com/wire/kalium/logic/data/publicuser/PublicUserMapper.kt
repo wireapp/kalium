@@ -38,7 +38,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -105,7 +105,7 @@ class PublicUserMapperImpl(
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = userEntityTypeMapper.fromUserType(userType),
-            botService = botService?.let { BotEntity(it.id, it.provider) },
+            botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted
         )
     }
@@ -157,7 +157,7 @@ class PublicUserMapperImpl(
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
-        botService = userDetailResponse.service?.let { BotEntity(it.id, it.provider) },
+        botService = userDetailResponse.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false
     )
 

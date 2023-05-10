@@ -98,7 +98,7 @@ data class ConversationViewEntity(
     val lastReadDate: Instant,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,
-    val botService: BotEntity?,
+    val botService: BotIdEntity?,
     val userDeleted: Boolean?,
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,

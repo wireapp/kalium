@@ -15,30 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.adapter
 
-package com.wire.kalium.api.json.model
+import app.cash.sqldelight.ColumnAdapter
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.ErrorResponse
+internal object QualifiedIDListAdapter : ColumnAdapter<List<QualifiedIDEntity>, String> {
 
-object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |  "code": ${serializable.code},
-        |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}"
-        |}
-        """.trimMargin()
-    }
+    override fun decode(databaseValue: String): List<QualifiedIDEntity> =
+        if (databaseValue.isEmpty()) listOf()
+        else databaseValue.split(",").map { itemDatabaseValue ->
+            val components = itemDatabaseValue.split("@")
+            QualifiedIDEntity(components.first(), components.last())
+        }
 
-    val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
-        jsonProvider
-    )
-
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
-        error,
-        jsonProvider
-    )
+    override fun encode(value: List<QualifiedIDEntity>): String =
+        value.joinToString(",") { "${it.value}@${it.domain}" }
 }

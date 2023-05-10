@@ -18,11 +18,12 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
-import com.wire.kalium.network.api.base.model.TeamId
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -81,4 +82,9 @@ interface TeamsApi {
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
+    suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>
+
+    companion object {
+        const val DEFAULT_SERVICES_SIZE = 100 // this number is copied from the web client
+    }
 }

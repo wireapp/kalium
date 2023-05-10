@@ -18,14 +18,13 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.message.MessageMapper.requireField
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -342,7 +341,7 @@ object MessageMapper {
         senderCompleteAssetId: QualifiedIDEntity?,
         senderAvailabilityStatus: UserAvailabilityStatusEntity,
         senderUserType: UserTypeEntity,
-        senderBotService: BotEntity?,
+        senderBotService: BotIdEntity?,
         senderIsDeleted: Boolean,
         isSelfMessage: Boolean,
         text: String?,

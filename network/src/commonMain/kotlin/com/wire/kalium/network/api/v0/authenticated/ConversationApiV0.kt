@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
@@ -132,6 +133,19 @@ internal open class ConversationApiV0 internal constructor(
     ): NetworkResponse<ConversationMemberAddedResponse> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(addParticipantRequest)
+        }.let { response ->
+            handleConversationMemberAddedResponse(response)
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    override suspend fun addService(
+        addServiceRequest: AddServiceRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_BOTS") {
+            setBody(addServiceRequest)
         }.let { response ->
             handleConversationMemberAddedResponse(response)
         }
@@ -352,6 +366,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_RECEIPT_MODE = "receipt-mode"
         const val PATH_CODE = "code"
         const val PATH_MESSAGE_TIMER = "message-timer"
+        const val PATH_BOTS = "bots"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"

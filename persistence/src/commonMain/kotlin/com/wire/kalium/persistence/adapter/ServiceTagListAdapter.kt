@@ -15,30 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.adapter
 
-package com.wire.kalium.api.json.model
+import app.cash.sqldelight.ColumnAdapter
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.ErrorResponse
-
-object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |  "code": ${serializable.code},
-        |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}"
-        |}
-        """.trimMargin()
+internal object ServiceTagListAdapter : ColumnAdapter<List<String>, String> {
+    override fun decode(databaseValue: String): List<String> {
+        return databaseValue.split(SEPARATOR)
     }
 
-    val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
-        jsonProvider
-    )
+    override fun encode(value: List<String>): String {
+        return value.joinToString(SEPARATOR)
+    }
 
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
-        error,
-        jsonProvider
-    )
+    private const val SEPARATOR = ","
 }

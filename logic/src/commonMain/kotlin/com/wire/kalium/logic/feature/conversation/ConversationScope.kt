@@ -134,6 +134,9 @@ class ConversationScope internal constructor(
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
 
+    val addServiceToConversationUseCase: AddServiceToConversationUseCase
+        get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
+
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository, conversationGroupRepository)
 
