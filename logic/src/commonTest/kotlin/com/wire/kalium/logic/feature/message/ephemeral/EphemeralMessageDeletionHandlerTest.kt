@@ -434,8 +434,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
-            verify(arrangement.deleteEphemeralMessageForSelfUserAsSender)
-                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsSender::invoke)
+            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
                 .with(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))
                 .wasInvoked(once)
 
@@ -588,10 +588,6 @@ class EphemeralMessageDeletionHandlerTest {
                 .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
                 .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("1", "2"))
                 .wasInvoked(Times(pendingMessagesToDeletePastTheTime.size))
-            verify(arrangement.deleteEphemeralMessageForSelfUserAsReceiver)
-                .suspendFunction(arrangement.deleteEphemeralMessageForSelfUserAsReceiver::invoke)
-                .with(eq(TestMessage.TEXT_MESSAGE.conversationId), oneOf("1", "2"))
-                .wasInvoked(Times(pendingMessagesToDeletePastTheTime.size))
         }
 
     @Test
@@ -684,7 +680,7 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
             .whenInvokedWith(any(), any())
             .then { _, _ -> Either.Right(Unit) }
         given(deleteEphemeralMessageForSelfUserAsSender)
-            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+            .suspendFunction(deleteEphemeralMessageForSelfUserAsSender::invoke)
             .whenInvokedWith(any(), any())
             .then { _, _ -> Either.Right(Unit) }
 
