@@ -411,7 +411,7 @@ private class Arrangement(private val coroutineScope: CoroutineScope, private va
         return this
     }
 
-    fun withDeletingMessage(): Arrangement {
+    fun withDeletingMessage(): Arrangement {1
         given(deleteEphemeralMessageForSelfUserAsReceiver)
             .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
             .whenInvokedWith(any(), any())
