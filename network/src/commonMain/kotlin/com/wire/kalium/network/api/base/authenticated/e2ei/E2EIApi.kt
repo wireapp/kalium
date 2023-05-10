@@ -15,18 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.user
+package com.wire.kalium.network.api.base.authenticated.e2ei
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.utils.NetworkResponse
 
-/**
- * Mark the Self Deleting Messages team setting change as notified on the app.
- * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
- */
-class MarkSelfDeletingMessagesChangeAsNotifiedUseCase(
-    private val userConfigRepository: UserConfigRepository
-) {
-    operator fun invoke() {
-        userConfigRepository.setSelfDeletingMessagesAsNotified()
+interface E2EIApi {
+    suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse>
+
+    suspend fun getWireNonce(clientId: String): NetworkResponse<String>
+
+    companion object {
+        fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
+            APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
+        )
     }
 }

@@ -71,7 +71,7 @@ data class SelfDeletingMessagesModel(
 )
 
 data class SelfDeletingMessagesConfigModel(
-    val enforcedTimeoutSeconds: Int?
+    val enforcedTimeoutSeconds: Long?
 )
 
 data class MLSModel(

@@ -34,6 +34,7 @@ data class KaliumConfigs(
     val blacklistHost: String = "",
     val maxAccount: Int = 0,
     val developmentApiEnabled: Boolean = false,
+    val ignoreSSLCertificatesForUnboundCalls: Boolean = false,
     val guestRoomLink: Boolean = true,
     val selfDeletingMessages: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,

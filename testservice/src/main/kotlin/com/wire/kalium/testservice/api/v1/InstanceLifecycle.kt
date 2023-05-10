@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.validation.Valid
+import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
 import javax.ws.rs.PUT
@@ -59,6 +60,7 @@ class InstanceLifecycle(
     @PUT
     @Path("/instance")
     @Operation(summary = "Create a new instance")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     fun createInstance(@Valid instanceRequest: InstanceRequest, @Suspended ar: AsyncResponse) {
         val instanceId = UUID.randomUUID().toString()

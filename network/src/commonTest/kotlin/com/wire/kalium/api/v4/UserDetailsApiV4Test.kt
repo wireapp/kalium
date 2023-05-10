@@ -39,7 +39,7 @@ import kotlin.test.assertTrue
 internal class UserDetailsApiV4Test : ApiTest() {
 
     @Test
-    fun givenListOfQualifiedIds_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
+    fun givenListOfQualifiedIds_whenGettingListOfUsersWithFailedUsers_thenBodyShouldSerializeCorrectly() = runTest {
         val params = ListUserRequest.qualifiedIds(
             listOf(QualifiedIDSamples.one, QualifiedIDSamples.two, QualifiedIDSamples.three)
         )
@@ -63,8 +63,34 @@ internal class UserDetailsApiV4Test : ApiTest() {
         assertEquals(response.value.usersFound, SUCCESS_RESPONSE_WITH_FAILED_TO_LIST.serializableData.usersFound)
     }
 
+    @Test
+    fun givenListOfQualifiedIds_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
+        val params = ListUserRequest.qualifiedIds(
+            listOf(QualifiedIDSamples.one, QualifiedIDSamples.two, QualifiedIDSamples.three)
+        )
+        val expectedRequestBody = KtxSerializer.json.encodeToString(params)
+        val networkClient = mockAuthenticatedNetworkClient(
+            SUCCESS_RESPONSE.rawJson,
+            statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertPost()
+                assertJson()
+                assertNoQueryParams()
+                assertPathEqual(PATH_LIST_USERS)
+                assertJsonBodyContent(expectedRequestBody)
+            }
+        )
+        val userDetailsApi: UserDetailsApiV4 = UserDetailsApiV4(networkClient)
+
+        val response: NetworkResponse<ListUsersDTO> = userDetailsApi.getMultipleUsers(params)
+        assertTrue(response.isSuccessful())
+        assertTrue(response.value.usersFailed.isEmpty())
+        assertEquals(response.value.usersFound, SUCCESS_RESPONSE.serializableData.usersFound)
+    }
+
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
-        val SUCCESS_RESPONSE_WITH_FAILED_TO_LIST = ListUsersResponseJson.v4
+        val SUCCESS_RESPONSE_WITH_FAILED_TO_LIST = ListUsersResponseJson.v4_withFailedUsers
+        val SUCCESS_RESPONSE = ListUsersResponseJson.v4
     }
 }
