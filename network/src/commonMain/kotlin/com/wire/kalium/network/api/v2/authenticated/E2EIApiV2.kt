@@ -15,15 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v2.authenticated
 
-package com.wire.kalium.network
+import com.wire.kalium.network.api.v0.authenticated.E2EIApiV0
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
-
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null,
-    ignoreSSLCertificates: Boolean = false
-): HttpClientEngine
+internal open class E2EIApiV2 internal constructor() : E2EIApiV0()

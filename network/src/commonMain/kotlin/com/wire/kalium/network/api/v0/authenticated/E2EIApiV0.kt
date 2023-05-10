@@ -15,15 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v0.authenticated
 
-package com.wire.kalium.network
+import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
+import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
+import com.wire.kalium.network.utils.NetworkResponse
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
+internal open class E2EIApiV0 internal constructor() : E2EIApi {
+    override suspend fun getWireNonce(clientId: String): NetworkResponse<String> = E2EIApi.getApiNotSupportError(::getWireNonce.name)
 
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null,
-    ignoreSSLCertificates: Boolean = false
-): HttpClientEngine
+    override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
+        E2EIApi.getApiNotSupportError(::getAccessToken.name)
+}
