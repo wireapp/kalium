@@ -15,15 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.authenticated.e2ei
 
-package com.wire.kalium.network
+import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.utils.NetworkResponse
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
+interface E2EIApi {
+    suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse>
 
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null,
-    ignoreSSLCertificates: Boolean = false
-): HttpClientEngine
+    suspend fun getWireNonce(clientId: String): NetworkResponse<String>
+
+    companion object {
+        fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
+            APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
+        )
+    }
+}
