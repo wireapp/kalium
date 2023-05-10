@@ -225,6 +225,15 @@ data class ServiceReferenceDTO(
 )
 
 @Serializable
+data class AddServiceRequest(
+    @SerialName("service")
+    val id: String,
+
+    @SerialName("provider")
+    val provider: String
+)
+
+@Serializable
 data class SubconversationResponse(
     @SerialName("subconv_id")
     val id: SubconversationId,

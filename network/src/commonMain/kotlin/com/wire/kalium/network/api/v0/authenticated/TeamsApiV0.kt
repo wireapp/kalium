@@ -22,6 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
+import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
@@ -46,6 +47,12 @@ internal open class TeamsApiV0 internal constructor(
             httpClient.get("$PATH_TEAMS/$teamId")
         }
 
+    override suspend fun whiteListedServices(teamId: TeamId, size: Int): NetworkResponse<ServiceDetailResponse> = wrapKaliumResponse {
+        httpClient.get("$PATH_TEAMS/$teamId/$PATH_SERVICES/$PATH_WHITELISTED") {
+            parameter("size", size)
+        }
+    }
+
     override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamsApi.TeamMemberList> =
         wrapKaliumResponse {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
@@ -62,5 +69,7 @@ internal open class TeamsApiV0 internal constructor(
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_SERVICES = "services"
+        const val PATH_WHITELISTED = "whitelisted"
     }
 }
