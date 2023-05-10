@@ -15,15 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.authenticated.e2ei
 
-package com.wire.kalium.network
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
-
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null,
-    ignoreSSLCertificates: Boolean = false
-): HttpClientEngine
+@Suppress("EnforceSerializableFields")
+@Serializable
+data class AccessTokenResponse(
+    @JsonNames("expires_in")
+    val expiresIn: String,
+    val token: String,
+    val type: String
+)
