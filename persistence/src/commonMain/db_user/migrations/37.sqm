@@ -1,5 +1,15 @@
 ALTER TABLE Conversation ADD COLUMN message_timer INTEGER DEFAULT(NULL);
 
+CREATE TABLE MessageConversationTimerChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      message_timer INTEGER DEFAULT(NULL),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 DROP VIEW IF EXISTS ConversationDetails;
 DROP VIEW IF EXISTS MessageDetailsView;
 
