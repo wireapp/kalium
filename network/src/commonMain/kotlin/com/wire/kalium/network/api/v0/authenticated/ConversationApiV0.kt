@@ -317,12 +317,12 @@ internal open class ConversationApiV0 internal constructor(
     private suspend fun handleServiceAddedResponse(
         httpResponse: HttpResponse
     ): NetworkResponse<ServiceAddedResponse> =
-        when (httpResponse.status.value) {
-            HttpStatusCode.NoContent.value -> {
+        when (httpResponse.status) {
+            HttpStatusCode.NoContent -> {
                 NetworkResponse.Success(ServiceAddedResponse.Unchanged, httpResponse)
             }
 
-            in 200..299 -> {
+            HttpStatusCode.Created -> {
                 wrapKaliumResponse<AddServiceResponse> { httpResponse }
                     .mapSuccess { ServiceAddedResponse.Changed(it.event) }
             }

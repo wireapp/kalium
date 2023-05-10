@@ -19,6 +19,7 @@
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.model.AddServiceResponseJson
 import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
@@ -251,12 +252,12 @@ internal class ConversationApiV0Test : ApiTest() {
     }
 
     @Test
-    fun gicenServiceId_whenAddingToGroup_thenRequestShouldMeetTheSpec() = runTest {
+    fun givenServiceId_whenAddingToGroup_thenRequestShouldMeetTheSpec() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val serviceId = AddServiceRequest("service_id", "service_provider")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
+            AddServiceResponseJson.valid.rawJson, statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
                 assertPathEqual("conversations/${conversationId.value}/bots")
