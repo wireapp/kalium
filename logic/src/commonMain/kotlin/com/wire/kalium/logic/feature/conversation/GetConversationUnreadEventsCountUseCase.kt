@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * UseCase for getting once the amount of unread events (all: messages, pings, missed calls, etc.) in a specific conversation.
+ */
 interface GetConversationUnreadEventsCountUseCase {
 
     suspend operator fun invoke(conversationId: ConversationId): Result

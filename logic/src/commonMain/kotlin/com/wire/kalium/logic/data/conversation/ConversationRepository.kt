@@ -368,18 +368,7 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeGetConversationByQualifiedID(conversationID.toDao())
             .wrapStorageRequest()
             // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
-            .mapRight {
-//                 val unreadEvents = unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
-//                     when (it.key) {
-//                         UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
-//                         UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
-//                         UnreadEventTypeEntity.MENTION -> UnreadEventType.MENTION
-//                         UnreadEventTypeEntity.REPLY -> UnreadEventType.REPLY
-//                         UnreadEventTypeEntity.MESSAGE -> UnreadEventType.MESSAGE
-//                     }
-//                 }
-                conversationMapper.fromDaoModelToDetails(it, null, mapOf())
-            }
+            .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
