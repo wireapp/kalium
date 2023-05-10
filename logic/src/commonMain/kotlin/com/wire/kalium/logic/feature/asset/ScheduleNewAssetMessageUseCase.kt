@@ -130,7 +130,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
             val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-
             message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Asset(
@@ -146,8 +145,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
                 expectsReadConfirmation = expectsReadConfirmation,
-                expirationData = expireAfter?.let {
-                    Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                expirationData = expireAfter?.let { duration ->
+                    // normalize the duration in case it's 0 to null, so that the message is not expirable in that case
+                    if (duration == Duration.ZERO) null
+                    else Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
                 },
                 isSelfMessage = true
             )
