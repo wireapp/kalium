@@ -15,30 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.service
 
-package com.wire.kalium.api.json.model
+import com.wire.kalium.logic.data.service.ServiceRepository
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.ErrorResponse
+class ServiceScope internal constructor(
+    private val serviceRepository: ServiceRepository
+) {
 
-object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |  "code": ${serializable.code},
-        |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}"
-        |}
-        """.trimMargin()
-    }
+    val getServiceById: GetServiceByIdUseCase
+        get() = GetServiceByIdUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
 
-    val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
-        jsonProvider
-    )
-
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
-        error,
-        jsonProvider
-    )
+    val observeIsServiceMember: ObserveIsServiceMemberUseCase
+        get() = ObserveIsServiceMemberUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
 }

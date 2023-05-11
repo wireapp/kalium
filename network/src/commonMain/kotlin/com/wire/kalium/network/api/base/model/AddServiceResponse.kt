@@ -15,30 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.model
 
-package com.wire.kalium.api.json.model
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.ErrorResponse
+@Serializable
+data class AddServiceResponse(
+    @SerialName("event")
+    val event: EventContentDTO.Conversation.MemberJoinDTO
+)
 
-object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |  "code": ${serializable.code},
-        |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}"
-        |}
-        """.trimMargin()
-    }
+sealed class ServiceAddedResponse {
+    /**
+     * The service requested to be added were already members
+     */
+    object Unchanged : ServiceAddedResponse()
 
-    val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
-        jsonProvider
-    )
-
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
-        error,
-        jsonProvider
-    )
+    data class Changed(val event: EventContentDTO.Conversation.MemberJoinDTO) : ServiceAddedResponse()
 }

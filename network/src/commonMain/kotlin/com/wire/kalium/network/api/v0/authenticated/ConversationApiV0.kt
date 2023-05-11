@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
@@ -41,10 +42,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
@@ -133,6 +136,19 @@ internal open class ConversationApiV0 internal constructor(
             setBody(addParticipantRequest)
         }.let { response ->
             handleConversationMemberAddedResponse(response)
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    override suspend fun addService(
+        addServiceRequest: AddServiceRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<ServiceAddedResponse> = try {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_BOTS") {
+            setBody(addServiceRequest)
+        }.let { response ->
+            handleServiceAddedResponse(response)
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
@@ -298,6 +314,24 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
+    private suspend fun handleServiceAddedResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<ServiceAddedResponse> =
+        when (httpResponse.status) {
+            HttpStatusCode.NoContent -> {
+                NetworkResponse.Success(ServiceAddedResponse.Unchanged, httpResponse)
+            }
+
+            HttpStatusCode.Created -> {
+                wrapKaliumResponse<AddServiceResponse> { httpResponse }
+                    .mapSuccess { ServiceAddedResponse.Changed(it.event) }
+            }
+
+            else -> {
+                wrapKaliumResponse { httpResponse }
+            }
+        }
+
     override suspend fun updateReceiptMode(
         conversationId: ConversationId,
         receiptMode: ConversationReceiptModeDTO
@@ -343,6 +377,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_JOIN = "join"
         const val PATH_RECEIPT_MODE = "receipt-mode"
         const val PATH_CODE = "code"
+        const val PATH_BOTS = "bots"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
         const val QUERY_KEY_START = "start"
