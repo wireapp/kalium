@@ -309,7 +309,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            receiptMode = ConversationEntity.ReceiptMode.DISABLED
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+            messageTimer = null
         )
     }
 }

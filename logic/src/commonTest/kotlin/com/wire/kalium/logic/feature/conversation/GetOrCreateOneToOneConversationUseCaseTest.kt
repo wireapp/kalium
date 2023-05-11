@@ -124,7 +124,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
             creatorId = null,
-            receiptMode = Conversation.ReceiptMode.DISABLED
+            receiptMode = Conversation.ReceiptMode.DISABLED,
+            messageTimer = null
         )
     }
 }

@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
@@ -44,7 +43,6 @@ import io.ktor.utils.io.core.toByteArray
 
 @Suppress("TooManyFunctions")
 class EventMapper(
-    private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
@@ -86,7 +84,20 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
         }
+
+    private fun conversationMessageTimerUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MessageTimerUpdate,
+        transient: Boolean
+    ): Event = Event.Conversation.ConversationMessageTimer(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        transient = transient,
+        messageTimer = eventContentDTO.data.messageTimer,
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+    )
 
     private fun conversationReceiptModeUpdate(
         id: String,

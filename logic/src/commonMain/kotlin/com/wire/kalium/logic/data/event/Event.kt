@@ -302,6 +302,23 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
+
+        data class ConversationMessageTimer(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val messageTimer: Long?,
+            val senderUserId: UserId
+        ) : Conversation(id, transient, conversationId) {
+
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationMessageTimer",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "messageTime" to messageTimer,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
     }
 
     sealed class Team(
