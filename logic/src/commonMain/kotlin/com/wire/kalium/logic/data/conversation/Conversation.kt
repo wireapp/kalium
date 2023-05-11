@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 data class Conversation(
     val id: ConversationId,
@@ -47,6 +48,7 @@ data class Conversation(
     val accessRole: List<AccessRole>,
     val creatorId: String?,
     val receiptMode: ReceiptMode,
+    val messageTimer: Duration? // enforced time by group conversation for self deleting messages, always NULL for 1on1 conversation
 ) {
 
     companion object {
@@ -270,7 +272,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             access = access,
             accessRole = accessRole,
             creatorId = null,
-            receiptMode = Conversation.ReceiptMode.DISABLED
+            receiptMode = Conversation.ReceiptMode.DISABLED,
+            messageTimer = null
         )
     )
 }

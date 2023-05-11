@@ -19,6 +19,7 @@
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.model.AddServiceResponseJson
 import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
@@ -28,6 +29,7 @@ import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.MemberUpdateRequestJson
 import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
@@ -245,6 +247,25 @@ internal class ConversationApiV0Test : ApiTest() {
         )
         val conversationApi = ConversationApiV0(networkClient)
         val response = conversationApi.addMember(request, conversationId)
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun givenServiceId_whenAddingToGroup_thenRequestShouldMeetTheSpec() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val serviceId = AddServiceRequest("service_id", "service_provider")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            AddServiceResponseJson.valid.rawJson, statusCode = HttpStatusCode.Created,
+            assertion = {
+                assertPost()
+                assertPathEqual("conversations/${conversationId.value}/bots")
+                assertNoQueryParams()
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.addService(serviceId, conversationId)
 
         assertTrue(response.isSuccessful())
     }

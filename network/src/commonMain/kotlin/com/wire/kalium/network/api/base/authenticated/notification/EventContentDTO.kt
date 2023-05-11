@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationN
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -218,7 +219,13 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
-        // TODO conversation.message-timer-update
+        @Serializable
+        @SerialName("conversation.message-timer-update")
+        data class MessageTimerUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationMessageTimerDTO,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.mls-message-add")
