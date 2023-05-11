@@ -215,6 +215,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
         }
     }
 
@@ -303,6 +304,7 @@ class MessageMapperImpl(
         is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
         is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
+        is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -384,6 +386,7 @@ class MessageMapperImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+        is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
     }
 }
 

@@ -134,7 +134,6 @@ internal object MapperProvider {
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
     fun eventMapper(): EventMapper = EventMapper(
-        idMapper(),
         memberMapper(),
         connectionMapper(),
         featureConfigMapper(),
