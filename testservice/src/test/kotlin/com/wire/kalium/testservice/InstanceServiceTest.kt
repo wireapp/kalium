@@ -3,6 +3,8 @@ package com.wire.kalium.testservice
 import com.codahale.metrics.MetricRegistry
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.InstanceRequest
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment
+import io.dropwizard.lifecycle.setup.ScheduledExecutorServiceBuilder
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
@@ -15,7 +17,13 @@ class InstanceServiceTest {
     @Test
     fun givenWorkingCredentials_whenInstanceCreated_thenAllDataIsStoredCorrectly() {
         val metricRegistry = MetricRegistry()
-        val instanceService = InstanceService(metricRegistry)
+        val environment = LifecycleEnvironment(metricRegistry)
+        val cleanupPool = ScheduledExecutorServiceBuilder(environment, "cleanupPool", true)
+            .threads(2)
+            .removeOnCancelPolicy(true)
+            .build()
+        val configuration = TestserviceConfiguration()
+        val instanceService = InstanceService(metricRegistry, cleanupPool, configuration)
         val instanceId = UUID.randomUUID().toString()
         val instanceRequest = InstanceRequest()
         val instancePath = System.getProperty("user.home") +
