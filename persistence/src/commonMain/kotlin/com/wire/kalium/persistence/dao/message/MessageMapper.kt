@@ -18,14 +18,13 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.message.MessageMapper.requireField
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -170,6 +169,7 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -341,7 +341,7 @@ object MessageMapper {
         senderCompleteAssetId: QualifiedIDEntity?,
         senderAvailabilityStatus: UserAvailabilityStatusEntity,
         senderUserType: UserTypeEntity,
-        senderBotService: BotEntity?,
+        senderBotService: BotIdEntity?,
         senderIsDeleted: Boolean,
         isSelfMessage: Boolean,
         text: String?,
@@ -387,7 +387,8 @@ object MessageMapper {
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
-        conversationReceiptModeChanged: Boolean?
+        conversationReceiptModeChanged: Boolean?,
+        conversationMessageTimerChanged: Long?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -470,6 +471,9 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
+                messageTimer = conversationMessageTimerChanged
+            )
         }
 
         return createMessageEntity(

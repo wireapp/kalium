@@ -38,12 +38,12 @@ import javax.net.ssl.X509TrustManager
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
-    ignoreAllSSLErrors: Boolean
+    ignoreSSLCertificates: Boolean
 ): HttpClientEngine = OkHttp.create {
 
     val okHttpClient = OkHttpClient.Builder()
 
-    if (ignoreAllSSLErrors) okHttpClient.ignoreAllSSLErrors()
+    if (ignoreSSLCertificates) okHttpClient.ignoreAllSSLErrors()
 
     okHttpClient.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
         .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)

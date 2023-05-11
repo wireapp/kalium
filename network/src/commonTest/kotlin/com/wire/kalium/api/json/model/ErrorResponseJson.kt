@@ -36,4 +36,9 @@ object ErrorResponseJson {
         ErrorResponse(code = 499, label = "error_label", message = "error_message"),
         jsonProvider
     )
+
+    fun valid(error: ErrorResponse) = ValidJsonProvider(
+        error,
+        jsonProvider
+    )
 }
