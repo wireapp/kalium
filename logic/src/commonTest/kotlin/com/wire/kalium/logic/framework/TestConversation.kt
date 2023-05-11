@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -222,6 +223,17 @@ object TestConversation {
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
         ConversationMemberAddedResponse.Changed(
+            EventContentDTO.Conversation.MemberJoinDTO(
+                NETWORK_ID,
+                NETWORK_USER_ID1,
+                "2022-03-30T15:36:00.000Z",
+                ConversationMembers(emptyList(), emptyList()),
+                NETWORK_ID.value
+            )
+        )
+
+    val ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
+        ServiceAddedResponse.Changed(
             EventContentDTO.Conversation.MemberJoinDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,

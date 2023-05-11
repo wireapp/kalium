@@ -43,10 +43,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
@@ -143,11 +145,11 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun addService(
         addServiceRequest: AddServiceRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+    ): NetworkResponse<ServiceAddedResponse> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_BOTS") {
             setBody(addServiceRequest)
         }.let { response ->
-            handleConversationMemberAddedResponse(response)
+            handleServiceAddedResponse(response)
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
@@ -306,6 +308,24 @@ internal open class ConversationApiV0 internal constructor(
 
             HttpStatusCode.NoContent -> {
                 NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, httpResponse)
+            }
+
+            else -> {
+                wrapKaliumResponse { httpResponse }
+            }
+        }
+
+    private suspend fun handleServiceAddedResponse(
+        httpResponse: HttpResponse
+    ): NetworkResponse<ServiceAddedResponse> =
+        when (httpResponse.status) {
+            HttpStatusCode.NoContent -> {
+                NetworkResponse.Success(ServiceAddedResponse.Unchanged, httpResponse)
+            }
+
+            HttpStatusCode.Created -> {
+                wrapKaliumResponse<AddServiceResponse> { httpResponse }
+                    .mapSuccess { ServiceAddedResponse.Changed(it.event) }
             }
 
             else -> {

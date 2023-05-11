@@ -801,7 +801,7 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )

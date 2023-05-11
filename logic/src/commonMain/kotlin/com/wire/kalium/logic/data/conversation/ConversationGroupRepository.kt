@@ -48,6 +48,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -165,7 +166,7 @@ internal class ConversationGroupRepositoryImpl(
                                 conversationId.toApi()
                             )
                         }.onSuccess { response ->
-                            if (response is ConversationMemberAddedResponse.Changed) {
+                            if (response is ServiceAddedResponse.Changed) {
                                 memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
                             }
                         }.map { Unit }

@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
@@ -71,7 +72,7 @@ interface ConversationApi {
     suspend fun addService(
         addServiceRequest: AddServiceRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse>
+    ): NetworkResponse<ServiceAddedResponse>
 
     suspend fun removeMember(
         userId: UserId,
