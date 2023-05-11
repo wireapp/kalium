@@ -95,8 +95,10 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                expirationData = expireAfter?.let {
-                    Message.ExpirationData(expireAfter = it, selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                expirationData = expireAfter?.let { duration ->
+                    // normalize the duration in case it's 0 to null, so that the message is not expirable in that case
+                    if (duration == Duration.ZERO) null
+                    else Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
                 },
                 isSelfMessage = true
             )
