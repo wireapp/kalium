@@ -175,7 +175,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
             val newEnforcedTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
                 selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
                 else -> SelfDeletionTimer.Disabled
             }
