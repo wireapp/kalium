@@ -24,7 +24,9 @@ import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 
 class TestserviceConfiguration(
     private var saveToUserHomeDirectory: Boolean = true,
-    private var instanceCreationTimeoutInSeconds: Long = 60
+    private var instanceCreationTimeoutInSeconds: Long = 60,
+    private var instanceMaximumRuntimeInMinutes: Long = 10,
+    private var instanceCleanupPeriodInMinutes: Long = 5
 ) : Configuration() {
 
     @JsonProperty("swagger")
@@ -45,4 +47,23 @@ class TestserviceConfiguration(
         instanceCreationTimeoutInSeconds = timeout
     }
 
+    @JsonProperty
+    fun getInstanceMaximumRuntimeInMinutes(): Long {
+        return instanceMaximumRuntimeInMinutes
+    }
+
+    @JsonProperty
+    fun setInstanceMaximumRuntimeInMinutes(runtime: Long) {
+        instanceMaximumRuntimeInMinutes = runtime
+    }
+
+    @JsonProperty
+    fun getInstanceCleanupPeriodInMinutes(): Long {
+        return instanceCleanupPeriodInMinutes
+    }
+
+    @JsonProperty
+    fun setInstanceCleanupPeriodInMinutes(period: Long) {
+        instanceCleanupPeriodInMinutes = period
+    }
 }
