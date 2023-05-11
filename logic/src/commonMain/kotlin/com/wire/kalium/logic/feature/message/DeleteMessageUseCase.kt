@@ -98,6 +98,8 @@ class DeleteMessageUseCase internal constructor(
                     }
                         .onSuccess { deleteMessageAsset(message) }
                         .flatMap {
+                            // in case of ephemeral message, we want to delete it completely from the device, not just mark it as deleted
+                            // as this can only happen when the user decide to delete it, before the timer expired
                             val isEphemeralMessage = message is Message.Regular && message.expirationData != null
                             if (isEphemeralMessage) {
                                 messageRepository.deleteMessage(messageId, conversationId)
