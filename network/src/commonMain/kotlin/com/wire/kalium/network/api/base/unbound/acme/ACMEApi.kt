@@ -144,7 +144,7 @@ class ACMEApiImpl internal constructor(
         const val DEX_PORT = "5556"
 
         const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
-        const val PATH_ACME_DIRECTORIES = "acme/wire/directory"
+        const val PATH_ACME_DIRECTORIES = "acme/google-android/directory"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
     }

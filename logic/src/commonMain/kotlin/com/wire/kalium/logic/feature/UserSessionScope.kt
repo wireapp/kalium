@@ -61,6 +61,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -160,6 +162,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -439,14 +443,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val e2EIClientProvider: E2EClientProvider by lazy {
-        E2EIClientProviderImpl(
-            userId = userId,
-            currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider
-        )
-    }
-
     private val commitBundleEventReceiver: CommitBundleEventReceiverImpl
         get() = CommitBundleEventReceiverImpl(
             memberJoinHandler, memberLeaveHandler
@@ -463,6 +459,28 @@ class UserSessionScope internal constructor(
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow
+        )
+
+    private val e2eiRepository: E2EIRepository
+        get() = E2EIRepositoryImpl(
+            authenticatedNetworkContainer.e2eiApi,
+            globalScope.unboundNetworkContainer.acmeApi,
+            e2EIClientProvider,
+            clientIdProvider
+        )
+
+    private val e2EIClientProvider: E2EClientProvider by lazy {
+        E2EIClientProviderImpl(
+            userId = userId,
+            currentClientIdProvider = clientIdProvider,
+            mlsClientProvider = mlsClientProvider,
+            selfUserUseCase = users.getSelfUser
+        )
+    }
+
+    val enrolE2EI: EnrolE2EIUseCase
+        get() = EnrolE2EIUseCaseImpl(
+            e2eiRepository
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)

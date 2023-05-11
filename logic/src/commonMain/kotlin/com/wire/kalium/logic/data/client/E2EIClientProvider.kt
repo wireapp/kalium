@@ -22,32 +22,34 @@ import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 interface E2EClientProvider {
-    suspend fun getE2EIClient(clientId: ClientId? = null, selfUser: SelfUser): Either<CoreFailure, E2EIClient>
+    suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
 }
 
 class E2EIClientProviderImpl(
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
+    private val selfUserUseCase: GetSelfUserUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : E2EClientProvider {
 
     private var e2EIClient: E2EIClient? = null
 
-    override suspend fun getE2EIClient(clientId: ClientId?, selfUser: SelfUser): Either<CoreFailure, E2EIClient> =
+    override suspend fun getE2EIClient(clientId: ClientId?): Either<CoreFailure, E2EIClient> =
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
@@ -56,23 +58,31 @@ class E2EIClientProviderImpl(
                 CryptoQualifiedID(value = userId.value, domain = userId.domain)
             )
 
-            if (selfUser.name == null || selfUser.handle == null)
-                return@withContext Either.Left(MLSFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-
             return@withContext e2EIClient?.let {
                 Either.Right(it)
             } ?: run {
-                mlsClientProvider.getMLSClient(currentClientId).flatMap {
-                    val newE2EIClient = it.newAcmeEnrollment(
-                        e2eiClientId,
-                        selfUser.name,
-                        selfUser.handle
-                    )
-                    e2EIClient = newE2EIClient
-                    Either.Right(newE2EIClient)
+                getSelfUserInfo().flatMap { selfUser ->
+                    mlsClientProvider.getMLSClient(currentClientId).flatMap {
+                        val newE2EIClient = it.newAcmeEnrollment(
+                            e2eiClientId,
+                            //todo: selfUser.name,selfUser.handle
+                            "Mojtaba Chenani",
+                            "mojtaba_wire"
+                        )
+                        e2EIClient = newE2EIClient
+                        Either.Right(newE2EIClient)
+                    }
                 }
             }
+
         }
+
+    private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
+        val selfUser = selfUserUseCase().first()
+        return if (selfUser.name == null || selfUser.handle == null)
+            Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
+        else Either.Right(Pair(selfUser.name, selfUser.handle))
+    }
 
     private companion object {
         const val ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL = "name and handle must have a value"
