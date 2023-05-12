@@ -361,8 +361,7 @@ class MessageDAOImpl(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
-    companion object {
-        const val UNREAD_EVENTS_LIMIT: Long = 4000L
-    }
+    override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long =
+        unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
 
 }

@@ -15,18 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.user
+package com.wire.kalium.network.api.v3.authenticated
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.network.api.v2.authenticated.E2EIApiV2
 
-/**
- * Mark the Self Deleting Messages team setting change as notified on the app.
- * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
- */
-class MarkSelfDeletingMessagesChangeAsNotifiedUseCase(
-    private val userConfigRepository: UserConfigRepository
-) {
-    operator fun invoke() {
-        userConfigRepository.setSelfDeletingMessagesAsNotified()
-    }
-}
+internal open class E2EIApiV3 internal constructor() : E2EIApiV2()

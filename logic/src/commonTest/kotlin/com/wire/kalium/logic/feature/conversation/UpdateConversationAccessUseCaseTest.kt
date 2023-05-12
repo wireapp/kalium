@@ -396,7 +396,8 @@ class UpdateConversationAccessUseCaseTest {
             ),
             lastReadDate = "2022.01.02",
             creatorId = "someCreatorId",
-            receiptMode = Conversation.ReceiptMode.DISABLED
+            receiptMode = Conversation.ReceiptMode.DISABLED,
+            messageTimer = null
         )
     }
 

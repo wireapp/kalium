@@ -80,6 +80,10 @@ class SlowSyncManagerTest {
         verify(arrangement.slowSyncWorker)
             .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
             .wasInvoked(exactly = once)
+        verify(arrangement.slowSyncRepository)
+            .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -137,6 +141,11 @@ class SlowSyncManagerTest {
 
         advanceUntilIdle()
 
+        verify(arrangement.slowSyncRepository)
+            .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
+            .with(any())
+            .wasInvoked(once)
+
         val completedTime = DateTimeUtil.currentInstant()
         verify(arrangement.slowSyncRepository)
             .function(arrangement.slowSyncRepository::setLastSlowSyncCompletionInstant)
@@ -164,6 +173,42 @@ class SlowSyncManagerTest {
             .with(any<Instant?>())
             .wasNotInvoked()
     }
+
+    @Test
+    fun givenItWasCompletedRecentlyAndVersionIsOutdated_whenCriteriaAreMet_thenShouldUpdateSlowSyncVersion() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withSatisfiedCriteria()
+                .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+                .withSlowSyncWorkerReturning(emptyFlow())
+                .withLastSlowSyncPerformedOnAnOldVersion()
+                .arrange()
+
+            advanceUntilIdle()
+
+            verify(arrangement.slowSyncRepository)
+                .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
+                .with(any())
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenItWasCompletedRecentlyAndVersionIsUpToDate_whenCriteriaAreMet_thenShouldNotUpdateSlowSyncVersion() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withSatisfiedCriteria()
+                .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+                .withSlowSyncWorkerReturning(emptyFlow())
+                .withLastSlowSyncPerformedOnANewVersion()
+                .arrange()
+
+            advanceUntilIdle()
+
+            verify(arrangement.slowSyncRepository)
+                .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
+                .with(any())
+                .wasNotInvoked()
+        }
 
     @Test
     fun givenCriteriaAreMet_whenWorkerEmitsAStep_thenShouldUpdateStateInRepository() = runTest(TestKaliumDispatcher.default) {
@@ -325,13 +370,14 @@ class SlowSyncManagerTest {
             .function(arrangement.exponentialDurationHelper::reset)
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenCriteriaAreMet_whenRecovers_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
             .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
             .withRecoveringFromFailure()
-            .withNextExponentialDuration(10.seconds)
+            .withNextExponentialDuration(1.seconds)
             .arrange()
 
         advanceUntilIdle()
@@ -365,7 +411,14 @@ class SlowSyncManagerTest {
         init {
             withLastSlowSyncPerformedAt(flowOf(null))
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
-            withNextExponentialDuration(10.seconds)
+            withNextExponentialDuration(1.seconds)
+            withLastSlowSyncPerformedOnANewVersion()
+            apply {
+                given(slowSyncRepository)
+                    .suspendFunction(slowSyncRepository::setSlowSyncVersion)
+                    .whenInvokedWith(any())
+                    .thenReturn(Unit)
+            }
         }
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
@@ -410,6 +463,20 @@ class SlowSyncManagerTest {
                 .function(exponentialDurationHelper::next)
                 .whenInvoked()
                 .thenReturn(duration)
+        }
+
+        fun withLastSlowSyncPerformedOnAnOldVersion() = apply {
+            given(slowSyncRepository)
+                .suspendFunction(slowSyncRepository::getSlowSyncVersion)
+                .whenInvoked()
+                .thenReturn(0)
+        }
+
+        fun withLastSlowSyncPerformedOnANewVersion() = apply {
+            given(slowSyncRepository)
+                .suspendFunction(slowSyncRepository::getSlowSyncVersion)
+                .whenInvoked()
+                .thenReturn(Int.MAX_VALUE)
         }
 
         private val slowSyncManager = SlowSyncManager(

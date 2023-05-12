@@ -15,6 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.persistence.adapter
 
-data class SelfDeletingMessagesStatus(val isEnabled: Boolean, val isStatusChanged: Boolean?, val enforcedTimeoutInSeconds: Int?)
+import app.cash.sqldelight.ColumnAdapter
+
+internal object ServiceTagListAdapter : ColumnAdapter<List<String>, String> {
+    override fun decode(databaseValue: String): List<String> {
+        return databaseValue.split(SEPARATOR)
+    }
+
+    override fun encode(value: List<String>): String {
+        return value.joinToString(SEPARATOR)
+    }
+
+    private const val SEPARATOR = ","
+}
