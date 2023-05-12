@@ -465,14 +465,14 @@ class SlowSyncManagerTest {
                 .thenReturn(duration)
         }
 
-        fun withOldLastSlowSyncVersion() = apply {
+        fun withLastSlowSyncPerformedOnAnOldVersion() = apply {
             given(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::getSlowSyncVersion)
                 .whenInvoked()
                 .thenReturn(0)
         }
 
-        fun withNewLastSlowSyncVersion() = apply {
+        fun withLastSlowSyncPerformedOnANewVersion() = apply {
             given(slowSyncRepository)
                 .suspendFunction(slowSyncRepository::getSlowSyncVersion)
                 .whenInvoked()
