@@ -36,5 +36,5 @@ GROUP BY conversation_id;
 getPaginatedUnreadEvents:
 SELECT * FROM UnreadEvent LIMIT ? OFFSET ?;
 
-getUnreadEventsCount:
-SELECT COUNT(*) FROM UnreadEvent;
+getConversationUnreadEventsCount:
+SELECT COUNT(*) FROM UnreadEvent WHERE  conversation_id = ?;

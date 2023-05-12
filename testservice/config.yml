@@ -1,4 +1,6 @@
 instanceCreationTimeoutInSeconds: 60
+instanceMaximumRuntimeInMinutes: 10
+instanceCleanupPeriodInMinutes: 5
 
 # the only required property is resourcePackage, for more config options see below
 swagger:

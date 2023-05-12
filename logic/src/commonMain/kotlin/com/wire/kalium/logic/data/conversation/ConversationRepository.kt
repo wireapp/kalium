@@ -189,6 +189,8 @@ interface ConversationRepository {
         conversationId: ConversationId,
         receiptMode: Conversation.ReceiptMode
     ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -599,6 +601,7 @@ internal class ConversationDataSource internal constructor(
                             conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                         }
                     }
+
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                 }
@@ -685,6 +688,9 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
+        wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
