@@ -82,6 +82,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             Status.DISABLED
         )
 
+    @Suppress("MagicNumber")
     override fun fromDTO(data: FeatureConfigData.MLSMigration?): MLSMigrationModel =
         data?.let {
             MLSMigrationModel(
