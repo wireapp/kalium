@@ -181,7 +181,7 @@ class SlowSyncManagerTest {
                 .withSatisfiedCriteria()
                 .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
                 .withSlowSyncWorkerReturning(emptyFlow())
-                .withOldLastSlowSyncVersion()
+                .withLastSlowSyncPerformedOnAnOldVersion()
                 .arrange()
 
             advanceUntilIdle()
@@ -199,7 +199,7 @@ class SlowSyncManagerTest {
                 .withSatisfiedCriteria()
                 .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
                 .withSlowSyncWorkerReturning(emptyFlow())
-                .withNewLastSlowSyncVersion()
+                .withLastSlowSyncPerformedOnANewVersion()
                 .arrange()
 
             advanceUntilIdle()
@@ -412,7 +412,7 @@ class SlowSyncManagerTest {
             withLastSlowSyncPerformedAt(flowOf(null))
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
             withNextExponentialDuration(1.seconds)
-            withNewLastSlowSyncVersion()
+            withLastSlowSyncPerformedOnANewVersion()
             apply {
                 given(slowSyncRepository)
                     .suspendFunction(slowSyncRepository::setSlowSyncVersion)
