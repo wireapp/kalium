@@ -97,7 +97,16 @@ class DeleteMessageUseCase internal constructor(
                         }
                     }
                         .onSuccess { deleteMessageAsset(message) }
-                        .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
+                        .flatMap {
+                            // in case of ephemeral message, we want to delete it completely from the device, not just mark it as deleted
+                            // as this can only happen when the user decides to delete the message, before the self-deletion timer expired
+                            val isEphemeralMessage = message is Message.Regular && message.expirationData != null
+                            if (isEphemeralMessage) {
+                                messageRepository.deleteMessage(messageId, conversationId)
+                            } else {
+                                messageRepository.markMessageAsDeleted(messageId, conversationId)
+                            }
+                        }
                         .onFailure { failure ->
                             kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
                             if (failure is CoreFailure.Unknown) {
