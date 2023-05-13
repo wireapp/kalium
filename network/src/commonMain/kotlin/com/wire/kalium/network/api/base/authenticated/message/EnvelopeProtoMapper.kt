@@ -23,6 +23,7 @@ import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
 import com.wire.kalium.protobuf.otr.UserEntry
+import com.wire.kalium.protobuf.otr.UserId
 import pbandk.ByteArr
 import pbandk.encodeToByteArray
 
@@ -40,7 +41,7 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
         val qualifiedEntries = envelopeParameters.recipients.entries.groupBy({ it.key.domain }) { userEntry ->
             val clientEntries = userEntry.value.entries.map(otrClientEntryMapper::toOtrClientEntry)
             UserEntry(
-                user = otrUserIdMapper.toOtrUserId(userEntry.key.value),
+                user = UserId(ByteArr(otrUserIdMapper.toOtrUserId(userEntry.key.value))),
                 clients = clientEntries
             )
         }.entries.map { (domain, userEntries) ->
