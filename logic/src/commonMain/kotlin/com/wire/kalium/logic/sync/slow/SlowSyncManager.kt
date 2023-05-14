@@ -103,7 +103,9 @@ internal class SlowSyncManager(
                 logger.i("Last SlowSync was performed on '$lastTimeSlowSyncWasPerformed'")
                 val nextSlowSyncDateTime = lastTimeSlowSyncWasPerformed + MIN_TIME_BETWEEN_SLOW_SYNCS
                 logger.i("Next SlowSync should be performed on '$nextSlowSyncDateTime'")
-                currentTime > nextSlowSyncDateTime
+                val lastVersion = slowSyncRepository.getSlowSyncVersion()
+                logger.i("Last saved SlowSync version is $lastVersion, current is $CURRENT_VERSION")
+                currentTime > nextSlowSyncDateTime || CURRENT_VERSION > lastVersion
             } ?: true
         }
 
@@ -128,6 +130,7 @@ internal class SlowSyncManager(
                 logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                 performSlowSync()
                 logger.i("SlowSync completed. Updating last completion instant")
+                slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
                 slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
             } else {
                 logger.i("No need to perform SlowSync. Marking as Complete")
@@ -152,5 +155,6 @@ internal class SlowSyncManager(
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
+        const val CURRENT_VERSION = 1 // bump this version to perform slow sync when some new feature flag was added
     }
 }

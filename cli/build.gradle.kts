@@ -83,7 +83,7 @@ kotlin {
                  implementation(libs.okhttp.loggingInterceptor)
              }
         }
-        val darwinMain by creating {
+        val appleMain by creating {
             dependsOn(commonMain)
 
             dependencies {
@@ -91,10 +91,10 @@ kotlin {
             }
         }
         val macosX64Main by getting {
-            dependsOn(darwinMain)
+            dependsOn(appleMain)
         }
         val macosArm64Main by getting {
-            dependsOn(darwinMain)
+            dependsOn(appleMain)
         }
 
         tasks.withType<JavaExec> {

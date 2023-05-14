@@ -51,6 +51,14 @@ class SlowSyncRepositoryTest {
         assertEquals(instant, slowSyncRepository.observeLastSlowSyncCompletionInstant().first())
     }
 
+    @Test
+    fun givenVersionIsUpdated_whenGettingTheLastSlowSyncVersion_thenShouldReturnTheNewState() = runTest(testDispatcher) {
+        val version = 2
+
+        slowSyncRepository.setSlowSyncVersion(version)
+        assertEquals(version, slowSyncRepository.getSlowSyncVersion())
+    }
+
     @IgnoreIOS // TODO investigate why test is failing
     @Test
     fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
