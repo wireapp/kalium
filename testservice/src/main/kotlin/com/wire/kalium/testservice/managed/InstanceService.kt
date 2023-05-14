@@ -27,7 +27,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -38,6 +37,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
@@ -52,7 +52,11 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.Response
 
@@ -61,11 +65,19 @@ This service makes sure that instances are destroyed (used files deleted) on
 shutdown of the service and also periodically checks for leftover instances
 which are not needed anymore.
  */
-class InstanceService(val metricRegistry: MetricRegistry) : Managed {
+class InstanceService(
+    val metricRegistry: MetricRegistry,
+    private val cleanupPool: ScheduledExecutorService,
+    private val configuration: TestserviceConfiguration
+) : Managed {
 
     private val log = LoggerFactory.getLogger(InstanceService::class.java.name)
     private val instances: MutableMap<String, Instance> = ConcurrentHashMap<String, Instance>()
     private val scope = CoroutineScope(Dispatchers.Default)
+    private val maximumRuntime: Duration = Duration.ofMinutes(configuration.getInstanceMaximumRuntimeInMinutes())
+    private val deleteLocalFilesTimeoutInMinutes: Duration = Duration.ofMinutes(2)
+    private val cleanupPeriod: Duration = Duration.ofMinutes(configuration.getInstanceCleanupPeriodInMinutes())
+    private var cleanupTask: ScheduledFuture<*>? = null
 
     override fun start() {
         log.info("Instance service started.")
@@ -78,10 +90,20 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             Gauge {
                 instances.values
                     .filter { it.startupTime != 0L }
-                    .map { it.startupTime?.toDouble() ?: 0.0 }
+                    .map { it.startupTime.toDouble() ?: 0.0 }
                     .average()
             }
         )
+
+        cleanupTask = cleanupPool.scheduleAtFixedRate({
+            log.info("Stop instances that exist longer than ${maximumRuntime.toMinutes()} minutes")
+            instances.forEach { instance ->
+                if (System.currentTimeMillis() - instance.value.startTime > maximumRuntime.toMillis()) {
+                    log.info("Instance ${instance.key}: Instance reached maximum runtime")
+                    deleteInstance(instance.key)
+                }
+            }
+        }, maximumRuntime.toMinutes(), cleanupPeriod.toMinutes(), TimeUnit.MINUTES)
     }
 
     override fun stop() {
@@ -91,6 +113,9 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             deleteInstance(instance.key)
         }
         log.info("Instance service stopped.")
+        log.info("Run cleanup to delete files...")
+        cleanupTask?.cancel(true)
+        log.info("Cleanup done.")
     }
 
     fun getInstances(): Collection<Instance> {
@@ -209,7 +234,8 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             coreLogic,
             instancePath,
             instanceRequest.password,
-            System.currentTimeMillis() - before
+            System.currentTimeMillis() - before,
+            System.currentTimeMillis()
         )
         instances.put(instanceId, instance)
 
@@ -218,7 +244,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     fun deleteInstance(id: String) {
         val instance = getInstanceOrThrow(id)
-        log.info("Instance $id: Delete device ${instance.clientId} and logout")
+        log.info("Instance $id: Remove device ${instance.clientId}")
         instance.coreLogic?.globalScope {
             scope.launch {
                 val result = session.currentSession()
@@ -229,32 +255,32 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                                 client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))
                             }
                         }
-                        log.info("Instance $id: Device ${instance.clientId} deleted")
-                        runBlocking { logout(LogoutReason.SELF_SOFT_LOGOUT) }
+                        log.info("Instance $id: Device ${instance.clientId} removed")
                     }
                 }
-                log.info("Instance $id: Delete sessions in preference file")
-                // TODO Something like session.allSessions.deleteInvalidSession()
-            }
-        }
-        log.info("Instance $id: Logged out")
-        log.info("Instance $id: Delete locate files in ${instance.instancePath}")
-        instance.instancePath?.let {
-            try {
-                val files = Files.walk(Path.of(instance.instancePath))
-
-                // delete directory including files and sub-folders
-                files.sorted(Comparator.reverseOrder())
-                    .map { obj: Path -> obj.toFile() }
-                    .forEach { obj: File -> obj.delete() }
-
-                // close the stream
-                files.close()
-            } catch (e: IOException) {
-                log.warn("Instance $id: Could not delete directory ${instance.instancePath}: ${e.message}")
             }
         }
         instances.remove(id)
+        log.info("Instance $id: Schedule deletion of local files")
+        cleanupPool.schedule({
+            log.info("Instance ${instance.instanceId}: Delete local files in ${instance.instancePath}")
+            instance.instancePath?.let {
+                try {
+                    val files = Files.walk(Path.of(instance.instancePath))
+
+                    // delete directory including files and sub-folders
+                    files.sorted(Comparator.reverseOrder())
+                        .map { obj: Path -> obj.toFile() }
+                        .forEach { obj: File -> obj.delete() }
+
+                    // close the stream
+                    files.close()
+                } catch (e: IOException) {
+                    log.warn("Instance ${instance.instanceId}: Could not delete directory ${instance.instancePath}: "
+                            + e.message)
+                }
+            }
+        }, deleteLocalFilesTimeoutInMinutes.toMinutes(), TimeUnit.MINUTES)
     }
 
     private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links): AuthenticationScope =

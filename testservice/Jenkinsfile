@@ -37,6 +37,8 @@ pipeline {
                 expression { return sh(returnStdout: true, script: 'uname -s').contains('Linux') }
             }
             steps {
+                // Remove old files
+                sh "rm -rf ${HOME}/.testservice/"
                 sh "mkdir -p ${HOME}/.config/systemd/user/"
                 sh """printf \\
 '[Unit]
