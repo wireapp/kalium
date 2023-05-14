@@ -87,5 +87,4 @@ class AddMemberToConversationUseCaseTest {
 
         fun arrange() = this to addMemberUseCase
     }
-
 }

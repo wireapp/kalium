@@ -212,6 +212,11 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
+            is MessageEntityContent.ConversationMessageTimerChanged -> messagesQueries.insertConversationMessageTimerChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                message_timer = content.messageTimer
+            )
         }
     }
 
@@ -299,5 +304,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
+        is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
     }
 }

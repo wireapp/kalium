@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -40,11 +42,13 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -58,12 +62,14 @@ interface ConversationGroupRepository {
     ): Either<CoreFailure, Conversation>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
+    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -146,6 +152,28 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.MLS -> {
                         mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                     }
+                }
+            }
+
+    override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            .flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus -> {
+                        wrapApiRequest {
+                            conversationApi.addService(
+                                AddServiceRequest(id = serviceId.id, provider = serviceId.provider),
+                                conversationId.toApi()
+                            )
+                        }.onSuccess { response ->
+                            if (response is ServiceAddedResponse.Changed) {
+                                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+                            }
+                        }.map { Unit }
+                    }
+
+                    is ConversationEntity.ProtocolInfo.MLS ->
+                        Either.Left(MLSFailure(UnsupportedOperationException("Adding service to MLS conversation is not supported")))
                 }
             }
 
@@ -245,4 +273,11 @@ internal class ConversationGroupRepositoryImpl(
 
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
+
+    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer)
+        }
+            .onSuccess { conversationDAO.updateMessageTimer(conversationId.toDao(), messageTimer) }
+            .map { }
 }

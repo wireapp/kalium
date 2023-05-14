@@ -88,7 +88,7 @@ kotlin {
                 implementation(libs.ktor.okHttp)
             }
         }
-        val darwinMain by getting {
+        val appleMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }

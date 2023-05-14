@@ -63,7 +63,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
-            // TODO handle other feature flags
+            // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             handleGuestRoomLinkFeatureFlag(it.guestRoomLinkModel)
             handleFileSharingStatus(it.fileSharingModel)
             handleMLSStatus(it.mlsModel)
@@ -145,7 +145,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
             val selfDeletionTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
                 selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
                 else -> SelfDeletionTimer.Disabled
             }

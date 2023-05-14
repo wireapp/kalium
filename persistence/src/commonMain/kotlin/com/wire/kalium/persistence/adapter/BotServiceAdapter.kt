@@ -19,16 +19,16 @@
 package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 
-internal class BotServiceAdapter : ColumnAdapter<BotEntity, String> {
+internal class BotServiceAdapter : ColumnAdapter<BotIdEntity, String> {
 
-    override fun decode(databaseValue: String): BotEntity {
+    override fun decode(databaseValue: String): BotIdEntity {
         val components = databaseValue.split("@")
-        return BotEntity(components.first(), components.last())
+        return BotIdEntity(components.first(), components.last())
     }
 
-    override fun encode(value: BotEntity): String {
+    override fun encode(value: BotIdEntity): String {
         return "${value.id}@${value.provider}"
     }
 

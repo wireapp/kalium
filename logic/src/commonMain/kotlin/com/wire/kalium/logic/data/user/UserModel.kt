@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.serialization.SerialName
@@ -159,7 +160,11 @@ data class OtherUser(
 data class BotService(
     val id: String,
     val provider: String
-)
+) {
+    override fun toString(): String {
+        return "$id$VALUE_DOMAIN_SEPARATOR$provider"
+    }
+}
 
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID

@@ -34,7 +34,7 @@ class LibraryPlugin : Plugin<Project> {
 
     abstract class Extension(private val project: Project) {
         interface MultiplatformConfiguration {
-            val enableDarwin: Property<Boolean>
+            val enableApple: Property<Boolean>
             val enableJs: Property<Boolean>
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
@@ -50,7 +50,7 @@ class LibraryPlugin : Plugin<Project> {
         fun multiplatform(action: Action<MultiplatformConfiguration> = defaultConfiguration) {
             action.execute(multiplatformConfiguration)
             project.configureDefaultMultiplatform(
-                enableDarwin = multiplatformConfiguration.enableDarwin.getOrElse(true),
+                enableApple = multiplatformConfiguration.enableApple.getOrElse(true),
                 enableJs = multiplatformConfiguration.enableJs.getOrElse(true),
                 enableJsTests = multiplatformConfiguration.enableJsTests.getOrElse(true),
                 includeNativeInterop = multiplatformConfiguration.includeNativeInterop.getOrElse(false)
