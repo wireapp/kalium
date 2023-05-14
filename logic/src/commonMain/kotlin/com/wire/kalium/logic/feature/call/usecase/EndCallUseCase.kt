@@ -46,7 +46,7 @@ class EndCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-): EndCallUseCase {
+) : EndCallUseCase {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.

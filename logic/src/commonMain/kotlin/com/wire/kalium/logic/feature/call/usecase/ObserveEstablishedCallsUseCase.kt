@@ -35,7 +35,7 @@ interface ObserveEstablishedCallsUseCase {
 
 internal class ObserveEstablishedCallsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
-): ObserveEstablishedCallsUseCase {
+) : ObserveEstablishedCallsUseCase {
     override suspend operator fun invoke(): Flow<List<Call>> {
         return callRepository.establishedCallsFlow()
     }
