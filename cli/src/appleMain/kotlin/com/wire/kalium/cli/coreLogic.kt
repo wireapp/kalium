@@ -14,11 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
- *
  */
 
-package com.wire.kalium.logic.util
+package com.wire.kalium.cli
 
-actual class CurrentPlatform(
-    val type: PlatformType = PlatformType.DARWIN
-)
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
+
+actual fun coreLogic(
+    rootPath: String,
+    kaliumConfigs: KaliumConfigs
+): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Kalium CLI/apple")

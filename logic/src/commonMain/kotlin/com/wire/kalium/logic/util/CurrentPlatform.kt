@@ -24,5 +24,5 @@ expect class CurrentPlatform
 enum class PlatformType(val value: String) {
     ANDROID("Android"),
     JVM("Jvm"),
-    DARWIN("Darwin")
+    APPLE("Apple")
 }

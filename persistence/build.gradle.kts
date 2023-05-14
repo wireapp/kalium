@@ -106,7 +106,7 @@ kotlin {
                 implementation(libs.sql.android.cipher)
             }
         }
-        val darwinMain by getting {
+        val appleMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
