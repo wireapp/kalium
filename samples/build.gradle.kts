@@ -57,7 +57,7 @@ kotlin {
             }
         }
 
-        val darwinMain by getting {
+        val appleMain by getting {
             dependencies {
                 implementation(project(":logic"))
                 implementation(project(":calling"))

@@ -225,4 +225,7 @@ class ConversationScope internal constructor(
             persistMessage,
             selfUserId
         )
+
+    val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
+        get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
 }

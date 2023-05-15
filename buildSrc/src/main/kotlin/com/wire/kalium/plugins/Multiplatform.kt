@@ -19,6 +19,7 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
@@ -29,8 +30,9 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  *
  * @see commonDokkaConfig
  */
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 fun Project.configureDefaultMultiplatform(
-    enableDarwin: Boolean,
+    enableApple: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean,
@@ -41,6 +43,7 @@ fun Project.configureDefaultMultiplatform(
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
+        targetHierarchy.default()
         jvm { commonJvmConfig(includeNativeInterop) }
 
         android { commmonKotlinAndroidTargetConfig() }
@@ -49,8 +52,8 @@ fun Project.configureDefaultMultiplatform(
             js { commonJsConfig(enableJsTests) }
         }
 
-        if (enableDarwin) {
-            commonDarwinMultiplatformConfig()
+        if (enableApple) {
+            commonAppleMultiplatformConfig()
         }
     }
 

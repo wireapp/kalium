@@ -29,7 +29,7 @@ internal actual class GlobalWorkSchedulerImpl(
 ) : GlobalWorkScheduler {
     override fun schedulePeriodicApiVersionUpdate() {
         kaliumLogger.w(
-            "Scheduling a periodic execution of checking the API version is not supported on Darwin."
+            "Scheduling a periodic execution of checking the API version is not supported on Apple devices."
         )
     }
 
