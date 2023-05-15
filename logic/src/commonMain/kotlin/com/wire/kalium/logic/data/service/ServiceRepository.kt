@@ -22,14 +22,21 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageNullableRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 interface ServiceRepository {
+    suspend fun getAllServices(): Either<StorageFailure, Flow<List<ServiceDetails>>>
+    suspend fun searchServicesByName(name: String): Either<StorageFailure, Flow<List<ServiceDetails>>>
     suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?>
     suspend fun observeIsServiceMember(
         serviceId: ServiceId,
@@ -39,8 +46,36 @@ interface ServiceRepository {
 
 internal class ServiceDataSource internal constructor(
     private val serviceDAO: ServiceDAO,
+    private val userRepository: UserRepository,
+    private val teamRepository: TeamRepository,
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : ServiceRepository {
+
+    override suspend fun getAllServices(): Either<StorageFailure, Flow<List<ServiceDetails>>> =
+        wrapStorageRequest {
+            serviceDAO.getAllServices().map {
+                it.map { serviceEntity ->
+                    serviceMapper.fromDaoToModel(service = serviceEntity)
+                }
+            }.map {
+//                 if (it.isEmpty()) {
+//                     val user = userRepository.observeSelfUser().first()
+//                     user.teamId?.let { teamId ->
+//                         teamRepository.syncServices(teamId = teamId)
+//                     }
+//                 }
+                it
+            }
+        }
+
+    override suspend fun searchServicesByName(name: String): Either<StorageFailure, Flow<List<ServiceDetails>>> =
+        wrapStorageRequest {
+            serviceDAO.searchServicesByName(query = name).map {
+                it.map { serviceEntity ->
+                    serviceMapper.fromDaoToModel(service = serviceEntity)
+                }
+            }
+        }
 
     override suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?> =
         wrapStorageNullableRequest {
