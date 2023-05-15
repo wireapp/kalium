@@ -23,18 +23,25 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
+import kotlin.time.Duration.Companion.hours
 
-interface PendingMetadataUpdateManager {
-    suspend fun refreshPendingMetadata(): Either<CoreFailure, Unit>
+/**
+ * This class is responsible for checking if there are any users or conversations without metadata
+ * and if so, it will refresh them.
+ *
+ * The criteria for this is in a window of 3 hours.
+ */
+interface MissingMetadataUpdateManager {
+    suspend fun performSyncIfNeeded(): Either<CoreFailure, Unit>
 }
 
-internal class PendingMetadataUpdateManagerImpl(
+internal class MissingMetadataUpdateManagerImpl(
     private val metadataDAO: MetadataDAO,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
-) : PendingMetadataUpdateManager {
+) : MissingMetadataUpdateManager {
 
-    override suspend fun refreshPendingMetadata(): Either<CoreFailure, Unit> {
+    override suspend fun performSyncIfNeeded(): Either<CoreFailure, Unit> {
         wrapStorageRequest {
             // todo: check for last time performed
             // todo: if > 3 hrs, refresh users and conversations and update last time performed
@@ -44,6 +51,7 @@ internal class PendingMetadataUpdateManagerImpl(
     }
 
     companion object {
-        const val LAST_MISSING_METADATA_SYNC = "LAST_MISSING_METADATA_SYNC"
+        const val LAST_MISSING_METADATA_SYNC_KEY = "LAST_MISSING_METADATA_SYNC_INSTANT"
+        val MIN_TIME_BETWEEN_METADATA_SYNCS = 3.hours
     }
 }
