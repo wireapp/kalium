@@ -20,12 +20,15 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -39,7 +42,8 @@ internal interface NewMessageEventHandler {
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
-    private val applicationMessageHandler: ApplicationMessageHandler
+    private val applicationMessageHandler: ApplicationMessageHandler,
+    private val logoutUseCase: LogoutUseCase
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -55,6 +59,11 @@ internal class NewMessageEventHandlerImpl(
 
                 if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
                     logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
+                    return
+                }
+
+                if (it is CoreFailure.MissingClientRegistration) {
+                    logoutUseCase(LogoutReason.REMOVED_CLIENT)
                     return
                 }
 
