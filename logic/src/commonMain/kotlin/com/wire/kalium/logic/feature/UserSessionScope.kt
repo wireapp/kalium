@@ -522,7 +522,11 @@ class UserSessionScope internal constructor(
         )
 
     private val serviceRepository: ServiceRepository
-        get() = ServiceDataSource(serviceDAO = userStorage.database.serviceDAO)
+        get() = ServiceDataSource(
+            serviceDAO = userStorage.database.serviceDAO,
+            userRepository = userRepository,
+            teamRepository = teamRepository
+        )
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(

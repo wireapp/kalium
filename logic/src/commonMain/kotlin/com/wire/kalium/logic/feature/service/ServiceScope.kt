@@ -32,4 +32,9 @@ class ServiceScope internal constructor(
         get() = ObserveIsServiceMemberUseCaseImpl(
             serviceRepository = serviceRepository
         )
+
+    val observeAllServices: ObserveAllServicesUseCase
+        get() = ObserveAllServicesUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
 }

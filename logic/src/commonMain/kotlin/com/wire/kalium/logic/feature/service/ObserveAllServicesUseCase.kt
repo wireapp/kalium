@@ -23,20 +23,19 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-interface GetAllServicesUseCase {
+interface ObserveAllServicesUseCase {
 
     suspend operator fun invoke(): Flow<List<ServiceDetails>>
 }
 
-class GetAllServicesUseCaseImpl internal constructor(
+class ObserveAllServicesUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
-) : GetAllServicesUseCase {
+) : ObserveAllServicesUseCase {
 
     override suspend fun invoke(): Flow<List<ServiceDetails>> =
         serviceRepository.getAllServices()
             .fold({
                 flowOf(listOf())
-                // TODO(Service): Run API request here in case it is empty?
             }, {
                 it
             })
