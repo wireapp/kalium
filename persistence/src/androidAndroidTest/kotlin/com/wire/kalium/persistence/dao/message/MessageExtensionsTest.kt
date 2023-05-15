@@ -36,7 +36,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageExtensionsTest : BaseDatabaseTest() {
@@ -106,10 +108,11 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         populateMessageData()
 
         val pagingSource = getPager().pagingSource
-        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
+        val secondPageResult = pagingSource.nextPageForOffset(1)
 
         assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
-
+        assertFalse { secondPageResult.data.isEmpty() }
+        assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, message ->
             assertEquals((index + PAGE_SIZE).toString(), message.id)
         }
