@@ -31,6 +31,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -136,17 +137,17 @@ class ClearConversationContentTest {
             verify(assetRepository)
                 .suspendFunction(assetRepository::deleteAsset)
                 .with(anything(), anything(), anything())
-                .wasInvoked()
+                .wasNotInvoked()
 
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::deleteAllMessages)
                 .with(anything())
-                .wasInvoked()
+                .wasInvoked(exactly = once)
 
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::getAssetMessages)
                 .with(anything())
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
 
         assertIs<Either.Left<CoreFailure>>(result)

@@ -49,6 +49,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -95,7 +96,7 @@ class ApplicationMessageHandlerTest {
                             (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
                 }
             )
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
