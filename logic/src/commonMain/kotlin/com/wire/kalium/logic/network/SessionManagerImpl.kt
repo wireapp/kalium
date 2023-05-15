@@ -47,10 +47,6 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
-import kotlinx.atomicfu.AtomicRef
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
-import kotlinx.atomicfu.updateAndGet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -67,7 +63,7 @@ class SessionManagerImpl internal constructor(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
-    private val session: SessionDTO? = null
+    private var session: SessionDTO? = null
     private var serverConfig: ServerConfigDTO? = null
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
@@ -86,11 +82,11 @@ class SessionManagerImpl internal constructor(
         }
     }
 
-    override fun serverConfig(): ServerConfigDTO = serverConfig?: run {
-            sessionRepository.fullAccountInfo(userId)
-                .map { serverConfigMapper.toDTO(it.serverConfig) }
-                .onSuccess { serverConfig = it }
-                .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
+    override fun serverConfig(): ServerConfigDTO = serverConfig ?: run {
+        sessionRepository.fullAccountInfo(userId)
+            .map { serverConfigMapper.toDTO(it.serverConfig) }
+            .onSuccess { serverConfig = it }
+            .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
         serverConfig!!
     }!!
 
