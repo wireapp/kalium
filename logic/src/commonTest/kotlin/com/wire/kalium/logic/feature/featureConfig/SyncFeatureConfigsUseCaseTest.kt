@@ -58,8 +58,6 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @OptIn(ExperimentalCoroutinesApi::class)
-
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncFeatureConfigsUseCaseTest {
 
     @Test
@@ -541,7 +539,7 @@ class SyncFeatureConfigsUseCaseTest {
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
             .withSuccessfulTeamSettingsSelfDeletionStatus()
@@ -567,7 +565,7 @@ class SyncFeatureConfigsUseCaseTest {
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
             .withSuccessfulTeamSettingsSelfDeletionStatus()
@@ -594,7 +592,7 @@ class SyncFeatureConfigsUseCaseTest {
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
             .withSuccessfulTeamSettingsSelfDeletionStatus()
