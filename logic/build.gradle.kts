@@ -48,7 +48,6 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
-                implementation(libs.ktx.atomicfu)
 
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(libs.settings.kmp)

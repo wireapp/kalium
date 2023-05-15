@@ -67,14 +67,14 @@ class SessionManagerImpl internal constructor(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
-    private val session: AtomicRef<SessionDTO?> = atomic(null)
-    private var serverConfig: AtomicRef<ServerConfigDTO?> = atomic(null)
+    private val session: SessionDTO? = null
+    private var serverConfig: ServerConfigDTO? = null
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
-        session.value ?: run {
+        session ?: run {
             wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
                 .map { sessionMapper.fromEntityToSessionDTO(it) }
-                .onSuccess { session.update { it } }
+                .onSuccess { session = it }
                 .onFailure {
                     kaliumLogger.e(
                         """SESSION MANAGER: 
@@ -82,15 +82,16 @@ class SessionManagerImpl internal constructor(
                     |"cause": "$it" """.trimMargin()
                     )
                 }
-            session.value
+            session
         }
     }
 
-    override fun serverConfig(): ServerConfigDTO = serverConfig.updateAndGet {
-        it ?: serverConfigMapper.toDTO(
+    override fun serverConfig(): ServerConfigDTO = serverConfig?: run {
             sessionRepository.fullAccountInfo(userId)
-                .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it.serverConfig })
-        )
+                .map { serverConfigMapper.toDTO(it.serverConfig) }
+                .onSuccess { serverConfig = it }
+                .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
+        serverConfig!!
     }!!
 
     override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
@@ -104,7 +105,7 @@ class SessionManagerImpl internal constructor(
         }.map {
             sessionMapper.fromEntityToSessionDTO(it)
         }.onSuccess {
-            session.update { it }
+            session = it
         }.nullableFold({
             null
         }, {
