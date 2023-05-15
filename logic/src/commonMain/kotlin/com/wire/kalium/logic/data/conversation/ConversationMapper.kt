@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -75,6 +76,7 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
+    fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -346,6 +348,24 @@ internal class ConversationMapperImpl(
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)
         )
     }
+
+    override fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
+        id = conversationId.toDao(),
+        name = null,
+        type = ConversationEntity.Type.GROUP,
+        teamId = null,
+        protocolInfo = ProtocolInfo.Proteus,
+        mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+        mutedTime = 0,
+        removedBy = null,
+        creatorId = "",
+        lastNotificationDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastModifiedDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        access = emptyList(),
+        accessRole = emptyList(),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+    )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {

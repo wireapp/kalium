@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
@@ -245,7 +246,8 @@ internal class ConversationDataSource internal constructor(
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
-                            .d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                            .d("Handling ${conversations.conversationsFailed.size} conversations failed")
+                        handleFailedConversations(conversations.conversationsFailed)
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
@@ -599,6 +601,7 @@ internal class ConversationDataSource internal constructor(
                             conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                         }
                     }
+
                 is Conversation.ProtocolInfo.Proteus -> wrapStorageRequest {
                     conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
                 }
@@ -682,6 +685,18 @@ internal class ConversationDataSource internal constructor(
                         receiptMode = receiptModeMapper.fromApiToDaoModel(response.event.data.receiptMode)
                     )
                 }
+            }
+        }
+    }
+
+    private suspend fun handleFailedConversations(
+        conversationsFailed: List<NetworkQualifiedId>
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            if (conversationsFailed.isNotEmpty()) {
+                conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
+                    conversationMapper.fromFailedConversationToEntity(conversationId)
+                })
             }
         }
     }
