@@ -55,6 +55,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okio.Path
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 fun interface ScheduleNewAssetMessageUseCase {
@@ -163,15 +164,29 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
             persistMessage(message).onSuccess {
-                messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
-                    if (visibility == MessageEntity.Visibility.DELETED) {
-                        // If the message is deleted we cancel the upload
-                        outGoingAssetUploadJob?.cancel()
-                    }
-                }
                 // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
                 outGoingAssetUploadJob = scope.launch(dispatcher.io) {
-                    uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                    launch {
+                        messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
+                            if (visibility == MessageEntity.Visibility.DELETED) {
+                                // If the message is deleted we cancel the upload
+                                outGoingAssetUploadJob?.cancel()
+                            }
+                        }
+                    }
+                    launch {
+                        uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                    }
+                }
+
+                outGoingAssetUploadJob?.apply {
+                    invokeOnCompletion { cause ->
+                        if (cause is CancellationException) {
+                            kaliumLogger.d(
+                                "Asset upload was cancelled for message with id ${message.id} and conversationId $conversationId due to message deletion"
+                            )
+                        }
+                    }
                 }
             }
         }.fold({
