@@ -183,7 +183,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     invokeOnCompletion { cause ->
                         if (cause is CancellationException) {
                             kaliumLogger.d(
-                                "Asset upload was cancelled for message with id ${message.id} and conversationId $conversationId due to message deletion"
+                                "Asset upload was cancelled, for message with id ${message.id} and conversationId $conversationId"
                             )
                         }
                     }
