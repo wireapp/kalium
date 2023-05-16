@@ -48,7 +48,7 @@ internal class MLSMigrationRepositoryImpl(
 
     override suspend fun fetchMigrationConfiguration(): Either<CoreFailure, Unit> {
         return wrapApiRequest { featureConfigApi.featureConfigs() }
-            .flatMap { it.mlsMigration?.let { setMigrationConfiguration(featureConfigMapper.fromDTO(it)) } ?: Either.Right(Unit) }
+            .flatMap { setMigrationConfiguration(featureConfigMapper.fromDTO(it.mlsMigration)) }
     }
 
     override suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel> =
