@@ -45,7 +45,7 @@ interface MLSClientManager
 @Suppress("LongParameterList")
 internal class MLSClientManagerImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val isMLSEnabled: IsMLSEnabledUseCase,
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val slowSyncRepository: Lazy<SlowSyncRepository>,
     private val clientRepository: Lazy<ClientRepository>,
@@ -68,7 +68,7 @@ internal class MLSClientManagerImpl(
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
                 if (syncState is IncrementalSyncStatus.Live &&
-                    isMLSEnabled()
+                    isAllowedToRegisterMLSClient()
                 ) {
                     registerMLSClientIfNeeded()
                 }
