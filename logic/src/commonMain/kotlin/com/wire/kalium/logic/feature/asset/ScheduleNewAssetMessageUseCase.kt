@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -46,9 +47,11 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okio.Path
@@ -92,10 +95,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val messageRepository: MessageRepository,
     private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
+
+    private var outGoingAssetUploadJob: Job? = null
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -124,6 +130,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)), // Sha256 will be replaced with right values after asset upload
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
         )
+
         lateinit var message: Message.Regular
 
         return currentClientIdProvider().flatMap { currentClientId ->
@@ -156,8 +163,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
             persistMessage(message).onSuccess {
+                messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
+                    if (visibility == MessageEntity.Visibility.DELETED) {
+                        // If the message is deleted we cancel the upload
+                        outGoingAssetUploadJob?.cancel()
+                    }
+                }
                 // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
-                scope.launch(dispatcher.io) {
+                outGoingAssetUploadJob = scope.launch(dispatcher.io) {
                     uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
                 }
             }
