@@ -295,6 +295,11 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .wasInvoked(exactly = twice)
         }
 
+    @Test
+    fun test() = runTest(testDispatcher.default) {
+
+    }
+
     private class Arrangement {
 
         @Mock
