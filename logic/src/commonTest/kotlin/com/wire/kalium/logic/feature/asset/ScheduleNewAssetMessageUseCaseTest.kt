@@ -57,6 +57,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -128,6 +129,43 @@ class ScheduleNewAssetMessageUseCaseTest {
 
             // Then
             assertTrue(result is ScheduleNewAssetMessageResult.Success)
+        }
+
+    @Test
+    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenAssetShouldStillBeSavedInitiallyWithStatusUploadFailed() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val unauthorizedException = TestNetworkException.missingAuth
+            val (arrangement, sendAssetUseCase) = Arrangement()
+                .withUploadAssetErrorResponse(unauthorizedException)
+                .arrange()
+
+            // When
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
+            advanceUntilIdle()
+
+            // Then
+            verify(arrangement.assetDataSource)
+                .suspendFunction(arrangement.assetDataSource::persistAsset)
+                .with(any(), any(), eq(dataPath), any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.updateUploadStatus)
+                .suspendFunction(arrangement.updateUploadStatus::invoke)
+                .with(matching { it == Message.UploadStatus.FAILED_UPLOAD }, any(), any())
+                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -207,7 +245,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         }
 
     @Test
-    fun givenAnErrorAtInitialMessagePersistCall_whenCheckingTheMessageRepository_thenTheAssetUploadStatusIsMarkedAsFailed() =
+    fun givenAnErrorAtInitialAssetPersistCall_whenCheckingTheMessageRepository_thenTheAssetUploadStatusIsMarkedAsFailed() =
         runTest(testDispatcher.default) {
             // Given
             val assetToSend = mockedLongAssetData()
@@ -215,7 +253,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val (arrangement, sendAssetUseCase) = Arrangement()
-                .withPersistErrorResponse()
+                .withPersistAssetErrorResponse()
                 .arrange()
 
             // When
@@ -232,6 +270,55 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
+            verify(arrangement.assetDataSource)
+                .suspendFunction(arrangement.assetDataSource::persistAsset)
+                .with(any(), any(), eq(dataPath), any(), any())
+                .wasInvoked(once)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.updateUploadStatus)
+                .suspendFunction(arrangement.updateUploadStatus::invoke)
+                .with(
+                    matching {
+                        it == Message.UploadStatus.FAILED_UPLOAD
+                    },
+                    any(), any()
+                )
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenAnErrorAtInitialMessagePersistCall_whenCheckingTheMessageRepository_thenTheAssetUploadStatusIsMarkedAsFailed() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val (arrangement, sendAssetUseCase) = Arrangement()
+                .withPersistMessageErrorResponse()
+                .arrange()
+
+            // When
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                expireAfter = null
+            )
+            advanceUntilIdle()
+
+            // Then
+            verify(arrangement.assetDataSource)
+                .suspendFunction(arrangement.assetDataSource::persistAsset)
+                .with(any(), any(), eq(dataPath), any(), any())
+                .wasInvoked(once)
             verify(arrangement.persistMessage)
                 .suspendFunction(arrangement.persistMessage::invoke)
                 .with(
@@ -306,7 +393,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
-        private val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
@@ -323,6 +410,8 @@ class ScheduleNewAssetMessageUseCaseTest {
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
+
+        private val testScope = TestScope(testDispatcher.default)
 
         init {
             withToggleReadReceiptsStatus()
@@ -343,7 +432,15 @@ class ScheduleNewAssetMessageUseCaseTest {
             return this
         }
 
-        fun withSuccessfulResponse(expectedAssetId: UploadedAssetId, assetSHA256Key: SHA256Key): Arrangement = apply {
+        fun withSuccessfulResponse(
+            expectedAssetId: UploadedAssetId,
+            assetSHA256Key: SHA256Key,
+            temporaryAssetId: String = "temporary_id"
+            ): Arrangement = apply {
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::persistAsset)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
@@ -384,6 +481,10 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(assetDataSource)
+                .suspendFunction(assetDataSource::persistAsset)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
+            given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
@@ -393,7 +494,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withPersistErrorResponse() = apply {
+        fun withPersistMessageErrorResponse() = apply {
             given(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
@@ -402,9 +503,32 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .getter(slowSyncRepository::slowSyncStatus)
                 .whenInvoked()
                 .thenReturn(completeStateFlow)
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::persistAsset)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
+                .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
+            given(updateUploadStatus)
+                .suspendFunction(updateUploadStatus::invoke)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+        }
+
+        fun withPersistAssetErrorResponse() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(someClientId))
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::persistAsset)
+                .whenInvokedWith(any(), any(), any(), any(), any())
                 .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
             given(updateUploadStatus)
                 .suspendFunction(updateUploadStatus::invoke)
@@ -422,6 +546,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
+            testScope,
             testDispatcher
         )
     }

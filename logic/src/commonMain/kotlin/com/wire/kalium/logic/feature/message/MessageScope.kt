@@ -171,6 +171,7 @@ class MessageScope internal constructor(
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
+            scope,
             dispatcher
         )
 

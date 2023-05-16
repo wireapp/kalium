@@ -44,12 +44,15 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.Path
 import kotlin.time.Duration
@@ -94,6 +97,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
+    private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
     override suspend fun invoke(
@@ -126,20 +130,20 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 assetHeight = assetHeight,
                 expireAfter = expireAfter,
                 expectsReadConfirmation = expectsReadConfirmation
-            ).flatMap { (currentAssetMessageContent, message) ->
-                // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
-                uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
-                    .map {
-                        // We delete asset added temporarily that was used to show the loading
-                        assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
-                        message.id
-                    }
+            ).onSuccess { (currentAssetMessageContent, message) ->
+                // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
+                scope.launch(dispatcher.io) {
+                    uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                        .onSuccess {
+                            // We delete asset added temporarily that was used to show the loading
+                            assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
+                        }
+                }
             }
         }.fold({
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
             ScheduleNewAssetMessageResult.Failure(it)
-        }, { messageId ->
-            ScheduleNewAssetMessageResult.Success(messageId)
+        }, { (_, message) ->
+            ScheduleNewAssetMessageResult.Success(message.id)
         })
     }
 
@@ -204,6 +208,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     persistMessage(message)
                         .map { currentAssetMessageContent to message }
                 }
+                .onFailure {
+                    updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, messageId)
+                    messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, messageId, TYPE)
+                }
         }
     }
 
@@ -221,6 +229,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             currentAssetMessageContent.assetName.fileExtension()
         ).onFailure {
             updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, message.id, TYPE)
         }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist
             // and update the message on the DB layer to display the changes on the Conversation screen
@@ -240,9 +249,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     kaliumLogger.e(
                         "There was an error when trying to persist the updated asset message with the information returned by the backend"
                     )
-                }.flatMap {
+                }.onSuccess {
                     // Finally we try to send the Asset Message to the recipients of the given conversation
-                    messageSender.sendMessage(updatedMessage)
+                    messageSender.sendPendingMessage(updatedMessage.conversationId, updatedMessage.id)
                 }
         }
 
