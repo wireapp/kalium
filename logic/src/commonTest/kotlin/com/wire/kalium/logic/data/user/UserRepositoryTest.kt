@@ -441,6 +441,28 @@ class UserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenThereAreNOUsersWithoutMetadata_whenSyncingUsers_thenShouldNOTUpdateThem() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withDaoReturningNoMetadataUsers(listOf())
+            .arrange()
+
+        // when
+        userRepository.syncUsersWithoutMetadata()
+            .shouldSucceed()
+
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
