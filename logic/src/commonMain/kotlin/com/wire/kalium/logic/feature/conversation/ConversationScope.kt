@@ -213,4 +213,9 @@ class ConversationScope internal constructor(
         get() = ObserveGuestRoomLinkUseCaseImpl(
             conversationGroupRepository
         )
+
+    val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
+        get() = RefreshConversationsWithoutMetadataUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
 }

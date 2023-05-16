@@ -224,6 +224,8 @@ import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
+import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -657,6 +659,14 @@ class UserSessionScope internal constructor(
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             slowSyncRepository, incrementalSyncRepository
+        )
+    }
+
+    val missingMetadataUpdateManager: MissingMetadataUpdateManager by lazy {
+        MissingMetadataUpdateManagerImpl(
+            userStorage.database.metadataDAO,
+            users.refreshUsersWithoutMetadata,
+            conversations.refreshConversationsWithoutMetadata
         )
     }
 
