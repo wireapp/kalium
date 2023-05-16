@@ -14,26 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
  */
 
-package com.wire.kalium.plugins
+package com.wire.kalium.logic.util
 
-import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-
-fun Project.appleTargets(): List<String> =
-    listOf(
-        "iosX64",
-        "iosArm64",
-        "iosSimulatorArm64",
-        "macosX64",
-        "macosArm64"
-    )
-
-fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    macosX64()
-    macosArm64()
-}
+actual class CurrentPlatform(
+    val type: PlatformType = PlatformType.APPLE
+)
