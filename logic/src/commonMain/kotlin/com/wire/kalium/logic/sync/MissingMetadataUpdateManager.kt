@@ -47,11 +47,12 @@ internal class MissingMetadataUpdateManagerImpl(
 
     override suspend fun performSyncIfNeeded() {
         wrapStorageRequest {
-            if (needsSync()) {
+            val currentInstant = Clock.System.now()
+            if (needsSync(currentInstant)) {
                 kaliumLogger.d("Started syncing users and conversations without metadata")
                 refreshUsersWithoutMetadata()
                 refreshConversationsWithoutMetadata()
-                metadataDAO.insertValue(LAST_MISSING_METADATA_SYNC_KEY, Clock.System.now().toIsoDateTimeString())
+                metadataDAO.insertValue(LAST_MISSING_METADATA_SYNC_KEY, currentInstant.toIsoDateTimeString())
             }
         }.onFailure {
             kaliumLogger.e("Error while syncing users and conversations without metadata $it")
@@ -60,10 +61,10 @@ internal class MissingMetadataUpdateManagerImpl(
         }
     }
 
-    private suspend fun needsSync(): Boolean {
+    private suspend fun needsSync(currentInstant: Instant): Boolean {
         val lastSyncInstantString = metadataDAO.valueByKey(LAST_MISSING_METADATA_SYNC_KEY)
         return lastSyncInstantString?.let {
-            Clock.System.now() - Instant.parse(lastSyncInstantString) > MIN_TIME_BETWEEN_METADATA_SYNCS
+            currentInstant - Instant.parse(lastSyncInstantString) > MIN_TIME_BETWEEN_METADATA_SYNCS
         } ?: true
     }
 
