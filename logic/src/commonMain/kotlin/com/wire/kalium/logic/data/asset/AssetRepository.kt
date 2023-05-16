@@ -200,7 +200,6 @@ internal class AssetDataSource(
                     .map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
             }
 
-
     override suspend fun persistAsset(
         assetId: String,
         assetDomain: String?,
@@ -243,7 +242,6 @@ internal class AssetDataSource(
     private suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
             .map { it.dataPath.toPath() }
-
 
     @Suppress("LongParameterList")
     private suspend fun fetchOrDownloadDecodedAsset(
