@@ -50,6 +50,7 @@ import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -415,6 +416,31 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenThereAreUsersWithoutMetadata_whenSyncingUsers_thenShouldUpdateThem() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withDaoReturningNoMetadataUsers(listOf(TestUser.ENTITY.copy(name = null)))
+            .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
+            .arrange()
+
+        // when
+        userRepository.syncUsersWithoutMetadata()
+            .shouldSucceed()
+
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(matching {
+                it.first().name != null
+            })
+            .wasInvoked(exactly = once)
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -502,6 +528,12 @@ class UserRepositoryTest {
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(userEntity) }
+        }
+
+        fun withDaoReturningNoMetadataUsers(userEntity: List<UserEntity> = emptyList()) = apply {
+            given(userDAO).suspendFunction(userDAO::getUsersWithoutMetadata)
+                .whenInvoked()
+                .then { userEntity }
         }
 
         fun withGetSelfUserId() = apply {
