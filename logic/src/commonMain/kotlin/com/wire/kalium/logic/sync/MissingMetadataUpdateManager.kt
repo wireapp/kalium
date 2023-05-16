@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.hours
  * This class is responsible for checking if there are any users or conversations without metadata
  * and if so, it will refresh them.
  *
- * The criteria for this is in a window of 3 hours.
+ * The criteria for this, is in a window of 3 hours since the last time this was performed.
  */
 interface MissingMetadataUpdateManager {
     suspend fun performSyncIfNeeded(): Either<CoreFailure, Unit>
@@ -50,7 +50,7 @@ internal class MissingMetadataUpdateManagerImpl(
         return Either.Right(Unit)
     }
 
-    companion object {
+    internal companion object {
         const val LAST_MISSING_METADATA_SYNC_KEY = "LAST_MISSING_METADATA_SYNC_INSTANT"
         val MIN_TIME_BETWEEN_METADATA_SYNCS = 3.hours
     }
