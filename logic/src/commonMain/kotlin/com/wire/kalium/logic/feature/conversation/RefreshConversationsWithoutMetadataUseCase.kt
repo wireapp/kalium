@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -31,6 +33,12 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
-        // todo: fetch convos without metadata and refetch them
+        kaliumLogger.d("Started syncing conversations without metadata")
+        conversationRepository.syncConversationsWithoutMetadata()
+            .fold({
+                kaliumLogger.w("Error while syncing conversations without metadata $it")
+            }) {
+                kaliumLogger.d("Finished syncing users conversations metadata")
+            }
     }
 }

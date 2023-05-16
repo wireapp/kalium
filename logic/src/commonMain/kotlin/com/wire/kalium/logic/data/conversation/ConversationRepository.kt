@@ -190,6 +190,8 @@ interface ConversationRepository {
         conversationId: ConversationId,
         receiptMode: Conversation.ReceiptMode
     ): Either<CoreFailure, Unit>
+
+    suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -685,6 +687,18 @@ internal class ConversationDataSource internal constructor(
                         receiptMode = receiptModeMapper.fromApiToDaoModel(response.event.data.receiptMode)
                     )
                 }
+            }
+        }
+    }
+
+    override suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val conversationsWithoutMetadata = conversationDAO.getConversationsWithoutMetadata()
+        if (conversationsWithoutMetadata.isNotEmpty()) {
+            val conversationsWithoutMetadataIds = conversationsWithoutMetadata.map { it.toApi() }
+            wrapApiRequest {
+                conversationApi.fetchConversationsListDetails(conversationsWithoutMetadataIds)
+            }.onSuccess {
+                persistConversations(it.conversationsFound, null)
             }
         }
     }

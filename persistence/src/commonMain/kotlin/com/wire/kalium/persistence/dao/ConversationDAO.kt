@@ -203,4 +203,5 @@ interface ConversationDAO {
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?)
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
+    suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
 }

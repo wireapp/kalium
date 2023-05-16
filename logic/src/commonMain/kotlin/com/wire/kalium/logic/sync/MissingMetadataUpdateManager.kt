@@ -17,12 +17,16 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -32,7 +36,7 @@ import kotlin.time.Duration.Companion.hours
  * The criteria for this, is in a window of 3 hours since the last time this was performed.
  */
 interface MissingMetadataUpdateManager {
-    suspend fun performSyncIfNeeded(): Either<CoreFailure, Unit>
+    suspend fun performSyncIfNeeded()
 }
 
 internal class MissingMetadataUpdateManagerImpl(
@@ -41,13 +45,26 @@ internal class MissingMetadataUpdateManagerImpl(
     private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
 ) : MissingMetadataUpdateManager {
 
-    override suspend fun performSyncIfNeeded(): Either<CoreFailure, Unit> {
+    override suspend fun performSyncIfNeeded() {
         wrapStorageRequest {
-            // todo: check for last time performed
-            // todo: if > 3 hrs, refresh users and conversations and update last time performed
-            // todo: if not, do nothing
+            if (needsSync()) {
+                kaliumLogger.d("Started syncing users and conversations without metadata")
+                refreshUsersWithoutMetadata()
+                refreshConversationsWithoutMetadata()
+                metadataDAO.insertValue(LAST_MISSING_METADATA_SYNC_KEY, Clock.System.now().toIsoDateTimeString())
+            }
+        }.onFailure {
+            kaliumLogger.e("Error while syncing users and conversations without metadata $it")
+        }.onSuccess {
+            kaliumLogger.d("Finished syncing users and conversations without metadata")
         }
-        return Either.Right(Unit)
+    }
+
+    private suspend fun needsSync(): Boolean {
+        val lastSyncInstantString = metadataDAO.valueByKey(LAST_MISSING_METADATA_SYNC_KEY)
+        return lastSyncInstantString?.let {
+            Clock.System.now() - Instant.parse(lastSyncInstantString) > MIN_TIME_BETWEEN_METADATA_SYNCS
+        } ?: true
     }
 
     internal companion object {

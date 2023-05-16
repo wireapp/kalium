@@ -289,3 +289,9 @@ WHERE qualified_id = ?;
 
 getGuestRoomLinkByConversationId:
 SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;
+
+selectConversationIdsWithoutMetadata:
+SELECT qualified_id
+FROM Conversation
+WHERE type IS NOT 'SELF'
+AND (name IS NULL OR creator_id = '');
