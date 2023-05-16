@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -33,10 +34,83 @@ import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMigrationManagerTest {
 
-    @Suppress("UnusedPrivateClass")
+    @Test
+    fun givenMigrationUpdateTimerHasElapsed_whenObservingAndSyncFinishes_migrationIsUpdated() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withLastMLSMigrationCheck(true)
+                .withFetchMigrationConfigurationSucceeds()
+                .withLastMLSMigrationChecResetSucceeds()
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.mlsMigrationWorker)
+                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenMigrationUpdateTimerHasNotElapsed_whenObservingSyncFinishes_migrationIsNotUpdated() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withLastMLSMigrationCheck(false)
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.mlsMigrationWorker)
+                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_migrationIsNotUpdated() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(false)
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.mlsMigrationWorker)
+                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenNoMLSClientIsRegistered_whenObservingSyncFinishes_migrationIsNotUpdated() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.mlsMigrationWorker)
+                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
+                .wasNotInvoked()
+        }
+
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
@@ -58,11 +132,25 @@ class MLSMigrationManagerTest {
         @Mock
         val mlsMigrationWorker = mock(classOf<MLSMigrationWorker>())
 
+        fun withFetchMigrationConfigurationSucceeds() = apply {
+            given(mlsMigrationRepository)
+                .suspendFunction(mlsMigrationRepository::fetchMigrationConfiguration)
+                .whenInvoked()
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
             given(timestampKeyRepository)
                 .suspendFunction(timestampKeyRepository::hasPassed)
                 .whenInvokedWith(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK), anything())
                 .thenReturn(Either.Right(hasPassed))
+        }
+
+        fun withLastMLSMigrationChecResetSucceeds() = apply {
+            given(timestampKeyRepository)
+                .suspendFunction(timestampKeyRepository::reset)
+                .whenInvokedWith(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
