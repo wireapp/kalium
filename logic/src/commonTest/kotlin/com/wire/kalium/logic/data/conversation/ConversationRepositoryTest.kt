@@ -202,6 +202,16 @@ class ConversationRepositoryTest {
             verify(arrangement.conversationDAO)
                 .suspendFunction(arrangement.conversationDAO::insertConversations)
                 .with(
+                    matching { conversations ->
+                        conversations.any { entity ->
+                            entity.id.value == CONVERSATION_RESPONSE_DTO.conversationsFailed.first().value
+                        }
+                    }
+                ).wasInvoked(exactly = once)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::insertConversations)
+                .with(
                     matching { list ->
                         list.any {
                             it.id.value == CONVERSATION_RESPONSE.id.value
