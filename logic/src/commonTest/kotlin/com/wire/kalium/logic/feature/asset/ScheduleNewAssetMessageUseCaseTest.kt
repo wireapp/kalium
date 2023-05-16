@@ -35,13 +35,13 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -57,7 +57,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -318,11 +317,12 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
 
+        @Mock
+        val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
+
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-
-        private val testScope = TestScope(testDispatcher.default)
 
         init {
             withToggleReadReceiptsStatus()
@@ -420,8 +420,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             QualifiedID("some-id", "some-domain"),
             slowSyncRepository,
             messageSender,
+            messageSendFailureHandler,
             userPropertyRepository,
-            testScope,
             testDispatcher
         )
     }

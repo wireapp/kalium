@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
+import com.wire.kalium.logic.data.message.Message.UploadStatus.NOT_UPLOADED
+import com.wire.kalium.logic.data.message.Message.UploadStatus.UPLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
@@ -72,7 +74,10 @@ internal class GetMessageAssetUseCaseImpl(
             CompletableDeferred(MessageAssetResult.Failure(it))
         }, { message ->
             val assetDownloadStatus = (message.content as MessageContent.Asset).value.downloadStatus
+            val assetUploadStatus = (message.content as MessageContent.Asset).value.uploadStatus
             val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
+            // assets uploaded by other clients have upload status NOT_UPLOADED
+            val alreadyUploaded: Boolean =  assetUploadStatus == NOT_UPLOADED || assetUploadStatus == UPLOADED
             val assetMetadata = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
@@ -96,7 +101,8 @@ internal class GetMessageAssetUseCaseImpl(
             }
 
             // Start progress bar for generic assets
-            if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
+            if (!wasDownloaded && alreadyUploaded)
+                updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
 
             scope.async(dispatcher.io) {
                 assetDataSource.fetchPrivateDecodedAsset(
@@ -105,7 +111,8 @@ internal class GetMessageAssetUseCaseImpl(
                     assetName = assetMetadata.assetName,
                     assetToken = assetMetadata.assetToken,
                     encryptionKey = assetMetadata.encryptionKey,
-                    assetSHA256Key = assetMetadata.assetSHA256Key
+                    assetSHA256Key = assetMetadata.assetSHA256Key,
+                    downloadIfNeeded = alreadyUploaded
                 ).fold({
                     kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                     // This should be called if there is an issue while downloading the asset

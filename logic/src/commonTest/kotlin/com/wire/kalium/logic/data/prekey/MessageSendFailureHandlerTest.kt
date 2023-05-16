@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
+import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -38,6 +39,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -130,15 +132,46 @@ class MessageSendFailureHandlerTest {
     }
 
     @Test
-    fun givenFailedDueToNoNetwork_whenHandlingMessageSendFailure_thenUpdateMessageStatusToFailed() = runTest {
+    fun givenFailedDueToNoNetworkAndResendingSetToFalse_whenHandlingMessageSendFailure_thenUpdateMessageStatusToFailed() = runTest {
         val failure = NetworkFailure.NoNetworkConnection(null)
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .withUpdateMessageStatusSuccess()
             .arrange()
-        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, arrangement.conversationId, arrangement.messageId, "text")
+        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+            failure = failure,
+            conversationId = arrangement.conversationId,
+            messageId = arrangement.messageId,
+            messageType = "text",
+            scheduleResendIfNoNetwork = false
+        )
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.FAILED), any(), any())
+            .wasInvoked(once)
+        verify(arrangement.messageSendingScheduler)
+            .function(arrangement.messageSendingScheduler::scheduleSendingOfPendingMessages)
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenFailedDueToNoNetworkAndResendingSetToTrue_whenHandlingMessageSendFailure_thenScheduleResending() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .withUpdateMessageStatusSuccess()
+            .arrange()
+        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+            failure = failure,
+            conversationId = arrangement.conversationId,
+            messageId = arrangement.messageId,
+            messageType = "text",
+            scheduleResendIfNoNetwork = true
+        )
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+        verify(arrangement.messageSendingScheduler)
+            .function(arrangement.messageSendingScheduler::scheduleSendingOfPendingMessages)
             .wasInvoked(once)
     }
 
@@ -150,8 +183,10 @@ class MessageSendFailureHandlerTest {
         internal val userRepository = mock(classOf<UserRepository>())
         @Mock
         internal val messageRepository = mock(classOf<MessageRepository>())
+        @Mock
+        val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
         private val messageSendFailureHandler: MessageSendFailureHandler =
-            MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository)
+            MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
         val userOne: Pair<UserId, List<ClientId>> =
             UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
         val userTwo: Pair<UserId, List<ClientId>> =

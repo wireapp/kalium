@@ -92,7 +92,7 @@ class MessageScope internal constructor(
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
@@ -128,7 +128,6 @@ class MessageScope internal constructor(
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
-            messageSendingScheduler,
             messageSendingInterceptor,
             userRepository,
             scope
@@ -139,7 +138,6 @@ class MessageScope internal constructor(
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
-            messageRepository,
             persistMessage,
             selfUserId,
             currentClientIdProvider,
@@ -171,8 +169,8 @@ class MessageScope internal constructor(
             selfUserId,
             slowSyncRepository,
             messageSender,
+            messageSendFailureHandler,
             userPropertyRepository,
-            scope,
             dispatcher
         )
 
@@ -223,7 +221,6 @@ class MessageScope internal constructor(
 
     val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
-            messageRepository,
             persistMessage,
             selfUserId,
             currentClientIdProvider,

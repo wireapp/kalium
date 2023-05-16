@@ -116,16 +116,13 @@ class SendEditTextMessageUseCase internal constructor(
                                 messageContent = content,
                                 newMessageId = editedMessageId,
                                 editTimeStamp = message.date
-                            ).flatMap {
-                                // and change the status of the message
-                                messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, editedMessageId)
-                            }
+                            )
                         }
                 }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
     }
 
     companion object {
-        const val TYPE = "edit text"
+        const val TYPE = "TextEdited"
     }
 }
