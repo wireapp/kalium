@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -40,6 +41,8 @@ class MLSMigrationManagerTest {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
+        val kaliumConfigs = KaliumConfigs()
+
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
@@ -51,6 +54,9 @@ class MLSMigrationManagerTest {
 
         @Mock
         val mlsMigrationRepository = mock(classOf<MLSMigrationRepository>())
+
+        @Mock
+        val mlsMigrationWorker = mock(classOf<MLSMigrationWorker>())
 
         fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
             given(timestampKeyRepository)
@@ -73,10 +79,12 @@ class MLSMigrationManagerTest {
         }
 
         fun arrange() = this to MLSMigrationManagerImpl(
+            kaliumConfigs,
             featureSupport,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { timestampKeyRepository },
+            lazy { mlsMigrationWorker },
             lazy { mlsMigrationRepository },
             TestKaliumDispatcher
         )
