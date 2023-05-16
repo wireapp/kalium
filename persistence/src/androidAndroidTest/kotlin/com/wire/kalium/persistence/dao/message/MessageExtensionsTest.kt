@@ -28,9 +28,10 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
 import org.junit.After
 import org.junit.Before
@@ -51,6 +52,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(dispatcher)
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
 
@@ -58,7 +60,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
-        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper, StandardTestDispatcher())
+        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper, dispatcher)
     }
 
     @After
@@ -108,7 +110,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         populateMessageData()
 
         val pagingSource = getPager().pagingSource
-        val secondPageResult = pagingSource.nextPageForOffset(1)
+        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
 
         assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
