@@ -332,7 +332,7 @@ object TestConversation {
         TestTeam.TEAM_ID,
         ProtocolInfo.MLS(
             GROUP_ID,
-            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+            ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
