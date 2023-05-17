@@ -110,7 +110,8 @@ internal class ConversationMapperImpl(
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
-        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
+        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
+        hasIncompleteMetadata = false
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -364,7 +365,8 @@ internal class ConversationMapperImpl(
         lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
         access = emptyList(),
         accessRole = emptyList(),
-        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        hasIncompleteMetadata = true
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

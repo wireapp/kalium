@@ -613,7 +613,7 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUserWithoutMetadata_whenQueryingThem_thenShouldReturnUsersWithoutMetadata() = runTest(dispatcher) {
         // given
-        db.userDAO.insertUser(user1.copy(name = null, handle = null))
+        db.userDAO.insertUser(user1.copy(name = null, handle = null, hasIncompleteMetadata = true))
 
         // when
         val usersWithoutMetadata = db.userDAO.getUsersWithoutMetadata()
