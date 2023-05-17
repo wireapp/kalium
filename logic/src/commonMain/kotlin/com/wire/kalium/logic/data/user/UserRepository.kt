@@ -206,16 +206,22 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>) = wrapApiRequest {
-        userDetailsApi.getMultipleUsers(
-            ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
-        )
-    }.flatMap { listUserProfileDTO ->
-        if (listUserProfileDTO.usersFailed.isNotEmpty()) {
-            kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
-            persistIncompleteUsers(listUserProfileDTO.usersFailed)
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
+        if (qualifiedUserIdList.isEmpty()) {
+            return Either.Right(Unit)
         }
-        persistUsers(listUserProfileDTO.usersFound)
+
+        return wrapApiRequest {
+            userDetailsApi.getMultipleUsers(
+                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
+            )
+        }.flatMap { listUserProfileDTO ->
+            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                persistIncompleteUsers(listUserProfileDTO.usersFailed)
+            }
+            persistUsers(listUserProfileDTO.usersFound)
+        }
     }
 
     override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {

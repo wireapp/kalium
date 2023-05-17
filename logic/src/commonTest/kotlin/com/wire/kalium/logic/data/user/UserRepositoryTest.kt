@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
@@ -32,9 +33,10 @@ import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -98,13 +100,8 @@ class UserRepositoryTest {
     @Test
     fun givenAUserIsNotKnown_whenFetchingUsersIfUnknown_thenShouldFetchFromAPIAndSucceed() = runTest {
         val missingUserId = UserId(value = "id2", domain = "domain2")
-        val requestedUserIds = setOf(
-            UserId(value = "id1", domain = "domain1"),
-            missingUserId
-        )
-        val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1"))
-        )
+        val requestedUserIds = setOf(UserId(value = "id1", domain = "domain1"), missingUserId)
+        val knownUserEntities = listOf(TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")))
         val (arrangement, userRepository) = Arrangement()
             .withGetSelfUserId()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
@@ -114,8 +111,10 @@ class UserRepositoryTest {
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
         verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-            .with(eq(QualifiedID("id2", "domain2")))
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(matching { request: ListUserRequest ->
+                (request as QualifiedUserIdListRequest).qualifiedIds.first() == missingUserId.toApi()
+            })
             .wasInvoked(exactly = once)
     }
 
@@ -177,16 +176,18 @@ class UserRepositoryTest {
         // given
         val requestedUserIds = emptySet<UserId>()
         val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsersApiRequest(
+                ListUsersDTO(
+                    usersFailed = emptyList(),
+                    usersFound = listOf(TestUser.USER_PROFILE_DTO)
+                )
+            )
             .arrange()
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
             .with(any())
             .wasNotInvoked()
     }
@@ -199,7 +200,7 @@ class UserRepositoryTest {
             UserId(value = "id2", domain = "domain2")
         )
         val (arrangement, userRepository) = Arrangement()
-            .withSuccessfulGetUsersInfo()
+            .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(usersFailed = emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
             .arrange()
         assertTrue { requestedUserIds.none { it.domain == arrangement.selfUserId.domain } }
         // when
@@ -208,7 +209,7 @@ class UserRepositoryTest {
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
             .with(any())
-            .wasNotInvoked()
+            .wasInvoked(exactly = once)
     }
 
     @Test
