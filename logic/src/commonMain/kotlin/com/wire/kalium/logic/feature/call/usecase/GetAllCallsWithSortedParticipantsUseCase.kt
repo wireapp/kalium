@@ -24,18 +24,17 @@ import com.wire.kalium.logic.feature.call.Call
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Use case to get a list of all calls with the participants sorted according to the [CallingParticipantsOrder]
+ */
 interface GetAllCallsWithSortedParticipantsUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }
 
-/**
- * Use case to get a list of all calls with the participants sorted according to the [CallingParticipantsOrder]
- */
 class GetAllCallsWithSortedParticipantsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val callingParticipantsOrder: CallingParticipantsOrder
 ) : GetAllCallsWithSortedParticipantsUseCase {
-
 
     /**
      * Observes a [Flow] list of all calls with the participants sorted according to the [CallingParticipantsOrder]

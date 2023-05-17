@@ -22,7 +22,9 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 
-
+/**
+ * This use case is responsible for muting a call.
+ */
 interface MuteCallUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
@@ -30,9 +32,6 @@ interface MuteCallUseCase {
     )
 }
 
-/**
- * This use case is responsible for muting a call.
- */
 class MuteCallUseCaseImpl internal constructor(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository

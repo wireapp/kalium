@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 
+/**
+ * This use case is responsible for un-mute a call.
+ */
 interface UnMuteCallUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
@@ -29,9 +32,6 @@ interface UnMuteCallUseCase {
     )
 }
 
-/**
- * This use case is responsible for un-mute a call.
- */
 class UnMuteCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
