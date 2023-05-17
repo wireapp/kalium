@@ -844,7 +844,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
-            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, MLSMigratorImpl(conversationRepository, mlsConversationRepository, authenticatedNetworkContainer.conversationApi)) },
+            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, MLSMigratorImpl(selfTeamId, conversationRepository, mlsConversationRepository, authenticatedNetworkContainer.conversationApi)) },
             lazy { mlsMigrationRepository }
     )
 
