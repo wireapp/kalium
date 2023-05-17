@@ -114,7 +114,7 @@ internal class MLSMessageUnpackerImpl(
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
-            if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+            if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.d("Decrypting MLS for " +
                         "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
                         "groupID = ${protocolInfo.groupId.value.obfuscateId()}")
