@@ -52,7 +52,8 @@ data class UserEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
     val botService: BotEntity?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val hasIncompleteMetadata: Boolean = false
 )
 
 data class UserEntityMinimized(

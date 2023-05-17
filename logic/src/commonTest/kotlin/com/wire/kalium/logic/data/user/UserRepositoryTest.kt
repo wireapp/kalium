@@ -107,7 +107,6 @@ class UserRepositoryTest {
         )
         val (arrangement, userRepository) = Arrangement()
             .withGetSelfUserId()
-            .withSuccessfulGetUsersInfo()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
             .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(usersFailed = emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
             .arrange()

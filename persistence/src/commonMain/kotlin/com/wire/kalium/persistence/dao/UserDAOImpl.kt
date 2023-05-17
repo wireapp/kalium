@@ -69,6 +69,7 @@ class UserMapper {
         userType: UserTypeEntity,
         botService: BotEntity?,
         deleted: Boolean,
+        hasIncompleteMetadata: Boolean,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -87,7 +88,8 @@ class UserMapper {
             availabilityStatus = userAvailabilityStatus,
             userType = userType,
             botService = botService,
-            deleted = deleted
+            deleted = deleted,
+            hasIncompleteMetadata = hasIncompleteMetadata
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -134,7 +136,8 @@ class UserDAOImpl internal constructor(
             user.completeAssetId,
             user.userType,
             user.botService,
-            user.deleted
+            user.deleted,
+            user.hasIncompleteMetadata
         )
     }
 
@@ -154,7 +157,8 @@ class UserDAOImpl internal constructor(
                     user.completeAssetId,
                     user.userType,
                     user.botService,
-                    user.deleted
+                    user.deleted,
+                    user.hasIncompleteMetadata
                 )
             }
         }
@@ -190,7 +194,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
@@ -228,7 +233,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
@@ -254,7 +260,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
