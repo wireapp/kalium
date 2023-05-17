@@ -34,6 +34,7 @@ import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.UpdateTextRequest
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -301,9 +302,39 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
+    @POST
+    @Path("/instance/{id}/updateText")
+    @Operation(summary = "Update a text message in a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun updateText(@PathParam("id") id: String, @Valid updateTextRequest: UpdateTextRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        // TODO Implement buttons, link previews and ephemeral messages here
+        val mentions = when (updateTextRequest.mentions.size) {
+            0 -> emptyList<MessageMention>()
+            else -> {
+                updateTextRequest.mentions.stream().map { mention ->
+                    MessageMention(
+                        mention.start,
+                        mention.length,
+                        UserId(mention.userId, mention.userDomain),
+                        false
+                    )
+                }.toList()
+            }
+        }
+        return with(updateTextRequest) {
+            runBlocking {
+                ConversationRepository.updateTextMessage(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    text,
+                    mentions,
+                    firstMessageId
+                )
+            }
+        }
+    }
+
     // POST /api/v1/instance/{instanceId}/sendTyping
     // Send a typing indicator to a conversation.
-
-    // POST /api/v1/instance/{instanceId}/updateText
-    // Update a text message in a conversation.
 }
