@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.transform
 
@@ -69,9 +70,10 @@ internal class SyncManagerImpl(
     }
 
     override suspend fun waitUntilLiveOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> = slowSyncRepository.slowSyncStatus
+        .filter { it !is SlowSyncStatus.Pending }
         .combineTransform(incrementalSyncRepository.incrementalSyncState) { slowSyncState, incrementalSyncState ->
             logger.d("Waiting until or failure. Current status: slowSync: $slowSyncState; incrementalSync: $incrementalSyncState")
-            val didSlowSyncFail = slowSyncState is SlowSyncStatus.Pending || slowSyncState is SlowSyncStatus.Failed
+            val didSlowSyncFail = slowSyncState is SlowSyncStatus.Failed
             val didIncrementalSyncFail = incrementalSyncState is IncrementalSyncStatus.Failed
             val didSyncFail = didSlowSyncFail || didIncrementalSyncFail
             if (didSyncFail) {
