@@ -76,7 +76,7 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
-    fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
+    fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -350,7 +350,7 @@ internal class ConversationMapperImpl(
         )
     }
 
-    override fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
+    override fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
         id = conversationId.toDao(),
         name = null,
         type = ConversationEntity.Type.GROUP,
