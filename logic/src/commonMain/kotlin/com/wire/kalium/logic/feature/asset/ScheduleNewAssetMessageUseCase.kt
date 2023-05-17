@@ -184,7 +184,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                             )
                         } else {
                             kaliumLogger.d(
-                                "Asset upload was successfully, " +
+                                "Asset uploaded successfully, " +
                                         "for message with id ${message.id} and conversationId $conversationId"
                             )
                         }
