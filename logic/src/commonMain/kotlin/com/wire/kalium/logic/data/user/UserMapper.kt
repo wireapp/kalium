@@ -134,7 +134,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
-            deleted = userProfileDTO.deleted ?: false
+            deleted = userProfileDTO.deleted ?: false,
+            hasIncompleteMetadata = false
         )
     }
 

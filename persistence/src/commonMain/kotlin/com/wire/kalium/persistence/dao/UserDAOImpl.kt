@@ -49,7 +49,8 @@ class UserMapper {
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
             botService = user.bot_service,
-            deleted = user.deleted
+            deleted = user.deleted,
+            hasIncompleteMetadata = user.incomplete_metadata
         )
     }
 

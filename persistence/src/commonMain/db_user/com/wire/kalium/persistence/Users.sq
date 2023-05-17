@@ -152,5 +152,4 @@ UPDATE User SET name = ? WHERE qualified_id = ?;
 
 selectUsersWithoutMetadata:
 SELECT * FROM User AS user
-WHERE connection_status = "ACCEPTED" AND deleted = 0
-AND (name IS NULL OR name = '' OR handle IS NULL OR handle = '');
+WHERE deleted = 0 AND incomplete_metadata = 1;
