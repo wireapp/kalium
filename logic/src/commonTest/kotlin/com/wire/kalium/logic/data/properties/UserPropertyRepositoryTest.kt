@@ -94,7 +94,7 @@ class UserPropertyRepositoryTest {
         assertFalse(result)
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::isReadReceiptsEnabled)
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {

@@ -203,7 +203,7 @@ class ObserveUserInfoUseCaseTest {
                     verify(teamRepository)
                         .suspendFunction(teamRepository::fetchTeamById)
                         .with(any())
-                        .wasInvoked()
+                        .wasNotInvoked()
                 }
                 awaitComplete()
             }
