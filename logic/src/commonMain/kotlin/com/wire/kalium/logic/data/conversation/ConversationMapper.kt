@@ -350,6 +350,10 @@ internal class ConversationMapperImpl(
         )
     }
 
+    /**
+     * Default values and marked as [ConversationEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
     override fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
         id = conversationId.toDao(),
         name = null,
