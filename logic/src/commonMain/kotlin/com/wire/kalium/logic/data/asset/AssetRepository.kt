@@ -183,8 +183,7 @@ internal class AssetDataSource(
         decodedDataPath: Path,
         extension: String?
     ): Either<CoreFailure, UploadedAssetId> =
-        assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem)
-            .let { metaData ->
+        assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
                 wrapApiRequest {
                     val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
 
