@@ -17,29 +17,30 @@
  */
 package com.wire.kalium.logic.feature.service
 
+import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.functional.fold
+import kotlinx.coroutines.flow.first
 
-class ServiceScope internal constructor(
+/**
+ * This use case searches for services based on given name string.
+ *
+ * @param search The query to search for
+ */
+interface SearchServicesByNameUseCase {
+
+    suspend operator fun invoke(search: String): List<ServiceDetails>
+}
+
+class SearchServicesByNameUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
-) {
+) : SearchServicesByNameUseCase {
 
-    val getServiceById: GetServiceByIdUseCase
-        get() = GetServiceByIdUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
-
-    val observeIsServiceMember: ObserveIsServiceMemberUseCase
-        get() = ObserveIsServiceMemberUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
-
-    val observeAllServices: ObserveAllServicesUseCase
-        get() = ObserveAllServicesUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
-
-    val searchServicesByName: SearchServicesByNameUseCase
-        get() = SearchServicesByNameUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
+    override suspend fun invoke(search: String): List<ServiceDetails> =
+        serviceRepository.searchServicesByName(name = search)
+            .fold({
+                listOf()
+            }, {
+                it.first()
+            })
 }
