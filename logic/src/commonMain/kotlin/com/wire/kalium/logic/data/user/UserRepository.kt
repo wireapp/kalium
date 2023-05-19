@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -117,6 +118,11 @@ internal interface UserRepository {
      * otherwise [Either.Left] with [NetworkFailure]
      */
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
+
+    /**
+     * Updates users without metadata from the server.
+     */
+    suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -196,39 +202,34 @@ internal class UserDataSource internal constructor(
         return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
-        val selfUserDomain = selfUserId.domain
-        qualifiedUserIdList.groupBy { it.domain }
-            .filter { it.value.isNotEmpty() }
-            .map { (domain: String, usersOnDomain: List<UserId>) ->
-                when (selfUserDomain == domain) {
-                    true -> fetchMultipleUsers(usersOnDomain)
-                    false -> {
-                        usersOnDomain.forEach { userId ->
-                            fetchUserInfo(userId).fold({
-                                kaliumLogger.w("Ignoring external users details")
-                            }) { kaliumLogger.d("External users details saved") }
-                        }
-                        Either.Right(Unit)
-                    }
-                }
-            }
-
-        return Either.Right(Unit)
-    }
-
-    private suspend fun fetchMultipleUsers(qualifiedUsersOnSameDomainList: List<UserId>) = wrapApiRequest {
-        userDetailsApi.getMultipleUsers(
-            ListUserRequest.qualifiedIds(qualifiedUsersOnSameDomainList.map { userId -> userId.toApi() })
-        )
-    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO.usersFound) }
-
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
+        if (qualifiedUserIdList.isEmpty()) {
+            return Either.Right(Unit)
+        }
+
+        return wrapApiRequest {
+            userDetailsApi.getMultipleUsers(
+                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
+            )
+        }.flatMap { listUserProfileDTO ->
+            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                persistIncompleteUsers(listUserProfileDTO.usersFailed)
+            }
+            persistUsers(listUserProfileDTO.usersFound)
+        }
+    }
+
     override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {
         selfApi.updateEmailAddress(email)
+    }
+
+    private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
+        userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
@@ -462,6 +463,14 @@ internal class UserDataSource internal constructor(
                 }
             )
         }
+
+    override suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.getUsersWithoutMetadata()
+    }.flatMap { usersWithoutMetadata ->
+        kaliumLogger.d("Numbers of users refreshed: ${usersWithoutMetadata.size}")
+        val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
+        fetchUsersByIds(userIds)
+    }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

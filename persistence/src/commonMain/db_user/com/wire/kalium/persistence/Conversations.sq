@@ -2,6 +2,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
+import kotlin.Boolean;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -31,7 +32,8 @@ CREATE TABLE Conversation (
     mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
     receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
-    guest_room_link TEXT
+    guest_room_link TEXT,
+    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -47,8 +49,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, incomplete_metadata)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -66,7 +68,8 @@ last_notified_date = last_notified_date,
 last_read_date = last_read_date,
 mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update_date,
 mls_cipher_suite = excluded.mls_cipher_suite,
-receipt_mode = excluded.receipt_mode;
+receipt_mode = excluded.receipt_mode,
+incomplete_metadata = excluded.incomplete_metadata;
 
 updateConversation:
 UPDATE Conversation

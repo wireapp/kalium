@@ -40,7 +40,8 @@ data class ConversationEntity(
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val receiptMode: ReceiptMode,
-    val guestRoomLink: String? = null
+    val guestRoomLink: String? = null,
+    val hasIncompleteMetadata: Boolean = false,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
