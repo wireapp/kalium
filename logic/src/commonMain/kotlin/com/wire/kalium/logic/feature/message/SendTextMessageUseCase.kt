@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -34,8 +33,6 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -49,7 +46,6 @@ import kotlin.time.Duration
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
 class SendTextMessageUseCase internal constructor(
-    private val messageRepository: MessageRepository,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -103,16 +99,11 @@ class SendTextMessageUseCase internal constructor(
                 isSelfMessage = true
             )
             persistMessage(message)
-                .flatMap {
-                    messageSender.sendMessage(message)
-                }
-                .onSuccess {
-                    messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, generatedMessageUuid)
-                }
+                .flatMap { messageSender.sendMessage(message) }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
     }
 
     companion object {
-        const val TYPE = "text"
+        const val TYPE = "Text"
     }
 }
