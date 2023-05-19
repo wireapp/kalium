@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -35,7 +34,10 @@ class EnrolE2EIUseCaseImpl internal constructor(
 ) : EnrolE2EIUseCase {
     override suspend fun invoke(idToken: String): Either<CoreFailure, E2EIEnrolmentResult> {
         var step: E2EIEnrolmentResult = E2EIEnrolmentResult.NotStarted
+        kaliumLogger.e("ACME Enrolment State:>\n $step")
+
         var prevNonce = ""
+
         val acmeDirectories = e2EIRepository.loadACMEDirectories().fold({
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeDirectories, it).toCoreFailure())
         }, { directories ->
@@ -55,6 +57,8 @@ class EnrolE2EIUseCaseImpl internal constructor(
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).fold({
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, it).toCoreFailure())
         }, { createNewAccountNonce ->
+            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, createNewAccountNonce)
+            kaliumLogger.e("ACMENewAccount Nonce:>\n $createNewAccountNonce")
             createNewAccountNonce
         })
 
@@ -110,7 +114,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it).toCoreFailure())
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it.toString())
-            kaliumLogger.e("DPoPChallenge:> Passed}")
+            kaliumLogger.e("DPoPChallenge:> Passed")
             it
         })
         prevNonce = dpopChallengeResponse.nonce
@@ -123,10 +127,42 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it).toCoreFailure())
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it.toString())
-            kaliumLogger.e("OIDCChallenge:> Passed}")
+            kaliumLogger.e("OIDCChallenge:> Passed")
             it
         })
-        //or -> store in CC
+        prevNonce = oidcChallengeResponse.nonce
+
+        val orderResponse = e2EIRepository.checkOrderRequest(newOrderResponse.third, prevNonce).fold({
+            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it).toCoreFailure())
+        }, {
+            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it.toString())
+            kaliumLogger.e("CheckOrderRequest:> $it")
+            it
+        })
+
+        prevNonce = orderResponse.nonce
+
+        // todo: replace with orderResponse.third
+        val finalizeResponse = e2EIRepository.finalize("${newOrderResponse.third}/finalize", prevNonce).fold({
+            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it).toCoreFailure())
+        }, {
+            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it.toString())
+            kaliumLogger.e("FinalizeRequest:> ${it.first.response}")
+            it
+        })
+
+        prevNonce = finalizeResponse.first.nonce
+
+        val certificateRequest = e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).fold({
+            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.Certificate, it).toCoreFailure())
+        }, {
+            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.Certificate, it.toString())
+            kaliumLogger.e("Certificate:> ${it.response.decodeToString()}")
+            it
+        })
+
+        e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
+
         return Either.Right(step)
     }
 
@@ -134,10 +170,8 @@ class EnrolE2EIUseCaseImpl internal constructor(
 
 sealed interface E2EIEnrolmentResult {
     enum class E2EIStep {
-        NotStarted,
         AcmeNonce,
         AcmeDirectories,
-        AcmeNewNonce,
         AcmeNewAccount,
         AcmeNewOrder,
         AcmeNewAuthz,
@@ -145,8 +179,10 @@ sealed interface E2EIEnrolmentResult {
         DPoPToken,
         WireAccessToken,
         DPoPChallenge,
-        WaitingForIdToken,
-        OIDCChallenge
+        OIDCChallenge,
+        CheckOrderRequest,
+        FinalizeRequest,
+        Certificate
     }
 
     object NotStarted : E2EIEnrolmentResult {
@@ -159,9 +195,6 @@ sealed interface E2EIEnrolmentResult {
         override fun toString(): String {
             return "E2EI enrolment passed to the $step:$stepDetails"
         }
-    }
-
-    class WaitingForIdToken(val prevNonce: String, val oidcChallenge: AcmeChallenge) : E2EIEnrolmentResult {
     }
 
     data class Failed(val step: E2EIStep, val failure: CoreFailure) : E2EIEnrolmentResult {

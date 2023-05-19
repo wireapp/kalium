@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.E2EClientProvider
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -32,7 +33,10 @@ import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.base.unbound.acme.FinalizeOrderResponse
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -40,21 +44,30 @@ interface E2EIRepository {
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Pair<NewAcmeOrder, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Pair<NewAcmeAuthz, String>>
+    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
+    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessTokenEndPoint(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
-    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge): Either<CoreFailure, ChallengeResponse>
-    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge): Either<CoreFailure, ChallengeResponse>
+    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
+            : Either<CoreFailure, ChallengeResponse>
+
+    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
+            : Either<CoreFailure, ChallengeResponse>
+
     suspend fun validateChallenge(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
+    suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
+    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
+    suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
+    suspend fun initMLSClientWithCertificate(certificateChain: String)
 }
 
 class E2EIRepositoryImpl(
     private val e2EIApi: E2EIApi,
     private val acmeApi: ACMEApi,
     private val e2EClientProvider: E2EClientProvider,
+    private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider
 ) : E2EIRepository {
 
@@ -75,9 +88,8 @@ class E2EIRepositoryImpl(
     override suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String) =
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
             val accountRequest = e2eiClient.getNewAccountRequest(prevNonce)
-
             wrapApiRequest {
-                acmeApi.getNewAccount(createAccountEndpoint, accountRequest)
+                acmeApi.sendACMERequest(createAccountEndpoint, accountRequest)
             }.map { apiResponse ->
                 e2eiClient.setAccountResponse(apiResponse.response)
                 apiResponse.nonce
@@ -88,20 +100,20 @@ class E2EIRepositoryImpl(
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
             val orderRequest = e2eiClient.getNewOrderRequest(prevNonce)
             wrapApiRequest {
-                acmeApi.getNewOrder(createOrderEndpoint, orderRequest)
+                acmeApi.sendACMERequest(createOrderEndpoint, orderRequest)
             }.flatMap { apiResponse ->
                 val orderRespone = e2eiClient.setOrderResponse(apiResponse.response)
-                Either.Right(Pair(orderRespone, apiResponse.nonce))
+                Either.Right(Triple(orderRespone, apiResponse.nonce, apiResponse.location))
             }
         }
 
     override suspend fun createAuthz(prevNonce: String, authzEndpoint: String) = e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
         val authzRequest = e2eiClient.getNewAuthzRequest(authzEndpoint, prevNonce)
         wrapApiRequest {
-            acmeApi.getNewOrder(authzEndpoint, authzRequest)
+            acmeApi.sendACMERequest(authzEndpoint, authzRequest)
         }.flatMap { apiResponse ->
             val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
-            Either.Right(Pair(authzResponse, apiResponse.nonce))
+            Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
         }
     }
 
@@ -131,7 +143,7 @@ class E2EIRepositoryImpl(
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
             val challengeRequest = e2eiClient.getNewDpopChallengeRequest(accessToken, prevNonce)
             wrapApiRequest {
-                acmeApi.dpopChallenge(acmeChallenge.url, challengeRequest)
+                acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
             }.map { apiResponse ->
                 validateChallenge(apiResponse)
                 apiResponse
@@ -142,7 +154,7 @@ class E2EIRepositoryImpl(
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
             val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, prevNonce)
             wrapApiRequest {
-                acmeApi.oidcChallenge(acmeChallenge.url, challengeRequest)
+                acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
             }.map { apiResponse ->
                 validateChallenge(apiResponse)
                 apiResponse
@@ -152,5 +164,46 @@ class E2EIRepositoryImpl(
     override suspend fun validateChallenge(challengeResponse: ChallengeResponse) = e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
         e2eiClient.setChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
         Either.Right(Unit)
+    }
+
+    override suspend fun checkOrderRequest(location: String, prevNonce: String) =
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            val checkOrderRequest = e2eiClient.checkOrderRequest(location, prevNonce)
+            wrapApiRequest {
+                acmeApi.sendACMERequest(location, checkOrderRequest)
+            }.map { apiResponse ->
+                e2eiClient.checkOrderResponse(apiResponse.response)
+                apiResponse
+            }
+        }
+
+    override suspend fun finalize(location: String, prevNonce: String) =
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            val finalizeRequest = e2eiClient.finalizeRequest(prevNonce)
+            wrapApiRequest {
+                acmeApi.sendACMERequest(location, finalizeRequest)
+            }.map { apiResponse ->
+                e2eiClient.finalizeResponse(apiResponse.response)
+                // from finalize there is a JSON Object, inside there is a field named certificate
+                val finalizeResponseJson = Json.decodeFromString<FinalizeOrderResponse>(apiResponse.response.decodeToString())
+                Pair(apiResponse, finalizeResponseJson.certificate)
+            }
+        }
+
+    override suspend fun certificateRequest(location: String, prevNonce: String) =
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            val certificateRequest = e2eiClient.certificateRequest(prevNonce)
+            wrapApiRequest {
+                acmeApi.sendACMERequest(location, certificateRequest)
+            }.map { it }
+        }
+
+
+    override suspend fun initMLSClientWithCertificate(certificateChain: String) {
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            mlsClientProvider.getMLSClient().map {
+                it.initMLSWithE2EI(e2eiClient, certificateChain)
+            }
+        }
     }
 }

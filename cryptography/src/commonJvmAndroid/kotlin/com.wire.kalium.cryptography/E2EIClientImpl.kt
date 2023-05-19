@@ -24,7 +24,7 @@ import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl(
-    private val wireE2eIdentity: WireE2eIdentity
+    val wireE2eIdentity: WireE2eIdentity
 ) : E2EIClient {
 
     private val defaultDPoPTokenExpiry: UInt = 30U
@@ -84,7 +84,7 @@ class E2EIClientImpl(
 
         fun toNewAcmeOrder(value: com.wire.crypto.NewAcmeOrder) = NewAcmeOrder(
             value.delegate.toUByteArray().asByteArray(),
-            value.authorizations,
+            value.authorizations
         )
 
         private fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(

@@ -277,6 +277,8 @@ interface MLSClient {
         displayName: String,
         handle: String
     ): E2EIClient
+
+    fun initMLSWithE2EI(e2eiClient: E2EIClient, certificateChain: String)
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

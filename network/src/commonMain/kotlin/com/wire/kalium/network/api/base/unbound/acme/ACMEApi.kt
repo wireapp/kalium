@@ -41,18 +41,8 @@ interface ACMEApi {
     suspend fun getACMENonce(url: String): NetworkResponse<String>
 
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
+    suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
 
-    suspend fun getNewAccount(url: String, body: ByteArray): NetworkResponse<ACMEResponse>
-
-    suspend fun getNewOrder(url: String, body: ByteArray): NetworkResponse<ACMEResponse>
-
-    suspend fun dpopChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-
-    suspend fun oidcChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-
-    suspend fun getAuthzChallenge(url: String): NetworkResponse<ACMEResponse>
-
-    suspend fun getAuthzDirectories(): NetworkResponse<AuthzDirectoriesResponse>
 }
 
 class ACMEApiImpl internal constructor(
@@ -67,20 +57,6 @@ class ACMEApiImpl internal constructor(
         httpClient.prepareHead(url).execute { httpResponse ->
             handleACMENonceResponse(httpResponse)
         }
-
-    override suspend fun getAuthzDirectories(): NetworkResponse<AuthzDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("$BASE_URL:$DEX_PORT/$PATH_DEX_CONFIGURATION")
-    }
-
-    override suspend fun getAuthzChallenge(url: String): NetworkResponse<ACMEResponse> = sendACMERequest(url)
-
-    override suspend fun getNewAccount(url: String, body: ByteArray): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
-
-    override suspend fun getNewOrder(url: String, body: ByteArray): NetworkResponse<ACMEResponse> = sendACMERequest(url, body)
-
-    override suspend fun dpopChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
-
-    override suspend fun oidcChallenge(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> = sendChallengeRequest(url, body)
 
     private suspend fun handleACMENonceResponse(httpResponse: HttpResponse): NetworkResponse<String> =
         if (httpResponse.status.isSuccess()) httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
@@ -105,7 +81,9 @@ class ACMEApiImpl internal constructor(
             httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
                 NetworkResponse.Success(
                     ACMEResponse(
-                        nonce, response = httpResponse.body()
+                        nonce,
+                        response = httpResponse.body(),
+                        location = httpResponse.headers[LOCATION_HEADER_KEY].toString()
                     ), httpResponse
                 )
             } ?: run {
@@ -115,7 +93,7 @@ class ACMEApiImpl internal constructor(
             handleUnsuccessfulResponse(httpResponse)
         }
 
-    private suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
+    override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
         wrapKaliumResponse<ChallengeResponse> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
@@ -132,7 +110,6 @@ class ACMEApiImpl internal constructor(
                         nonce = nonce
                     ), challengeResponse.headers, challengeResponse.httpCode
                 )
-
             } ?: run {
                 CustomErrors.MISSING_NONCE
             }
@@ -147,6 +124,7 @@ class ACMEApiImpl internal constructor(
         const val PATH_ACME_DIRECTORIES = "acme/google-android/directory"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
+        const val LOCATION_HEADER_KEY = "location"
     }
 
 }

@@ -52,6 +52,7 @@ data class AuthzDirectoriesResponse @OptIn(ExperimentalSerializationApi::class) 
 @Serializable
 data class ACMEResponse(
     val nonce: String,
+    val location: String,
     val response: ByteArray
 )
 
@@ -63,4 +64,23 @@ data class ChallengeResponse(
     val status: String,
     val token: String,
     val nonce: String = ""
+)
+
+@kotlinx.serialization.Serializable
+data class FinalizeOrderResponse(
+    val id: String,
+    val status: String,
+    val expires: String,
+    val identifiers: List<Identifier>,
+    val authorizations: List<String>,
+    val finalize: String,
+    val notBefore: String,
+    val notAfter: String,
+    val certificate: String
+)
+
+@Serializable
+data class Identifier(
+    val type: String,
+    val value: String
 )

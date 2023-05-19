@@ -241,6 +241,10 @@ actual class MLSClientImpl actual constructor(
         )
     }
 
+    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificateChain: String) {
+        coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificateChain)
+    }
+
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()

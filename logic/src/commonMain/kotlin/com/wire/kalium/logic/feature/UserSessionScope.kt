@@ -471,6 +471,7 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.e2eiApi,
             globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
+            mlsClientProvider,
             clientIdProvider
         )
 
