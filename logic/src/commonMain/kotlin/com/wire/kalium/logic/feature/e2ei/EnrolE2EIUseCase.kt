@@ -39,7 +39,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
         var prevNonce = ""
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeDirectories, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeDirectories, it).toCoreFailure()
+            )
         }, { directories ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeDirectories, directories.toString())
             kaliumLogger.e("Directories:>\n $directories")
@@ -55,7 +57,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
         })
 
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, it).toCoreFailure()
+            )
         }, { createNewAccountNonce ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, createNewAccountNonce)
             kaliumLogger.e("ACMENewAccount Nonce:>\n $createNewAccountNonce")
@@ -63,7 +67,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
         })
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewOrder, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewOrder, it).toCoreFailure()
+            )
         }, { newOrderResponse ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewOrder, newOrderResponse.toString())
             kaliumLogger.e("NewOrderResponse:>\n $newOrderResponse")
@@ -73,7 +79,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
         prevNonce = newOrderResponse.second
 
         val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewAuthz, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNewAuthz, it).toCoreFailure()
+            )
         }, { authzResponse ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewAuthz, authzResponse.toString())
             kaliumLogger.e("NewAuthz:>\n $authzResponse")
@@ -99,7 +107,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
         })
 
         val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.WireAccessToken, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.WireAccessToken, it).toCoreFailure()
+            )
         }, { accessToken ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.WireAccessToken, accessToken.toString())
             kaliumLogger.e("AccessToken:>\n $accessToken")
@@ -111,7 +121,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
             prevNonce,
             authzResponse.first.wireDpopChallenge!!
         ).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it).toCoreFailure()
+            )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it.toString())
             kaliumLogger.e("DPoPChallenge:> Passed")
@@ -124,7 +136,9 @@ class EnrolE2EIUseCaseImpl internal constructor(
             prevNonce,
             authzResponse.first.wireOidcChallenge!!
         ).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it).toCoreFailure()
+            )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it.toString())
             kaliumLogger.e("OIDCChallenge:> Passed")
@@ -133,18 +147,22 @@ class EnrolE2EIUseCaseImpl internal constructor(
         prevNonce = oidcChallengeResponse.nonce
 
         val orderResponse = e2EIRepository.checkOrderRequest(newOrderResponse.third, prevNonce).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it).toCoreFailure())
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it).toCoreFailure()
+            )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it.toString())
             kaliumLogger.e("CheckOrderRequest:> $it")
             it
         })
 
-        prevNonce = orderResponse.nonce
+        prevNonce = orderResponse.first.nonce
 
         // todo: replace with orderResponse.third
-        val finalizeResponse = e2EIRepository.finalize("${newOrderResponse.third}/finalize", prevNonce).fold({
-            return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it).toCoreFailure())
+        val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).fold({
+            return Either.Left(
+                E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it).toCoreFailure()
+            )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it.toString())
             kaliumLogger.e("FinalizeRequest:> ${it.first.response}")

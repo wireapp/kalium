@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
@@ -33,6 +34,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
 ) : ProteusClient {
 
     private val path: String = "$rootDir/$KEYSTORE_NAME"
+    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
@@ -46,7 +48,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
-            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName), null)
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -57,7 +59,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
         val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
-                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName), null)
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto

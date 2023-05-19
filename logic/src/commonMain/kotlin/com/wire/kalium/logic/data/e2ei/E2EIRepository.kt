@@ -58,7 +58,7 @@ interface E2EIRepository {
 
     suspend fun validateChallenge(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
+    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
     suspend fun initMLSClientWithCertificate(certificateChain: String)
 }
@@ -133,10 +133,8 @@ class E2EIRepositoryImpl(
         }
     }
 
-    override suspend fun getDPoPToken(wireNonce: String) = getWireAccessTokenEndPoint().flatMap { accessTokenEndpoint ->
-        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            Either.Right(e2eiClient.createDpopToken(accessTokenEndpoint, wireNonce))
-        }
+    override suspend fun getDPoPToken(wireNonce: String) = e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+        Either.Right(e2eiClient.createDpopToken(wireNonce))
     }
 
     override suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge) =
@@ -172,8 +170,8 @@ class E2EIRepositoryImpl(
             wrapApiRequest {
                 acmeApi.sendACMERequest(location, checkOrderRequest)
             }.map { apiResponse ->
-                e2eiClient.checkOrderResponse(apiResponse.response)
-                apiResponse
+                val finalizeOrderUrl = e2eiClient.checkOrderResponse(apiResponse.response)
+                Pair(apiResponse,finalizeOrderUrl)
             }
         }
 
@@ -183,10 +181,8 @@ class E2EIRepositoryImpl(
             wrapApiRequest {
                 acmeApi.sendACMERequest(location, finalizeRequest)
             }.map { apiResponse ->
-                e2eiClient.finalizeResponse(apiResponse.response)
-                // from finalize there is a JSON Object, inside there is a field named certificate
-                val finalizeResponseJson = Json.decodeFromString<FinalizeOrderResponse>(apiResponse.response.decodeToString())
-                Pair(apiResponse, finalizeResponseJson.certificate)
+                val certificateChain = e2eiClient.finalizeResponse(apiResponse.response)
+                Pair(apiResponse, certificateChain)
             }
         }
 
