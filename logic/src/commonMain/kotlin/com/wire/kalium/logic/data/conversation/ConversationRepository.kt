@@ -694,6 +694,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
         val conversationsWithoutMetadata = conversationDAO.getConversationsWithoutMetadata()
         if (conversationsWithoutMetadata.isNotEmpty()) {
+            kaliumLogger.d("Numbers of conversations to refresh: ${conversationsWithoutMetadata.size}")
             val conversationsWithoutMetadataIds = conversationsWithoutMetadata.map { it.toApi() }
             wrapApiRequest {
                 conversationApi.fetchConversationsListDetails(conversationsWithoutMetadataIds)
