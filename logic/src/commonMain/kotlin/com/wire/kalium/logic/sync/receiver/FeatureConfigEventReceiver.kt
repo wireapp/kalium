@@ -122,7 +122,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
-                    event
+                    event,
+                    Pair("isDurationEnforced", (event.model.config.enforcedTimeoutSeconds ?: 0) > 0),
                 )
             }
 

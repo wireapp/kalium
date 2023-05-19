@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.time.Duration
 
 sealed class SelfDeletionTimer {
@@ -46,6 +47,16 @@ sealed class SelfDeletionTimer {
         else -> Duration.ZERO
     }
 
+    private fun toLogMap(): Map<String, Any?> = mapOf(
+        typeKey to "SelfDeletionTimer",
+        selfDeletionKey to this::class.simpleName,
+        durationKey to toDuration().inWholeSeconds,
+        isEnforcedKey to isEnforced,
+        isDisabledKey to isDisabled
+    )
+
+    fun toLogString(): String = toLogMap().toJsonElement().toString()
+
     val isEnforced
         get() = this is Enforced
 
@@ -57,6 +68,14 @@ sealed class SelfDeletionTimer {
 
     val isDisabled
         get() = this is Disabled
+
+    private companion object {
+        const val typeKey = "type"
+        const val selfDeletionKey = "selfDeletionClassType"
+        const val durationKey = "durationInSeconds"
+        const val isEnforcedKey = "isEnforced"
+        const val isDisabledKey = "isDisabled"
+    }
 }
 
 data class ConversationSelfDeletionStatus(
