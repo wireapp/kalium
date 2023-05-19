@@ -229,7 +229,9 @@ internal class UserDataSource internal constructor(
     }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
-        userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
+        usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
+            userDAO.insertUser(it)
+        }
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
