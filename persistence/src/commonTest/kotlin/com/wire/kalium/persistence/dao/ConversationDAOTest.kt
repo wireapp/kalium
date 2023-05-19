@@ -819,6 +819,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConversation_whenUpdatingMessageTimer_itReturnsCorrectTimer() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity3)
+        val messageTimer = 60000L
+        conversationDAO.updateMessageTimer(conversationEntity3.id, messageTimer)
+
+        // when
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
+
+        // then
+        assertEquals(messageTimer, result?.messageTimer)
+    }
+
+    @Test
     fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
