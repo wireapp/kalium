@@ -68,7 +68,7 @@ last_read_date = last_read_date,
 mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update_date,
 mls_cipher_suite = excluded.mls_cipher_suite,
 receipt_mode = excluded.receipt_mode,
-message_timer = message_timer;
+message_timer = excluded.message_timer;
 
 updateConversation:
 UPDATE Conversation
