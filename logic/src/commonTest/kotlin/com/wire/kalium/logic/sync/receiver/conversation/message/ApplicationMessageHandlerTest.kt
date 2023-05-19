@@ -170,7 +170,7 @@ class ApplicationMessageHandlerTest {
                 .thenReturn(
                     Either.Right(
                         FileSharingStatus(
-                            isFileSharingEnabled = true,
+                            state = FileSharingStatus.Value.EnabledAll,
                             isStatusChanged = false
                         )
                     )
