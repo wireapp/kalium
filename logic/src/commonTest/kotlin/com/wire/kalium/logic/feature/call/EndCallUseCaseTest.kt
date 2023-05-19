@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -50,7 +51,7 @@ class EndCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        endCall = EndCallUseCase(lazy { callManager }, callRepository)
+        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository)
     }
 
     @Test
