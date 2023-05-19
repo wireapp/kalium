@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -17,7 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration
 
 interface EphemeralMessageDeletionHandler {
 
@@ -49,30 +52,29 @@ internal class EphemeralMessageDeletionHandlerImpl(
         launch {
             if (message.expirationData != null) {
                 ongoingSelfDeletionMessagesMutex.withLock {
-                    val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
-                    kaliumLogger.i(
-                        "Self deletion requested for outgoing deletion, skipping: ${
-                            ephemeralLoggingDataAsJson(
-                                message = message,
-                                expirationData = message.expirationData,
-                                loggingDeletionStatus = LoggingDeletionStatus.SELF_DELETION_ALREADY_REQUESTED
-                            )
-                        }"
+                    val isSelfDeletionOutgoing =
+                        ongoingSelfDeletionMessages[message.conversationId to message.id] != null
+
+                    logEphemeralEvent(
+                        LoggingDeletionEvent.SelfDeletionAlreadyRequested(
+                            message,
+                            message.expirationData
+                        )
                     )
+
                     if (isSelfDeletionOutgoing) return@launch
 
                     addToOutgoingDeletion(message)
                 }
                 markDeletionDateAndWait(message, message.expirationData)
-                kaliumLogger.i(
-                    "Delaying finished, starting the message deletion: ${
-                        ephemeralLoggingDataAsJson(
-                            message,
-                            message.expirationData,
-                            LoggingDeletionStatus.WAITING_FOR_DELETION
-                        )
-                    }"
+
+                logEphemeralEvent(
+                    LoggingDeletionEvent.StartingSelfDeletion(
+                        message,
+                        message.expirationData
+                    )
                 )
+
                 deleteMessage(message)
             } else {
                 kaliumLogger.i("Self deletion requested for message without expiration data")
@@ -84,72 +86,58 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.isSelfMessage) {
-            kaliumLogger.i(
-                "Attempting to delete a message for self user as sender: ${
-                    ephemeralLoggingDataAsJson(
-                        message,
-                        message.expirationData!!,
-                        LoggingDeletionStatus.ATTEMPT_TO_DELETE
-                    )
-                }"
+            logEphemeralEvent(
+                LoggingDeletionEvent.AttemptingToDelete(
+                    message,
+                    message.expirationData!!,
+                )
             )
+
             when (val result = deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    kaliumLogger.i(
-                        "Deleting the message for self user as sender FAILED, due to ${result.value}: ${
-                            ephemeralLoggingDataAsJson(
-                                message,
-                                message.expirationData,
-                                LoggingDeletionStatus.FAILED_TO_DELETE
-                            )
-                        }"
+                    logEphemeralEvent(
+                        LoggingDeletionEvent.DeletionFailed(
+                            message,
+                            message.expirationData,
+                            result.value
+                        )
                     )
                 }
 
                 is Either.Right -> {
-                    kaliumLogger.i(
-                        "Deleting the message for self user as sender succeed: ${
-                            ephemeralLoggingDataAsJson(
-                                message,
-                                message.expirationData,
-                                LoggingDeletionStatus.SUCCEED
-                            )
-                        }"
+                    logEphemeralEvent(
+                        LoggingDeletionEvent.SuccessFullyDeleted(
+                            message,
+                            message.expirationData,
+                        )
                     )
                 }
             }
         } else {
-            kaliumLogger.i(
-                "Attempting to delete a message for self user as receiver: ${
-                    ephemeralLoggingDataAsJson(
-                        message,
-                        message.expirationData!!,
-                        LoggingDeletionStatus.ATTEMPT_TO_DELETE
-                    )
-                }"
+            logEphemeralEvent(
+                LoggingDeletionEvent.AttemptingToDelete(
+                    message,
+                    message.expirationData!!,
+                )
             )
+
             when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    kaliumLogger.i(
-                        "Deleting the message for self user as sender FAILED, due to ${result.value}: ${
-                            ephemeralLoggingDataAsJson(
-                                message,
-                                message.expirationData,
-                                LoggingDeletionStatus.FAILED_TO_DELETE
-                            )
-                        }"
+                    logEphemeralEvent(
+                        LoggingDeletionEvent.DeletionFailed(
+                            message,
+                            message.expirationData,
+                            result.value
+                        )
                     )
                 }
 
                 is Either.Right -> {
-                    kaliumLogger.i(
-                        "Deleting the message for self user as sender succeed: ${
-                            ephemeralLoggingDataAsJson(
-                                message,
-                                message.expirationData,
-                                LoggingDeletionStatus.SUCCEED
-                            )
-                        }"
+                    logEphemeralEvent(
+                        LoggingDeletionEvent.SuccessFullyDeleted(
+                            message,
+                            message.expirationData,
+                        )
                     )
                 }
             }
@@ -165,30 +153,41 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private suspend fun markDeletionDateAndWait(message: Message.Regular, expirationData: Message.ExpirationData) {
         with(expirationData) {
             if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-                kaliumLogger.i(
-                    "Self deletion not started yet, marking self deletion start date: ${
-                        ephemeralLoggingDataAsJson(
-                            message,
-                            this,
-                            LoggingDeletionStatus.SELF_DELETION_NOT_STARTED_YET
-                        )
-                    }"
+
+                logEphemeralEvent(
+                    LoggingDeletionEvent.StartingSelfDeletion(
+                        message,
+                        expirationData
+                    )
                 )
+
+                val deletionStartMark = Clock.System.now()
+
                 messageRepository.markSelfDeletionStartDate(
                     conversationId = message.conversationId,
                     messageUuid = message.id,
-                    deletionStartDate = Clock.System.now()
+                    deletionStartDate = deletionStartMark
+                )
+
+                logEphemeralEvent(
+                    LoggingDeletionEvent.MarkingSelfDeletionStartDate(
+                        message,
+                        expirationData,
+                        deletionStartMark
+                    )
                 )
             }
-            kaliumLogger.i(
-                "Delaying ${timeLeftForDeletion()} for the next step to delete the message : ${
-                    ephemeralLoggingDataAsJson(
-                        message,
-                        this,
-                        LoggingDeletionStatus.WAITING_FOR_DELETION
-                    )
-                }"
+
+            val delayWaitingTime = timeLeftForDeletion()
+
+            logEphemeralEvent(
+                LoggingDeletionEvent.WaitingForDeletion(
+                    message,
+                    expirationData,
+                    delayWaitingTime
+                )
             )
+
             delay(timeLeftForDeletion())
         }
     }
@@ -209,38 +208,121 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 }
 
-private fun ephemeralLoggingDataAsJson(
-    message: Message.Regular,
-    expirationData: Message.ExpirationData,
-    loggingDeletionStatus: LoggingDeletionStatus
-): String {
-    with(message) {
-        return mapOf(
-            "message-id" to id,
-            "conversation-id" to conversationId,
-            "deletion-status" to loggingDeletionStatus.name,
-            "expire-after" to expirationData.expireAfter.inWholeSeconds,
-            "time-left" to expirationData.timeLeftForDeletion().toString(),
-        ).toMutableMap().apply {
-            val selfDeletionStatus = expirationData.selfDeletionStatus
+private fun logEphemeralEvent(
+    loggingDeletionEvent: LoggingDeletionEvent
+) {
+    kaliumLogger.i(loggingDeletionEvent.toJson())
+}
 
-            if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.Started) {
-                plus("start-date" to selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString())
+sealed class LoggingDeletionEvent(
+    open val message: Message.Regular,
+    open val expirationData: Message.ExpirationData
+) {
+    companion object {
+        const val EPHEMERAL_LOG_TAG = "Ephemeral"
+    }
 
-                if (loggingDeletionStatus == LoggingDeletionStatus.SUCCEED) {
-                    plus("total-expiration-time-passed" to Clock.System.now() - selfDeletionStatus.selfDeletionStartDate)
-                }
-            }
-        }.toJsonElement().toString()
+    fun toJson(): String {
+        return EPHEMERAL_LOG_TAG + mapOf(
+            "message-id" to message.id,
+            "conversation-id" to message.conversationId.toLogString(),
+            "expire-after" to expirationData.expireAfter.inWholeSeconds.toString(),
+            "expire-start-time" to expireStartTimeElement().toString()
+        ).toMutableMap().plus(eventJsonMap()).toJsonElement().toString()
+    }
+
+    abstract fun eventJsonMap(): Map<String, String>
+
+    private fun expireStartTimeElement(): String? {
+        return when (val selfDeletionStatus = expirationData.selfDeletionStatus) {
+            Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
+            is Message.ExpirationData.SelfDeletionStatus.Started -> selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString()
+        }
+    }
+
+    data class SelfDeletionAlreadyRequested(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "self-deletion-already-requested"
+            )
+        }
+    }
+
+    data class MarkingSelfDeletionStartDate(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData,
+        val startDate: Instant
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "marking-self_deletion_start_date",
+                "start-date-mark" to startDate.toIsoDateTimeString()
+            )
+        }
+    }
+
+    data class WaitingForDeletion(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData,
+        val delayWaitTime: Duration
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "waiting-for-deletion",
+                "delay-wait-time" to delayWaitTime.inWholeSeconds.toString()
+            )
+        }
+    }
+
+    data class StartingSelfDeletion(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData,
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "starting-self-deletion"
+            )
+        }
+    }
+
+    data class AttemptingToDelete(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "attempting-to-delete",
+                "is-user-sender" to message.isSelfMessage.toString()
+            )
+        }
+    }
+
+    data class SuccessFullyDeleted(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData,
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "self-deletion-succeed",
+                "is-user-sender" to message.isSelfMessage.toString()
+            )
+        }
+    }
+
+    data class DeletionFailed(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData,
+        val coreFailure: CoreFailure
+    ) : LoggingDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "self-deletion-failed",
+                "is-user-sender" to message.isSelfMessage.toString(),
+                "reason" to coreFailure.toString()
+            )
+        }
     }
 }
-
-private enum class LoggingDeletionStatus {
-    SELF_DELETION_ALREADY_REQUESTED,
-    SELF_DELETION_NOT_STARTED_YET,
-    WAITING_FOR_DELETION,
-    ATTEMPT_TO_DELETE,
-    FAILED_TO_DELETE,
-    SUCCEED
-}
-
