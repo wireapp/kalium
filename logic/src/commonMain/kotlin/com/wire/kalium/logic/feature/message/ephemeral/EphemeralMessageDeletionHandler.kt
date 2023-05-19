@@ -215,19 +215,23 @@ private fun ephemeralLoggingDataAsJson(
     loggingDeletionStatus: LoggingDeletionStatus
 ): String {
     with(message) {
-        val startDate = when (val status = expirationData.selfDeletionStatus) {
-            Message.ExpirationData.SelfDeletionStatus.NotStarted -> "none"
-            is Message.ExpirationData.SelfDeletionStatus.Started ->status.selfDeletionStartDate.toIsoDateTimeString()
-        }
-
         return mapOf(
             "message-id" to id,
             "conversation-id" to conversationId,
             "deletion-status" to loggingDeletionStatus.name,
-            "start-date" to startDate,
+            "expire-after" to expirationData.expireAfter.inWholeSeconds,
             "time-left" to expirationData.timeLeftForDeletion().toString(),
+        ).toMutableMap().apply {
+            val selfDeletionStatus = expirationData.selfDeletionStatus
 
-        ).toJsonElement().toString()
+            if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.Started) {
+                plus("start-date" to selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString())
+
+                if (loggingDeletionStatus == LoggingDeletionStatus.SUCCEED) {
+                    plus("total-expiration-time-passed" to Clock.System.now() - selfDeletionStatus.selfDeletionStartDate)
+                }
+            }
+        }.toJsonElement().toString()
     }
 }
 
