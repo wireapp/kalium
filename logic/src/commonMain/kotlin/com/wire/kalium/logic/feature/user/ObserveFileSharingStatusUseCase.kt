@@ -42,11 +42,11 @@ class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: User
                 when (it) {
                     StorageFailure.DataNotFound -> {
                         kaliumLogger.e("Data not found in ObserveFileSharingStatusUseCase")
-                        FileSharingStatus(null, null)
+                        FileSharingStatus(FileSharingStatus.Value.Disabled, false)
                     }
                     is StorageFailure.Generic -> {
                         kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveFileSharingStatusUseCase", it.rootCause)
-                        FileSharingStatus(null, null)
+                        FileSharingStatus(FileSharingStatus.Value.Disabled, false)
                     }
                 }
             }, {
