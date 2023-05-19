@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -102,16 +103,15 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
-        if (kaliumConfigs.fileRestrictionEnabled) {
-            userConfigRepository.setFileSharingStatus(false, null)
-        } else {
-            val status: Boolean = model.status == Status.ENABLED
-            val isStatusChanged = when (isFileSharingEnabledUseCase().isFileSharingEnabled) {
-                null, status -> false
-                else -> true
-            }
-            userConfigRepository.setFileSharingStatus(status, isStatusChanged)
+        val newStatus: Boolean = model.status == Status.ENABLED
+        val currentStatus = isFileSharingEnabledUseCase().state
+        val isStatusChanged = when (currentStatus) {
+            FileSharingStatus.Value.Disabled -> newStatus
+            FileSharingStatus.Value.EnabledAll -> !newStatus
+            // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
+            is FileSharingStatus.Value.EnabledSome -> !newStatus
         }
+        userConfigRepository.setFileSharingStatus(newStatus, isStatusChanged)
     }
 
     private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
