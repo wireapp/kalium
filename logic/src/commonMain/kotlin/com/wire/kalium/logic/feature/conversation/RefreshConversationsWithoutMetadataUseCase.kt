@@ -40,7 +40,7 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
             .fold({
                 kaliumLogger.w("Error while syncing conversations without metadata $it")
             }) {
-                kaliumLogger.d("Finished syncing users conversations metadata")
+                kaliumLogger.d("Finished syncing conversations without metadata")
             }
     }
 }
