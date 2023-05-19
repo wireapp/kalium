@@ -36,7 +36,6 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
-        kaliumLogger.d("Started syncing conversations without metadata")
         conversationRepository.syncConversationsWithoutMetadata()
             .fold({
                 kaliumLogger.w("Error while syncing conversations without metadata $it")

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -73,7 +72,7 @@ internal class MissingMetadataUpdateManagerImpl(
         timestampKeyRepository.value.hasPassed(LAST_MISSING_METADATA_SYNC_CHECK, MIN_TIME_BETWEEN_METADATA_SYNCS)
             .flatMap { needsSync ->
                 if (needsSync) {
-                    kaliumLogger.d("Started syncing users and conversations without metadata")
+                    kaliumLogger.d("Syncing users and conversations without metadata")
                     refreshConversationsWithoutMetadata.value()
                     refreshUsersWithoutMetadata.value()
                     timestampKeyRepository.value.reset(LAST_MISSING_METADATA_SYNC_CHECK)
@@ -83,8 +82,6 @@ internal class MissingMetadataUpdateManagerImpl(
                 }
             }.onFailure {
                 kaliumLogger.w("Error while syncing users and conversations without metadata $it")
-            }.onSuccess {
-                kaliumLogger.d("Finished syncing users and conversations without metadata")
             }
     }
 

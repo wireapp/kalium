@@ -37,7 +37,6 @@ internal class RefreshUsersWithoutMetadataUseCaseImpl(
 ) : RefreshUsersWithoutMetadataUseCase {
 
     override suspend fun invoke() = withContext(dispatchers.io) {
-        kaliumLogger.d("Started syncing users without metadata")
         userRepository.syncUsersWithoutMetadata()
             .fold({
                 kaliumLogger.w("Error while syncing users without metadata $it")
