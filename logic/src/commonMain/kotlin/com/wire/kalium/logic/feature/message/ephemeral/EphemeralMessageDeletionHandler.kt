@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -8,19 +7,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
-import kotlin.time.Duration
 
 interface EphemeralMessageDeletionHandler {
 
@@ -55,7 +50,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     val isSelfDeletionOutgoing =
                         ongoingSelfDeletionMessages[message.conversationId to message.id] != null
 
-                    logEphemeralEvent(
+                    EphemeralEventLogger.log(
                         LoggingDeletionEvent.SelfDeletionAlreadyRequested(
                             message,
                             message.expirationData
@@ -68,7 +63,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
                 markDeletionDateAndWait(message, message.expirationData)
 
-                logEphemeralEvent(
+                EphemeralEventLogger.log(
                     LoggingDeletionEvent.StartingSelfDeletion(
                         message,
                         message.expirationData
@@ -86,7 +81,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.isSelfMessage) {
-            logEphemeralEvent(
+            EphemeralEventLogger.log(
                 LoggingDeletionEvent.AttemptingToDelete(
                     message,
                     message.expirationData!!,
@@ -95,7 +90,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    logEphemeralEvent(
+                    EphemeralEventLogger.log(
                         LoggingDeletionEvent.DeletionFailed(
                             message,
                             message.expirationData,
@@ -105,7 +100,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    logEphemeralEvent(
+                    EphemeralEventLogger.log(
                         LoggingDeletionEvent.SuccessFullyDeleted(
                             message,
                             message.expirationData,
@@ -114,7 +109,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
             }
         } else {
-            logEphemeralEvent(
+            EphemeralEventLogger.log(
                 LoggingDeletionEvent.AttemptingToDelete(
                     message,
                     message.expirationData!!,
@@ -123,7 +118,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    logEphemeralEvent(
+                    EphemeralEventLogger.log(
                         LoggingDeletionEvent.DeletionFailed(
                             message,
                             message.expirationData,
@@ -133,7 +128,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    logEphemeralEvent(
+                    EphemeralEventLogger.log(
                         LoggingDeletionEvent.SuccessFullyDeleted(
                             message,
                             message.expirationData,
@@ -153,8 +148,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private suspend fun markDeletionDateAndWait(message: Message.Regular, expirationData: Message.ExpirationData) {
         with(expirationData) {
             if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-
-                logEphemeralEvent(
+                EphemeralEventLogger.log(
                     LoggingDeletionEvent.StartingSelfDeletion(
                         message,
                         expirationData
@@ -169,7 +163,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     deletionStartDate = deletionStartMark
                 )
 
-                logEphemeralEvent(
+                EphemeralEventLogger.log(
                     LoggingDeletionEvent.MarkingSelfDeletionStartDate(
                         message,
                         expirationData,
@@ -180,7 +174,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             val delayWaitingTime = timeLeftForDeletion()
 
-            logEphemeralEvent(
+            EphemeralEventLogger.log(
                 LoggingDeletionEvent.WaitingForDeletion(
                     message,
                     expirationData,
@@ -204,125 +198,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
                         if (ephemeralMessage is Message.Regular) enqueueSelfDeletion(ephemeralMessage)
                     }
                 }
-        }
-    }
-}
-
-private fun logEphemeralEvent(
-    loggingDeletionEvent: LoggingDeletionEvent
-) {
-    kaliumLogger.i(loggingDeletionEvent.toJson())
-}
-
-sealed class LoggingDeletionEvent(
-    open val message: Message.Regular,
-    open val expirationData: Message.ExpirationData
-) {
-    companion object {
-        const val EPHEMERAL_LOG_TAG = "Ephemeral"
-    }
-
-    fun toJson(): String {
-        return EPHEMERAL_LOG_TAG + mapOf(
-            "message-id" to message.id,
-            "conversation-id" to message.conversationId.toLogString(),
-            "expire-after" to expirationData.expireAfter.inWholeSeconds.toString(),
-            "expire-start-time" to expireStartTimeElement().toString()
-        ).toMutableMap().plus(eventJsonMap()).toJsonElement().toString()
-    }
-
-    abstract fun eventJsonMap(): Map<String, String>
-
-    private fun expireStartTimeElement(): String? {
-        return when (val selfDeletionStatus = expirationData.selfDeletionStatus) {
-            Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
-            is Message.ExpirationData.SelfDeletionStatus.Started -> selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString()
-        }
-    }
-
-    data class SelfDeletionAlreadyRequested(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "self-deletion-already-requested"
-            )
-        }
-    }
-
-    data class MarkingSelfDeletionStartDate(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData,
-        val startDate: Instant
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "marking-self_deletion_start_date",
-                "start-date-mark" to startDate.toIsoDateTimeString()
-            )
-        }
-    }
-
-    data class WaitingForDeletion(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData,
-        val delayWaitTime: Duration
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "waiting-for-deletion",
-                "delay-wait-time" to delayWaitTime.inWholeSeconds.toString()
-            )
-        }
-    }
-
-    data class StartingSelfDeletion(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData,
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "starting-self-deletion"
-            )
-        }
-    }
-
-    data class AttemptingToDelete(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "attempting-to-delete",
-                "is-user-sender" to message.isSelfMessage.toString()
-            )
-        }
-    }
-
-    data class SuccessFullyDeleted(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData,
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "self-deletion-succeed",
-                "is-user-sender" to message.isSelfMessage.toString()
-            )
-        }
-    }
-
-    data class DeletionFailed(
-        override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData,
-        val coreFailure: CoreFailure
-    ) : LoggingDeletionEvent(message, expirationData) {
-        override fun eventJsonMap(): Map<String, String> {
-            return mapOf(
-                "deletion-status" to "self-deletion-failed",
-                "is-user-sender" to message.isSelfMessage.toString(),
-                "reason" to coreFailure.toString()
-            )
         }
     }
 }
