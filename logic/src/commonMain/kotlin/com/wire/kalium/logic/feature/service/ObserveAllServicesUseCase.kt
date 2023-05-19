@@ -23,6 +23,12 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+/**
+ * This use case returns all services currently in the database.
+ * In case it is empty, the repository will request the list from the API.
+ *
+ * @return List<ServiceDetails>
+ */
 interface ObserveAllServicesUseCase {
 
     suspend operator fun invoke(): Flow<List<ServiceDetails>>

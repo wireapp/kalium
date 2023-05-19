@@ -31,7 +31,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 interface ServiceRepository {
@@ -53,19 +52,16 @@ internal class ServiceDataSource internal constructor(
 
     override suspend fun getAllServices(): Either<StorageFailure, Flow<List<ServiceDetails>>> =
         wrapStorageRequest {
-            serviceDAO.getAllServices().map {
-                it.map { serviceEntity ->
-                    serviceMapper.fromDaoToModel(service = serviceEntity)
+            getAllServicesAndMapFlow()
+                .map {
+                    it.ifEmpty {
+                        val user = userRepository.observeSelfUser().first()
+                        user.teamId?.let { teamId ->
+                            teamRepository.syncServices(teamId = teamId)
+                        }
+                        getAllServicesAndMapFlow().first()
+                    }
                 }
-            }.map {
-//                 if (it.isEmpty()) {
-//                     val user = userRepository.observeSelfUser().first()
-//                     user.teamId?.let { teamId ->
-//                         teamRepository.syncServices(teamId = teamId)
-//                     }
-//                 }
-                it
-            }
         }
 
     override suspend fun searchServicesByName(name: String): Either<StorageFailure, Flow<List<ServiceDetails>>> =
@@ -93,4 +89,11 @@ internal class ServiceDataSource internal constructor(
             id = serviceMapper.fromModelToDao(serviceId = serviceId),
             conversationId = conversationId.toDao()
         ).map { it?.toModel() }
+
+    private suspend fun getAllServicesAndMapFlow(): Flow<List<ServiceDetails>> =
+        serviceDAO.getAllServices().map {
+            it.map { serviceEntity ->
+                serviceMapper.fromDaoToModel(service = serviceEntity)
+            }
+        }
 }
