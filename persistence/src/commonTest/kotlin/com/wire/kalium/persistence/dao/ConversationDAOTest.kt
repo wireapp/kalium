@@ -992,7 +992,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = 1000L
+            messageTimer = null
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1014,7 +1014,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = 1000L
+            messageTimer = null
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1039,7 +1039,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = 1000L
+            messageTimer = null
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1064,7 +1064,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = 1000L
+            messageTimer = null
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)
