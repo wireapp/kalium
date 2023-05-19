@@ -685,7 +685,7 @@ class ConversationRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationReadDate)
             .with(anything(), anything())
-            .wasInvoked()
+            .wasInvoked(exactly = once)
         assertIs<Either.Left<StorageFailure>>(result)
     }
 

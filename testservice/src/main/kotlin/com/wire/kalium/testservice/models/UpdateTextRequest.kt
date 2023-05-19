@@ -16,15 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.testservice.models
 
-data class FileSharingStatus(
-    val state: Value,
-    val isStatusChanged: Boolean?
-) {
-    sealed interface Value {
-        object Disabled : Value
-        object EnabledAll : Value
-        data class EnabledSome(val allowedType: List<String>) : Value
-    }
-}
+data class UpdateTextRequest(
+    val buttons: List<String> = listOf(),
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val expectsReadConfirmation: Boolean = false,
+    val legalHoldStatus: Int = 0,
+    val linkPreview: LinkPreview? = null,
+    val mentions: List<Mention> = listOf(),
+    val messageTimer: Int = 0,
+    val text: String? = null,
+    val firstMessageId: String = ""
+)

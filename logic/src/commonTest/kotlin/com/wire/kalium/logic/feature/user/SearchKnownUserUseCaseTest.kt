@@ -68,8 +68,8 @@ class SearchKnownUserUseCaseTest {
         // then
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
-            .with(eq(handleSearchQuery), anything())
-            .wasInvoked()
+            .with(eq(handleSearchQuery.removePrefix("@")), anything())
+            .wasInvoked(exactly = once)
 
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
@@ -98,7 +98,7 @@ class SearchKnownUserUseCaseTest {
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
                 .with(eq(searchQuery), anything())
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -123,7 +123,7 @@ class SearchKnownUserUseCaseTest {
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
                 .with(anything(), anything())
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
