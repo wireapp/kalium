@@ -18,26 +18,31 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_FILE_NAME_PREFIX
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BackupConstantsTest {
     @Test
-    fun givenSomeValidData_whenCreatingNonEncryptedBackup_thenTheFinalBackupFileIsCreatedCorrectly() = runTest() {
+    fun givenUserNameWithTimestamp_whenCreatingFileNameForBackup_thenBackupNameIsProperlyParsed() = runTest() {
         // Given
         val timestamp = DateTimeUtil.currentSimpleDateTimeString()
         val userHandle = "user_handle"
 
+        val timeStampWithoutColon = timestamp.replace(":", "-")
+        val expectedValue = "$BACKUP_FILE_NAME_PREFIX-$userHandle-$timeStampWithoutColon.zip"
+
         // When
         val backupFileName = BackupConstants.createBackupFileName(userHandle, timestamp)
-        println(backupFileName)
 
         // Then
         assertTrue(isValidFileName(backupFileName))
+        assertEquals(expectedValue, backupFileName)
     }
 
     private fun isValidFileName(filename: String): Boolean {
