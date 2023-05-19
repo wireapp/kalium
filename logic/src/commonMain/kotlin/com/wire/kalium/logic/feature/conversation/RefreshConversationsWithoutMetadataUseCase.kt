@@ -24,6 +24,9 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+/**
+ * Refresh conversations without metadata, only if necessary.
+ */
 interface RefreshConversationsWithoutMetadataUseCase {
     suspend operator fun invoke()
 }
