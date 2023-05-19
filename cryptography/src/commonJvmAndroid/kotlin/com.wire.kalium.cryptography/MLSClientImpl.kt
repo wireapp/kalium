@@ -77,7 +77,7 @@ actual class MLSClientImpl actual constructor(
     private val defaultGroupConfiguration =
         CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
-    private val defaultCredentialType = MlsCredentialType.X509
+    private val defaultCredentialType = MlsCredentialType.BASIC
     private val defaultE2EIExpiry: UInt = 90U
 
     init {
