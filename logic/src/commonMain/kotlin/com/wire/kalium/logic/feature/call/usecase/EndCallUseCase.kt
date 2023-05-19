@@ -31,16 +31,27 @@ import kotlinx.coroutines.withContext
 /**
  * This use case is responsible for ending a call.
  */
-class EndCallUseCase(
-    private val callManager: Lazy<CallManager>,
-    private val callRepository: CallRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) {
+interface EndCallUseCase {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.
      */
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
+    suspend operator fun invoke(conversationId: ConversationId)
+}
+
+/**
+ * This use case is responsible for ending a call.
+ */
+class EndCallUseCaseImpl(
+    private val callManager: Lazy<CallManager>,
+    private val callRepository: CallRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+) : EndCallUseCase {
+
+    /**
+     * @param conversationId the id of the conversation for the call should be ended.
+     */
+    override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         persistMissedCallIfNeeded(conversationId)
 
         callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
