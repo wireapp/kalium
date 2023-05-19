@@ -709,7 +709,7 @@ internal class ConversationDataSource internal constructor(
         return wrapStorageRequest {
             if (conversationsFailed.isNotEmpty()) {
                 conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
-                    conversationMapper.fromFailedConversationToEntity(conversationId)
+                    conversationMapper.fromFailedGroupConversationToEntity(conversationId)
                 })
             }
         }

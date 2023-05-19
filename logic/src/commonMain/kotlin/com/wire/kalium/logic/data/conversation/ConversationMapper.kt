@@ -76,7 +76,7 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
-    fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
+    fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -110,7 +110,8 @@ internal class ConversationMapperImpl(
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
-        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode)
+        receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
+        hasIncompleteMetadata = false
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -349,7 +350,11 @@ internal class ConversationMapperImpl(
         )
     }
 
-    override fun fromFailedConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
+    /**
+     * Default values and marked as [ConversationEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
+    override fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
         id = conversationId.toDao(),
         name = null,
         type = ConversationEntity.Type.GROUP,
@@ -364,7 +369,8 @@ internal class ConversationMapperImpl(
         lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
         access = emptyList(),
         accessRole = emptyList(),
-        receiptMode = ConversationEntity.ReceiptMode.DISABLED
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        hasIncompleteMetadata = true
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

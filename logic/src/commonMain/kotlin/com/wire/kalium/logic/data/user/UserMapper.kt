@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -88,6 +89,8 @@ interface UserMapper {
 
     fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity
     fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity
+
+    fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
 }
 
 internal class UserMapperImpl(
@@ -131,7 +134,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
-            deleted = userProfileDTO.deleted ?: false
+            deleted = userProfileDTO.deleted ?: false,
+            hasIncompleteMetadata = false
         )
     }
 
@@ -303,5 +307,29 @@ internal class UserMapperImpl(
                     ?: persistedEntity.completeAssetId
             )
         }
+    }
+
+    /**
+     * Default values and marked as [UserEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
+    override fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity {
+        return UserEntity(
+            id = userId.toDao(),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = null,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = null,
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = false,
+            hasIncompleteMetadata = true
+        )
     }
 }
