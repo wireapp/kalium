@@ -1108,7 +1108,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             conversationDAO.getConversationsWithoutMetadata().let {
                 assertEquals(1, it.size)
-                assertEquals(conversationEntity1.id, it.first())
+                assertEquals(conversationEntity2.id, it.first())
             }
         }
 }
