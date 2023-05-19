@@ -20,7 +20,8 @@ package com.wire.kalium.logic.feature.service
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.fold
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * This use case searches for services based on given name string.
@@ -29,18 +30,18 @@ import kotlinx.coroutines.flow.first
  */
 interface SearchServicesByNameUseCase {
 
-    suspend operator fun invoke(search: String): List<ServiceDetails>
+    suspend operator fun invoke(search: String): Flow<List<ServiceDetails>>
 }
 
 class SearchServicesByNameUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : SearchServicesByNameUseCase {
 
-    override suspend fun invoke(search: String): List<ServiceDetails> =
+    override suspend fun invoke(search: String): Flow<List<ServiceDetails>> =
         serviceRepository.searchServicesByName(name = search)
             .fold({
-                listOf()
+                flowOf(listOf())
             }, {
-                it.first()
+                it
             })
 }
