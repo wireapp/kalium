@@ -965,7 +965,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             creatorId = creatorId,
             selfRole = Member.Role.Member,
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = messageTimer
+            messageTimer = null
         )
     }
 
