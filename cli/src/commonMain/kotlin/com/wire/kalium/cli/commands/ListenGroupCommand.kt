@@ -48,7 +48,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
         }
 
         while (true) {
-            val message = readLine()!!
+            val message = readln()
             userSession.messages.sendTextMessage(conversationID, message)
         }
     }

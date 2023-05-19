@@ -15,7 +15,7 @@ android-security = "1.1.0-alpha06"
 ktor = "2.2.2"
 okio = "3.2.0"
 ok-http = "4.9.3"
-mockative = "1.2.6"
+mockative = "1.4.1"
 android-work = "2.8.1"
 android-test-runner = "1.5.0"
 android-test-rules = "1.4.0"
@@ -28,7 +28,9 @@ ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
 ktx-atomicfu = "0.18.5"
 multiplatform-settings = "1.0.0-RC"
-sqldelight = "2.0.0-alpha04"
+# if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
+# and delete the work around in the dev.mk file
+sqldelight = "2.0.0-alpha05"
 sqlcipher-android = "4.5.3"
 pbandk = "0.14.2"
 turbine = "0.12.1"
@@ -145,7 +147,7 @@ sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", versio
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-jsDriver = { module = "app.cash.sqldelight:sqljs-driver", version.ref = "sqldelight" }
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
-sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-25-dialect", version.ref = "sqldelight" }
+sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-33-dialect", version.ref = "sqldelight" }
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
@@ -158,7 +160,12 @@ detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = 
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
 # misc
-pbandkRuntime = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
+pbandk-runtime-iosX64 = { module = "pro.streem.pbandk:pbandk-runtime-iosx64", version.ref = "pbandk" }
+pbandk-runtime-iosArm64 = { module = "pro.streem.pbandk:pbandk-runtime-iosarm64", version.ref = "pbandk" }
+pbandk-runtime-iosSimulatorArm64 = { module = "pro.streem.pbandk:pbandk-runtime-iossimulatorarm64", version.ref = "pbandk" }
+pbandk-runtime-macX64 = { module = "pro.streem.pbandk:pbandk-runtime-macosx64", version.ref = "pbandk" }
+pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm64", version.ref = "pbandk" }
+pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 
 # avs

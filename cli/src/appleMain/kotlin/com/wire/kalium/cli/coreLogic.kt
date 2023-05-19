@@ -24,4 +24,4 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 actual fun coreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Kalium CLI/darwin")
+): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Kalium CLI/apple")

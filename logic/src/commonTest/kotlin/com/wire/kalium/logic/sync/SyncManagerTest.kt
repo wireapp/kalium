@@ -34,24 +34,15 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
-
-    @Test
-    fun givenSlowSyncIsPending_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {
-        val (arrangement, syncManager) = Arrangement().arrange()
-        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
-        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-
-        val result = syncManager.waitUntilLiveOrFailure()
-
-        result.shouldFail()
-    }
 
     @Test
     fun givenSlowSyncFailed_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {

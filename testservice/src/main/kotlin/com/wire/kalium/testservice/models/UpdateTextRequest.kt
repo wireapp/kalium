@@ -14,11 +14,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
- *
  */
 
-package com.wire.kalium.logic.util
+package com.wire.kalium.testservice.models
 
-actual class CurrentPlatform(
-    val type: PlatformType = PlatformType.DARWIN
+data class UpdateTextRequest(
+    val buttons: List<String> = listOf(),
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val expectsReadConfirmation: Boolean = false,
+    val legalHoldStatus: Int = 0,
+    val linkPreview: LinkPreview? = null,
+    val mentions: List<Mention> = listOf(),
+    val messageTimer: Int = 0,
+    val text: String? = null,
+    val firstMessageId: String = ""
 )

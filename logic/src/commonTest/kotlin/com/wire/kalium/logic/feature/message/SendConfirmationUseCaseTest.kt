@@ -34,6 +34,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -58,7 +59,7 @@ class SendConfirmationUseCaseTest {
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(anything(), anything())
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     @Test
