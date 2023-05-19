@@ -1093,4 +1093,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(conversationEntity1.id, it.first().id)
         }
     }
+
+    @Test
+    fun givenLocalConversations_whenGettingConversationsWithoutMetadata_thenShouldReturnsOnlyConversationsWithIncompleteMetadataTrue() =
+        runTest {
+            conversationDAO.insertConversation(conversationEntity1)
+            conversationDAO.insertConversation(conversationEntity2.copy(hasIncompleteMetadata = true))
+
+            userDAO.insertUser(user1)
+            userDAO.insertUser(user2)
+
+            conversationDAO.insertMember(member1, conversationEntity1.id)
+            conversationDAO.insertMember(member2, conversationEntity1.id)
+
+            conversationDAO.getConversationsWithoutMetadata().let {
+                assertEquals(1, it.size)
+                assertEquals(conversationEntity1.id, it.first())
+            }
+        }
 }
