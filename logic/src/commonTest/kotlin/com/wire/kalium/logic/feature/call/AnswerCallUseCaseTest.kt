@@ -18,8 +18,12 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mock
 import io.mockative.classOf
@@ -29,20 +33,53 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
 
     @Mock
+    private val getAllCallsWithSortedParticipants = mock(classOf<GetAllCallsWithSortedParticipantsUseCase>())
+
+    @Mock
+    private val muteCall = mock(classOf<MuteCallUseCase>())
+
+    @Mock
+    private val unMuteCall = mock(classOf<UnMuteCallUseCase>())
+
+    @Mock
     private val callManager = mock(classOf<CallManager>())
+
+    private val answerCall = AnswerCallUseCaseImpl(
+        allCalls = getAllCallsWithSortedParticipants,
+        muteCall = muteCall,
+        unMuteCall = unMuteCall,
+        callManager = lazy { callManager },
+        kaliumConfigs = KaliumConfigs()
+    )
+
+    @BeforeTest
+    fun setUp() {
+        given(callManager)
+            .suspendFunction(callManager::answerCall)
+            .whenInvokedWith(eq(conversationId), eq(false))
+            .thenDoNothing()
+    }
 
     @Test
     fun givenCbrEnabled_whenAnsweringACall_thenInvokeAnswerCallWithCbrOnce() = runTest {
         val isCbrEnabled = true
         val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
-        val answerCallUseCase = AnswerCallUseCaseImpl(
+        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
+            .then { flowOf(listOf()) }
+
+        val answerCallWithCBR = AnswerCallUseCaseImpl(
+            allCalls = getAllCallsWithSortedParticipants,
+            muteCall = muteCall,
+            unMuteCall = unMuteCall,
             callManager = lazy { callManager },
             kaliumConfigs = configs
         )
@@ -52,7 +89,7 @@ class AnswerCallUseCaseTest {
             .whenInvokedWith(eq(conversationId), eq(configs.forceConstantBitrateCalls))
             .thenDoNothing()
 
-        answerCallUseCase.invoke(
+        answerCallWithCBR(
             conversationId = conversationId
         )
 
@@ -65,21 +102,59 @@ class AnswerCallUseCaseTest {
 
     @Test
     fun givenACall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest {
-        val configs = KaliumConfigs()
+        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
+            .then { flowOf(listOf()) }
 
-        val answerCallUseCase = AnswerCallUseCaseImpl(
-            callManager = lazy { callManager },
-            kaliumConfigs = configs
-        )
-
-        given(callManager)
-            .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId), eq(false))
-            .thenDoNothing()
-
-        answerCallUseCase.invoke(
+        answerCall(
             conversationId = conversationId
         )
+
+        verify(callManager)
+            .suspendFunction(callManager::answerCall)
+            .with(eq(conversationId), eq(false))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest {
+        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
+            .then { flowOf(listOf(call)) }
+
+        answerCall(
+            conversationId = conversationId
+        )
+
+        verify(muteCall)
+            .suspendFunction(muteCall::invoke)
+            .with(eq(conversationId), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(callManager)
+            .suspendFunction(callManager::answerCall)
+            .with(eq(conversationId), eq(false))
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenIncomingOneOnOneCallWithIsMutedFalse_whenAnsweringTheCall_thenUnMuteThatCall() = runTest {
+        val newCall = call.copy(
+            status = CallStatus.INCOMING,
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            isMuted = false
+        )
+
+        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
+            .then { flowOf(listOf(newCall)) }
+
+        answerCall(
+            conversationId = conversationId
+        )
+
+        verify(unMuteCall)
+            .suspendFunction(unMuteCall::invoke)
+            .with(eq(conversationId), eq(true))
+            .wasInvoked(exactly = once)
 
         verify(callManager)
             .suspendFunction(callManager::answerCall)
@@ -91,6 +166,19 @@ class AnswerCallUseCaseTest {
         val conversationId = ConversationId(
             value = "value1",
             domain = "domain1"
+        )
+        val call = Call(
+            conversationId = conversationId,
+            status = CallStatus.STILL_ONGOING,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            callerId = "id",
+            conversationName = "caller-name",
+            conversationType = Conversation.Type.GROUP,
+            callerName = "Name",
+            callerTeamName = "group",
+            establishedTime = null
         )
     }
 }
