@@ -662,13 +662,12 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val missingMetadataUpdateManager: MissingMetadataUpdateManager by lazy {
-        MissingMetadataUpdateManagerImpl(
-            userStorage.database.metadataDAO,
-            users.refreshUsersWithoutMetadata,
-            conversations.refreshConversationsWithoutMetadata
-        )
-    }
+    internal val missingMetadataUpdateManager: MissingMetadataUpdateManager = MissingMetadataUpdateManagerImpl(
+        incrementalSyncRepository,
+        lazy { users.refreshUsersWithoutMetadata },
+        lazy { conversations.refreshConversationsWithoutMetadata },
+        lazy { users.timestampKeyRepository }
+    )
 
     private val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCase(conversationRepository)
