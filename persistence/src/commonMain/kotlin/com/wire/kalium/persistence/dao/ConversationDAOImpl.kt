@@ -389,7 +389,7 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         withContext(coroutineContext) {
-            conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+            conversationQueries.selectByGroupState(groupState)
                 .executeAsList()
                 .map(conversationMapper::toModel)
         }
@@ -512,7 +512,6 @@ class ConversationDAOImpl(
     override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.MLS,
             DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
@@ -526,7 +525,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
-        return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
+        return conversationQueries.selectProposalTimers()
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
