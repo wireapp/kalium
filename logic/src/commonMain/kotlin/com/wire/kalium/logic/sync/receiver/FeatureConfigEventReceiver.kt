@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -50,27 +51,27 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
-                if (kaliumConfigs.fileRestrictionEnabled) {
-                    userConfigRepository.setFileSharingStatus(false, null)
-                } else {
+                val currentFileSharingStatus: Boolean = userConfigRepository
+                    .isFileSharingEnabled()
+                    .fold({ false }, {
+                        when (it.state) {
+                            FileSharingStatus.Value.Disabled -> false
+                            FileSharingStatus.Value.EnabledAll -> true
+                            is FileSharingStatus.Value.EnabledSome -> true
+                        }
+                    })
 
-                    val currentFileSharingStatus: Boolean = userConfigRepository
-                        .isFileSharingEnabled()
-                        .fold({ false }, { it.isFileSharingEnabled ?: false })
+                when (event.model.status) {
+                    Status.ENABLED -> userConfigRepository.setFileSharingStatus(
+                        status = true,
+                        isStatusChanged = !currentFileSharingStatus
+                    )
 
-                    when (event.model.status) {
-                        Status.ENABLED -> userConfigRepository.setFileSharingStatus(
-                            status = true,
-                            isStatusChanged = !currentFileSharingStatus
-                        )
-
-                        Status.DISABLED -> userConfigRepository.setFileSharingStatus(
-                            status = false,
-                            isStatusChanged = currentFileSharingStatus
-                        )
-                    }
+                    Status.DISABLED -> userConfigRepository.setFileSharingStatus(
+                        status = false,
+                        isStatusChanged = currentFileSharingStatus
+                    )
                 }
-
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
                     event

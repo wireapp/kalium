@@ -103,7 +103,7 @@ class FeatureConfigEventReceiverTest {
     fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingFileSharingEnabledSuccessful()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)))
             .arrange()
 
         featureConfigEventReceiver.onEvent(arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)))
@@ -117,7 +117,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = true, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.EnabledAll, isStatusChanged = false)))
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 
@@ -134,7 +134,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(isFileSharingEnabled = false, isStatusChanged = false)))
+            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)))
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 

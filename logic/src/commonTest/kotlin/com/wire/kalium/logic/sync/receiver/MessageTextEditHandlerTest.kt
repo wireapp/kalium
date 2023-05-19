@@ -97,11 +97,11 @@ class MessageTextEditHandlerTest {
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateTextMessage)
                 .with(eq(editMessage.conversationId), eq(editContent), eq(editMessage.id), eq(editMessage.date))
-                .wasInvoked()
+                .wasInvoked(exactly = once)
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -134,7 +134,7 @@ class MessageTextEditHandlerTest {
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateTextMessage)
                 .with(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastTimeStamp))
-                .wasInvoked()
+                .wasInvoked(exactly = once)
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(any(), any(), any())

@@ -20,8 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingState
-import app.cash.paging.PagingSource
+import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import kotlin.coroutines.CoroutineContext
@@ -56,41 +55,19 @@ actual class MessageExtensionsImpl actual constructor(
     private fun getPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>
-    ): PagingSource<Int, MessageEntity> = object : PagingSource<Int, MessageEntity>() {
-        override fun getRefreshKey(state: PagingState<Int, MessageEntity>): Int? {
-            return state.anchorPosition?.let { anchorPosition ->
-                val anchorPage = state.closestPageToPosition(anchorPosition)
-                anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
-            }
-        }
-
-        @Suppress("TooGenericExceptionCaught")
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MessageEntity> {
-            val page = params.key ?: 0
-            return try {
-                val total = messagesQueries.countByConversationIdAndVisibility(
-                    conversationId,
-                    visibilities
-                ).executeAsOne()
-                val data = messagesQueries.selectByConversationIdAndVisibility(
+    ) =
+        QueryPagingSource(
+            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+            transacter = messagesQueries,
+            context = coroutineContext,
+            queryProvider = { limit, offset ->
+                messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,
                     visibilities,
-                    limit = params.loadSize.toLong(),
-                    offset = page * params.loadSize.toLong(),
+                    limit,
+                    offset,
                     messageMapper::toEntityMessageFromView
-                ).executeAsList()
-                // simulate page loading
-
-                LoadResult.Page(
-                    data,
-                    prevKey = if (page == 0) null else (page - 1) * params.loadSize,
-                    nextKey = if (data.isEmpty()) null else (page + 1) * params.loadSize,
-                    itemsBefore = (page * params.loadSize),
-                    itemsAfter = (total - (page * params.loadSize) - data.size).toInt()
                 )
-            } catch (e: Exception) {
-                LoadResult.Error(e)
             }
-        }
-    }
+        )
 }
