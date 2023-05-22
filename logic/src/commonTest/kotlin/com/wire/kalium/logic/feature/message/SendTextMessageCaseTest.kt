@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -30,13 +29,10 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -60,7 +56,6 @@ class SendTextMessageCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageSuccess()
-            .withUpdateMessageStatusSuccess()
             .arrange()
 
         // When
@@ -80,13 +75,9 @@ class SendTextMessageCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
             .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.SENT), any(), any())
-            .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -99,7 +90,6 @@ class SendTextMessageCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageFailure()
-            .withUpdateMessageStatusSuccess()
             .arrange()
 
         // When
@@ -121,14 +111,11 @@ class SendTextMessageCaseTest {
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasInvoked(once)
     }
 
     private class Arrangement {
-
-        @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -179,12 +166,6 @@ class SendTextMessageCaseTest {
                 .whenInvoked()
                 .thenReturn(stateFlow)
         }
-        fun withUpdateMessageStatusSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
         fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
             given(userPropertyRepository)
                 .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
@@ -193,7 +174,6 @@ class SendTextMessageCaseTest {
         }
 
         fun arrange() = this to SendTextMessageUseCase(
-            messageRepository,
             persistMessage,
             TestUser.SELF.id,
             currentClientIdProvider,
