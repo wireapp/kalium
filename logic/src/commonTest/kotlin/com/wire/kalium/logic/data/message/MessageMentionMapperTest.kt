@@ -105,14 +105,16 @@ class MessageMentionMapperTest {
         val mention = Mention(
             start = 0,
             length = 1,
-            qualifiedUserId = QualifiedUserId(selfUserId.value, selfUserId.domain),
+            qualifiedUserId = null,
             mentionType = Mention.MentionType.UserId(selfUserId.value)
         )
+
         val result = messageMentionMapper.fromProtoToModel(mention)
+
         assertEquals(result.start, mention.start)
         assertEquals(result.length, mention.length)
-        assertEquals(result.userId.value, mention.qualifiedUserId?.id)
-        assertEquals(result.userId.domain, mention.qualifiedUserId?.domain)
+        assertEquals(result.userId.value, selfUserId.value)
+        assertEquals(result.userId.domain, selfUserId.domain)
         assertTrue(result.isSelfMention)
     }
 
@@ -123,13 +125,33 @@ class MessageMentionMapperTest {
             start = 0,
             length = 1,
             qualifiedUserId = QualifiedUserId(otherUser.value, otherUser.domain),
-            mentionType = Mention.MentionType.UserId(otherUser.value)
+            mentionType = null
         )
+
         val result = messageMentionMapper.fromProtoToModel(mention)
+
         assertEquals(result.start, mention.start)
         assertEquals(result.length, mention.length)
         assertEquals(result.userId.value, mention.qualifiedUserId?.id)
         assertEquals(result.userId.domain, mention.qualifiedUserId?.domain)
+        assertFalse(result.isSelfMention)
+    }
+
+    @Test
+    fun givenAProtoUserMentionWithNullIds_whenMappingFromProtoToModel_thenReturnMentionWithEmptyIdValue() {
+        val mention = Mention(
+            start = 0,
+            length = 1,
+            qualifiedUserId = null,
+            mentionType = null
+        )
+
+        val result = messageMentionMapper.fromProtoToModel(mention)
+
+        assertEquals(result.start, mention.start)
+        assertEquals(result.length, mention.length)
+        assertEquals(result.userId.value, "")
+        assertEquals(result.userId.domain, selfUserId.domain)
         assertFalse(result.isSelfMention)
     }
 

@@ -57,10 +57,10 @@ class MessageMentionMapperImpl(
     override fun fromProtoToModel(mention: Mention): MessageMention {
         val userId = mention.qualifiedUserId?.let {
             idMapper.fromProtoUserId(it)
-        } ?: UserId(
-            mention.mentionType?.value as String,
-            selfUserId.domain
-        )
+        } ?: run {
+            val id = if (mention.mentionType != null) mention.mentionType?.value as String else ""
+            UserId(id, selfUserId.domain)
+        }
         return MessageMention(
             start = mention.start,
             length = mention.length,
