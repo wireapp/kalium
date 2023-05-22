@@ -32,6 +32,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -82,7 +83,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         verify(conversationRepository)
             .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
             .with(anything())
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -103,7 +104,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
         verify(conversationGroupRepository)
             .coroutine { createGroupConversation(usersList = MEMBER) }
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     private companion object {

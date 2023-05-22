@@ -155,6 +155,6 @@ internal class SlowSyncManager(
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
-        const val CURRENT_VERSION = 1 // bump this version to perform slow sync when some new feature flag was added
+        const val CURRENT_VERSION = 2 // bump this version to perform slow sync when some new feature flag was added
     }
 }
