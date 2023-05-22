@@ -24,5 +24,4 @@ import kotlinx.serialization.Serializable
 data class UpdateConversationProtocolRequest(
     @SerialName("protocol")
     val protocol: ConvProtocol
-) {
-}
+)

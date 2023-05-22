@@ -816,6 +816,14 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
         )
 
+    private val mlsMigrator: MLSMigrator
+        get() = MLSMigratorImpl(
+            selfTeamId,
+            conversationRepository,
+            mlsConversationRepository,
+            authenticatedNetworkContainer.conversationApi
+        )
+
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
         incrementalSyncRepository,
         lazy { clientRepository },
@@ -844,7 +852,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
-            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, MLSMigratorImpl(selfTeamId, conversationRepository, mlsConversationRepository, authenticatedNetworkContainer.conversationApi)) },
+            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, mlsMigrator) },
             lazy { mlsMigrationRepository }
     )
 

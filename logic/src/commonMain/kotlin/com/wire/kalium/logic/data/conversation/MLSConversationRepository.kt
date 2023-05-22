@@ -318,7 +318,11 @@ class MLSConversationDataSource(
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
 
-    suspend fun internalAddMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>, retryOnStaleMessage: Boolean): Either<CoreFailure, Unit> =
+    suspend fun internalAddMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        retryOnStaleMessage: Boolean
+    ): Either<CoreFailure, Unit> =
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->

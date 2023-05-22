@@ -47,6 +47,7 @@ import kotlinx.datetime.Clock
  */
 internal interface MLSMigrationManager
 
+@Suppress("LongParameterList")
 internal class MLSMigrationManagerImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val featureSupport: FeatureSupport,
@@ -83,20 +84,22 @@ internal class MLSMigrationManagerImpl(
     }
 
     private suspend fun updateMigration(): Either<CoreFailure, Unit> =
-        timestampKeyRepository.value.hasPassed(TimestampKeys.LAST_MLS_MIGRATION_CHECK, kaliumConfigs.mlsMigrationInterval)
-            .flatMap { lastMlsMigrationCheckHasPassed ->
-                kaliumLogger.d("Migration needs to be updated: $lastMlsMigrationCheckHasPassed")
-                if (lastMlsMigrationCheckHasPassed) {
-                    kaliumLogger.d("Updating migration config")
-                    mlsMigrationRepository.value.fetchMigrationConfiguration()
-                        .onSuccess { timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK) }
-                        .flatMap {
-                            mlsMigrationWorker.value.runMigration()
-                            Either.Right(Unit)
-                        }
-                }
-                Either.Right(Unit)
+        timestampKeyRepository.value.hasPassed(
+            TimestampKeys.LAST_MLS_MIGRATION_CHECK,
+            kaliumConfigs.mlsMigrationInterval
+        ).flatMap { lastMlsMigrationCheckHasPassed ->
+            kaliumLogger.d("Migration needs to be updated: $lastMlsMigrationCheckHasPassed")
+            if (lastMlsMigrationCheckHasPassed) {
+                kaliumLogger.d("Updating migration config")
+                mlsMigrationRepository.value.fetchMigrationConfiguration()
+                    .onSuccess { timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK) }
+                    .flatMap {
+                        mlsMigrationWorker.value.runMigration()
+                        Either.Right(Unit)
+                    }
             }
+            Either.Right(Unit)
+        }
 }
 
 fun MLSMigrationModel.hasMigrationStarted(): Boolean {

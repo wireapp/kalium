@@ -45,7 +45,7 @@ internal open class ConversationApiV4 internal constructor(
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL") {
             setBody(UpdateConversationProtocolRequest(protocol))
         }.let { httpResponse ->
-            when(httpResponse.status) {
+            when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(
                     UpdateConversationProtocolResponse.ProtocolUnchanged, httpResponse
                 )
