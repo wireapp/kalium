@@ -19,53 +19,38 @@ package com.wire.kalium.logic.data.service
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.wrapFlowStorageRequest
+import com.wire.kalium.logic.wrapNullableFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface ServiceRepository {
-    suspend fun getAllServices(): Either<StorageFailure, Flow<List<ServiceDetails>>>
-    suspend fun searchServicesByName(name: String): Either<StorageFailure, Flow<List<ServiceDetails>>>
+    suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>>
+    suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>>
     suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?>
     suspend fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<QualifiedID?>
+    ): Flow<Either<StorageFailure, UserId?>>
 }
 
 internal class ServiceDataSource internal constructor(
     private val serviceDAO: ServiceDAO,
-    private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository,
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : ServiceRepository {
 
-    override suspend fun getAllServices(): Either<StorageFailure, Flow<List<ServiceDetails>>> =
-        wrapStorageRequest {
-            getAllServicesAndMapFlow()
-                .map {
-                    it.ifEmpty {
-                        val user = userRepository.observeSelfUser().first()
-                        user.teamId?.let { teamId ->
-                            teamRepository.syncServices(teamId = teamId)
-                        }
-                        getAllServicesAndMapFlow().first()
-                    }
-                }
-        }
-
-    override suspend fun searchServicesByName(name: String): Either<StorageFailure, Flow<List<ServiceDetails>>> =
-        wrapStorageRequest {
+    override suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>> =
+        wrapFlowStorageRequest {
             serviceDAO.searchServicesByName(query = name).map {
                 it.map { serviceEntity ->
                     serviceMapper.fromDaoToModel(service = serviceEntity)
@@ -84,16 +69,19 @@ internal class ServiceDataSource internal constructor(
     override suspend fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<QualifiedID?> =
+    ): Flow<Either<StorageFailure, UserId?>> = wrapNullableFlowStorageRequest {
         serviceDAO.observeIsServiceMember(
             id = serviceMapper.fromModelToDao(serviceId = serviceId),
             conversationId = conversationId.toDao()
         ).map { it?.toModel() }
+    }
 
-    private suspend fun getAllServicesAndMapFlow(): Flow<List<ServiceDetails>> =
-        serviceDAO.getAllServices().map {
-            it.map { serviceEntity ->
-                serviceMapper.fromDaoToModel(service = serviceEntity)
+    override suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>> =
+        wrapFlowStorageRequest {
+            serviceDAO.getAllServices().map {
+                it.map { serviceEntity ->
+                    serviceMapper.fromDaoToModel(service = serviceEntity)
+                }
             }
         }
 }

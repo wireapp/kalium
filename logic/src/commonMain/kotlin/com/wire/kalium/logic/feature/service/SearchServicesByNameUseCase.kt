@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case searches for services based on given name string.
@@ -38,10 +39,11 @@ class SearchServicesByNameUseCaseImpl internal constructor(
 ) : SearchServicesByNameUseCase {
 
     override suspend fun invoke(search: String): Flow<List<ServiceDetails>> =
-        serviceRepository.searchServicesByName(name = search)
-            .fold({
-                flowOf(listOf())
+        serviceRepository.searchServicesByName(name = search).map {
+            it.fold({
+                listOf()
             }, {
                 it
             })
+        }
 }
