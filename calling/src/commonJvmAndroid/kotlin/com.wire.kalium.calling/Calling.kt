@@ -168,8 +168,7 @@ interface Calling : Library {
         conversationId: String,
         epoch: Uint32_t,
         clientsJson: String,
-        keyData: ByteArray,
-        keyLength: Uint32_t
+        keyData: String,
     ): Int
 
     @Suppress("FunctionNaming")
