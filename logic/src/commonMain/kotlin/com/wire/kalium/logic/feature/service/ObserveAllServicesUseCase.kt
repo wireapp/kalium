@@ -23,6 +23,7 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.fold
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case returns all services currently in the database.
@@ -39,5 +40,10 @@ class ObserveAllServicesUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveAllServicesUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> = TODO()
+    override suspend fun invoke(): Flow<List<ServiceDetails>> = serviceRepository.observeAllServices().map {
+        it.fold(
+            { emptyList() },
+            { it }
+        )
+    }
 }
