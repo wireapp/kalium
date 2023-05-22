@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.user.UserId

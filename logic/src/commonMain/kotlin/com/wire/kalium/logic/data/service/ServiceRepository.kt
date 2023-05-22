@@ -21,15 +21,12 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapNullableFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageNullableRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.ServiceDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
