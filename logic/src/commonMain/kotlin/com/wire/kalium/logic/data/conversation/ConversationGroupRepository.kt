@@ -250,7 +250,11 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo> =
         wrapApiRequest { conversationApi.fetchLimitedInformationViaCode(code, key) }
 
-    private suspend fun deleteMemberFromMlsGroup(userId: UserId, conversationId: ConversationId, protocol: ConversationEntity.ProtocolInfo.MLSCapable) =
+    private suspend fun deleteMemberFromMlsGroup(
+        userId: UserId,
+        conversationId: ConversationId,
+        protocol: ConversationEntity.ProtocolInfo.MLSCapable
+    ) =
         if (userId == selfUserId) {
             deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
                 mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))

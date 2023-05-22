@@ -200,7 +200,7 @@ data class Conversation(
             override fun name() = "Mixed"
         }
 
-        sealed interface MLSCapable: ProtocolInfo {
+        sealed interface MLSCapable : ProtocolInfo {
             val groupId: GroupID
             val groupState: GroupState
             val epoch: ULong
@@ -210,8 +210,7 @@ data class Conversation(
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
         }
 
-
-        abstract fun name(): String
+        fun name(): String
     }
 
     data class Member(val id: UserId, val role: Role) {
