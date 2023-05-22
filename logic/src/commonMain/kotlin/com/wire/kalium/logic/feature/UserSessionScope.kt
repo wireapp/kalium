@@ -1184,7 +1184,8 @@ class UserSessionScope internal constructor(
             messages.messageSender,
             clientIdProvider,
             conversationRepository,
-            team.isSelfATeamMember
+            team.isSelfATeamMember,
+            e2eiRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
