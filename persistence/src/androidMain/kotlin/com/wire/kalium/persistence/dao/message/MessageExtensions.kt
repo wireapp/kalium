@@ -59,6 +59,7 @@ actual class MessageExtensionsImpl actual constructor(
         QueryPagingSource(
             countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
             transacter = messagesQueries,
+            context = coroutineContext,
             queryProvider = { limit, offset ->
                 messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,

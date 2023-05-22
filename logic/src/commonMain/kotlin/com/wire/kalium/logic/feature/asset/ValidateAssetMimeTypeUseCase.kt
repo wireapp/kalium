@@ -15,16 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.asset
 
-package com.wire.kalium.logic.configuration
+/**
+ * Returns true if the mime type is allowed and false otherwise.
+ * @param mimeType the mime type to validate.
+ * @param allowedExtension the list of allowed extension.
+ */
+interface ValidateAssetMimeTypeUseCase {
+    operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean
+}
 
-data class FileSharingStatus(
-    val state: Value,
-    val isStatusChanged: Boolean?
-) {
-    sealed interface Value {
-        object Disabled : Value
-        object EnabledAll : Value
-        data class EnabledSome(val allowedType: List<String>) : Value
+internal class ValidateAssetMimeTypeUseCaseImpl : ValidateAssetMimeTypeUseCase {
+    override operator fun invoke(mimeType: String, allowedExtension: List<String>): Boolean {
+        val extension = mimeType.split("/").last().lowercase()
+        return allowedExtension.any {
+            it.lowercase() == extension
+        }
     }
 }

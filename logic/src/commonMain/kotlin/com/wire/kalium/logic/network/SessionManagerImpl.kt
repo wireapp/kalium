@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.network
 
-import app.cash.sqldelight.internal.Atomic
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
@@ -64,28 +63,32 @@ class SessionManagerImpl internal constructor(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
-    private val session: Atomic<SessionDTO?> = Atomic(null)
-    private var serverConfig: Atomic<ServerConfigDTO?> = Atomic(null)
+    private var session: SessionDTO? = null
+    private var serverConfig: ServerConfigDTO? = null
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
-        session.get() ?: run {
+        session ?: run {
             wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
                 .map { sessionMapper.fromEntityToSessionDTO(it) }
-                .onSuccess { session.set(it) }
-                .onFailure { kaliumLogger.e("""SESSION MANAGER: 
+                .onSuccess { session = it }
+                .onFailure {
+                    kaliumLogger.e(
+                        """SESSION MANAGER: 
                     |"error": "missing user session",
-                    |"cause": "$it" """.trimMargin()) }
-            session.get()
+                    |"cause": "$it" """.trimMargin()
+                    )
+                }
+            session
         }
     }
 
-    override fun serverConfig(): ServerConfigDTO = serverConfig.get() ?: run {
-        serverConfig.set(sessionRepository.fullAccountInfo(userId)
+    override fun serverConfig(): ServerConfigDTO = serverConfig ?: run {
+        sessionRepository.fullAccountInfo(userId)
             .map { serverConfigMapper.toDTO(it.serverConfig) }
+            .onSuccess { serverConfig = it }
             .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
-        )
-        serverConfig.get()!!
-    }
+        serverConfig!!
+    }!!
 
     override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
         wrapStorageRequest {
@@ -98,7 +101,7 @@ class SessionManagerImpl internal constructor(
         }.map {
             sessionMapper.fromEntityToSessionDTO(it)
         }.onSuccess {
-            session.set(it)
+            session = it
         }.nullableFold({
             null
         }, {

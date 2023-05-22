@@ -268,7 +268,8 @@ class ConversationDAOImpl(
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
-                receiptMode
+                receiptMode,
+                messageTimer
             )
         }
     }
