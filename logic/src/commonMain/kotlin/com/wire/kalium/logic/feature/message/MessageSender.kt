@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -46,7 +47,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -71,16 +71,12 @@ interface MessageSender {
      * Will handle all the needed encryption and possible set-up
      * steps and retries depending on the [ConversationOptions.Protocol].
      *
-     * In case of connectivity failure, will schedule a retry in the future using a [MessageSendingScheduler].
+     * In case of connectivity failure, will handle the error by updating the state of the persisted message
+     * and, if needed, also scheduling a retry in the future using a [MessageSendingScheduler].
      *
      * @param conversationId
      * @param messageUuid
      */
-    @Deprecated(
-        "For now we don't support re-sending pending messages, they should fail immediately when there's an error, " +
-                "even if it's no network",
-        ReplaceWith("sendMessage")
-    )
     suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
 
     /**
@@ -131,7 +127,6 @@ internal class MessageSenderImpl internal constructor(
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
-    private val messageSendingScheduler: MessageSendingScheduler,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
     private val scope: CoroutineScope
@@ -143,28 +138,26 @@ internal class MessageSenderImpl internal constructor(
         syncManager.waitUntilLive()
         return withContext(scope.coroutineContext) {
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-                if (message is Message.Regular) sendMessage(message)
-                else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
-            }.onFailure {
-                logger.i("Failed to send message. Failure = $it")
-                when (it) {
-                    is NetworkFailure.FederatedBackendFailure -> {
-                        logger.i("Failed due to federation context availability.")
-                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageUuid)
+                val result =
+                    if (message is Message.Regular) sendMessage(message)
+                    else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+                result
+                    .onFailure {
+                        val type = getType(message.content) ?: "Unknown"
+                        logger.i("Failed to send message of type $type. Failure = $it")
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = conversationId,
+                            messageId = messageUuid,
+                            messageType = type,
+                            scheduleResendIfNoNetwork = false // Right now we do not allow automatic resending of failed pending messages.
+                        )
                     }
-
-                    is NetworkFailure.NoNetworkConnection -> {
-                        logger.i("Scheduling message for retrying in the future.")
-                        messageSendingScheduler.scheduleSendingOfPendingMessages()
-                    }
-
-                    else -> {
-                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
-                    }
-                }
             }
         }
     }
+
+    private fun getType(messageContent: MessageContent?) = messageContent?.let { it::class.simpleName }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor
