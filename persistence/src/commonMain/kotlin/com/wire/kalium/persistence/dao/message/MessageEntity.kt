@@ -205,7 +205,7 @@ sealed class MessageEntity(
     data class Mention(
         @SerialName("start") val start: Int,
         @SerialName("length") val length: Int,
-        @SerialName("userId") val userId: QualifiedIDEntity
+        @SerialName("userId") val userId: QualifiedIDEntity?
     )
 }
 

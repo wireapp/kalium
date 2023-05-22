@@ -258,13 +258,15 @@ class MessageDAOImpl(
             queries.deleteMessageMentions(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
             newTextContent.mentions.forEach {
-                queries.insertMessageMention(
-                    message_id = currentMessageId,
-                    conversation_id = conversationId,
-                    start = it.start,
-                    length = it.length,
-                    user_id = it.userId
-                )
+                it.userId?.let { qualifiedId ->
+                    queries.insertMessageMention(
+                        message_id = currentMessageId,
+                        conversation_id = conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = qualifiedId
+                    )
+                }
             }
             queries.updateMessageId(newMessageId, currentMessageId, conversationId)
             queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)

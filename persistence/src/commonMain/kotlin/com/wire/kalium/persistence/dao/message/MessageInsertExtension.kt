@@ -113,13 +113,15 @@ internal class MessageInsertExtensionImpl(
                     is_quote_verified = content.isQuoteVerified
                 )
                 content.mentions.forEach {
-                    messagesQueries.insertMessageMention(
-                        message_id = message.id,
-                        conversation_id = message.conversationId,
-                        start = it.start,
-                        length = it.length,
-                        user_id = it.userId
-                    )
+                    it.userId?.let { qualifiedId ->
+                        messagesQueries.insertMessageMention(
+                            message_id = message.id,
+                            conversation_id = message.conversationId,
+                            start = it.start,
+                            length = it.length,
+                            user_id = qualifiedId
+                        )
+                    }
                 }
             }
 

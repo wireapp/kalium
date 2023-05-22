@@ -41,8 +41,8 @@ class MessageMentionMapperImpl(
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId.toModel(),
-            isSelfMention = mention.userId.toModel() == selfUserId
+            userId = mention.userId?.toModel(),
+            isSelfMention = mention.userId?.toModel() == selfUserId
         )
     }
 
@@ -50,29 +50,41 @@ class MessageMentionMapperImpl(
         return MessageEntity.Mention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId.toDao()
+            userId = mention.userId?.toDao()
         )
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention {
-        val userId = mention.qualifiedUserId?.let {
-            idMapper.fromProtoUserId(it)
-        } ?: run {
-            val id = if (mention.mentionType != null) mention.mentionType?.value as String else ""
-            UserId(id, selfUserId.domain)
-        }
-        return MessageMention(
+    override fun fromProtoToModel(mention: Mention): MessageMention = mention.qualifiedUserId?.let {
+        MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = userId,
-            isSelfMention = userId == selfUserId
+            userId = idMapper.fromProtoUserId(it),
+            isSelfMention = idMapper.fromProtoUserId(it) == selfUserId
         )
+    } ?: run {
+        mention.mentionType?.let { mentionType ->
+            val userId = UserId(mentionType.value as String, selfUserId.domain)
+            MessageMention(
+                start = mention.start,
+                length = mention.length,
+                userId = userId,
+                isSelfMention = userId == selfUserId
+            )
+
+        } ?: run {
+            MessageMention(
+                start = 0,
+                length = 0,
+                userId = null,
+                isSelfMention = false
+            )
+        }
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
         start = mention.start,
         length = mention.length,
-        qualifiedUserId = idMapper.toProtoUserId(mention.userId),
-        mentionType = Mention.MentionType.UserId(mention.userId.value)
+        qualifiedUserId = mention.userId?.let { idMapper.toProtoUserId(it) },
+        mentionType = mention.userId?.let { Mention.MentionType.UserId(it.value) }
     )
 }

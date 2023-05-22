@@ -149,7 +149,7 @@ internal class PersistMigratedMessagesUseCaseImpl(
                         MessageEntity.Mention(
                             it.start,
                             it.length,
-                            it.userId.toDao()
+                            it.userId?.toDao()
                         )
                     }
                 ),

@@ -48,7 +48,7 @@ interface IdMapper {
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
     fun fromProtoUserId(qualifiedUserId: QualifiedUserId): QualifiedID
-    fun toProtoUserId(userId: UserId): QualifiedUserId
+    fun toProtoUserId(userId: UserId): QualifiedUserId?
     fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId?
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
     fun toNetworkUserId(userId: UserId): UserIdDTO
@@ -91,7 +91,7 @@ internal class IdMapperImpl : IdMapper {
     override fun fromProtoUserId(qualifiedUserId: QualifiedUserId): UserId =
         UserId(qualifiedUserId.id, qualifiedUserId.domain)
 
-    override fun toProtoUserId(userId: UserId): QualifiedUserId =
+    override fun toProtoUserId(userId: UserId): QualifiedUserId? =
         QualifiedUserId(userId.value, userId.domain)
 
     override fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId? = with(userSsoIdDTO) {
