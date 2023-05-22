@@ -229,7 +229,9 @@ internal class UserDataSource internal constructor(
     }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
-        userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
+        usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
+            userDAO.insertUser(it)
+        }
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
@@ -467,7 +469,7 @@ internal class UserDataSource internal constructor(
     override suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
         userDAO.getUsersWithoutMetadata()
     }.flatMap { usersWithoutMetadata ->
-        kaliumLogger.d("Numbers of users refreshed: ${usersWithoutMetadata.size}")
+        kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
         fetchUsersByIds(userIds)
     }

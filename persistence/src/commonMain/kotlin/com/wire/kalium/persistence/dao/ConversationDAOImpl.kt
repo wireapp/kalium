@@ -554,4 +554,8 @@ class ConversationDAOImpl(
         conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().map {
             it.executeAsOne().guest_room_link
         }.flowOn(coroutineContext)
+
+    override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
+    }
 }

@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.publicuser
+package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -25,24 +25,22 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Refresh users without metadata, only if necessary.
+ * Refresh conversations without metadata, only if necessary.
  */
-interface RefreshUsersWithoutMetadataUseCase {
+interface RefreshConversationsWithoutMetadataUseCase {
     suspend operator fun invoke()
 }
 
-internal class RefreshUsersWithoutMetadataUseCaseImpl(
-    private val userRepository: UserRepository,
+internal class RefreshConversationsWithoutMetadataUseCaseImpl(
+    private val conversationRepository: ConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : RefreshUsersWithoutMetadataUseCase {
-
+) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
-        userRepository.syncUsersWithoutMetadata()
+        conversationRepository.syncConversationsWithoutMetadata()
             .fold({
-                kaliumLogger.w("Error while syncing users without metadata $it")
+                kaliumLogger.w("Error while syncing conversations without metadata $it")
             }) {
-                kaliumLogger.d("Finished syncing users without metadata")
+                kaliumLogger.d("Finished syncing conversations without metadata")
             }
     }
-
 }

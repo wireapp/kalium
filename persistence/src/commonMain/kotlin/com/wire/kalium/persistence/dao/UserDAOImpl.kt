@@ -217,7 +217,8 @@ class UserDAOImpl internal constructor(
                     user.completeAssetId,
                     user.userType,
                     user.botService,
-                    user.id,
+                    false,
+                    user.id
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
