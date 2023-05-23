@@ -92,7 +92,7 @@ class DebugScope internal constructor(
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
@@ -128,7 +128,6 @@ class DebugScope internal constructor(
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
-            messageSendingScheduler,
             messageSendingInterceptor,
             userRepository,
             scope
