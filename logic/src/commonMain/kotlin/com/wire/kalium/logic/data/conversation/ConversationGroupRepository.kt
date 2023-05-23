@@ -231,14 +231,14 @@ internal class ConversationGroupRepositoryImpl(
             memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
                 .flatMap {
                     wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
-                        .flatMap {
-                            when (it) {
+                        .flatMap { protocol ->
+                            when (protocol) {
                                 is ConversationEntity.ProtocolInfo.Proteus ->
                                     Either.Right(Unit)
 
                                 is ConversationEntity.ProtocolInfo.MLSCapable -> {
                                     joinExistingMLSConversation(conversationId).flatMap {
-                                        addMembers(listOf(selfUserId), conversationId)
+                                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), listOf(selfUserId))
                                     }
                                 }
                             }
