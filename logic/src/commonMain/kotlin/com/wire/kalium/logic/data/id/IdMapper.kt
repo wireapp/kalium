@@ -91,8 +91,7 @@ internal class IdMapperImpl : IdMapper {
     override fun fromProtoUserId(qualifiedUserId: QualifiedUserId): UserId =
         UserId(qualifiedUserId.id, qualifiedUserId.domain)
 
-    override fun toProtoUserId(userId: UserId): QualifiedUserId =
-        QualifiedUserId(userId.value, userId.domain)
+    override fun toProtoUserId(userId: UserId): QualifiedUserId = QualifiedUserId(userId.value, userId.domain)
 
     override fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId? = with(userSsoIdDTO) {
         this?.let { SsoId(scimExternalId = scimExternalId, subject = subject, tenant = tenant) }
