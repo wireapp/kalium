@@ -90,7 +90,7 @@ internal class ServiceDAOImpl(
     override suspend fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
-        serviceQueries.getServicesByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
+        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
 
     override suspend fun insert(service: ServiceEntity) = withContext(context) {
         serviceQueries.insert(
