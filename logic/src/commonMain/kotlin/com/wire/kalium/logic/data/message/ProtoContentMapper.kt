@@ -402,10 +402,7 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
         value = protoContent.value.content,
-        mentions = protoContent.value.mentions.mapNotNull {
-            val newMention = it.copy(qualifiedUserId = null, mentionType = null )
-            messageMentionMapper.fromProtoToModel(newMention)
-                                                          },
+        mentions = protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.value.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
