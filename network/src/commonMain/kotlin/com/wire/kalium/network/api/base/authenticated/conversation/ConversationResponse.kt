@@ -24,8 +24,15 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class GlobalTeamConversationResponse(
@@ -263,3 +270,16 @@ data class SubconversationMember(
     @SerialName("user_id") val userId: String,
     @SerialName("domain") val domain: String
 )
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializer(ConversationResponse.Type::class)
+class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
+    override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: ConversationResponse.Type) = encoder.encodeInt(value.id)
+
+    override fun deserialize(decoder: Decoder): ConversationResponse.Type {
+        val rawValue = decoder.decodeInt()
+        return ConversationResponse.Type.fromId(rawValue)
+    }
+}
