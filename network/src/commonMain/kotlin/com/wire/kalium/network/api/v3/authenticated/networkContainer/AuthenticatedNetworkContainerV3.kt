@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
@@ -46,6 +47,7 @@ import com.wire.kalium.network.api.v3.authenticated.CallApiV3
 import com.wire.kalium.network.api.v3.authenticated.ClientApiV3
 import com.wire.kalium.network.api.v3.authenticated.ConnectionApiV3
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
+import com.wire.kalium.network.api.v3.authenticated.E2EIApiV3
 import com.wire.kalium.network.api.v3.authenticated.FeatureConfigApiV3
 import com.wire.kalium.network.api.v3.authenticated.KeyPackageApiV3
 import com.wire.kalium.network.api.v3.authenticated.LogoutApiV3
@@ -86,6 +88,8 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
     override val messageApi: MessageApi get() = MessageApiV3(networkClient, EnvelopeProtoMapperImpl())
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV3()
+
+    override val e2eiApi: E2EIApi get() = E2EIApiV3()
 
     override val conversationApi: ConversationApi get() = ConversationApiV3(networkClient, ApiModelMapperImpl())
 

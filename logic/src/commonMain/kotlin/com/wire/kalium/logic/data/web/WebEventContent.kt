@@ -48,7 +48,8 @@ data class WebConversationContent(
     @SerialName("others") val others: List<String>?,
     @SerialName("protocol") val protocol: String?,
     @SerialName("status") val status: Int?,
-    @SerialName("team_id") val teamId: String?
+    @SerialName("team_id") val teamId: String?,
+    @SerialName("ephemeral_timer") val messageTimer: Long?
 )
 
 @Serializable

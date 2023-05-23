@@ -52,6 +52,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
@@ -111,6 +113,7 @@ internal class ConversationMapperImpl(
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
+        messageTimer = apiModel.messageTimer,
         hasIncompleteMetadata = false
     )
 
@@ -137,7 +140,8 @@ internal class ConversationMapperImpl(
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
-            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -158,7 +162,8 @@ internal class ConversationMapperImpl(
             access = access.map { it.toDAO() },
             accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
-            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode)
+            receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -346,7 +351,8 @@ internal class ConversationMapperImpl(
             lastReadDate = conversation.lastReadDate.toInstant(),
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
-            receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode)
+            receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
+            messageTimer = messageTimer?.inWholeMilliseconds
         )
     }
 
@@ -370,6 +376,7 @@ internal class ConversationMapperImpl(
         access = emptyList(),
         accessRole = emptyList(),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null,
         hasIncompleteMetadata = true
     )
 

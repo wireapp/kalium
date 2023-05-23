@@ -191,6 +191,8 @@ interface ConversationRepository {
         receiptMode: Conversation.ReceiptMode
     ): Either<CoreFailure, Unit>
 
+    suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
+
     suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
@@ -690,6 +692,9 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
+        wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
     override suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
         val conversationsWithoutMetadata = conversationDAO.getConversationsWithoutMetadata()

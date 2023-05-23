@@ -79,7 +79,8 @@ private class ConversationMapper {
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
             selfRole = selfRole,
-            receiptMode = receipt_mode
+            receiptMode = receipt_mode,
+            messageTimer = message_timer
         )
     }
 
@@ -104,7 +105,8 @@ private class ConversationMapper {
         accessRoleList: List<ConversationEntity.AccessRole>,
         mlsLastKeyingMaterialUpdateDate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
-        receiptMode: ConversationEntity.ReceiptMode
+        receiptMode: ConversationEntity.ReceiptMode,
+        messageTimer: Long?
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -126,7 +128,8 @@ private class ConversationMapper {
         lastReadDate = lastReadDate,
         access = accessList,
         accessRole = accessRoleList,
-        receiptMode = receiptMode
+        receiptMode = receiptMode,
+        messageTimer = messageTimer
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -169,7 +172,8 @@ private class ConversationMapper {
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
                 selfRole = selfRole,
-                receiptMode = receipt_mode
+                receiptMode = receipt_mode,
+                messageTimer = message_timer
             )
         }
     }
@@ -265,6 +269,7 @@ class ConversationDAOImpl(
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
+                messageTimer,
                 hasIncompleteMetadata
             )
         }
@@ -555,7 +560,12 @@ class ConversationDAOImpl(
             it.executeAsOne().guest_room_link
         }.flowOn(coroutineContext)
 
+    override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
+        conversationQueries.updateMessageTimer(messageTimer, conversationId)
+    }
+
     override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
+
 }

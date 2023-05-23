@@ -206,7 +206,7 @@ class GetUserInfoUseCaseTest {
                 verify(teamRepository)
                     .suspendFunction(teamRepository::fetchTeamById)
                     .with(any())
-                    .wasInvoked()
+                    .wasNotInvoked()
             }
         }
 

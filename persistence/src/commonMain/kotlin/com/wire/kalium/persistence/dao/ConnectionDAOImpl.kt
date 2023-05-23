@@ -66,7 +66,7 @@ private class ConnectionMapper {
         complete_asset_id: QualifiedIDEntity?,
         user_availability_status: UserAvailabilityStatusEntity?,
         user_type: UserTypeEntity?,
-        bot_service: BotEntity?,
+        bot_service: BotIdEntity?,
         deleted: Boolean?,
         incomplete_metadata: Boolean?
     ): ConnectionEntity = ConnectionEntity(

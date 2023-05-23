@@ -19,6 +19,8 @@
 package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
@@ -29,6 +31,7 @@ import io.ktor.client.engine.HttpClientEngine
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
     val remoteVersion: VersionApi
+    val acmeApi: ACMEApi
 }
 
 private interface UnboundNetworkClientProvider {
@@ -38,7 +41,8 @@ private interface UnboundNetworkClientProvider {
 internal class UnboundNetworkClientProviderImpl(
     val developmentApiEnabled: Boolean,
     userAgent: String,
-    engine: HttpClientEngine = defaultHttpEngine()
+    private val ignoreSSLCertificates: Boolean,
+    engine: HttpClientEngine = defaultHttpEngine(ignoreSSLCertificates = ignoreSSLCertificates)
 ) : UnboundNetworkClientProvider {
 
     init {
@@ -51,10 +55,12 @@ internal class UnboundNetworkClientProviderImpl(
 }
 
 class UnboundNetworkContainerCommon(
-    val developmentApiEnabled: Boolean,
-    userAgent: String
+    private val developmentApiEnabled: Boolean,
+    userAgent: String,
+    private val ignoreSSLCertificates: Boolean,
 ) : UnboundNetworkContainer,
-    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent) {
+    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent, ignoreSSLCertificates) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
+    override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
 }

@@ -36,8 +36,11 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
+import org.slf4j.LoggerFactory
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
+
+    private val log = LoggerFactory.getLogger(TestserviceApplication::class.java.name)
 
     companion object {
         @JvmStatic
@@ -61,11 +64,17 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
 
+        log.info("Creating cleanup worker pool...")
+        val cleanupPool = environment.lifecycle().scheduledExecutorService(name, true)
+            .threads(2)
+            .removeOnCancelPolicy(true)
+            .build()
+
         // metrics containing only application related stuff (no memory, jvm, etc)
         val metricRegistry = MetricRegistry()
 
         // managed
-        val instanceService = InstanceService(metricRegistry)
+        val instanceService = InstanceService(metricRegistry, cleanupPool, configuration)
         environment.lifecycle().manage(instanceService)
 
         // metrics

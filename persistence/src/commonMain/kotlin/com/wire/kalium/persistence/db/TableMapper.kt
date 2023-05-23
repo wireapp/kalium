@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
+import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
@@ -41,9 +42,9 @@ import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
+import com.wire.kalium.persistence.Service
 import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
-import com.wire.kalium.persistence.adapter.BotServiceAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
@@ -51,6 +52,8 @@ import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.BotServiceAdapter
+import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -89,13 +92,13 @@ internal object TableMapper {
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,
         conversationAdapter = QualifiedIDAdapter,
-        roleAdapter = MemberRoleAdapter()
+        roleAdapter = MemberRoleAdapter
     )
     val messageAdapter = Message.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         sender_user_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        content_typeAdapter = ContentTypeAdapter(),
+        content_typeAdapter = ContentTypeAdapter,
         visibilityAdapter = EnumColumnAdapter(),
         creation_dateAdapter = InstantTypeAdapter,
         last_edit_dateAdapter = InstantTypeAdapter,
@@ -116,7 +119,7 @@ internal object TableMapper {
     )
     val messageMemberChangeContentAdapter = MessageMemberChangeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
-        member_change_listAdapter = QualifiedIDListAdapter(),
+        member_change_listAdapter = QualifiedIDListAdapter,
         member_change_typeAdapter = EnumColumnAdapter()
     )
     val messageMentionAdapter = MessageMention.Adapter(
@@ -166,6 +169,9 @@ internal object TableMapper {
     val messageConversationReceiptModeChangedContentAdapter = MessageConversationReceiptModeChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
     )
+    val messageConversationTimerChangedContentAdapter = MessageConversationTimerChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
 
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
@@ -173,9 +179,16 @@ internal object TableMapper {
         creation_dateAdapter = InstantTypeAdapter,
     )
 
+    val serviceAdapter = Service.Adapter(
+        idAdapter = BotServiceAdapter(),
+        tagsAdapter = ServiceTagListAdapter,
+        preview_asset_idAdapter = QualifiedIDAdapter,
+        complete_asset_idAdapter = QualifiedIDAdapter
+    )
+
     val messageRecipientFailureAdapter = MessageRecipientFailure.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
-        recipient_failure_listAdapter = QualifiedIDListAdapter(),
+        recipient_failure_listAdapter = QualifiedIDListAdapter,
         recipient_failure_typeAdapter = EnumColumnAdapter()
     )
 }

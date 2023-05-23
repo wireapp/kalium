@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -75,6 +77,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
@@ -197,6 +200,59 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPISucceedsWithChange_whenAddingServiceToConversation_thenShouldSucceed() = runTest {
+        val serviceID = ServiceId("service-id", "service-provider")
+        val addServiceRequest = AddServiceRequest(id = serviceID.id, provider = serviceID.provider)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddServiceAPISucceedChanged()
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addService)
+            .with(eq(addServiceRequest), eq(TestConversation.ID.toApi()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLSConversation_whenAddingServiceToConversation_theReturnError() = runTest {
+        val serviceID = ServiceId("service-id", "service-provider")
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .arrange()
+
+        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+            .shouldFail {
+                assertIs<MLSFailure>(it)
+                assertIs<UnsupportedOperationException>(it.exception)
+            }
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addService)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasNotInvoked()
     }
 
     @Test
@@ -733,6 +789,19 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(
                     NetworkResponse.Success(
                         TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withAddServiceAPISucceedChanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addService)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
