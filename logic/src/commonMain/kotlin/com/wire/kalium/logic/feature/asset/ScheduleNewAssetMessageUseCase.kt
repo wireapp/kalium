@@ -251,7 +251,20 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     )
                 }.onSuccess {
                     // Finally we try to send the Asset Message to the recipients of the given conversation
-                    messageSender.sendPendingMessage(updatedMessage.conversationId, updatedMessage.id)
+                    val finalMessage = Message.Regular(
+                        id = updatedMessage.id,
+                        content = updatedMessage.content,
+                        conversationId = updatedMessage.conversationId,
+                        date = updatedMessage.date,
+                        senderUserId = updatedMessage.senderUserId,
+                        senderClientId = updatedMessage.senderClientId,
+                        status = updatedMessage.status,
+                        editStatus = updatedMessage.editStatus,
+                        expectsReadConfirmation = updatedMessage.expectsReadConfirmation,
+                        expirationData = updatedMessage.expirationData,
+                        isSelfMessage = updatedMessage.isSelfMessage
+                    )
+                    messageSender.sendMessage(finalMessage)
                 }
         }
 

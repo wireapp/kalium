@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
+import com.wire.kalium.persistence.util.JsonSerializer
+import kotlinx.serialization.KSerializer
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
@@ -62,6 +64,18 @@ class MetadataDAOImpl internal constructor(
             metadataQueries.deleteAll()
         } else {
             metadataQueries.deleteAllExcept(keysToKeep)
+        }
+    }
+
+    override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
+        val jsonString = JsonSerializer().encodeToString(kSerializer, value)
+        insertValue(key, jsonString)
+    }
+
+    override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
+        val jsonString: String? = valueByKey(key)
+        return jsonString?.let {
+            JsonSerializer().decodeFromString(kSerializer, it)
         }
     }
 }

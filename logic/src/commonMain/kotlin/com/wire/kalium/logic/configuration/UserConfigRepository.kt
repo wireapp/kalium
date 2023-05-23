@@ -58,19 +58,18 @@ interface UserConfigRepository {
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
 
-    fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
-    fun setTeamSettingsSelfDeletionStatus(
+    suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
+    suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit>
 
-    fun setConversationSelfDeletionTimer(
+    suspend fun setConversationSelfDeletionTimer(
         conversationId: ConversationId,
         selfDeletionTimer: SelfDeletionTimer
     ): Either<StorageFailure, Unit>
 
-    fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
-    fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    fun observeConversationSelfDeletionTimer(conversationId: ConversationId): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>>
+    suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
+    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
 }
 
 @Suppress("TooManyFunctions")
@@ -192,7 +191,7 @@ class UserConfigDataSource(
                 }
             }
 
-    override fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
+    override suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
         userConfigStorage.getTeamSettingsSelfDeletionStatus()
     }.map {
         with(it) {
@@ -203,7 +202,7 @@ class UserConfigDataSource(
         }
     }
 
-    override fun setTeamSettingsSelfDeletionStatus(
+    override suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
@@ -215,18 +214,18 @@ class UserConfigDataSource(
             )
         }
 
-    override fun setConversationSelfDeletionTimer(
+    override suspend fun setConversationSelfDeletionTimer(
         conversationId: ConversationId,
         selfDeletionTimer: SelfDeletionTimer
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.persistConversationSelfDeletionTimer(conversationId.toDao(), selfDeletionTimer.toSelfDeletionTimerEntity())
     }
 
-    override fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.setSelfDeletingMessagesAsNotified()
     }
 
-    override fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
+    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
         userConfigStorage.getTeamSettingsSelfDeletionStatusFlow()
             .wrapStorageRequest()
             .map {
@@ -234,20 +233,6 @@ class UserConfigDataSource(
                     TeamSettingsSelfDeletionStatus(
                         teamSettingsStatus.isStatusChanged,
                         teamSettingsStatus.selfDeletionTimerEntity.toSelfDeletionTimerStatus()
-                    )
-                }
-            }
-
-    override fun observeConversationSelfDeletionTimer(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>> =
-        userConfigStorage.getConversationSelfDeletionTimerFlow(conversationId.toDao())
-            .wrapStorageRequest()
-            .map {
-                it.map { conversationSelfDeletionStatus ->
-                    ConversationSelfDeletionStatus(
-                        conversationId = conversationId,
-                        selfDeletionTimer = conversationSelfDeletionStatus.toSelfDeletionTimerStatus()
                     )
                 }
             }

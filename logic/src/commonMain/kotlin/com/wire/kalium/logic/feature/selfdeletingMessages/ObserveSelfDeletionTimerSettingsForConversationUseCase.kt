@@ -60,14 +60,20 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
                                         )
                                     )
 
-                                    considerSelfUserSettings -> userConfigRepository.observeConversationSelfDeletionTimer(conversationId)
-                                        .map { selfDeletionStatusEither ->
-                                            selfDeletionStatusEither.fold({
-                                                SelfDeletionTimer.Enabled(ZERO)
-                                            }, { selfDeletionStatus ->
-                                                selfDeletionStatus.selfDeletionTimer
-                                            })
-                                        }
+                                    considerSelfUserSettings -> {
+                                        conversationRepository.observeConversationDetailsById(conversationId)
+                                            .map { conversationDetailsEither ->
+                                                conversationDetailsEither.fold({
+                                                    SelfDeletionTimer.Enabled(ZERO)
+                                                }, { conversationDetails ->
+                                                    conversationDetails.conversation.messageTimer?.let { timer ->
+                                                        SelfDeletionTimer.Enforced.ByGroup(timer)
+                                                    } ?: conversationDetails.conversation.userMessageTimer?.let { timer ->
+                                                        SelfDeletionTimer.Enabled(timer)
+                                                    } ?: SelfDeletionTimer.Enabled(ZERO)
+                                                })
+                                            }
+                                    }
 
                                     else -> flowOf(SelfDeletionTimer.Enabled(ZERO))
                                 }

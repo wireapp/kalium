@@ -116,7 +116,7 @@ class DebugScope internal constructor(
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
-        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository, conversationRepository)
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -25,18 +26,18 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Use case to persist the new self deletion timer for a given conversation to memory.
  */
-fun interface PersistNewSelfDeletionTimerUseCase {
+interface PersistNewSelfDeletionTimerUseCase {
     /**
      * @param conversationId the conversation id for which the self deletion timer should be updated
      */
-    operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
+    suspend operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
 }
 
 class PersistNewSelfDeletionTimerUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val conversationRepository: ConversationRepository
 ) : PersistNewSelfDeletionTimerUseCase {
-    override fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
-        userConfigRepository.setConversationSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
+    override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
+        conversationRepository.updateUserSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
             kaliumLogger.e("Failure while persisting self deleting messages status $it")
         }, { kaliumLogger.d("Successfully updated self deleting messages status $newSelfDeletionTimer") })
 }

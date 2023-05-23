@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -41,7 +42,8 @@ data class ConversationEntity(
     val accessRole: List<AccessRole>,
     val receiptMode: ReceiptMode,
     val guestRoomLink: String? = null,
-    val messageTimer: Long?
+    val messageTimer: Long?,
+    val userMessageTimer: Long?
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -119,7 +121,8 @@ data class ConversationViewEntity(
     val creatorId: String,
     val removedBy: UserIDEntity? = null, // TODO how to calculate?,
     val receiptMode: ConversationEntity.ReceiptMode,
-    val messageTimer: Long?
+    val messageTimer: Long?,
+    val userMessageTimer: Long?
 ) {
     val isMember: Boolean get() = selfRole != null
 
@@ -206,4 +209,5 @@ interface ConversationDAO {
     suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?)
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
+    suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
 }

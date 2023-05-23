@@ -48,7 +48,8 @@ data class Conversation(
     val accessRole: List<AccessRole>,
     val creatorId: String?,
     val receiptMode: ReceiptMode,
-    val messageTimer: Duration? // enforced time by group conversation for self deleting messages, always NULL for 1on1 conversation
+    val messageTimer: Duration?, // enforced time by group conversation for self deleting messages, always NULL for 1on1 conversation
+    val userMessageTimer: Duration? // timer duration picked by the user in absence of team or conversation enforced timers
 ) {
 
     companion object {
@@ -273,7 +274,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             accessRole = accessRole,
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
     )
 }

@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
@@ -80,7 +81,8 @@ private class ConversationMapper {
             otherUserId = otherUserId,
             selfRole = selfRole,
             receiptMode = receipt_mode,
-            messageTimer = message_timer
+            messageTimer = message_timer,
+            userMessageTimer = user_message_timer,
         )
     }
 
@@ -106,7 +108,8 @@ private class ConversationMapper {
         mlsLastKeyingMaterialUpdateDate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
         receiptMode: ConversationEntity.ReceiptMode,
-        messageTimer: Long?
+        messageTimer: Long?,
+        userMessageTimer: Long?,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -129,7 +132,8 @@ private class ConversationMapper {
         access = accessList,
         accessRole = accessRoleList,
         receiptMode = receiptMode,
-        messageTimer = messageTimer
+        messageTimer = messageTimer,
+        userMessageTimer = userMessageTimer,
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -173,7 +177,8 @@ private class ConversationMapper {
                 otherUserId = otherUserId,
                 selfRole = selfRole,
                 receiptMode = receipt_mode,
-                messageTimer = message_timer
+                messageTimer = message_timer,
+                userMessageTimer = user_message_timer,
             )
         }
     }
@@ -269,7 +274,8 @@ class ConversationDAOImpl(
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
-                messageTimer
+                messageTimer,
+                userMessageTimer
             )
         }
     }
@@ -560,6 +566,10 @@ class ConversationDAOImpl(
         }.flowOn(coroutineContext)
 
     override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
+        conversationQueries.updateMessageTimer(messageTimer, conversationId)
+    }
+
+    override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
         conversationQueries.updateMessageTimer(messageTimer, conversationId)
     }
 

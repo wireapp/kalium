@@ -19,12 +19,14 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.persistence.dao.ConversationDAO
 
 interface MessageSendingInterceptor {
     suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable>
@@ -32,7 +34,8 @@ interface MessageSendingInterceptor {
 
 class MessageSendingInterceptorImpl(
     private val messageContentEncoder: MessageContentEncoder,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository
 ) : MessageSendingInterceptor {
 
     override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
@@ -44,6 +47,8 @@ class MessageSendingInterceptorImpl(
         ) {
             return Either.Right(message)
         }
+
+        val conversationEnforcedTimer = conversationRepository.getConversationById(message.conversationId)?.messageTimer
 
         return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
             .map { originalMessage ->
