@@ -37,14 +37,19 @@ class PersistNewSelfDeletionTimerUseCaseImpl(
 ) : PersistNewSelfDeletionTimerUseCase {
     override fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
         userConfigRepository.setConversationSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
-            kaliumLogger.e(
-                "Failure while persisting a new Self Deletion Timer for conversation=${conversationId.toLogString()} with " +
-                        "error=$it"
+            val logMap = mapOf(
+                "event" to "Self Deletion Update Failure",
+                "value" to newSelfDeletionTimer.toLogString(),
+                "errorInfo" to "$it"
             )
+            kaliumLogger.e("Self Deletion update: $logMap")
         }, {
+            val logMap = mapOf(
+                "event" to "Self Deletion Update Success",
+                "value" to newSelfDeletionTimer.toLogString()
+            )
             kaliumLogger.d(
-                "A new Self Deletion Timer for conversation=${conversationId.toLogString()} was successfully updated: " +
-                        newSelfDeletionTimer.toLogString()
+                "Self Deletion update: $logMap"
             )
         })
 }

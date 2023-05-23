@@ -48,8 +48,7 @@ sealed class SelfDeletionTimer {
     }
 
     private fun toLogMap(): Map<String, Any?> = mapOf(
-        typeKey to "SelfDeletionTimer",
-        selfDeletionKey to this::class.simpleName,
+        typeKey to this::class.simpleName,
         durationKey to toDuration().inWholeSeconds,
         isEnforcedKey to isEnforced,
         isDisabledKey to isDisabled
@@ -71,7 +70,6 @@ sealed class SelfDeletionTimer {
 
     private companion object {
         const val typeKey = "type"
-        const val selfDeletionKey = "selfDeletionClassType"
         const val durationKey = "durationInSeconds"
         const val isEnforcedKey = "isEnforced"
         const val isDisabledKey = "isDisabled"
