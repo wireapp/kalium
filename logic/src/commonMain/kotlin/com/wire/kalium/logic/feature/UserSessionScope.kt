@@ -1231,8 +1231,10 @@ class UserSessionScope internal constructor(
 
     val service: ServiceScope
         get() = ServiceScope(
-        serviceRepository
-    )
+            serviceRepository,
+            teamRepository,
+            selfTeamId
+        )
 
     val calls: CallsScope
         get() = CallsScope(

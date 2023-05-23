@@ -17,14 +17,22 @@
  */
 package com.wire.kalium.logic.feature.service
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -43,11 +51,15 @@ class ObserveAllServicesUseCaseTest {
             serviceDetails.copy(id = ServiceId("id2", "providerId"))
         )
 
-        val (arrangement, observeAllServicesUseCase) = Arrangement()
+        val scope = CoroutineScope(TestKaliumDispatcher.main)
+
+        val (_, observeAllServicesUseCase) = Arrangement()
+            .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
+            .withSyncingServices()
             .withObserveAllServices(flowOf(Either.Right(expected)))
             .arrange()
 
-        observeAllServicesUseCase().first().also {
+        observeAllServicesUseCase(scope).first().also {
             assertEquals(expected, it)
         }
     }
@@ -57,14 +69,17 @@ class ObserveAllServicesUseCaseTest {
         val error = StorageFailure.DataNotFound
 
         val (_, observeAllServicesUseCase) = Arrangement()
+            .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
+            .withSyncingServices()
             .withObserveAllServices(flowOf(Either.Left(error)))
             .arrange()
 
-        observeAllServicesUseCase().first().also {
+        val scope = CoroutineScope(TestKaliumDispatcher.main)
+
+        observeAllServicesUseCase(scope).first().also {
             assertEquals(emptyList<ServiceDetails>(), it)
         }
     }
-
 
 
     private companion object {
@@ -87,7 +102,17 @@ class ObserveAllServicesUseCaseTest {
         @Mock
         val serviceRepository: ServiceRepository = mock(ServiceRepository::class)
 
-        private val useCase: ObserveAllServicesUseCase = ObserveAllServicesUseCaseImpl(serviceRepository)
+        @Mock
+        val teamRepository: TeamRepository = mock(TeamRepository::class)
+
+        @Mock
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
+        private val useCase: ObserveAllServicesUseCase = ObserveAllServicesUseCaseImpl(
+            serviceRepository,
+            teamRepository,
+            selfTeamIdProvider
+        )
 
         fun withObserveAllServices(result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
             given(serviceRepository)
@@ -95,6 +120,21 @@ class ObserveAllServicesUseCaseTest {
                 .whenInvoked()
                 .then { result }
         }
+
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { either }
+        }
+
+        fun withSyncingServices() = apply {
+            given(teamRepository)
+                .suspendFunction(teamRepository::syncServices)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun arrange() = this to useCase
     }
 }

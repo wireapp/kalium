@@ -19,29 +19,44 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * This use case returns all services currently in the database.
  * In case it is empty, the repository will request the list from the API.
  *
- * @return List<ServiceDetails>
+ * @return Flow<List<ServiceDetails>>
  */
 interface ObserveAllServicesUseCase {
 
-    suspend operator fun invoke(): Flow<List<ServiceDetails>>
+    suspend operator fun invoke(scope: CoroutineScope): Flow<List<ServiceDetails>>
 }
 
 class ObserveAllServicesUseCaseImpl internal constructor(
-    private val serviceRepository: ServiceRepository
+    private val serviceRepository: ServiceRepository,
+    private val teamRepository: TeamRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider
 ) : ObserveAllServicesUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> = serviceRepository.observeAllServices().map {
-        it.fold(
-            { emptyList() },
-            { it }
-        )
+    override suspend fun invoke(scope: CoroutineScope): Flow<List<ServiceDetails>> {
+        scope.launch {
+            selfTeamIdProvider().getOrNull()?.let { teamId ->
+                teamRepository.syncServices(teamId = teamId)
+            }
+        }
+
+        return serviceRepository.observeAllServices().map { either ->
+            either.fold(
+                { emptyList() },
+                { it }
+            )
+        }
     }
 }
