@@ -184,7 +184,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceedsWithChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+    fun givenProteusConversation_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
@@ -203,7 +203,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceedsWithChange_whenAddingServiceToConversation_thenShouldSucceed() = runTest {
+    fun givenProteusConversation_whenAddingServiceToConversation_thenShouldSucceed() = runTest {
         val serviceID = ServiceId("service-id", "service-provider")
         val addServiceRequest = AddServiceRequest(id = serviceID.id, provider = serviceID.provider)
 
@@ -227,6 +227,41 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusConversationAndUserIsAlreadyAMember_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddMemberAPISucceedUnchanged()
+            .arrange()
+
+        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            .shouldSucceed()
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenProteusConversationAndAPICallFails_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withAddMemberAPIFailed()
+            .arrange()
+
+        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            .shouldFail()
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasNotInvoked()
     }
 
     @Test
@@ -256,42 +291,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceedsWithoutChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
-            .withFetchUsersIfUnknownByIdsSuccessful()
-            .withAddMemberAPISucceedUnchanged()
-            .arrange()
-
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldSucceed()
-
-        verify(arrangement.memberJoinEventHandler)
-            .suspendFunction(arrangement.memberJoinEventHandler::handle)
-            .with(anything())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
-            .withAddMemberAPIFailed()
-            .arrange()
-
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldFail()
-
-        verify(arrangement.memberJoinEventHandler)
-            .suspendFunction(arrangement.memberJoinEventHandler::handle)
-            .with(anything())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenMLSConversation_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
@@ -315,7 +315,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceedsWithChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenProteusConversation_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
@@ -333,7 +333,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceedsWithoutChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenProteusConversationAndUserIsNotAMember_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
@@ -350,7 +350,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPIFailed_whenRemovingMemberFromConversation_thenShouldFail() = runTest {
+    fun givenProteusConversationAndAPICallFails_whenRemovingMemberFromConversation_thenShouldFail() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
@@ -367,7 +367,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
+    fun givenMLSConversation_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
@@ -395,7 +395,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenMLSConversation_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
