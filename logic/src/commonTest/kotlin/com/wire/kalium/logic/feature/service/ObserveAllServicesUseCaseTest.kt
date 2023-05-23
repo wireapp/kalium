@@ -56,7 +56,7 @@ class ObserveAllServicesUseCaseTest {
     fun givenError_whenObserveAllServices_thenResultIsEmpty() = runTest {
         val error = StorageFailure.DataNotFound
 
-        val (arrangement, observeAllServicesUseCase) = Arrangement()
+        val (_, observeAllServicesUseCase) = Arrangement()
             .withObserveAllServices(flowOf(Either.Left(error)))
             .arrange()
 
@@ -91,8 +91,8 @@ class ObserveAllServicesUseCaseTest {
 
         fun withObserveAllServices(result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
             given(serviceRepository)
-                .suspendFunction(ServiceRepository::observeAllServices)
-                .whenInvokedWith()
+                .suspendFunction(serviceRepository::observeAllServices)
+                .whenInvoked()
                 .then { result }
         }
         fun arrange() = this to useCase
