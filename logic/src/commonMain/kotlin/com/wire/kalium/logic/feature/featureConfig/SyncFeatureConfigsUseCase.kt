@@ -56,7 +56,7 @@ internal interface SyncFeatureConfigsUseCase {
 internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
+    // private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
     private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
@@ -104,12 +104,17 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
         val newStatus: Boolean = model.status == Status.ENABLED
-        val currentStatus = isFileSharingEnabledUseCase().state
-        val isStatusChanged = when (currentStatus) {
-            FileSharingStatus.Value.Disabled -> newStatus
-            FileSharingStatus.Value.EnabledAll -> !newStatus
-            // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
-            is FileSharingStatus.Value.EnabledSome -> !newStatus
+        val currentStatus = userConfigRepository.isFileSharingEnabled()
+        val isStatusChanged: Boolean = when (currentStatus) {
+            is Either.Left -> false
+            is Either.Right -> {
+                when(currentStatus.value.state) {
+                    FileSharingStatus.Value.Disabled -> newStatus
+                    FileSharingStatus.Value.EnabledAll -> !newStatus
+                    // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
+                    is FileSharingStatus.Value.EnabledSome -> !newStatus
+                }
+            }
         }
         userConfigRepository.setFileSharingStatus(newStatus, isStatusChanged)
     }
