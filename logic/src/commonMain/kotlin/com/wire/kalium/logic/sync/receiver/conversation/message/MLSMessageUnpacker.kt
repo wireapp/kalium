@@ -120,7 +120,7 @@ internal class MLSMessageUnpackerImpl(
                         "groupID = ${protocolInfo.groupId.value.obfuscateId()}")
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
-                Either.Right(null)
+                Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 

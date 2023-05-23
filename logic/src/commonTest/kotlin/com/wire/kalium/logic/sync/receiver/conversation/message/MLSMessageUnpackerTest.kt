@@ -20,20 +20,22 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
@@ -41,10 +43,10 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
-import io.mockative.matchers.Matcher
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -54,7 +56,58 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMessageUnpackerTest {
+
+    @Test
+    fun givenConversationWithProteusProtocol_whenUnpacking_thenFailWithNotSupportedByProteus() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.PROTEUS_PROTOCOL_INFO)
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldFail { failure ->
+            assertEquals(CoreFailure.NotSupportedByProteus, failure)
+        }
+    }
+
+    @Test
+    fun givenConversationWithMixedProtocol_whenUnpacking_thenSucceed() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
+            .withDecryptMessageReturningProposal()
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldSucceed()
+
+        assertEquals(MessageUnpackResult.HandshakeMessage, result.getOrNull())
+    }
+
+    @Test
+    fun givenConversationWithMLSProtocol_whenUnpacking_thenSucceed() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturningProposal()
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldSucceed()
+
+        assertEquals(MessageUnpackResult.HandshakeMessage, result.getOrNull())
+    }
 
     @Test
     fun givenNewMLSMessageEventWithProposal_whenUnpacking_thenScheduleProposalTimer() = runTest {
@@ -151,13 +204,6 @@ class MLSMessageUnpackerTest {
                 .thenReturn(Unit)
         }
 
-        fun withProtoContentMapperReturning(plainBlobMatcher: Matcher<PlainMessageBlob>, protoContent: ProtoContent) = apply {
-            given(protoContentMapper)
-                .function(protoContentMapper::decodeFromProtobuf)
-                .whenInvokedWith(plainBlobMatcher)
-                .thenReturn(protoContent)
-        }
-
         fun withGetConversationProtocolInfoSuccessful(protocolInfo: Conversation.ProtocolInfo) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationProtocolInfo)
@@ -166,7 +212,6 @@ class MLSMessageUnpackerTest {
         }
 
         fun arrange() = this to mlsMessageUnpacker
-
     }
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
