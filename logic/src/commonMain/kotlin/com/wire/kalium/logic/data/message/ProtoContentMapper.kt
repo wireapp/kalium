@@ -343,7 +343,7 @@ class ProtoContentMapperImpl(
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
-                val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                val mentions = editContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
                 MessageContent.TextEdited(
                     editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
@@ -402,7 +402,10 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
         value = protoContent.value.content,
-        mentions = protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+        mentions = protoContent.value.mentions.mapNotNull {
+            val newMention = it.copy(qualifiedUserId = null, mentionType = null )
+            messageMentionMapper.fromProtoToModel(newMention)
+                                                          },
         quotedMessageReference = protoContent.value.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false

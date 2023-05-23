@@ -28,7 +28,7 @@ import com.wire.kalium.protobuf.messages.Mention
 interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention
     fun fromModelToDao(mention: MessageMention): MessageEntity.Mention
-    fun fromProtoToModel(mention: Mention): MessageMention
+    fun fromProtoToModel(mention: Mention): MessageMention?
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
@@ -41,8 +41,8 @@ class MessageMentionMapperImpl(
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId?.toModel(),
-            isSelfMention = mention.userId?.toModel() == selfUserId
+            userId = mention.userId.toModel(),
+            isSelfMention = mention.userId.toModel() == selfUserId
         )
     }
 
@@ -50,11 +50,11 @@ class MessageMentionMapperImpl(
         return MessageEntity.Mention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId?.toDao()
+            userId = mention.userId.toDao()
         )
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention = mention.qualifiedUserId?.let {
+    override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let {
         MessageMention(
             start = mention.start,
             length = mention.length,
@@ -71,20 +71,13 @@ class MessageMentionMapperImpl(
                 isSelfMention = userId == selfUserId
             )
 
-        } ?: run {
-            MessageMention(
-                start = 0,
-                length = 0,
-                userId = null,
-                isSelfMention = false
-            )
-        }
+        } ?: run { null }
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
         start = mention.start,
         length = mention.length,
-        qualifiedUserId = mention.userId?.let { idMapper.toProtoUserId(it) },
-        mentionType = mention.userId?.let { Mention.MentionType.UserId(it.value) }
+        qualifiedUserId = idMapper.toProtoUserId(mention.userId),
+        mentionType = Mention.MentionType.UserId(mention.userId.value)
     )
 }

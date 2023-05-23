@@ -113,15 +113,13 @@ internal class MessageInsertExtensionImpl(
                     is_quote_verified = content.isQuoteVerified
                 )
                 content.mentions.forEach {
-                    it.userId?.let { qualifiedId ->
-                        messagesQueries.insertMessageMention(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            start = it.start,
-                            length = it.length,
-                            user_id = qualifiedId
-                        )
-                    }
+                    messagesQueries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
+                    )
                 }
             }
 
@@ -214,6 +212,7 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
+
             is MessageEntityContent.ConversationMessageTimerChanged -> messagesQueries.insertConversationMessageTimerChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -234,10 +233,12 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
                 is MessageEntityContent.Text -> insertUnreadTextContent(
                     message,
                     message.content as MessageEntityContent.Text
                 )
+
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
@@ -246,12 +247,14 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
                 MessageEntityContent.MissedCall -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MISSED_CALL,
                     message.conversationId,
                     message.date
                 )
+
                 else -> {}
             }
         }
@@ -274,6 +277,7 @@ internal class MessageInsertExtensionImpl(
                 message.conversationId,
                 message.date
             )
+
             textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
                 unreadEventsQueries.insertEvent(
                     message.id,
@@ -281,6 +285,7 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
             else -> unreadEventsQueries.insertEvent(
                 message.id,
                 UnreadEventTypeEntity.MESSAGE,

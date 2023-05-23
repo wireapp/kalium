@@ -30,6 +30,7 @@ import com.wire.kalium.protobuf.messages.QualifiedUserId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -51,8 +52,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId?.value, result.userId?.value)
-        assertEquals(mention.userId?.domain, result.userId?.domain)
+        assertEquals(mention.userId.value, result.userId.value)
+        assertEquals(mention.userId.domain, result.userId.domain)
         assertTrue(result.isSelfMention)
     }
 
@@ -69,8 +70,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId?.value, result.userId?.value)
-        assertEquals(mention.userId?.domain, result.userId?.domain)
+        assertEquals(mention.userId.value, result.userId.value)
+        assertEquals(mention.userId.domain, result.userId.domain)
         assertFalse(result.isSelfMention)
     }
 
@@ -82,11 +83,13 @@ class MessageMentionMapperTest {
             userId = selfUserId,
             isSelfMention = true
         )
+
         val result = messageMentionMapper.fromModelToDao(mention)
+
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId?.value, result.userId?.value)
-        assertEquals(mention.userId?.domain, result.userId?.domain)
+        assertEquals(mention.userId.value, result.userId.value)
+        assertEquals(mention.userId.domain, result.userId.domain)
     }
 
     @Test
@@ -103,8 +106,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId?.value, result.userId?.value)
-        assertEquals(mention.userId?.domain, result.userId?.domain)
+        assertEquals(mention.userId.value, result.userId.value)
+        assertEquals(mention.userId.domain, result.userId.domain)
     }
 
     @Test
@@ -118,10 +121,11 @@ class MessageMentionMapperTest {
 
         val result = messageMentionMapper.fromProtoToModel(mention)
 
+        assertNotNull(result)
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(selfUserId.value, result.userId?.value)
-        assertEquals(selfUserId.domain, result.userId?.domain)
+        assertEquals(selfUserId.value, result.userId.value)
+        assertEquals(selfUserId.domain, result.userId.domain)
         assertTrue(result.isSelfMention)
     }
 
@@ -137,15 +141,16 @@ class MessageMentionMapperTest {
 
         val result = messageMentionMapper.fromProtoToModel(mention)
 
+        assertNotNull(result)
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.qualifiedUserId?.id, result.userId?.value)
-        assertEquals(mention.qualifiedUserId?.domain, result.userId?.domain)
+        assertEquals(mention.qualifiedUserId?.id, result.userId.value)
+        assertEquals(mention.qualifiedUserId?.domain, result.userId.domain)
         assertFalse(result.isSelfMention)
     }
 
     @Test
-    fun givenAProtoUserMentionWithNullIds_whenMappingFromProtoToModel_thenReturnAnInvalidMentionObject() {
+    fun givenAProtoUserMentionWithUserId_whenMappingFromProtoToModel_thenReturnNull() {
         val mention = Mention(
             start = 0,
             length = 1,
@@ -155,10 +160,7 @@ class MessageMentionMapperTest {
 
         val result = messageMentionMapper.fromProtoToModel(mention)
 
-        assertEquals(0, result.start)
-        assertEquals(0, result.length)
-        assertNull(result.userId)
-        assertFalse(result.isSelfMention)
+        assertNull(result)
     }
 
     @Test
@@ -169,12 +171,14 @@ class MessageMentionMapperTest {
             userId = selfUserId,
             isSelfMention = true
         )
+
         val result = messageMentionMapper.fromModelToProto(mention)
+
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId?.value, result.qualifiedUserId?.id)
-        assertEquals(mention.userId?.domain, result.qualifiedUserId?.domain)
-        assertEquals(result.userId, mention.userId?.value)
+        assertEquals(mention.userId.value, result.qualifiedUserId?.id)
+        assertEquals(mention.userId.domain, result.qualifiedUserId?.domain)
+        assertEquals(result.userId, mention.userId.value)
     }
 
     @Test
@@ -189,8 +193,8 @@ class MessageMentionMapperTest {
         val result = messageMentionMapper.fromModelToProto(mention)
         assertEquals(result.start, mention.start)
         assertEquals(result.length, mention.length)
-        assertEquals(result.qualifiedUserId?.id, mention.userId?.value)
-        assertEquals(result.qualifiedUserId?.domain, mention.userId?.domain)
-        assertEquals(result.userId, mention.userId?.value)
+        assertEquals(result.qualifiedUserId?.id, mention.userId.value)
+        assertEquals(result.qualifiedUserId?.domain, mention.userId.domain)
+        assertEquals(result.userId, mention.userId.value)
     }
 }
