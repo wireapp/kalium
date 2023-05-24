@@ -33,13 +33,14 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
-import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -491,10 +492,11 @@ class MessageSenderTest {
                 sendEnvelopeWithResult = Either.Right(
                     MessageSent(
                         time = MESSAGE_SENT_TIME,
-                        failed = listOf(TEST_MEMBER_2)
+                        failed = listOf(Arrangement.TEST_MEMBER_1)
                     )
                 )
             )
+            .withFailedClientsPartialSuccess()
             .withPromoteMessageToSentUpdatingServerTime()
             .withSendMessagePartialSuccess()
             .arrange()
@@ -507,7 +509,7 @@ class MessageSenderTest {
             result.shouldSucceed()
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
-                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .with(anything(), anything(), eq(listOf(Arrangement.TEST_MEMBER_1)))
                 .wasInvoked(exactly = once)
         }
     }
@@ -540,11 +542,11 @@ class MessageSenderTest {
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistNoClientsToDeliverFailure)
                 .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasInvoked(exactly = once)
+                .wasInvoked(exactly = twice)
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
                 .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasInvoked(exactly = once)
+                .wasNotInvoked()
         }
     }
 
@@ -918,13 +920,6 @@ class MessageSenderTest {
         companion object {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
-            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
-                senderClientId = ClientId(
-                    value = "testValue",
-                ),
-                recipients = listOf(),
-                dataBlob = null
-            )
             val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
@@ -957,6 +952,14 @@ class MessageSenderTest {
             val TEST_MEMBER_3 = UserId("value3", "domain3")
             val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
             val TEST_RECIPIENT_3 = Recipient(TEST_MEMBER_3, listOf(TEST_CONTACT_CLIENT_4))
+            val TEST_RECIPIENT_ENTRY = RecipientEntry(TEST_MEMBER_1, listOf())
+            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
+                senderClientId = ClientId(
+                    value = "testValue",
+                ),
+                recipients = listOf(TEST_RECIPIENT_ENTRY),
+                dataBlob = null
+            )
         }
     }
 }
