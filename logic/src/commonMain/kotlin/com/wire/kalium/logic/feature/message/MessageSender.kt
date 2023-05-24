@@ -313,7 +313,7 @@ internal class MessageSenderImpl internal constructor(
                 }
             }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
-                handleRecipientsDeliveryFailure(message, messageSent).flatMap {
+                handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
                     Either.Right(messageSent.time)
                 }
             })
@@ -401,10 +401,19 @@ internal class MessageSenderImpl internal constructor(
     /**
      * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
      */
-    private suspend fun handleRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
-        if (messageSent.failed.isEmpty()) {
-            Either.Right(Unit)
-        } else {
-            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
+    private suspend fun handleRecipientsDeliveryFailure(envelope: MessageEnvelope, message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        else {
+            val usersWithoutSessions = messageSent.failed.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
+            if (usersWithoutSessions.isNotEmpty()) {
+                messageRepository.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
+            }
+
+            val filteredUsersFailed = messageSent.failed.minus(usersWithoutSessions.toSet())
+            if (filteredUsersFailed.isNotEmpty()) {
+                messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
+            } else {
+                Either.Right(Unit)
+            }
         }
 }
