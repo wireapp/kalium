@@ -280,7 +280,6 @@ internal class AssetDataSource(
                                     ?: getExtensionFromMimeType(mimeType)
                             )
                         )
-                    kaliumLogger.d("KBX repo ${decodedAssetPath.name}")
 
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
