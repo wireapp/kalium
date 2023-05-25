@@ -17,79 +17,55 @@
  */
 package com.wire.kalium.persistence.dao.unread
 
-import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.UserConfigQueries
-import com.wire.kalium.persistence.cache.Cache
-import com.wire.kalium.persistence.cache.LRUCache
-import com.wire.kalium.persistence.util.JsonSerializer
-import com.wire.kalium.persistence.util.mapToOneOrNull
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
+import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.KSerializer
-import kotlin.coroutines.CoroutineContext
+
 
 interface UserConfigDAO {
-    suspend fun insertValue(key: String, value: String)
-    suspend fun deleteValue(key: String)
-    suspend fun valueByKeyFlow(key: String): Flow<String?>
-    suspend fun valueByKey(key: String): String?
-    suspend fun clear(keysToKeep: List<String>?)
-    suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
-    suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
+
+    suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity?
+    suspend fun setTeamSettingsSelfDeletionStatus(
+        teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
+    )
+
+    suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified()
+    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
 }
 
 class UserConfigDAOImpl internal constructor(
-    private val userConfigQueries: UserConfigQueries,
-    private val userConfigCache: Cache<String, Flow<String?>>,
-    private val databaseScope: CoroutineScope,
-    private val queriesContext: CoroutineContext
+    private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {
 
-    private val teamSettingsSelfDeletionStatusFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = DROP_OLDEST)
+    override suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
+        metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
 
-    override suspend fun insertValue(key: String, value: String) = withContext(queriesContext) {
-        userConfigQueries.insertValue(key, value)
+
+    override suspend fun setTeamSettingsSelfDeletionStatus(
+        teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
+    ) {
+        metadataDAO.putSerializable(
+            SELF_DELETING_MESSAGES,
+            teamSettingsSelfDeletionStatusEntity,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
     }
 
-    override suspend fun deleteValue(key: String) = withContext(queriesContext) {
-        userConfigQueries.deleteValue(key)
+    override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified() {
+        val newValue: TeamSettingsSelfDeletionStatusEntity =
+            metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+                ?.copy(isStatusChanged = false) ?: return
+        metadataDAO.putSerializable(
+            SELF_DELETING_MESSAGES,
+            newValue,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
     }
 
-    override suspend fun valueByKeyFlow(key: String): Flow<String?> = userConfigCache.get(key) {
-        userConfigQueries.selectValueByKey(key)
-            .asFlow()
-            .mapToOneOrNull()
-            .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Lazily, 1)
-    }
+    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
+        metadataDAO.observeSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
 
-    override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
-        userConfigQueries.selectValueByKey(key).executeAsOneOrNull()
-    }
-
-    override suspend fun clear(keysToKeep: List<String>?) = withContext(queriesContext) {
-        if (keysToKeep == null) {
-            userConfigQueries.deleteAll()
-        } else {
-            userConfigQueries.deleteAllExcept(keysToKeep)
-        }
-    }
-
-    override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
-        val jsonString = JsonSerializer().encodeToString(kSerializer, value)
-        insertValue(key, jsonString)
-    }
-
-    override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
-        val jsonString: String? = valueByKey(key)
-        return jsonString?.let {
-            JsonSerializer().decodeFromString(kSerializer, it)
-        }
+    private companion object {
+        private const val SELF_DELETING_MESSAGES = "SELF_DELETING_MESSAGES"
     }
 }

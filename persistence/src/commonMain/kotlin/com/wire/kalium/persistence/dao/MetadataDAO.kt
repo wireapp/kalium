@@ -27,4 +27,7 @@ interface MetadataDAO {
     suspend fun valueByKeyFlow(key: String): Flow<String?>
     suspend fun valueByKey(key: String): String?
     suspend fun clear(keysToKeep: List<String>?)
+    suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
+    suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
+    suspend fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?>
 }

@@ -21,16 +21,17 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
-import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.KSerializer
+import kotlin.coroutines.CoroutineContext
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
@@ -64,6 +65,26 @@ class MetadataDAOImpl internal constructor(
             metadataQueries.deleteAll()
         } else {
             metadataQueries.deleteAllExcept(keysToKeep)
+        }
+    }
+
+    override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
+        val jsonString = JsonSerializer().encodeToString(kSerializer, value)
+        insertValue(key, jsonString)
+    }
+
+    override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
+        val jsonString: String? = valueByKey(key)
+        return jsonString?.let {
+            JsonSerializer().decodeFromString(kSerializer, it)
+        }
+    }
+
+    override suspend fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
+        return valueByKeyFlow(key).map { jsonString ->
+            jsonString?.let {
+                JsonSerializer().decodeFromString(kSerializer, it)
+            }
         }
     }
 }
