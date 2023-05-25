@@ -412,7 +412,7 @@ class UserSessionScope internal constructor(
     )
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, kaliumConfigs)
+        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, userStorage.database.userConfigDAO, kaliumConfigs)
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -1206,7 +1206,7 @@ class UserSessionScope internal constructor(
         get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)
 
     val persistNewSelfDeletionStatus: PersistNewSelfDeletionTimerUseCaseImpl
-        get() = PersistNewSelfDeletionTimerUseCaseImpl(userConfigRepository)
+        get() = PersistNewSelfDeletionTimerUseCaseImpl(conversationRepository)
 
     val observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
         get() = ObserveGuestRoomLinkFeatureFlagUseCaseImpl(userConfigRepository)
@@ -1229,8 +1229,8 @@ class UserSessionScope internal constructor(
 
     val service: ServiceScope
         get() = ServiceScope(
-        serviceRepository
-    )
+            serviceRepository
+        )
 
     val calls: CallsScope
         get() = CallsScope(

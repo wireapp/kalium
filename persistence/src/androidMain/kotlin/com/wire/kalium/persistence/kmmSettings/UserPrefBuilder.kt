@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
 import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorageImpl
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.UserConfigStorageImpl
-import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 
 actual class UserPrefBuilder(

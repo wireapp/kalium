@@ -133,7 +133,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
     }
 
-    private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
+    private suspend fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(

@@ -56,6 +56,8 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -66,6 +68,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
 internal const val USER_CACHE_SIZE = 125
+internal const val USER_CONFIG_CACHE_SIZE = 125
 internal const val METADATA_CACHE_SIZE = 30
 
 @JvmInline
@@ -145,8 +148,12 @@ class UserDatabaseBuilder internal constructor(
 
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
     private val userCache = LRUCache<UserIDEntity, Flow<UserEntity?>>(USER_CACHE_SIZE)
+    private val userConfigCache = LRUCache<String, Flow<String?>>(USER_CONFIG_CACHE_SIZE)
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
+
+    val userConfigDAO: UserConfigDAO
+        get() = UserConfigDAOImpl(database.userConfigQueries, userConfigCache, databaseScope, queriesContext)
 
     val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries, queriesContext)

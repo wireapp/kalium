@@ -1,0 +1,21 @@
+CREATE TABLE UserConfig (
+    key TEXT NOT NULL PRIMARY KEY,
+    stringValue TEXT NOT NULL
+);
+
+insertValue:
+INSERT INTO UserConfig(key, stringValue)
+VALUES (?, ?)
+ON CONFLICT(key) DO UPDATE SET stringValue = excluded.stringValue;
+
+selectValueByKey:
+SELECT stringValue FROM UserConfig WHERE key = ?;
+
+deleteValue:
+DELETE FROM UserConfig WHERE key = ?;
+
+deleteAllExcept:
+DELETE FROM UserConfig WHERE key NOT IN ?;
+
+deleteAll:
+DELETE FROM UserConfig;

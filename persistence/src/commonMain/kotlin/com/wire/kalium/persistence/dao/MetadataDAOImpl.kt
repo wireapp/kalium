@@ -66,16 +66,4 @@ class MetadataDAOImpl internal constructor(
             metadataQueries.deleteAllExcept(keysToKeep)
         }
     }
-
-    override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
-        val jsonString = JsonSerializer().encodeToString(kSerializer, value)
-        insertValue(key, jsonString)
-    }
-
-    override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
-        val jsonString: String? = valueByKey(key)
-        return jsonString?.let {
-            JsonSerializer().decodeFromString(kSerializer, it)
-        }
-    }
 }

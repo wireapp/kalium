@@ -23,6 +23,7 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerStatus
@@ -35,8 +36,14 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.UserConfigStorageImpl
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -63,20 +70,19 @@ interface UserConfigRepository {
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit>
 
-    suspend fun setConversationSelfDeletionTimer(
-        conversationId: ConversationId,
-        selfDeletionTimer: SelfDeletionTimer
-    ): Either<StorageFailure, Unit>
-
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
-    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
+    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus?>>
 }
 
 @Suppress("TooManyFunctions")
 class UserConfigDataSource(
     private val userConfigStorage: UserConfigStorage,
+    private val userConfigDAO: UserConfigDAO,
     private val kaliumConfigs: KaliumConfigs
 ) : UserConfigRepository {
+
+    private val teamSettingsSelfDeletionStatusFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
@@ -192,7 +198,7 @@ class UserConfigDataSource(
             }
 
     override suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
-        userConfigStorage.getTeamSettingsSelfDeletionStatus()
+        userConfigDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
     }.map {
         with(it) {
             TeamSettingsSelfDeletionStatus(
@@ -206,27 +212,34 @@ class UserConfigDataSource(
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            userConfigStorage.persistTeamSettingsSelfDeletionStatus(
-                TeamSettingsSelfDeletionStatusEntity(
-                    selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
-                    isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
-                )
+            val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
+                selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
+                isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
             )
+            userConfigDAO.putSerializable(
+                SELF_DELETING_MESSAGES,
+                teamSettingsSelfDeletionStatusEntity,
+                TeamSettingsSelfDeletionStatusEntity.serializer()
+            ).also {
+                teamSettingsSelfDeletionStatusFlow.tryEmit(Unit)
+            }
         }
 
-    override suspend fun setConversationSelfDeletionTimer(
-        conversationId: ConversationId,
-        selfDeletionTimer: SelfDeletionTimer
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.persistConversationSelfDeletionTimer(conversationId.toDao(), selfDeletionTimer.toSelfDeletionTimerEntity())
-    }
-
     override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.setSelfDeletingMessagesAsNotified()
+        val newValue = userConfigDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+            ?.copy(isStatusChanged = false) ?: return Either.Left(StorageFailure.DataNotFound)
+        userConfigDAO.putSerializable(
+            SELF_DELETING_MESSAGES,
+            newValue,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        ).also { teamSettingsSelfDeletionStatusFlow.tryEmit(Unit) }
     }
 
-    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
-        userConfigStorage.getTeamSettingsSelfDeletionStatusFlow()
+    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus?>> =
+        teamSettingsSelfDeletionStatusFlow
+            .map { userConfigDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer()) }
+            .onStart { emit(userConfigDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())) }
+            .distinctUntilChanged()
             .wrapStorageRequest()
             .map {
                 it.map { teamSettingsStatus ->
@@ -236,4 +249,8 @@ class UserConfigDataSource(
                     )
                 }
             }
+
+    private companion object {
+        const val SELF_DELETING_MESSAGES = "self_deleting_messages"
+    }
 }
