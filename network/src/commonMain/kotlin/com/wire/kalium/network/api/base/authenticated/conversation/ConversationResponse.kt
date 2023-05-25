@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.base.authenticated.conversation
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
@@ -110,6 +111,9 @@ data class ConversationResponse(
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
+
+    @SerialName("failed_to_add")
+    val failedToAdd: Set<QualifiedID> = emptySet()
 ) {
 
     val isOneOnOneConversation: Boolean
@@ -174,6 +178,57 @@ data class ConversationResponseV3(
 
     @SerialName("receipt_mode")
     val receiptMode: ReceiptMode,
+)
+
+@Serializable
+data class ConversationResponseV4(
+    @SerialName("creator")
+    val creator: String,
+
+    @SerialName("members")
+    val members: ConversationMembersResponse,
+
+    @SerialName("name")
+    val name: String?,
+
+    @SerialName("qualified_id")
+    val id: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String?,
+
+    @SerialName("epoch")
+    val epoch: ULong?,
+
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: ConversationResponse.Type,
+
+    @SerialName("message_timer")
+    val messageTimer: Long?,
+
+    @SerialName("team")
+    val teamId: TeamId?,
+
+    @SerialName("protocol")
+    val protocol: ConvProtocol,
+
+    @SerialName("last_event_time")
+    val lastEventTime: String,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
+    @SerialName("access")
+    val access: Set<ConversationAccessDTO>,
+
+    @SerialName("access_role_v2")
+    val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
+
+    @SerialName("receipt_mode")
+    val receiptMode: ReceiptMode,
+
+    @SerialName("failed_to_add")
+    val failedToAdd: Set<QualifiedID> = emptySet()
 )
 
 @Serializable
