@@ -248,7 +248,8 @@ class AssetRepositoryTest {
             assetToken = assetToken,
             encryptionKey = assetEncryptionKey,
             assetSHA256Key = SHA256Key(assetSha256!!),
-            downloadIfNeeded = true
+            downloadIfNeeded = true,
+            mimeType = null
         )
 
         // Then
@@ -294,7 +295,8 @@ class AssetRepositoryTest {
                 assetToken = assetToken,
                 encryptionKey = assetEncryptionKey,
                 assetSHA256Key = SHA256Key(assetSha256!!),
-                downloadIfNeeded = false
+                downloadIfNeeded = false,
+                mimeType = null
             )
 
             // Then
@@ -339,7 +341,8 @@ class AssetRepositoryTest {
                 assetToken = assetToken,
                 encryptionKey = assetEncryptionKey,
                 assetSHA256Key = SHA256Key(assetSha256!!),
-                downloadIfNeeded = false
+                downloadIfNeeded = false,
+                mimeType = null
             )
 
             // Then
@@ -387,6 +390,7 @@ class AssetRepositoryTest {
                 assetKey.value,
                 assetKey.domain,
                 assetName,
+                null,
                 assetToken,
                 assetEncryptionKey,
                 SHA256Key(wrongAssetSha256!!)
@@ -450,6 +454,7 @@ class AssetRepositoryTest {
             assetId = assetKey.value,
             assetDomain = assetKey.domain,
             assetName,
+            null,
             null,
             encryptionKey,
             assetSha256

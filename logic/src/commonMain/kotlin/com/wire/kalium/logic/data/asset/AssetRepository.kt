@@ -112,6 +112,7 @@ interface AssetRepository {
         assetId: String,
         assetDomain: String?,
         assetName: String,
+        mimeType: String?,
         assetToken: String?,
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
@@ -184,14 +185,14 @@ internal class AssetDataSource(
         extension: String?
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
-                wrapApiRequest {
-                    val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
+            wrapApiRequest {
+                val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
 
-                    // we should also consider for avatar images, the compression for preview vs complete picture
-                    assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
-                        .also { dataSource.close() }
-                }
+                // we should also consider for avatar images, the compression for preview vs complete picture
+                assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
+                    .also { dataSource.close() }
             }
+        }
             .flatMap { assetResponse ->
                 // After successful upload, we persist the asset to a persistent path
                 persistAsset(assetResponse.key, assetResponse.domain, decodedDataPath, uploadAssetData.dataSize, extension)
@@ -217,12 +218,13 @@ internal class AssetDataSource(
     }
 
     override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null)
+        fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null, mimeType = null)
 
     override suspend fun fetchPrivateDecodedAsset(
         assetId: String,
         assetDomain: String?,
         assetName: String,
+        mimeType: String?,
         assetToken: String?,
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
@@ -233,6 +235,7 @@ internal class AssetDataSource(
             assetId = assetId,
             assetDomain = assetDomain,
             assetName = assetName,
+            mimeType = mimeType,
             assetToken = assetToken,
             encryptionKey = encryptionKey,
             assetSHA256 = assetSHA256Key
@@ -248,6 +251,7 @@ internal class AssetDataSource(
         assetDomain: String?,
         assetName: String,
         assetToken: String?,
+        mimeType: String?,
         encryptionKey: AES256Key? = null,
         assetSHA256: SHA256Key? = null
     ): Either<CoreFailure, Path> =
@@ -270,7 +274,13 @@ internal class AssetDataSource(
 
                     // Decrypt and persist decoded asset onto a persistent asset path
                     val decodedAssetPath =
-                        kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId, assetName.fileExtension()))
+                        kaliumFileSystem.providePersistentAssetPath(
+                            buildFileName(
+                                assetId, assetName.fileExtension()
+                                    ?: getExtensionFromMimeType(mimeType)
+                            )
+                        )
+                    kaliumLogger.d("KBX repo ${decodedAssetPath.name}")
 
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
