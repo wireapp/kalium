@@ -74,6 +74,9 @@ class DebugScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
+    val breakSession: BreakSessionUseCase
+        get() = BreakSessionUseCaseImpl(proteusClientProvider)
+
     val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
         get() = SendBrokenAssetMessageUseCaseImpl(
             currentClientIdProvider,
