@@ -127,9 +127,11 @@ fun buildConversationResponse(
         conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
         if (conversationResponse.failedToAdd.isNotEmpty()) {
             putJsonArray("failed_to_add") {
-                addJsonObject {
-                    put("id", conversationResponse.failedToAdd.first().value)
-                    put("domain", conversationResponse.failedToAdd.first().domain)
+                conversationResponse.failedToAdd.forEach { failedToAdd ->
+                    addJsonObject {
+                        put("id", failedToAdd.value)
+                        put("domain", failedToAdd.domain)
+                    }
                 }
             }
         }
