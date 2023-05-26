@@ -52,7 +52,7 @@ internal class NewConversationMemberHandlerImpl(
         membersAdded: List<UserId>
     ) = run {
         // TODO: Add failed members handling in api v4 (offline backend branch)
-        val systemConversationStartedWith = Message.System(
+        val messageStartedWithMembers = Message.System(
             uuid4().toString(),
             MessageContent.MemberChange.CreationAdded(membersAdded),
             conversationId.toModel(),
@@ -61,7 +61,7 @@ internal class NewConversationMemberHandlerImpl(
             Message.Status.SENT,
             Message.Visibility.VISIBLE
         )
-        persistMessage.invoke(systemConversationStartedWith)
+        persistMessage.invoke(messageStartedWithMembers)
     }
 
 }

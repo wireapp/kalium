@@ -680,6 +680,9 @@ class ConversationGroupRepositoryTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
+        val newConversationMemberHandler = mock(NewConversationMemberHandler::class)
+
+        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         val conversationGroupRepository =
@@ -690,6 +693,7 @@ class ConversationGroupRepositoryTest {
                 memberLeaveEventHandler,
                 conversationDAO,
                 conversationApi,
+                newConversationMemberHandler,
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
