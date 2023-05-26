@@ -482,7 +482,7 @@ class UserSessionScope internal constructor(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            selfUserUseCase = users.getSelfUser
+            //selfUserUseCase = users.getSelfUser
         )
     }
 

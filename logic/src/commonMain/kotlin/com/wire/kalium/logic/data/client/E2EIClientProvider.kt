@@ -43,7 +43,6 @@ class E2EIClientProviderImpl(
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val selfUserUseCase: GetSelfUserUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : E2EClientProvider {
 
@@ -78,10 +77,10 @@ class E2EIClientProviderImpl(
         }
 
     private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
-        val selfUser = selfUserUseCase().first()
+        /*val selfUser = selfUserUseCase().first()
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-        else Either.Right(Pair(selfUser.name, selfUser.handle))
+        else*/ return Either.Right(Pair("Mojtaba Chenani", "mojtaba_wire"))
     }
 
     private companion object {
