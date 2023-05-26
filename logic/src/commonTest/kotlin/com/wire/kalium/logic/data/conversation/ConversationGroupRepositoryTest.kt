@@ -113,6 +113,11 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
                 .with(anything(), anything())
                 .wasInvoked(once)
+
+            verify(newConversationMemberHandler)
+                .suspendFunction(newConversationMemberHandler::handle)
+                .with(anything(), anything())
+                .wasInvoked(once)
         }
     }
 
@@ -143,6 +148,11 @@ class ConversationGroupRepositoryTest {
 
             verify(conversationDAO)
                 .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newConversationMemberHandler)
+                .suspendFunction(newConversationMemberHandler::handle)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -181,6 +191,11 @@ class ConversationGroupRepositoryTest {
 
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newConversationMemberHandler)
+                .suspendFunction(newConversationMemberHandler::handle)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
