@@ -149,6 +149,14 @@ object MessageMapper {
                             )
                         }
                     }
+
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                        MessagePreviewEntityContent.MembersFailedToAdded(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
                 }
             }
 
@@ -170,6 +178,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.NEW_CONVERSATION_MEMBER_CHANGE -> MessagePreviewEntityContent.Unknown // revisit :thiiking
         }
     }
 
@@ -388,7 +397,9 @@ object MessageMapper {
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
-        conversationMessageTimerChanged: Long?
+        conversationMessageTimerChanged: Long?,
+        memberAddList: List<QualifiedIDEntity>?,
+        memberAddType: MessageEntity.MemberChangeType?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -473,6 +484,11 @@ object MessageMapper {
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
                 messageTimer = conversationMessageTimerChanged
+            )
+
+            MessageEntity.ContentType.NEW_CONVERSATION_MEMBER_CHANGE -> MessageEntityContent.NewConversationMemberChange(
+                memberUserIdList = memberAddList.requireField("memberAddList"),
+                memberChangeType = memberAddType.requireField("memberAddType")
             )
         }
 

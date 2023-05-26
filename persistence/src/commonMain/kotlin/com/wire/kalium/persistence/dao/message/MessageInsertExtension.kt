@@ -218,6 +218,8 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 message_timer = content.messageTimer
             )
+
+            is MessageEntityContent.NewConversationMemberChange -> TODO("create query for this")
         }
     }
 
@@ -312,5 +314,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
+        is MessageEntityContent.NewConversationMemberChange -> MessageEntity.ContentType.NEW_CONVERSATION_MEMBER_CHANGE
     }
 }

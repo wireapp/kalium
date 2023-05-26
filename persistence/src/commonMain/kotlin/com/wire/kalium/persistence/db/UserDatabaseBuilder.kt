@@ -135,7 +135,8 @@ class UserDatabaseBuilder internal constructor(
         MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
         UnreadEventAdapter = TableMapper.unreadEventAdapter,
         MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
-        ServiceAdapter = TableMapper.serviceAdapter
+        ServiceAdapter = TableMapper.serviceAdapter,
+        MessageNewConversationMemberChangeContentAdapter = TableMapper.messageNewConversationMemberChangeContentAdapter,
     )
 
     init {
