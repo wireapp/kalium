@@ -40,7 +40,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
         metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
 
-
     override suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
     ) {

@@ -70,7 +70,7 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
         val jsonString = JsonSerializer().encodeToString(kSerializer, value)
-        insertValue(key, jsonString)
+        insertValue(value = jsonString, key = key)
     }
 
     override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
