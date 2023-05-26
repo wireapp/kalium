@@ -170,9 +170,6 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val conversationSelfDeletionTimerFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
     override fun persistFileSharingStatus(
         status: Boolean,
         isStatusChanged: Boolean?

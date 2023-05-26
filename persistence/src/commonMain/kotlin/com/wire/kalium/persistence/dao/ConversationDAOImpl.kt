@@ -570,7 +570,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
-        conversationQueries.updateMessageTimer(messageTimer, conversationId)
+        conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
     }
 
 }

@@ -48,7 +48,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     }
 
     @Suppress("LongMethod")
-    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
                 val currentFileSharingStatus: Boolean = userConfigRepository
@@ -159,7 +159,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
+    private suspend fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
