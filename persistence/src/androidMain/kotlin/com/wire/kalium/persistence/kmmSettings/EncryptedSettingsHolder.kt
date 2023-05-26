@@ -23,6 +23,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import com.wire.kalium.persistence.kaliumLogger
 
 private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.AppSettings -> "_app_settings_master_key_"
@@ -41,18 +42,20 @@ private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.
 internal actual fun encryptedSettingsBuilder(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = SharedPreferencesSettings(
-    if (options.shouldEncryptData) {
-        EncryptedSharedPreferences.create(
-            param.appContext,
-            options.fileName,
-            getOrCreateMasterKey(param.appContext, options.keyAlias()),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    } else {
-        param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
-    }, false
-)
+): Settings  {
+    return SharedPreferencesSettings(
+        if (options.shouldEncryptData) {
+            EncryptedSharedPreferences.create(
+                param.appContext,
+                options.fileName,
+                getOrCreateMasterKey(param.appContext, options.keyAlias()),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        } else {
+            param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
+        }, false
+    )
+}
 
 internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
