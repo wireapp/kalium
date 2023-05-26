@@ -80,6 +80,7 @@ internal class ConversationGroupRepositoryImpl(
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
+    private val newConversationMemberHandler: NewConversationMemberHandler,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -117,6 +118,12 @@ internal class ConversationGroupRepositoryImpl(
                                 persistMembersFromConversationResponse(conversationResponse)
                                     .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList + selfUserId) }
                         }
+                    }.flatMap {
+                        newConversationMemberHandler.handle(
+                            conversationId = conversationEntity.id,
+                            membersFailedToAdd = emptyList(), // TODO: add failed members in api v4 (offline backend branch)
+                            membersAdded = usersList
+                        )
                     }.flatMap {
                         wrapStorageRequest {
                             conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
