@@ -33,7 +33,7 @@ import com.wire.kalium.util.DateTimeUtil
  * Handles the creation of system messages when a conversation is started with several users.
  * Either all users are added or some of them could fail to be added.
  *
- * TODO(offline backend branch): Handle all member related work here (aka.ConversationGroupRepository.persistMembersFromConversationResponse)
+ * TODO(offline backend branch): Handle all member related work here (ConvoGroupRepository.persistMembersFromConversationResponse)
  * TODO(offline backend branch): And add failed members handling in api v4
  */
 internal interface NewConversationMemberHandler {
