@@ -104,9 +104,9 @@ class UserConfigDataSource(
         serverSideConfig: Either<StorageFailure, IsFileSharingEnabledEntity>,
         buildConfig: BuildFileRestrictionState
     ): Either<StorageFailure, FileSharingStatus> = when {
-        serverSideConfig.isLeft() -> Either.Left(serverSideConfig.value)
+        serverSideConfig.isLeft() -> serverSideConfig
 
-        !serverSideConfig.value.status -> Either.Right(
+        serverSideConfig.value.status.not() -> Either.Right(
             FileSharingStatus(
                 isStatusChanged = serverSideConfig.value.isStatusChanged,
                 state = FileSharingStatus.Value.Disabled
