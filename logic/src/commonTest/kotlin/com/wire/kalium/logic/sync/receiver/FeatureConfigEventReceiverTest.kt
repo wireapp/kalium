@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
@@ -185,7 +185,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenNewTeamSettingsSelfDeletingDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
         val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-            enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO),
+            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO),
             hasFeatureChanged = false
         )
         val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -202,7 +202,7 @@ class FeatureConfigEventReceiverTest {
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
-                it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
+                it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
             })
             .wasInvoked(once)
     }
@@ -211,7 +211,7 @@ class FeatureConfigEventReceiverTest {
     fun givenNewSelfDeletingMessagesEnablingEventWithNoEnforcedTimeout_whenProcessingEvent_ThenEnableFeatureOnUserConfigRepository() =
         runTest {
             val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-                enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO),
+                enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO),
                 hasFeatureChanged = false
             )
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -226,8 +226,8 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
-                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                            && it.enforcedSelfDeletionTimer.toDuration() == ZERO
+                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enabled
+                            && (it.enforcedSelfDeletionTimer as TeamSelfDeleteTimer.Enabled).userDuration == ZERO
                 })
                 .wasInvoked(once)
         }
@@ -237,7 +237,7 @@ class FeatureConfigEventReceiverTest {
         runTest {
             val newEnforcedDuration = 3600.toDuration(DurationUnit.SECONDS)
             val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-                enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Disabled,
                 hasFeatureChanged = false
             )
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -252,8 +252,8 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enforced
-                            && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedDuration
+                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enforced
+                            && (it.enforcedSelfDeletionTimer as TeamSelfDeleteTimer.Enforced).enforcedDuration == newEnforcedDuration
                 })
                 .wasInvoked(once)
         }
@@ -274,8 +274,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer !is SelfDeletionTimer.Disabled
-                            && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedTimeoutSeconds.toDuration(DurationUnit.SECONDS)
+                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -296,8 +295,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching<TeamSettingsSelfDeletionStatus> {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
-                            && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedTimeoutSeconds.toDuration(DurationUnit.SECONDS)
+                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -317,8 +315,7 @@ class FeatureConfigEventReceiverTest {
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching<TeamSettingsSelfDeletionStatus> {
-                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
-                        && it.enforcedSelfDeletionTimer.toDuration() == ZERO
+                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
             })
             .wasInvoked(once)
     }

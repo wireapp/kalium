@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.isPositiveNotNull
-import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlin.time.Duration.Companion.ZERO
@@ -55,11 +54,11 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
                 teamSettings.fold({
                     onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
                 }, {
-                    when (it.selfDeletionTimerEntity) {
-                        SelfDeletionTimerEntity.Disabled -> SelfDeletionTimer.Disabled
-                        is SelfDeletionTimerEntity.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
-                        is SelfDeletionTimerEntity.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
-                            (it.selfDeletionTimerEntity as SelfDeletionTimerEntity.Enforced).enforcedDuration
+                    when (it.enforcedSelfDeletionTimer) {
+                        TeamSelfDeleteTimer.Disabled -> SelfDeletionTimer.Disabled
+                        is TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
+                        is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
+                            it.enforcedSelfDeletionTimer.enforcedDuration
                         )
                     }
                 })
