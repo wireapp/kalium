@@ -634,7 +634,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenASuccess_WhenSendingEditMessage_ThenUpdateMessageId() {
+    fun givenASuccess_WhenSendingEditMessage_ThenUpdateMessageIdButDoNotUpdateCreationDate() {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
@@ -666,11 +666,15 @@ class MessageSenderTest {
                 .suspendFunction(arrangement.messageRepository::updateTextMessage)
                 .with(anything(), eq(content), eq(editedMessageId), anything())
                 .wasInvoked(exactly = once)
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), eq(editedMessageId), eq(null), anything())
+                .wasInvoked(exactly = once)
         }
     }
 
     @Test
-    fun givenASuccess_WhenSendingRegularMessage_ThenUpdateMessageId() {
+    fun givenASuccess_WhenSendingRegularMessage_ThenDoNotUpdateMessageIdButUpdateCreationDateToServerDate() {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
@@ -688,6 +692,10 @@ class MessageSenderTest {
                 .suspendFunction(arrangement.messageRepository::updateTextMessage)
                 .with(anything(), anything(), anything(), anything())
                 .wasNotInvoked()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), eq(TestMessage.TEXT_MESSAGE.id), matching { it != null }, anything())
+                .wasInvoked(exactly = once)
         }
     }
 

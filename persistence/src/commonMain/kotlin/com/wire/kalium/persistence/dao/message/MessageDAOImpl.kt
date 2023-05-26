@@ -336,7 +336,7 @@ class MessageDAOImpl(
     override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     ) = withContext(coroutineContext) {
         queries.promoteMessageToSentUpdatingServerTime(
