@@ -33,7 +33,7 @@ interface UserConfigDAO {
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
 }
 
-class UserConfigDAOImpl internal constructor(
+internal class UserConfigDAOImpl internal constructor(
     private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {
 

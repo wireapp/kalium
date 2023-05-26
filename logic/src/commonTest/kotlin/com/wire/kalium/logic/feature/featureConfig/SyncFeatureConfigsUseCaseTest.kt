@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -626,6 +627,9 @@ class SyncFeatureConfigsUseCaseTest {
         @Mock
         val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
 
+        @Mock
+        val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
+
         private val syncFeatureConfigsUseCase
             get() = SyncFeatureConfigsUseCaseImpl(
                 userConfigRepository,
@@ -696,6 +700,7 @@ class SyncFeatureConfigsUseCaseTest {
         fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCaseImpl> {
             userConfigRepository = UserConfigDataSource(
                 inMemoryUserConfigStorage(),
+                userConfigDAO,
                 kaliumConfigs
             )
             return this to syncFeatureConfigsUseCase

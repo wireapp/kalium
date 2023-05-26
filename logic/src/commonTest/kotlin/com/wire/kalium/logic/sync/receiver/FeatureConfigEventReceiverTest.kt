@@ -200,7 +200,7 @@ class FeatureConfigEventReceiverTest {
         featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+            .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
             .with(matching {
                 it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
             })
@@ -224,7 +224,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
                     it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
                             && it.enforcedSelfDeletionTimer.toDuration() == ZERO
@@ -250,7 +250,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enforced
                             && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedDuration
@@ -272,7 +272,7 @@ class FeatureConfigEventReceiverTest {
             featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
                     it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer !is SelfDeletionTimer.Disabled
                             && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedTimeoutSeconds.toDuration(DurationUnit.SECONDS)
@@ -295,7 +295,7 @@ class FeatureConfigEventReceiverTest {
 
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
-                .with(matching {
+                .with(matching<TeamSettingsSelfDeletionStatus> {
                     it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
                             && it.enforcedSelfDeletionTimer.toDuration() == newEnforcedTimeoutSeconds.toDuration(DurationUnit.SECONDS)
                 })
@@ -316,7 +316,7 @@ class FeatureConfigEventReceiverTest {
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
+            .with(matching<TeamSettingsSelfDeletionStatus> {
                 it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
                         && it.enforcedSelfDeletionTimer.toDuration() == ZERO
             })
@@ -368,22 +368,22 @@ class FeatureConfigEventReceiverTest {
 
         fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::getTeamSettingsSelfDeletionStatus)
+                .suspendFunction(userConfigRepository::getTeamSettingsSelfDeletionStatus)
                 .whenInvoked()
                 .thenReturn(Either.Right(currentSelfDeletingMessagesStatus))
             given(userConfigRepository)
-                .function(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withStoredTeamSettingsSelfDeletionStatusError() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::getTeamSettingsSelfDeletionStatus)
+                .suspendFunction(userConfigRepository::getTeamSettingsSelfDeletionStatus)
                 .whenInvoked()
                 .thenReturn(Either.Left(StorageFailure.DataNotFound))
             given(userConfigRepository)
-                .function(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -391,7 +391,7 @@ class FeatureConfigEventReceiverTest {
         fun withDisabledKaliumConfigFlag() = apply {
             kaliumConfigs = kaliumConfigs.copy(selfDeletingMessages = false)
             given(userConfigRepository)
-                .function(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .suspendFunction(userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
