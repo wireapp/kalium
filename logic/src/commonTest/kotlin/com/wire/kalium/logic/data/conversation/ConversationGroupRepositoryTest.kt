@@ -92,6 +92,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -123,6 +124,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -155,6 +157,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -983,6 +986,14 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(GUEST_ROOM_LINK_FLOW)
         }
+
+        fun withSuccessfulNewConversationMemberHandled() = apply {
+            given(newConversationMemberHandler)
+                .suspendFunction(newConversationMemberHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
 
         fun arrange() = this to conversationGroupRepository
     }
