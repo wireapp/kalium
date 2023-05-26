@@ -23,7 +23,6 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
-import com.wire.kalium.persistence.kaliumLogger
 
 private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.AppSettings -> "_app_settings_master_key_"
@@ -42,7 +41,7 @@ private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.
 internal actual fun encryptedSettingsBuilder(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings  {
+): Settings {
     return SharedPreferencesSettings(
         if (options.shouldEncryptData) {
             EncryptedSharedPreferences.create(
