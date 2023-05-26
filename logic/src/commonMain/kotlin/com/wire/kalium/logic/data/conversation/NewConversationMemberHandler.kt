@@ -32,6 +32,9 @@ import com.wire.kalium.util.DateTimeUtil
 /**
  * Handles the creation of system messages when a conversation is started with several users.
  * Either all users are added or some of them could fail to be added.
+ *
+ * TODO(offline backend branch): Handle all member related work here (aka.ConversationGroupRepository.persistMembersFromConversationResponse)
+ * TODO(offline backend branch): And add failed members handling in api v4
  */
 internal interface NewConversationMemberHandler {
     suspend fun handle(
@@ -51,7 +54,6 @@ internal class NewConversationMemberHandlerImpl(
         membersFailedToAdd: List<NetworkQualifiedId>,
         membersAdded: List<UserId>
     ) = run {
-        // TODO: Add failed members handling in api v4 (offline backend branch)
         val messageStartedWithMembers = Message.System(
             uuid4().toString(),
             MessageContent.MemberChange.CreationAdded(membersAdded),
