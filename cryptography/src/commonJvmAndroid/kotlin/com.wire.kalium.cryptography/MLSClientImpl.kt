@@ -85,7 +85,6 @@ actual class MLSClientImpl actual constructor(
             rootDir,
             databaseKey.value,
             toUByteList(clientId.toString()),
-            listOf(defaultCiphersuiteName),
             null
         )
         coreCrypto.setCallbacks(Callbacks())
@@ -161,7 +160,7 @@ actual class MLSClientImpl actual constructor(
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
-        coreCrypto.createConversation(groupIdAsBytes, conf)
+        coreCrypto.createConversation(groupIdAsBytes, defaultCredentialType, conf)
     }
 
     override fun wipeConversation(groupId: MLSGroupId) {

@@ -48,7 +48,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
-            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName), null)
+            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -59,7 +59,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
         val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
-                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName), null)
+                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto
