@@ -185,17 +185,6 @@ CREATE TABLE MessageConversationTimerChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageNewConversationMemberChangeContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      member_add_list TEXT AS List<QualifiedIDEntity> NOT NULL,
-      member_add_type TEXT AS MemberChangeType NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -297,9 +286,7 @@ QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
-ConversationTimerChangedContent.message_timer AS messageTimerChanged,
-NewConversationMemberChangeContent.member_add_list AS memberAddList,
-NewConversationMemberChangeContent.member_add_type AS memberAddType
+ConversationTimerChangedContent.message_timer AS messageTimerChanged
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -310,7 +297,6 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageNewConversationMemberChangeContent AS NewConversationMemberChangeContent ON Message.id = NewConversationMemberChangeContent.message_id AND Message.conversation_id = NewConversationMemberChangeContent.conversation_id
 -- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id

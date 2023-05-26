@@ -188,12 +188,11 @@ sealed class MessageEntity(
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
-        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        NEW_CONVERSATION_MEMBER_CHANGE
+        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, FAILED_TO_ADD
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD
     }
 
     enum class Visibility {
@@ -311,11 +310,6 @@ sealed class MessageEntityContent {
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
-    data class NewConversationMemberChange(
-        val memberUserIdList: List<QualifiedIDEntity>,
-        val memberChangeType: MessageEntity.MemberChangeType
-    ) : System()
-
     object HistoryLost : System()
 }
 
@@ -379,6 +373,12 @@ sealed class MessagePreviewEntityContent {
     ) : MessagePreviewEntityContent()
 
     data class MembersFailedToAdded(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class MembersCreationAdded(
         val senderName: String?,
         val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,

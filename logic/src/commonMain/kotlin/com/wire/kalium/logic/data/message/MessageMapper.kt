@@ -294,6 +294,12 @@ class MessageMapperImpl(
 
                 is MessageContent.MemberChange.Removed ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
+
+                is MessageContent.MemberChange.CreationAdded ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
+
+                is MessageContent.MemberChange.FailedToAdd ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
             }
         }
 
@@ -376,6 +382,8 @@ class MessageMapperImpl(
             when (this.memberChangeType) {
                 MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
             }
         }
 
@@ -420,6 +428,19 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+
+    is MessagePreviewEntityContent.MembersCreationAdded -> MessagePreviewContent.WithUser.MembersCreationAdded(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
+    is MessagePreviewEntityContent.MembersFailedToAdded -> MessagePreviewContent.WithUser.MembersFailedToAdd(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
     is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)

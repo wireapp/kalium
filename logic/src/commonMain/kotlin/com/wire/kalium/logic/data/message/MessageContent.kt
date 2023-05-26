@@ -179,6 +179,8 @@ sealed class MessageContent {
     sealed class MemberChange(open val members: List<UserId>) : System() {
         data class Added(override val members: List<UserId>) : MemberChange(members)
         data class Removed(override val members: List<UserId>) : MemberChange(members)
+        data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
+        data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -262,6 +264,18 @@ sealed class MessagePreviewContent {
         ) : WithUser(senderName)
 
         data class MembersRemoved(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersFailedToAdd(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersCreationAdded(
             val senderName: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
