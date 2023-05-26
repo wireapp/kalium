@@ -993,7 +993,7 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
-        
+
         fun arrange() = this to conversationGroupRepository
     }
 
