@@ -24,7 +24,6 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -46,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceReq
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -83,10 +81,8 @@ internal class ConversationGroupRepositoryImpl(
     private val newConversationMemberHandler: NewConversationMemberHandler,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
 
@@ -110,20 +106,17 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        when (protocol) {
-                            is Conversation.ProtocolInfo.Proteus ->
-                                persistMembersFromConversationResponse(conversationResponse)
-
-                            is Conversation.ProtocolInfo.MLS ->
-                                persistMembersFromConversationResponse(conversationResponse)
-                                    .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList + selfUserId) }
+                        newConversationMemberHandler.handleMembersJoinedFromResponse(
+                            conversationEntity.id, conversationResponse, usersList
+                        ).flatMap {
+                            when (protocol) {
+                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                                is Conversation.ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup(
+                                    groupID = protocol.groupId,
+                                    members = usersList + selfUserId
+                                )
+                            }
                         }
-                    }.flatMap {
-                        newConversationMemberHandler.handle(
-                            conversationId = conversationEntity.id,
-                            membersFailedToAdd = emptyList(), // TODO: add failed members in api v4 (offline backend branch)
-                            membersAdded = usersList
-                        )
                     }.flatMap {
                         wrapStorageRequest {
                             conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
@@ -133,18 +126,6 @@ internal class ConversationGroupRepositoryImpl(
                     }
                 }
         }
-
-    private suspend fun persistMembersFromConversationResponse(
-        conversationResponse: ConversationResponse
-    ): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            conversationDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversationResponse.members),
-                conversationId
-            )
-        }
-    }
 
     override suspend fun addMembers(
         userIdList: List<UserId>,

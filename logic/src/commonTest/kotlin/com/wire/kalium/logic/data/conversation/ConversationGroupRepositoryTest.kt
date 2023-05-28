@@ -65,7 +65,6 @@ import io.mockative.anything
 import io.mockative.eq
 import io.mockative.fun2
 import io.mockative.given
-import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
@@ -109,13 +108,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .with(anything(), anything())
-                .wasInvoked(once)
-
             verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handle)
+                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -146,13 +140,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .with(anything(), anything())
-                .wasInvoked(once)
-
             verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handle)
+                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -184,18 +173,13 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .with(matching { it.isNotEmpty() }, anything())
-                .wasInvoked(once)
-
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
                 .with(anything(), anything())
                 .wasInvoked(once)
 
             verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handle)
+                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -1004,7 +988,7 @@ class ConversationGroupRepositoryTest {
 
         fun withSuccessfulNewConversationMemberHandled() = apply {
             given(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handle)
+                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

@@ -496,6 +496,7 @@ class UserSessionScope internal constructor(
     private val newConversationMemberHandler: NewConversationMemberHandler
         get() = NewConversationMemberHandlerImpl(
             persistMessage,
+            userStorage.database.conversationDAO,
             userId
         )
 
