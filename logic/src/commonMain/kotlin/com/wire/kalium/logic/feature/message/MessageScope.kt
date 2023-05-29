@@ -116,7 +116,7 @@ class MessageScope internal constructor(
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
-        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository, conversationRepository)
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(

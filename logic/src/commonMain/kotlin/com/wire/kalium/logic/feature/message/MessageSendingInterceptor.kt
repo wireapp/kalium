@@ -19,26 +19,34 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.persistence.dao.ConversationDAO
+import kotlin.time.Duration.Companion.ZERO
 
 interface MessageSendingInterceptor {
-    suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable>
+    suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable>
 }
 
 class MessageSendingInterceptorImpl(
     private val messageContentEncoder: MessageContentEncoder,
-    private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository
+    private val messageRepository: MessageRepository
 ) : MessageSendingInterceptor {
 
-    override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
+    override suspend fun prepareMessage(originalMsg: Message.Sendable): Either<CoreFailure, Message.Sendable> {
+        // We delegate the responsibility of fetching the correct expiration data to the message repository. That way we add an extra layer
+        // of security in case the app was providing wrong data and not checking correctly the enforced data from the conversation (i.e. if
+        // in the future we implement message forwarding feature, kalium will determine the correct expiration data to use)
+        val hasValidExpirationData = originalMsg is Message.Regular && (originalMsg.expirationData?.expireAfter ?: ZERO) > ZERO
+        val message: Message.Sendable = if (hasValidExpirationData) {
+            messageRepository.getMessageByIdWithLatestExpirationData(originalMsg.conversationId, originalMsg.id)
+                .fold({ originalMsg }, { it as Message.Sendable })
+        } else originalMsg
+
         val replyMessageContent = message.content
 
         if (replyMessageContent !is MessageContent.Text
@@ -48,13 +56,11 @@ class MessageSendingInterceptorImpl(
             return Either.Right(message)
         }
 
-        val conversationEnforcedTimer = conversationRepository.getConversationById(message.conversationId)?.messageTimer
-
         return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
-            .map { originalMessage ->
+            .map { persistedMessage ->
                 val encodedMessageContent = messageContentEncoder.encodeMessageContent(
-                    messageDate = originalMessage.date,
-                    messageContent = originalMessage.content
+                    messageDate = persistedMessage.date,
+                    messageContent = persistedMessage.content
                 )
 
                 message.copy(
