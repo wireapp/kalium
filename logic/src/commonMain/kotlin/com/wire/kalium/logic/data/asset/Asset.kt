@@ -71,25 +71,3 @@ fun isVideoMimeType(mimeType: String): Boolean = mimeType in setOf(
     "video/mp4", "video/webm", "video/3gpp", "video/mkv"
 )
 
-fun getExtensionFromMimeType(mimeType: String?): String? {
-    return mimeType?.let { mimeTypeToExtensionMap[it.lowercase()] }
-}
-
-private val mimeTypeToExtensionMap = mapOf(
-    "image/jpg" to "jpg",
-    "image/jpeg" to "jpeg",
-    "image/png" to "png",
-    "image/heic" to "heic",
-    "image/gif" to "gif",
-    "image/webp" to "webp",
-    "audio/mp3" to "mp3",
-    "audio/mpeg" to "mpeg",
-    "audio/ogg" to "ogg",
-    "audio/wav" to "wav",
-    "audio/x-wav" to "wav",
-    "audio/x-pn-wav" to "wav",
-    "video/mp4" to "mp4",
-    "video/webm" to "webm",
-    "video/3gpp" to "3gpp",
-    "video/mkv" to "mkv"
-)
