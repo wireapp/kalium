@@ -20,7 +20,7 @@ package com.wire.kalium.util
 actual fun getExtensionFromMimeType(mimeType: String?): String? =
     mimeType?.let { mimeTypeToExtensionMap[it.lowercase()] } // TODO: replace with a proper platform implementation
 
-private val mimeTypeToExtensionMap: Map<String, String> =  // TODO: remove after all platforms have their own proper implementations
+private val mimeTypeToExtensionMap: Map<String, String> = // TODO: remove after all platforms have their own proper implementations
     mapOf(
         "image/jpg" to "jpg",
         "image/jpeg" to "jpeg",

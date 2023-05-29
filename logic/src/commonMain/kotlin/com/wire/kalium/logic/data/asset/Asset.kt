@@ -70,4 +70,3 @@ fun isAudioMimeType(mimeType: String): Boolean = mimeType in setOf(
 fun isVideoMimeType(mimeType: String): Boolean = mimeType in setOf(
     "video/mp4", "video/webm", "video/3gpp", "video/mkv"
 )
-
