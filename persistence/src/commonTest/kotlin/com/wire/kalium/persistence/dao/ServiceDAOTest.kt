@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -50,6 +51,34 @@ class ServiceDAOTest : BaseDatabaseTest() {
 
         val result = serviceDAO.byId(id = serviceBotId)
         assertEquals(serviceEntity.id, result?.id)
+    }
+
+    @Test
+    fun givenServiceDoesNotExistsWhenSearchingByName_thenResultIsEmpty() = runTest {
+        val result = serviceDAO.searchServicesByName(query = "non-existing")
+        assertEquals(0, result.first().size)
+    }
+
+    @Test
+    fun givenServiceExistsWhenSearchingByName_thenResultIsNotEmpty() = runTest {
+        serviceDAO.insert(service = serviceEntity.copy(name = "existing"))
+
+        val result = serviceDAO.searchServicesByName(query = "ex")
+        assertEquals(1, result.first().size)
+    }
+
+    @Test
+    fun givenNoServiceInserted_whenObservingAllServices_thenResultIsEmpty() = runTest {
+        val result = serviceDAO.getAllServices()
+        assertEquals(0, result.first().size)
+    }
+
+    @Test
+    fun givenServiceInserted_whenObservingAllServices_thenResultIsNotEmpty() = runTest {
+        serviceDAO.insert(service = serviceEntity)
+
+        val result = serviceDAO.getAllServices()
+        assertEquals(1, result.first().size)
     }
 
     private companion object {
