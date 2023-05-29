@@ -107,3 +107,6 @@ libs/
 
 # kotlin files generated from proto
 generated/
+
+# Mega linter reports
+megalinter-reports/
