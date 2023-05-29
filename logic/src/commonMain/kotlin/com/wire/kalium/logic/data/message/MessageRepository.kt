@@ -99,6 +99,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessageByIdWithLatestExpirationData(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
 
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -277,6 +278,13 @@ class MessageDataSource(
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
         }.map { messageMapper.fromEntityToMessage(it) }
+
+    override suspend fun getMessageByIdWithLatestExpirationData(
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Message> = wrapStorageRequest {
+        messageDAO.getMessageByIdWithLatestExpirationData(messageUuid, conversationId.toDao())
+    }.map { messageMapper.fromEntityToMessage(it) }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,

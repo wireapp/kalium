@@ -562,6 +562,21 @@ SELECT * FROM Message ORDER BY Message.creation_date DESC LIMIT ? OFFSET ?;
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
+selectByIdWithLatestExpirationData {
+    SELECT
+      CASE
+        WHEN message_timer IS NULL OR message_timer = 0
+            THEN COALESCE(user_message_timer, expire_after_millis)
+            ELSE message_timer
+      END AS expire_after_millis
+    FROM
+      Message
+    LEFT JOIN
+      Conversation ON Message.conversation_id = Conversation.qualified_id
+    WHERE
+      Message.id = ? AND Conversation.qualified_id = ?;
+}
+
 countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
