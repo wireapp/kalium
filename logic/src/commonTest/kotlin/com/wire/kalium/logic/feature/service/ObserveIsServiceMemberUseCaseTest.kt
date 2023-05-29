@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -50,14 +52,12 @@ class ObserveIsServiceMemberUseCaseTest {
             .arrange()
 
         // when
-        val result = observeServiceDetails.invoke(
+        observeServiceDetails.invoke(
             serviceId = Arrangement.serviceId,
             conversationId = Arrangement.conversationId
-        ).first()
-
-        // then
-        assertIs<QualifiedID>(result)
-        assertEquals(Arrangement.userId, result)
+        ).first().shouldSucceed { result ->
+            assertEquals(Arrangement.userId, result)
+        }
     }
 
     private class Arrangement {
@@ -80,7 +80,7 @@ class ObserveIsServiceMemberUseCaseTest {
             given(serviceRepository)
                 .suspendFunction(serviceRepository::observeIsServiceMember)
                 .whenInvokedWith(eq(serviceId), eq(conversationId))
-                .thenReturn(flowOf(userId))
+                .thenReturn(flowOf(Either.Right(userId)))
         }
 
         companion object {
