@@ -168,13 +168,13 @@ interface MessageRepository {
     ): Either<CoreFailure, Conversation.ReceiptMode?>
 
     /**
-     * updates the message status to [MessageEntity.Status.SENT] and the server date to [serverDate]
-     * also mark other pending messages and add millis to their date
+     * updates the message status to [MessageEntity.Status.SENT] and optionally sets the message creation date to [serverDate] if not null,
+     * also marks other pending messages and adds millis to their date
      */
     suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationId,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     ): Either<CoreFailure, Unit>
 
@@ -485,7 +485,7 @@ class MessageDataSource(
     override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationId,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.promoteMessageToSentUpdatingServerTime(

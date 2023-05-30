@@ -1232,7 +1232,7 @@ class UserSessionScope internal constructor(
     val service: ServiceScope
         get() = ServiceScope(
             serviceRepository,
-            teamRepository,
+        teamRepository,
             selfTeamId
         )
 

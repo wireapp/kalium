@@ -20,15 +20,15 @@ package com.wire.kalium.logic.feature.selfdeletingMessages
 import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
 
 object SelfDeletionMapper { // TODO rename and refactor
-    fun SelfDeletionTimer.toSelfDeletionTimerEntity(): SelfDeletionTimerEntity = when (this) {
-        is SelfDeletionTimer.Disabled -> SelfDeletionTimerEntity.Disabled
-        is SelfDeletionTimer.Enabled -> SelfDeletionTimerEntity.Enabled(userDuration)
-        is SelfDeletionTimer.Enforced -> SelfDeletionTimerEntity.Enforced(enforcedDuration)
+    fun TeamSelfDeleteTimer.toSelfDeletionTimerEntity(): SelfDeletionTimerEntity = when (this) {
+        is TeamSelfDeleteTimer.Disabled -> SelfDeletionTimerEntity.Disabled
+        is TeamSelfDeleteTimer.Enabled -> SelfDeletionTimerEntity.Enabled(userDuration)
+        is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimerEntity.Enforced(enforcedDuration)
     }
 
-    fun SelfDeletionTimerEntity.toSelfDeletionTimerStatus(): SelfDeletionTimer = when (this) {
-        is SelfDeletionTimerEntity.Disabled -> SelfDeletionTimer.Disabled
-        is SelfDeletionTimerEntity.Enabled -> SelfDeletionTimer.Enabled(userDuration)
-        is SelfDeletionTimerEntity.Enforced -> SelfDeletionTimer.Enforced.ByTeam(enforcedDuration)
+    fun SelfDeletionTimerEntity.toTeamSelfDeleteTimer(): TeamSelfDeleteTimer = when (this) {
+        SelfDeletionTimerEntity.Disabled -> TeamSelfDeleteTimer.Disabled
+        is SelfDeletionTimerEntity.Enabled -> TeamSelfDeleteTimer.Enabled(userDuration)
+        is SelfDeletionTimerEntity.Enforced -> TeamSelfDeleteTimer.Enforced(enforcedDuration)
     }
 }

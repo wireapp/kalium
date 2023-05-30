@@ -20,8 +20,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerStatus
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -33,11 +32,8 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Duration.Companion.ZERO
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -194,14 +190,14 @@ class UserConfigDataSource(
         with(it) {
             TeamSettingsSelfDeletionStatus(
                 hasFeatureChanged = isStatusChanged,
-                enforcedSelfDeletionTimer = selfDeletionTimerEntity.toSelfDeletionTimerStatus()
+                enforcedSelfDeletionTimer = selfDeletionTimerEntity.toTeamSelfDeleteTimer()
             )
         }
     }
 
     override suspend fun setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
+            val teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
                 selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
                 isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
             )
@@ -213,12 +209,12 @@ class UserConfigDataSource(
     }
 
     override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
-        userConfigDAO.observeTeamSettingsSelfDeletingStatus().map {
-            it?.let { teamSettingsStatus ->
+        userConfigDAO.observeTeamSettingsSelfDeletingStatus().wrapStorageRequest().map {
+            it.map {
                 TeamSettingsSelfDeletionStatus(
-                    teamSettingsStatus.isStatusChanged,
-                    teamSettingsStatus.selfDeletionTimerEntity.toSelfDeletionTimerStatus()
+                    hasFeatureChanged = it.isStatusChanged,
+                    enforcedSelfDeletionTimer = it.selfDeletionTimerEntity.toTeamSelfDeleteTimer()
                 )
-            } ?: TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, SelfDeletionTimer.Enabled(ZERO))
-        }.wrapStorageRequest()
+            }
+        }
 }

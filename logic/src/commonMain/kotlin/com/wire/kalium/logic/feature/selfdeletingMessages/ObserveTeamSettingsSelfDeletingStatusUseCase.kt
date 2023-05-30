@@ -39,7 +39,7 @@ class ObserveTeamSettingsSelfDeletingStatusUseCaseImpl internal constructor(
             it.fold(
                 {
                     kaliumLogger.e("There was an error when fetching team settings self deletion timer")
-                    TeamSettingsSelfDeletionStatus(null, SelfDeletionTimer.Enabled(Duration.ZERO))
+                    TeamSettingsSelfDeletionStatus(null, TeamSelfDeleteTimer.Enabled(Duration.ZERO))
                 },
                 { teamSettingsSelfDeletionStatus ->
                     teamSettingsSelfDeletionStatus

@@ -167,11 +167,22 @@ internal class MessageSenderImpl internal constructor(
                     val serverDate = messageRemoteTime.toInstant()
                     val localDate = message.date.toInstant()
                     val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    val isEditMessage = message.content is MessageContent.TextEdited
+                    // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                    if (isEditMessage) {
+                        messageRepository.updateTextMessage(
+                            conversationId = processedMessage.conversationId,
+                            messageContent = processedMessage.content as MessageContent.TextEdited,
+                            newMessageId = processedMessage.id,
+                            editTimeStamp = processedMessage.date
+                        )
+                    }
                     messageRepository.promoteMessageToSentUpdatingServerTime(
-                        processedMessage.conversationId,
-                        processedMessage.id,
-                        serverDate,
-                        millis
+                        conversationId = processedMessage.conversationId,
+                        messageUuid = processedMessage.id,
+                        // if it's edit then we don't want to change the original message creation time, it's already a server date
+                        serverDate = if (!isEditMessage) serverDate else null,
+                        millis = millis
                     )
                     Unit
                 }
