@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold

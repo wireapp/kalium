@@ -23,7 +23,6 @@ import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 
-
 @OptIn(ExperimentalContracts::class)
 fun Duration?.isPositiveNotNull(): Boolean {
     contract {

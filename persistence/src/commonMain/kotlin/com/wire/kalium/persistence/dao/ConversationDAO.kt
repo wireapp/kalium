@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant

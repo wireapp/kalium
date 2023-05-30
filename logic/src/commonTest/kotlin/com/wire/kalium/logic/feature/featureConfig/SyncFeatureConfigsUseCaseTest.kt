@@ -31,8 +31,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -584,11 +583,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         var kaliumConfigs = KaliumConfigs()
 
-        var userConfigRepository: UserConfigRepository = UserConfigDataSource(
-            inMemoryStorage,
-            kaliumConfigs
-        )
-            private set
+        lateinit var userConfigRepository: UserConfigRepository
 
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
@@ -621,6 +616,7 @@ class SyncFeatureConfigsUseCaseTest {
             kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
             userConfigRepository = UserConfigDataSource(
                 inMemoryStorage,
+                userConfigDAO,
                 kaliumConfigs
             )
         }
@@ -663,11 +659,16 @@ class SyncFeatureConfigsUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
+            userConfigRepository = UserConfigDataSource(
+                inMemoryStorage,
+                userConfigDAO,
+                kaliumConfigs
+            )
+
             syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
                 userConfigRepository,
                 featureConfigRepository,
                 isGuestRoomLinkFeatureEnabled,
-                userConfigDAO,
                 kaliumConfigs,
                 SELF_USER_ID
             )

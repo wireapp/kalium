@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.persistence.dao.ConversationDAO
 
 interface MessageSendingInterceptor {
     suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable>

@@ -40,7 +40,7 @@ sealed class SelfDeletionTimer {
         data class ByGroup(val duration: Duration) : Enforced(duration)
     }
 
-    fun toDuration(): Duration = when(this) {
+    fun toDuration(): Duration = when (this) {
         is Enabled -> userDuration
         is Enforced -> enforcedDuration
         is Disabled -> Duration.ZERO
