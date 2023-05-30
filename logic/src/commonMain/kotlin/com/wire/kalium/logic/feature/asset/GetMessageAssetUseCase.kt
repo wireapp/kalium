@@ -80,7 +80,7 @@ internal class GetMessageAssetUseCaseImpl(
                     val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
                     // assets uploaded by other clients have upload status NOT_UPLOADED
                     val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.shouldBeDisplayed)
-                                || assetUploadStatus == UPLOADED
+                            || assetUploadStatus == UPLOADED
                     val assetMetadata = with(content.value.remoteData) {
                         DownloadAssetMessageMetadata(
                             content.value.name ?: "",
@@ -102,6 +102,7 @@ internal class GetMessageAssetUseCaseImpl(
                             assetId = assetMetadata.assetKey,
                             assetDomain = assetMetadata.assetKeyDomain,
                             assetName = assetMetadata.assetName,
+                            mimeType = content.value.mimeType,
                             assetToken = assetMetadata.assetToken,
                             encryptionKey = assetMetadata.encryptionKey,
                             assetSHA256Key = assetMetadata.assetSHA256Key,
@@ -132,6 +133,11 @@ internal class GetMessageAssetUseCaseImpl(
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName: String) : MessageAssetResult()
+    class Success(
+        val decodedAssetPath: Path,
+        val assetSize: Long,
+        val assetName: String
+    ) : MessageAssetResult()
+
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }
