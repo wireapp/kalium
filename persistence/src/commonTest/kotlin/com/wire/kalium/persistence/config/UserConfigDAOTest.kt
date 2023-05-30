@@ -21,8 +21,10 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,6 +39,9 @@ class UserConfigDAOTest : BaseDatabaseTest() {
 
     private lateinit var userConfigDAO: UserConfigDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
+     init {
+         Dispatchers.setMain(dispatcher)
+     }
 
     @BeforeTest
     fun setUp() {
