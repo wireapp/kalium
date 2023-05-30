@@ -42,7 +42,7 @@ class NewGroupConversationStartedMessageCreatorTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = sysMessageCreator.createMessageForConversation(
+        val result = sysMessageCreator.createSystemMessage(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
         )
 
@@ -62,7 +62,7 @@ class NewGroupConversationStartedMessageCreatorTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = newGroupConversationCreatedHandler.createMessageForConversation(
+        val result = newGroupConversationCreatedHandler.createSystemMessage(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.ONE_ON_ONE)
         )
 

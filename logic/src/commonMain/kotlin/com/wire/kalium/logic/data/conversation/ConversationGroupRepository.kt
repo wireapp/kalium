@@ -107,7 +107,7 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        newGroupConversationStartedMessageCreator.createMessageForConversation(conversationEntity)
+                        newGroupConversationStartedMessageCreator.createSystemMessage(conversationEntity)
                     }.flatMap {
                         newConversationMembersRepository.persistMembersAdditionToTheConversation(
                             conversationEntity.id, conversationResponse

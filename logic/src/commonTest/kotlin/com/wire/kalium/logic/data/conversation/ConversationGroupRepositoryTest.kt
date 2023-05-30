@@ -995,7 +995,7 @@ class ConversationGroupRepositoryTest {
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
             given(newGroupConversationStartedMessageCreator)
-                .suspendFunction(newGroupConversationStartedMessageCreator::createMessageForConversation)
+                .suspendFunction(newGroupConversationStartedMessageCreator::createSystemMessage)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
