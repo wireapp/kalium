@@ -688,7 +688,7 @@ class ConversationGroupRepositoryTest {
         val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
 
         @Mock
-        val newConversationGroupStartedHandler = mock(NewConversationGroupStartedHandler::class)
+        val newGroupConversationStartedMessageCreator = mock(NewGroupConversationStartedMessageCreator::class)
 
         @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
@@ -702,7 +702,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
-                newConversationGroupStartedHandler,
+                newGroupConversationStartedMessageCreator,
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -994,8 +994,8 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
-            given(newConversationGroupStartedHandler)
-                .suspendFunction(newConversationGroupStartedHandler::handle)
+            given(newGroupConversationStartedMessageCreator)
+                .suspendFunction(newGroupConversationStartedMessageCreator::createMessageForConversation)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

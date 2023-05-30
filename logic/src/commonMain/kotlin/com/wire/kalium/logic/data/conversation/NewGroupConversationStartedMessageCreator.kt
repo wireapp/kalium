@@ -31,16 +31,16 @@ import com.wire.kalium.util.DateTimeUtil
 /**
  * Handles the creation started message for a group conversation.
  */
-internal interface NewConversationGroupStartedHandler {
-    suspend fun handle(conversation: ConversationEntity): Either<CoreFailure, Unit>
+internal interface NewGroupConversationStartedMessageCreator {
+    suspend fun createMessageForConversation(conversation: ConversationEntity): Either<CoreFailure, Unit>
 }
 
-internal class NewConversationGroupStartedHandlerImpl(
+internal class NewGroupConversationStartedMessageCreatorImpl(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
-) : NewConversationGroupStartedHandler {
+) : NewGroupConversationStartedMessageCreator {
 
-    override suspend fun handle(conversation: ConversationEntity): Either<CoreFailure, Unit> = run {
+    override suspend fun createMessageForConversation(conversation: ConversationEntity): Either<CoreFailure, Unit> = run {
         if (conversation.type != ConversationEntity.Type.GROUP) {
             return Either.Right(Unit)
         }

@@ -60,16 +60,20 @@ internal class NewConversationMembersRepositoryImpl(
         conversationResponse: ConversationResponse,
     ) = run {
         persistMembers(conversationResponse).flatMap {
-            val messageStartedWithMembers = Message.System(
-                uuid4().toString(),
-                MessageContent.MemberChange.CreationAdded(mapOtherMembersIdFromResponse(conversationResponse)),
-                conversationId.toModel(),
-                DateTimeUtil.currentIsoDateTimeString(),
-                selfUserId,
-                Message.Status.SENT,
-                Message.Visibility.VISIBLE
-            )
-            persistMessage(messageStartedWithMembers)
+            if (conversationResponse.members.otherMembers.isEmpty()) {
+                Either.Right(Unit)
+            } else {
+                val messageStartedWithMembers = Message.System(
+                    uuid4().toString(),
+                    MessageContent.MemberChange.CreationAdded(mapOtherMembersIdFromResponse(conversationResponse)),
+                    conversationId.toModel(),
+                    DateTimeUtil.currentIsoDateTimeString(),
+                    selfUserId,
+                    Message.Status.SENT,
+                    Message.Visibility.VISIBLE
+                )
+                persistMessage(messageStartedWithMembers)
+            }
         }
     }
 

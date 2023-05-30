@@ -34,15 +34,15 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class NewConversationGroupStartedHandlerTest {
+class NewGroupConversationStartedMessageCreatorTest {
 
     @Test
     fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessage() = runTest {
-        val (arrangement, newGroupConversationCreatedHandler) = Arrangement()
+        val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = newGroupConversationCreatedHandler.handle(
+        val result = sysMessageCreator.createMessageForConversation(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
         )
 
@@ -62,7 +62,7 @@ class NewConversationGroupStartedHandlerTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = newGroupConversationCreatedHandler.handle(
+        val result = newGroupConversationCreatedHandler.createMessageForConversation(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.ONE_ON_ONE)
         )
 
@@ -87,7 +87,7 @@ class NewConversationGroupStartedHandlerTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun arrange() = this to NewConversationGroupStartedHandlerImpl(
+        fun arrange() = this to NewGroupConversationStartedMessageCreatorImpl(
             persistMessage, TestUser.SELF.id,
         )
     }
