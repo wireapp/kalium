@@ -1,0 +1,16 @@
+{
+    "threshold": 0,
+    "minLines": 10,
+    "reporters": [
+        "html",
+        "console",
+        "xml"
+    ],
+    "ignore": [
+        "**/src/test/java/**"
+    ],
+    "ignorePattern": [
+        "import .*"
+    ],
+    "absolute": true
+}
