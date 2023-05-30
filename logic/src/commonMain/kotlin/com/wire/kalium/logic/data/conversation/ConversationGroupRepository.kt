@@ -78,7 +78,7 @@ internal class ConversationGroupRepositoryImpl(
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
-    private val newConversationMemberHandler: NewConversationMemberHandler,
+    private val newConversationMembersRepository: NewConversationMembersRepository,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -106,16 +106,17 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        newConversationMemberHandler.handleMembersJoinedFromResponse(conversationEntity.id, conversationResponse)
-                            .flatMap {
-                                when (protocol) {
-                                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                                    is Conversation.ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup(
-                                        groupID = protocol.groupId,
-                                        members = usersList + selfUserId
-                                    )
-                                }
+                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                            conversationEntity.id, conversationResponse
+                        ).flatMap {
+                            when (protocol) {
+                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                                is Conversation.ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup(
+                                    groupID = protocol.groupId,
+                                    members = usersList + selfUserId
+                                )
                             }
+                        }
                     }.flatMap {
                         wrapStorageRequest {
                             conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {

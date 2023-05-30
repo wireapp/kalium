@@ -42,7 +42,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class NewConversationMemberHandlerTest {
+class NewConversationMembersRepositoryTest {
 
     @Test
     fun givenASuccessConversationResponse_whenPersistingMembers_ThenShouldSucceedAndCreateASystemMessage() = runTest {
@@ -51,7 +51,7 @@ class NewConversationMemberHandlerTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = handler.handleMembersJoinedFromResponse(conversationId, CONVERSATION_RESPONSE)
+        val result = handler.persistMembersAdditionToTheConversation(conversationId, CONVERSATION_RESPONSE)
 
         result.shouldSucceed()
 
@@ -83,7 +83,7 @@ class NewConversationMemberHandlerTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun arrange() = this to NewConversationMemberHandlerImpl(
+        fun arrange() = this to NewConversationMembersRepositoryImpl(
             persistMessage, conversationDAO, TestUser.SELF.id,
         )
     }

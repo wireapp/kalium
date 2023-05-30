@@ -35,27 +35,27 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.util.DateTimeUtil
 
 /**
- * Handles the creation of system messages when a conversation is started with several users.
+ * Handles the addition of members to a new conversation and the related system messages when a conversation is started.
  * Either all users are added or some of them could fail to be added.
  *
  * TODO(offline backend branch): And add failed members handling in api v4
  */
-internal interface NewConversationMemberHandler {
-    suspend fun handleMembersJoinedFromResponse(
+internal interface NewConversationMembersRepository {
+    suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
     ): Either<CoreFailure, Unit>
 }
 
-internal class NewConversationMemberHandlerImpl(
+internal class NewConversationMembersRepositoryImpl(
     private val persistMessage: PersistMessageUseCase,
     private val conversationDAO: ConversationDAO,
     private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper()
-) : NewConversationMemberHandler {
+) : NewConversationMembersRepository {
 
-    override suspend fun handleMembersJoinedFromResponse(
+    override suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
     ) = run {
