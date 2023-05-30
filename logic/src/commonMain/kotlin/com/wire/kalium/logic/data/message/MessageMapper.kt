@@ -216,6 +216,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_CREATED -> null
         }
     }
 
@@ -285,6 +286,7 @@ class MessageMapperImpl(
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
     }
 
+    @Suppress("ComplexMethod")
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
         is MessageContent.MemberChange -> {
             val memberUserIdList = this.members.map { it.toDao() }
@@ -311,6 +313,7 @@ class MessageMapperImpl(
         is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
+        is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -376,6 +379,7 @@ class MessageMapperImpl(
         else -> MessageContent.QuotedMessageDetails.Invalid
     }
 
+    @Suppress("ComplexMethod")
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { it.toModel() }
@@ -395,6 +399,7 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
+        is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
     }
 }
 

@@ -56,6 +56,8 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.NewConversationGroupStartedHandler
+import com.wire.kalium.logic.data.conversation.NewConversationGroupStartedHandlerImpl
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
@@ -489,8 +491,15 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
+            newConversationGroupStartedHandler,
             userId,
             selfTeamId
+        )
+
+    private val newConversationGroupStartedHandler: NewConversationGroupStartedHandler
+        get() = NewConversationGroupStartedHandlerImpl(
+            persistMessage,
+            userId
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository

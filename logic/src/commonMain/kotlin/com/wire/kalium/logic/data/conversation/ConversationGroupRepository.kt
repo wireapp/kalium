@@ -79,6 +79,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
+    private val newConversationGroupStartedHandler: NewConversationGroupStartedHandler,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -105,6 +106,8 @@ internal class ConversationGroupRepositoryImpl(
 
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
+                    }.flatMap {
+                        newConversationGroupStartedHandler.handle(conversationEntity)
                     }.flatMap {
                         newConversationMembersRepository.persistMembersAdditionToTheConversation(
                             conversationEntity.id, conversationResponse

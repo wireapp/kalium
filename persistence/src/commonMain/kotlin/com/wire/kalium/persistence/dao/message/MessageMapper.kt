@@ -184,6 +184,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -488,6 +489,8 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
                 messageTimer = conversationMessageTimerChanged
             )
+
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
         }
 
         return createMessageEntity(
