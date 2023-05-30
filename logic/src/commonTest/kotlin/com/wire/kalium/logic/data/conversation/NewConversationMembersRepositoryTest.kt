@@ -42,17 +42,16 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class NewConversationMemberHandlerTest {
+class NewConversationMembersRepositoryTest {
 
     @Test
     fun givenASuccessConversationResponse_whenPersistingMembers_ThenShouldSucceedAndCreateASystemMessage() = runTest {
         val conversationId = TestConversation.ENTITY_ID
-        val membersAdded = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, handler) = Arrangement()
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = handler.handleMembersJoinedFromResponse(conversationId, CONVERSATION_RESPONSE, membersAdded)
+        val result = handler.persistMembersAdditionToTheConversation(conversationId, CONVERSATION_RESPONSE)
 
         result.shouldSucceed()
 
@@ -64,7 +63,7 @@ class NewConversationMemberHandlerTest {
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
-                (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
+                (it.content as? MessageContent.MemberChange.CreationAdded)?.members?.contains(TestUser.OTHER.id) == true
             })
             .wasInvoked(once)
     }
@@ -84,7 +83,7 @@ class NewConversationMemberHandlerTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun arrange() = this to NewConversationMemberHandlerImpl(
+        fun arrange() = this to NewConversationMembersRepositoryImpl(
             persistMessage, conversationDAO, TestUser.SELF.id,
         )
     }
@@ -94,7 +93,7 @@ class NewConversationMemberHandlerTest {
             "creator",
             ConversationMembersResponse(
                 ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
-                emptyList()
+                listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), "wire_member"))
             ),
             ConversationGroupRepositoryTest.GROUP_NAME,
             TestConversation.NETWORK_ID,

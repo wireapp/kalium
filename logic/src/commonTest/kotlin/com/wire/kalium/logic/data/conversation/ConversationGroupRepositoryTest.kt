@@ -109,8 +109,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -142,8 +142,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -181,8 +181,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything(), anything())
                 .wasInvoked(once)
 
-            verify(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -685,7 +685,7 @@ class ConversationGroupRepositoryTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
-        val newConversationMemberHandler = mock(NewConversationMemberHandler::class)
+        val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
 
         @Mock
         val newConversationGroupStartedHandler = mock(NewConversationGroupStartedHandler::class)
@@ -701,7 +701,7 @@ class ConversationGroupRepositoryTest {
                 memberLeaveEventHandler,
                 conversationDAO,
                 conversationApi,
-                newConversationMemberHandler,
+                newConversationMembersRepository,
                 newConversationGroupStartedHandler,
                 TestUser.SELF.id,
                 selfTeamIdProvider
@@ -1001,8 +1001,8 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withSuccessfulNewConversationMemberHandled() = apply {
-            given(newConversationMemberHandler)
-                .suspendFunction(newConversationMemberHandler::handleMembersJoinedFromResponse)
+            given(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

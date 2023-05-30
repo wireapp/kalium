@@ -147,7 +147,7 @@ class GetMessageAssetUseCaseTest {
         // Then
         verify(arrangement.assetDataSource)
             .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
-            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), eq(true))
+            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(true))
             .wasInvoked(once)
         verify(arrangement.updateAssetMessageDownloadStatus)
             .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
@@ -170,7 +170,7 @@ class GetMessageAssetUseCaseTest {
         // Then
         verify(arrangement.assetDataSource)
             .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
-            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), eq(false))
+            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(false))
             .wasInvoked(once)
         verify(arrangement.updateAssetMessageDownloadStatus)
             .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
@@ -262,6 +262,7 @@ class GetMessageAssetUseCaseTest {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(
+                    anything(),
                     anything(),
                     anything(),
                     anything(),

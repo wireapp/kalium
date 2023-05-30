@@ -58,8 +58,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationGroupStartedHandler
 import com.wire.kalium.logic.data.conversation.NewConversationGroupStartedHandlerImpl
-import com.wire.kalium.logic.data.conversation.NewConversationMemberHandler
-import com.wire.kalium.logic.data.conversation.NewConversationMemberHandlerImpl
+import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
+import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
@@ -490,7 +490,7 @@ class UserSessionScope internal constructor(
             memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
-            newConversationMemberHandler,
+            newConversationMembersRepository,
             newConversationGroupStartedHandler,
             userId,
             selfTeamId
@@ -502,8 +502,8 @@ class UserSessionScope internal constructor(
             userId
         )
 
-    private val newConversationMemberHandler: NewConversationMemberHandler
-        get() = NewConversationMemberHandlerImpl(
+    private val newConversationMembersRepository: NewConversationMembersRepository
+        get() = NewConversationMembersRepositoryImpl(
             persistMessage,
             userStorage.database.conversationDAO,
             userId

@@ -78,7 +78,7 @@ internal class ConversationGroupRepositoryImpl(
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
-    private val newConversationMemberHandler: NewConversationMemberHandler,
+    private val newConversationMembersRepository: NewConversationMembersRepository,
     private val newConversationGroupStartedHandler: NewConversationGroupStartedHandler,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
@@ -109,8 +109,8 @@ internal class ConversationGroupRepositoryImpl(
                     }.flatMap {
                         newConversationGroupStartedHandler.handle(conversationEntity)
                     }.flatMap {
-                        newConversationMemberHandler.handleMembersJoinedFromResponse(
-                            conversationEntity.id, conversationResponse, usersList
+                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                            conversationEntity.id, conversationResponse
                         ).flatMap {
                             when (protocol) {
                                 is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
