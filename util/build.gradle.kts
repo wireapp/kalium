@@ -48,5 +48,10 @@ kotlin {
                 implementation(libs.annotation)
             }
         }
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.apacheTika)
+            }
+        }
     }
 }
