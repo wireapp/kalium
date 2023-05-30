@@ -24,7 +24,10 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -36,7 +39,7 @@ import kotlinx.coroutines.launch
  */
 interface ObserveAllServicesUseCase {
 
-    suspend operator fun invoke(scope: CoroutineScope): Flow<List<ServiceDetails>>
+    suspend operator fun invoke(): Flow<List<ServiceDetails>>
 }
 
 class ObserveAllServicesUseCaseImpl internal constructor(
@@ -45,18 +48,21 @@ class ObserveAllServicesUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : ObserveAllServicesUseCase {
 
-    override suspend fun invoke(scope: CoroutineScope): Flow<List<ServiceDetails>> {
+    override suspend fun invoke(): Flow<List<ServiceDetails>> = flow {
+        val scope = CoroutineScope(currentCoroutineContext())
         scope.launch {
             selfTeamIdProvider().getOrNull()?.let { teamId ->
                 teamRepository.syncServices(teamId = teamId)
             }
         }
 
-        return serviceRepository.observeAllServices().map { either ->
-            either.fold(
-                { emptyList() },
-                { it }
-            )
-        }
+        emitAll(
+            serviceRepository.observeAllServices().map { either ->
+                either.fold(
+                    { emptyList() },
+                    { it }
+                )
+            }
+        )
     }
 }

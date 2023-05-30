@@ -27,12 +27,10 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -51,15 +49,13 @@ class ObserveAllServicesUseCaseTest {
             serviceDetails.copy(id = ServiceId("id2", "providerId"))
         )
 
-        val scope = CoroutineScope(TestKaliumDispatcher.main)
-
         val (_, observeAllServicesUseCase) = Arrangement()
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
             .withSyncingServices()
             .withObserveAllServices(flowOf(Either.Right(expected)))
             .arrange()
 
-        observeAllServicesUseCase(scope).first().also {
+        observeAllServicesUseCase().first().also {
             assertEquals(expected, it)
         }
     }
@@ -74,9 +70,7 @@ class ObserveAllServicesUseCaseTest {
             .withObserveAllServices(flowOf(Either.Left(error)))
             .arrange()
 
-        val scope = CoroutineScope(TestKaliumDispatcher.main)
-
-        observeAllServicesUseCase(scope).first().also {
+        observeAllServicesUseCase().first().also {
             assertEquals(emptyList<ServiceDetails>(), it)
         }
     }
