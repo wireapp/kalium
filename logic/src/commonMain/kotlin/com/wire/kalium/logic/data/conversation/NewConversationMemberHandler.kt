@@ -44,7 +44,6 @@ internal interface NewConversationMemberHandler {
     suspend fun handleMembersJoinedFromResponse(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
-        membersAdded: List<UserId>
     ): Either<CoreFailure, Unit>
 }
 
@@ -59,12 +58,11 @@ internal class NewConversationMemberHandlerImpl(
     override suspend fun handleMembersJoinedFromResponse(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
-        membersAdded: List<UserId>
     ) = run {
         persistMembers(conversationResponse).flatMap {
             val messageStartedWithMembers = Message.System(
                 uuid4().toString(),
-                MessageContent.MemberChange.CreationAdded(membersAdded),
+                MessageContent.MemberChange.CreationAdded(mapOtherMembersIdFromResponse(conversationResponse)),
                 conversationId.toModel(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
@@ -86,5 +84,8 @@ internal class NewConversationMemberHandlerImpl(
             )
         }
     }
+
+    private fun mapOtherMembersIdFromResponse(conversationResponse: ConversationResponse): List<UserId> =
+        memberMapper.fromApiModel(conversationResponse.members).otherMembers.map { it.id }
 
 }

@@ -106,17 +106,16 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        newConversationMemberHandler.handleMembersJoinedFromResponse(
-                            conversationEntity.id, conversationResponse, usersList
-                        ).flatMap {
-                            when (protocol) {
-                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                                is Conversation.ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup(
-                                    groupID = protocol.groupId,
-                                    members = usersList + selfUserId
-                                )
+                        newConversationMemberHandler.handleMembersJoinedFromResponse(conversationEntity.id, conversationResponse)
+                            .flatMap {
+                                when (protocol) {
+                                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                                    is Conversation.ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup(
+                                        groupID = protocol.groupId,
+                                        members = usersList + selfUserId
+                                    )
+                                }
                             }
-                        }
                     }.flatMap {
                         wrapStorageRequest {
                             conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
