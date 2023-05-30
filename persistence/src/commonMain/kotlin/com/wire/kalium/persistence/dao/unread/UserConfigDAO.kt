@@ -44,21 +44,21 @@ internal class UserConfigDAOImpl internal constructor(
         teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
     ) {
         metadataDAO.putSerializable(
-            SELF_DELETING_MESSAGES,
-            teamSettingsSelfDeletionStatusEntity,
+            key = SELF_DELETING_MESSAGES,
+            value = teamSettingsSelfDeletionStatusEntity,
             TeamSettingsSelfDeletionStatusEntity.serializer()
         )
     }
 
     override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified() {
-        val newValue: TeamSettingsSelfDeletionStatusEntity =
-            metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
-                ?.copy(isStatusChanged = false) ?: return
-        metadataDAO.putSerializable(
-            SELF_DELETING_MESSAGES,
-            newValue,
-            TeamSettingsSelfDeletionStatusEntity.serializer()
-        )
+        metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+            ?.copy(isStatusChanged = false)?.let { newValue ->
+                metadataDAO.putSerializable(
+                    SELF_DELETING_MESSAGES,
+                    newValue,
+                    TeamSettingsSelfDeletionStatusEntity.serializer()
+                )
+            }
     }
 
     override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =

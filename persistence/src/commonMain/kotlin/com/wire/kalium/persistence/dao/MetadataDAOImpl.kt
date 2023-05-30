@@ -25,10 +25,8 @@ import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlin.coroutines.CoroutineContext
@@ -53,7 +51,7 @@ class MetadataDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrNull()
             .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Lazily, 1)
+//            .shareIn(databaseScope, SharingStarted.Lazily, 1)
     }
 
     override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
@@ -81,10 +79,15 @@ class MetadataDAOImpl internal constructor(
     }
 
     override suspend fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
-        return valueByKeyFlow(key).map { jsonString ->
-            jsonString?.let {
-                JsonSerializer().decodeFromString(kSerializer, it)
+        return metadataQueries.selectValueByKey(key)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { jsonString ->
+                jsonString?.let {
+                    JsonSerializer().decodeFromString(kSerializer, it)
+                }
             }
-        }
+            .distinctUntilChanged()
+//            .shareIn(databaseScope, SharingStarted.Lazily, 1)
     }
 }

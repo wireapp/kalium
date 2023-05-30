@@ -17,17 +17,18 @@
  */
 package com.wire.kalium.persistence.config
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
@@ -82,9 +83,40 @@ class UserConfigDAOTest : BaseDatabaseTest() {
             isStatusChanged = false
         )
         userConfigDAO.setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
-        assertTrue(
-            userConfigDAO.observeTeamSettingsSelfDeletingStatus().first()?.selfDeletionTimerEntity is SelfDeletionTimerEntity.Disabled
-        )
-        assertFalse(userConfigDAO.observeTeamSettingsSelfDeletingStatus().first()?.isStatusChanged!!)
+
+        userConfigDAO.getTeamSettingsSelfDeletionStatus().also {
+            assertIs<SelfDeletionTimerEntity.Disabled>(it?.selfDeletionTimerEntity)
+            assertFalse(it?.isStatusChanged!!)
+        }
+    }
+
+    @Test
+    fun givenValidEnabledTeamSettingsSelfDeletingStatus_whenObservingItsValue_thenItShouldBeRetrievedCorrectly() = runTest {
+        userConfigDAO.observeTeamSettingsSelfDeletingStatus().test {
+            val firstNullValue = awaitItem()
+            assertNull(firstNullValue)
+
+            val expectedFirstValue = TeamSettingsSelfDeletionStatusEntity(
+                selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled(ZERO),
+                isStatusChanged = false
+            )
+
+            userConfigDAO.setTeamSettingsSelfDeletionStatus(expectedFirstValue)
+            val firstValue = awaitItem()
+            assertEquals(expectedFirstValue, firstValue)
+
+            val expectedSecondValue = TeamSettingsSelfDeletionStatusEntity(
+                selfDeletionTimerEntity = SelfDeletionTimerEntity.Disabled,
+                isStatusChanged = true
+            )
+            userConfigDAO.setTeamSettingsSelfDeletionStatus(expectedSecondValue)
+            val secondValue = awaitItem()
+            assertEquals(expectedSecondValue, secondValue)
+
+            val thirdExpectedValue = expectedSecondValue.copy(isStatusChanged = false)
+            userConfigDAO.setTeamSettingsSelfDeletionStatus(thirdExpectedValue)
+            val thirdValue = awaitItem()
+            assertEquals(thirdExpectedValue, thirdValue)
+        }
     }
 }
