@@ -200,8 +200,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             .with(any())
             .wasInvoked(exactly = twice)
         verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendPendingMessage)
-            .with(eq(conversationId), any())
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(any(), any())
             .wasInvoked(exactly = once)
     }
 

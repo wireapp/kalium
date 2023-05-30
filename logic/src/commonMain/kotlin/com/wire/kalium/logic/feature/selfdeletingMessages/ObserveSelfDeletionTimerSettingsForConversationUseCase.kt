@@ -56,7 +56,7 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
                 }, {
                     when (it.enforcedSelfDeletionTimer) {
                         TeamSelfDeleteTimer.Disabled -> SelfDeletionTimer.Disabled
-                        is TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
+                        TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
                         is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
                             it.enforcedSelfDeletionTimer.enforcedDuration
                         )

@@ -21,7 +21,6 @@ import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 
-
 interface UserConfigDAO {
 
     suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity?

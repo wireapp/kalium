@@ -40,7 +40,7 @@ sealed class SelfDeletionTimer {
         data class ByGroup(val duration: Duration) : Enforced(duration)
     }
 
-    fun toDuration(): Duration = when(this) {
+    fun toDuration(): Duration = when (this) {
         is Enabled -> userDuration
         is Enforced -> enforcedDuration
         is Disabled -> Duration.ZERO
@@ -81,6 +81,6 @@ data class TeamSettingsSelfDeletionStatus(
 
 sealed interface TeamSelfDeleteTimer {
     object Disabled : TeamSelfDeleteTimer
-    data class Enabled(val userDuration: Duration) : TeamSelfDeleteTimer
+    object Enabled : TeamSelfDeleteTimer
     data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
 }

@@ -18,8 +18,6 @@
 
 package com.wire.kalium.persistence.config
 
-import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow

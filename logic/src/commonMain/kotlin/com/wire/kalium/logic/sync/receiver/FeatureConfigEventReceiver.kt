@@ -169,7 +169,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             )
         } else {
             val storedTeamSettingsSelfDeletionStatus = userConfigRepository.getTeamSettingsSelfDeletionStatus().fold({
-                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO))
+                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled)
             }, {
                 it
             })
@@ -177,7 +177,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
             val newEnforcedTimer: TeamSelfDeleteTimer = when {
                 selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
-                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled(ZERO)
+                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
                 else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(

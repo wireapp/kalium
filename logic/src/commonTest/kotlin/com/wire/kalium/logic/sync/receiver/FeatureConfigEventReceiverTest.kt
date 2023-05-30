@@ -185,7 +185,7 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenNewTeamSettingsSelfDeletingDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
         val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO),
+            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled,
             hasFeatureChanged = false
         )
         val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -211,7 +211,7 @@ class FeatureConfigEventReceiverTest {
     fun givenNewSelfDeletingMessagesEnablingEventWithNoEnforcedTimeout_whenProcessingEvent_ThenEnableFeatureOnUserConfigRepository() =
         runTest {
             val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-                enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO),
+                enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled,
                 hasFeatureChanged = false
             )
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
@@ -227,7 +227,6 @@ class FeatureConfigEventReceiverTest {
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
                     it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enabled
-                            && (it.enforcedSelfDeletionTimer as TeamSelfDeleteTimer.Enabled).userDuration == ZERO
                 })
                 .wasInvoked(once)
         }

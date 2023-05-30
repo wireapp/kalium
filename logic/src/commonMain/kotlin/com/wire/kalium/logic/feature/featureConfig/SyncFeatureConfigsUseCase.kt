@@ -149,7 +149,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
             val selfDeletionTimer: TeamSelfDeleteTimer = when {
                 selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
-                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled(ZERO)
+                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
                 else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(

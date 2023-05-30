@@ -81,7 +81,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val storedTeamSettingsSelfDeletionStatus = TeamSettingsSelfDeletionStatus(
             hasFeatureChanged = null,
-            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO)
+            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled
         )
         val userStoredConversationStatus = TEST_CONVERSION.copy(
             messageTimer = conversationSettingsDuration,
@@ -144,7 +144,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val conversationId = ConversationId("conversationId", "domain")
         val storedTeamSettingsSelfDeletionStatus = TeamSettingsSelfDeletionStatus(
             hasFeatureChanged = null,
-            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO)
+            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled
         )
         val conversationDuration = 1.toDuration(DurationUnit.HOURS)
         val storedConversationStatus = TEST_CONVERSION.copy(
@@ -175,7 +175,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             Either.Right(
                 TeamSettingsSelfDeletionStatus(
                     hasFeatureChanged = null,
-                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled(ZERO)
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled
                 )
             )
         )

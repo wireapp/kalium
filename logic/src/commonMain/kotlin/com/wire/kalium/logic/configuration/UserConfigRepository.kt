@@ -195,9 +195,10 @@ class UserConfigDataSource(
         }
     }
 
-    override suspend fun setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus): Either<StorageFailure, Unit> =
+    override suspend fun setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus):
+            Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            val teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
+            val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
                 selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
                 isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
             )
