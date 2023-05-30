@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
@@ -191,10 +191,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
             .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.EnabledAll,
-                    isStatusChanged = false
-                )
+                status = true,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -227,10 +225,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
             .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.Disabled,
-                    isStatusChanged = false
-                )
+                status = false,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -248,10 +244,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
             .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.Disabled,
-                    isStatusChanged = false
-                )
+                status = false,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -273,10 +267,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
             .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.EnabledAll,
-                    isStatusChanged = false
-                )
+                status = true,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -409,53 +401,14 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenRemoteFeatureConfigsEnables_whenLocalIsEnableSome_thenIsStatusChangedIsFalse() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
-            )
-            .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")),
-                    isStatusChanged = false
-                )
-            )
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
-            assertFalse { it.isStatusChanged!! }
-        }
-    }
-
-    @Test
-    fun givenRemoteFeatureConfigsDisble_whenLocalIsEnableSome_thenIsStatusChangedIsTrue() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
-            )
-            .withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")),
-                    isStatusChanged = false
-                )
-            )
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertTrue { it.isStatusChanged!! }
-        }
-    }
-
-    @Test
     fun givenRemoteConfigIsEnable_whenBuildConfigIsNoRestriction_thenStateIsEnableAll() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
             .arrange()
@@ -472,6 +425,10 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
             .arrange()
@@ -623,16 +580,18 @@ class SyncFeatureConfigsUseCaseTest {
 
     private class Arrangement {
 
+        private val inMemoryStorage = inMemoryUserConfigStorage()
+
         var kaliumConfigs = KaliumConfigs()
 
-        lateinit var userConfigRepository: UserConfigRepository
+        var userConfigRepository: UserConfigRepository = UserConfigDataSource(
+            inMemoryStorage,
+            kaliumConfigs
+        )
             private set
 
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
-
-        @Mock
-        val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
 
         @Mock
         val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
@@ -640,24 +599,14 @@ class SyncFeatureConfigsUseCaseTest {
         @Mock
         val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
 
-        private val syncFeatureConfigsUseCase
-            get() = SyncFeatureConfigsUseCaseImpl(
-                userConfigRepository,
-                featureConfigRepository,
-                isFileSharingEnabledUseCase,
-                isGuestRoomLinkFeatureEnabled,
-                kaliumConfigs,
-                SELF_USER_ID
-            )
+        private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
         init {
             withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
-            withLocalSharingEnabledReturning(
-                FileSharingStatus(
-                    state = FileSharingStatus.Value.EnabledAll,
-                    isStatusChanged = false
-                )
-            )
+//            withLocalSharingEnabledReturning(
+//                status = true,
+//                isStatusChanged = false
+//            )
             withGuestRoomLinkEnabledReturning(
                 GuestRoomLinkStatus(
                     isGuestRoomLinkEnabled = true,
@@ -670,6 +619,10 @@ class SyncFeatureConfigsUseCaseTest {
             state: BuildFileRestrictionState
         ) = apply {
             kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
+            userConfigRepository = UserConfigDataSource(
+                inMemoryStorage,
+                kaliumConfigs
+            )
         }
 
         fun withRemoteFeatureConfigsSucceeding(featureConfigModel: FeatureConfigModel) =
@@ -682,11 +635,13 @@ class SyncFeatureConfigsUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withLocalSharingEnabledReturning(fileSharingStatus: FileSharingStatus) = apply {
-            given(isFileSharingEnabledUseCase)
-                .function(isFileSharingEnabledUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(fileSharingStatus)
+        fun withLocalSharingEnabledReturning(
+            status: Boolean,
+            isStatusChanged: Boolean?
+        ) = apply {
+            userConfigRepository.setFileSharingStatus(
+                status, isStatusChanged
+            )
         }
 
         fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
@@ -707,11 +662,14 @@ class SyncFeatureConfigsUseCaseTest {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 
-        fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCaseImpl> {
-            userConfigRepository = UserConfigDataSource(
-                inMemoryUserConfigStorage(),
+        fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
+            syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
+                userConfigRepository,
+                featureConfigRepository,
+                isGuestRoomLinkFeatureEnabled,
                 userConfigDAO,
-                kaliumConfigs
+                kaliumConfigs,
+                SELF_USER_ID
             )
             return this to syncFeatureConfigsUseCase
         }
