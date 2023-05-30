@@ -144,7 +144,7 @@ sealed class SelfDeletionTimerEntity {
 
     @Serializable
     @SerialName("enabled")
-    data class Enabled(val userDuration: Duration) : SelfDeletionTimerEntity()
+    object Enabled : SelfDeletionTimerEntity()
 
     @Serializable
     @SerialName("enforced")

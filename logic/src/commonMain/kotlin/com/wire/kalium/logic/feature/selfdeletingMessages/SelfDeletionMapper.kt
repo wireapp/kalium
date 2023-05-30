@@ -18,12 +18,11 @@
 package com.wire.kalium.logic.feature.selfdeletingMessages
 
 import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
-import kotlin.time.Duration.Companion.ZERO
 
 object SelfDeletionMapper { // TODO rename and refactor
     fun TeamSelfDeleteTimer.toSelfDeletionTimerEntity(): SelfDeletionTimerEntity = when (this) {
         is TeamSelfDeleteTimer.Disabled -> SelfDeletionTimerEntity.Disabled
-        is TeamSelfDeleteTimer.Enabled -> SelfDeletionTimerEntity.Enabled(ZERO)
+        is TeamSelfDeleteTimer.Enabled -> SelfDeletionTimerEntity.Enabled
         is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimerEntity.Enforced(enforcedDuration)
     }
 

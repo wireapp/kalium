@@ -30,7 +30,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,7 +48,7 @@ class UserConfigDAOTest : BaseDatabaseTest() {
     @Test
     fun givenValidEnabledTeamSettingsSelfDeletingStatus_whenGettingItsValue_thenItShouldBeRetrievedCorrectly() = runTest {
         val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
-            selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled(ZERO),
+            selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled,
             isStatusChanged = false
         )
         userConfigDAO.setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
@@ -97,7 +96,7 @@ class UserConfigDAOTest : BaseDatabaseTest() {
             assertNull(firstNullValue)
 
             val expectedFirstValue = TeamSettingsSelfDeletionStatusEntity(
-                selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled(ZERO),
+                selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled,
                 isStatusChanged = false
             )
 
