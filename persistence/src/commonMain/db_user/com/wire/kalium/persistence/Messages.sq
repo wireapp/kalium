@@ -615,7 +615,9 @@ WHERE message_id IN (
 
 promoteMessageToSentUpdatingServerTime {
 UPDATE Message
-SET creation_date = :server_creation_date, status = 'SENT'
+SET
+    creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
+    status = 'SENT'
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
 UPDATE OR IGNORE Message
