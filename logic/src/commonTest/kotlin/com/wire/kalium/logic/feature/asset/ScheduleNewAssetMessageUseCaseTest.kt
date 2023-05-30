@@ -199,9 +199,13 @@ class ScheduleNewAssetMessageUseCaseTest {
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = twice)
+        verify(arrangement.assetDataSource)
+            .suspendFunction(arrangement.assetDataSource::uploadAndPersistPrivateAsset)
+            .with(any(), any(),any(), any())
+            .wasInvoked(exactly = once)
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -458,7 +462,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
-                .suspendFunction(messageSender::sendPendingMessage)
+                .suspendFunction(messageSender::sendMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             given(updateUploadStatus)
