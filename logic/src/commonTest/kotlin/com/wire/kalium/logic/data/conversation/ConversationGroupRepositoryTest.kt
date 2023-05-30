@@ -91,6 +91,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
@@ -123,6 +124,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
@@ -156,6 +158,7 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
@@ -685,6 +688,9 @@ class ConversationGroupRepositoryTest {
         val newConversationMemberHandler = mock(NewConversationMemberHandler::class)
 
         @Mock
+        val newConversationGroupStartedHandler = mock(NewConversationGroupStartedHandler::class)
+
+        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         val conversationGroupRepository =
@@ -696,6 +702,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMemberHandler,
+                newConversationGroupStartedHandler,
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -984,6 +991,13 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
                 .thenReturn(GUEST_ROOM_LINK_FLOW)
+        }
+
+        fun withSuccessfulNewConversationGroupStartedHandled() = apply {
+            given(newConversationGroupStartedHandler)
+                .suspendFunction(newConversationGroupStartedHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withSuccessfulNewConversationMemberHandled() = apply {

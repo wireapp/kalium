@@ -95,5 +95,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationMessageTimerChanged -> false
             is MessageContent.MemberChange.CreationAdded -> false
             is MessageContent.MemberChange.FailedToAdd -> false
+            is MessageContent.ConversationCreated -> false
         }
 }

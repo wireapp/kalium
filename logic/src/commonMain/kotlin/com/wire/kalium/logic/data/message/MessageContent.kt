@@ -237,6 +237,7 @@ sealed class MessageContent {
     object CryptoSessionReset : System()
 
     object HistoryLost : System()
+    object ConversationCreated : System()
 }
 
 sealed class MessagePreviewContent {
