@@ -78,6 +78,8 @@ class SendTextMessageUseCase internal constructor(
                 is SelfDeletionTimer.Enforced.ByGroup -> it.duration
                 is SelfDeletionTimer.Enforced.ByTeam -> it.duration
             }
+        }.let {
+            if (it == Duration.ZERO) null else it
         }
 
         provideClientId().flatMap { clientId ->
