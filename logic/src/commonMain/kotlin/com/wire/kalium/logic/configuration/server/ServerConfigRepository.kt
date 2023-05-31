@@ -22,7 +22,6 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -40,9 +39,12 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
 internal interface ServerConfigRepository {
@@ -121,7 +123,7 @@ internal class ServerConfigDataSource(
     private val developmentApiEnabled: Boolean,
     private val backendMetaDataUtil: BackendMetaDataUtil = BackendMetaDataUtilImpl,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ServerConfigRepository {
 
     override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> =
@@ -145,42 +147,44 @@ internal class ServerConfigDataSource(
         })
 
     override suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest {
-            // check if such config is already inserted
-            val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
-            if (storedConfigId != null) {
-                // if already exists then just update it
-                dao.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
-                if (metadata.federation) dao.setFederationToTrue(storedConfigId)
-                storedConfigId
-            } else {
-                // otherwise insert new config
-                val newId = uuid4().toString()
-                dao.insert(
-                    ServerConfigurationDAO.InsertData(
-                        id = newId,
-                        apiBaseUrl = links.api,
-                        accountBaseUrl = links.accounts,
-                        webSocketBaseUrl = links.webSocket,
-                        blackListUrl = links.blackList,
-                        teamsUrl = links.teams,
-                        websiteUrl = links.website,
-                        isOnPremises = links.isOnPremises,
-                        title = links.title,
-                        federation = metadata.federation,
-                        domain = metadata.domain,
-                        commonApiVersion = metadata.commonApiVersion.version,
-                        apiProxyHost = links.apiProxy?.host,
-                        apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
-                        apiProxyPort = links.apiProxy?.port
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                // check if such config is already inserted
+                val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
+                if (storedConfigId != null) {
+                    // if already exists then just update it
+                    dao.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
+                    if (metadata.federation) dao.setFederationToTrue(storedConfigId)
+                    storedConfigId
+                } else {
+                    // otherwise insert new config
+                    val newId = uuid4().toString()
+                    dao.insert(
+                        ServerConfigurationDAO.InsertData(
+                            id = newId,
+                            apiBaseUrl = links.api,
+                            accountBaseUrl = links.accounts,
+                            webSocketBaseUrl = links.webSocket,
+                            blackListUrl = links.blackList,
+                            teamsUrl = links.teams,
+                            websiteUrl = links.website,
+                            isOnPremises = links.isOnPremises,
+                            title = links.title,
+                            federation = metadata.federation,
+                            domain = metadata.domain,
+                            commonApiVersion = metadata.commonApiVersion.version,
+                            apiProxyHost = links.apiProxy?.host,
+                            apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
+                            apiProxyPort = links.apiProxy?.port
+                        )
                     )
-                )
-                newId
+                    newId
+                }
+            }.flatMap { storedConfigId ->
+                wrapStorageRequest { dao.configById(storedConfigId) }
+            }.map {
+                serverConfigMapper.fromEntity(it)
             }
-        }.flatMap { storedConfigId ->
-            wrapStorageRequest { dao.configById(storedConfigId) }
-        }.map {
-            serverConfigMapper.fromEntity(it)
         }
 
     override suspend fun storeConfig(

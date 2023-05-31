@@ -524,7 +524,9 @@ class UserSessionScope internal constructor(
         )
 
     private val serviceRepository: ServiceRepository
-        get() = ServiceDataSource(serviceDAO = userStorage.database.serviceDAO)
+        get() = ServiceDataSource(
+            serviceDAO = userStorage.database.serviceDAO
+        )
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
@@ -1222,15 +1224,17 @@ class UserSessionScope internal constructor(
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
-            userConfigRepository, featureConfigRepository, isFileSharingEnabled, getGuestRoomLinkFeature, kaliumConfigs, userId
+            userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val service: ServiceScope
         get() = ServiceScope(
-        serviceRepository
-    )
+            serviceRepository,
+            teamRepository,
+            selfTeamId
+        )
 
     val calls: CallsScope
         get() = CallsScope(

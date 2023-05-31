@@ -18,9 +18,13 @@
 package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 
 class ServiceScope internal constructor(
-    private val serviceRepository: ServiceRepository
+    private val serviceRepository: ServiceRepository,
+    private val teamRepository: TeamRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
 
     val getServiceById: GetServiceByIdUseCase
@@ -30,6 +34,18 @@ class ServiceScope internal constructor(
 
     val observeIsServiceMember: ObserveIsServiceMemberUseCase
         get() = ObserveIsServiceMemberUseCaseImpl(
+            serviceRepository = serviceRepository
+        )
+
+    val observeAllServices: ObserveAllServicesUseCase
+        get() = ObserveAllServicesUseCaseImpl(
+            serviceRepository = serviceRepository,
+            teamRepository = teamRepository,
+            selfTeamIdProvider = selfTeamIdProvider
+        )
+
+    val searchServicesByName: SearchServicesByNameUseCase
+        get() = SearchServicesByNameUseCaseImpl(
             serviceRepository = serviceRepository
         )
 }
