@@ -23,13 +23,12 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
-import kotlinx.datetime.Instant
 
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
     fun fromDTO(data: FeatureConfigData.MLS?): MLSModel
-    fun fromDTO(data: FeatureConfigData.MLSMigration?): MLSMigrationModel
+    fun fromDTO(data: FeatureConfigData.MLSMigration): MLSMigrationModel
     fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel
     fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
     fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
@@ -61,7 +60,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
                 mlsModel = fromDTO(mls),
-                mlsMigrationModel = fromDTO(mlsMigration)
+                mlsMigrationModel = mlsMigration?.let { fromDTO(it) }
             )
         }
 
@@ -83,21 +82,13 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     @Suppress("MagicNumber")
-    override fun fromDTO(data: FeatureConfigData.MLSMigration?): MLSMigrationModel =
-        data?.let {
-            MLSMigrationModel(
-                it.config.startTime,
-                it.config.finaliseRegardlessAfter,
-                it.config.usersThreshold,
-                it.config.clientsThreshold,
-                fromDTO(it.status)
-            )
-        } ?: MLSMigrationModel(
-            Instant.DISTANT_FUTURE,
-            Instant.DISTANT_FUTURE,
-            100,
-            100,
-            Status.DISABLED
+    override fun fromDTO(data: FeatureConfigData.MLSMigration): MLSMigrationModel =
+        MLSMigrationModel(
+            data.config.startTime,
+            data.config.finaliseRegardlessAfter,
+            data.config.usersThreshold,
+            data.config.clientsThreshold,
+            fromDTO(data.status)
         )
 
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =

@@ -69,13 +69,13 @@ class FeatureConfigMapperTest {
     fun givenApiModelResponse_whenMappingMLSMigrationStatusToModel_thenShouldBeMappedCorrectly() {
         val (arrangement, mapper) = Arrangement().arrange()
 
-        val model = mapper.fromDTO(arrangement.featureConfigResponse.mlsMigration)
+        val model = arrangement.featureConfigResponse.mlsMigration?.let { mapper.fromDTO(it) }
 
-        assertEquals(Status.ENABLED, model.status)
-        assertEquals(Instant.DISTANT_FUTURE, model.startTime)
-        assertEquals(Instant.DISTANT_FUTURE, model.endTime)
-        assertEquals(100, model.usersThreshold)
-        assertEquals(80, model.clientsThreshold)
+        assertEquals(Status.ENABLED, model?.status)
+        assertEquals(Instant.DISTANT_FUTURE, model?.startTime)
+        assertEquals(Instant.DISTANT_FUTURE, model?.endTime)
+        assertEquals(100, model?.usersThreshold)
+        assertEquals(80, model?.clientsThreshold)
     }
 
     @Test

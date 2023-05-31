@@ -36,7 +36,7 @@ data class FeatureConfigModel(
     val ssoModel: ConfigsStatusModel,
     val validateSAMLEmailsModel: ConfigsStatusModel,
     val mlsModel: MLSModel,
-    val mlsMigrationModel: MLSMigrationModel
+    val mlsMigrationModel: MLSMigrationModel?
 )
 
 enum class Status {
