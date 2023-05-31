@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -48,15 +48,15 @@ class MLSMigratorImpl(
 ) : MLSMigrator {
 
     override suspend fun migrateProteusConversations(): Either<CoreFailure, Unit> =
-        conversationRepository.getConversationList().flatMap {
-            it.first().filter { conversation ->
-                conversation.protocol is Conversation.ProtocolInfo.Proteus &&
-                    conversation.type == Conversation.Type.GROUP &&
-                    conversation.isTeamGroup() &&
-                    conversation.teamId == selfTeamIdProvider().getOrNull()
-            }.foldToEitherWhileRight(Unit) { conversation, _ ->
-                migrate(conversation.id)
-            }
+        selfTeamIdProvider().flatMap {
+            it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+        }.flatMap { teamId ->
+            conversationRepository.getProteusTeamConversations(teamId)
+                .flatMap {
+                    it.first().foldToEitherWhileRight(Unit) { conversation, _ ->
+                        migrate(conversation.id)
+                    }
+                }
         }
 
     private suspend fun migrate(conversationId: ConversationId): Either<CoreFailure, Unit> {

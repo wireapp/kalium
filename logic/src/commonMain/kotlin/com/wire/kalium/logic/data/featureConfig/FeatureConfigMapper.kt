@@ -61,13 +61,6 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
                 mlsModel = fromDTO(mls),
                 mlsMigrationModel = mlsMigration?.let { fromDTO(it) }
-                    ?: MLSMigrationModel( // TODO jacob debugging values while not implemented on BE
-                        Instant.DISTANT_PAST,
-                        Instant.DISTANT_PAST,
-                        100,
-                        100,
-                        Status.ENABLED
-                    )
             )
         }
 

@@ -62,7 +62,7 @@ class MLSMigratorTest {
         )
 
         val (arrangement, migrator) = Arrangement()
-            .withGetConversationListReturning(listOf(conversation))
+            .withGetProteusTeamConversationsReturning(listOf(conversation))
             .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_SUCCESS)
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
@@ -95,7 +95,7 @@ class MLSMigratorTest {
         )
 
         val (arrangement, migrator) = Arrangement()
-            .withGetConversationListReturning(listOf(conversation))
+            .withGetProteusTeamConversationsReturning(listOf(conversation))
             .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_UNCHANGED)
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
@@ -128,7 +128,7 @@ class MLSMigratorTest {
         )
 
         val (arrangement, migrator) = Arrangement()
-            .withGetConversationListReturning(listOf(conversation))
+            .withGetProteusTeamConversationsReturning(listOf(conversation))
             .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_UNCHANGED)
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
@@ -137,43 +137,6 @@ class MLSMigratorTest {
 
         val result = migrator.migrateProteusConversations()
         result.shouldSucceed()
-    }
-
-    @Test
-    fun givenNonTeamConversation_whenMigrating_thenConversationIsIgnored() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
-            teamId = null
-        )
-
-        val (arrangement, migrator) = Arrangement()
-            .withGetConversationListReturning(listOf(conversation))
-            .arrange()
-
-        migrator.migrateProteusConversations()
-
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::updateProtocol)
-            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MIXED))
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenOneToOneConversation_whenMigrating_thenConversationIsIgnored() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.ONE_ON_ONE
-        )
-
-        val (arrangement, migrator) = Arrangement()
-            .withGetConversationListReturning(listOf(conversation))
-            .arrange()
-
-        migrator.migrateProteusConversations()
-
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::updateProtocol)
-            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MIXED))
-            .wasNotInvoked()
     }
 
     private class Arrangement {
@@ -190,10 +153,10 @@ class MLSMigratorTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
-        fun withGetConversationListReturning(conversations: List<Conversation>) = apply {
+        fun withGetProteusTeamConversationsReturning(conversations: List<Conversation>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationList)
-                .whenInvoked()
+                .suspendFunction(conversationRepository::getProteusTeamConversations)
+                .whenInvokedWith(anything())
                 .thenReturn(Either.Right(flowOf(conversations)))
         }
 
