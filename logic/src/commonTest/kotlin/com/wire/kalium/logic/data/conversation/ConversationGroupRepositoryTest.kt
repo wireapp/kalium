@@ -253,7 +253,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenProteusConversationAndAPICallFails_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
+    fun givenProteusConversationAndAPICallFails_whenAddingMembersToConversation_thenShouldFail() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
@@ -270,7 +270,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSConversation_whenAddingServiceToConversation_theReturnError() = runTest {
+    fun givenMLSConversation_whenAddingServiceToConversation_thenReturnError() = runTest {
         val serviceID = ServiceId("service-id", "service-provider")
 
         val (arrangement, conversationGroupRepository) = Arrangement()
