@@ -237,7 +237,40 @@ sealed class MessageContent {
     object HistoryLost : System()
 }
 
-fun MessageContent?.getType() = this?.let { it::class.simpleName } ?: "Unknown"
+/**
+ * @return A string representing the type of content.
+ * Useful for logging. Plain strings must be used, otherwise it may be affected by code minification.
+ */
+fun MessageContent?.getType() = when (this) {
+    is MessageContent.Asset -> "Asset"
+    is MessageContent.FailedDecryption -> "FailedDecryption"
+    is MessageContent.Knock -> "Knock"
+    is MessageContent.RestrictedAsset -> "RestrictedAsset"
+    is MessageContent.Text -> "Text"
+    is MessageContent.Unknown -> "Unknown"
+    is MessageContent.Availability -> "Availability"
+    is MessageContent.Calling -> "Calling"
+    is MessageContent.Cleared -> "Cleared"
+    is MessageContent.ClientAction -> "ClientAction"
+    is MessageContent.DeleteForMe -> "DeleteForMe"
+    is MessageContent.DeleteMessage -> "DeleteMessage"
+    is MessageContent.Ignored -> "Ignored"
+    is MessageContent.LastRead -> "LastRead"
+    is MessageContent.Reaction -> "Reaction"
+    is MessageContent.Receipt -> "Receipt"
+    is MessageContent.TextEdited -> "TextEdited"
+    is MessageContent.ConversationMessageTimerChanged -> "ConversationMessageTimerChanged"
+    is MessageContent.ConversationReceiptModeChanged -> "ConversationReceiptModeChanged"
+    is MessageContent.ConversationRenamed -> "ConversationRenamed"
+    is MessageContent.CryptoSessionReset -> "CryptoSessionReset"
+    is MessageContent.HistoryLost -> "HistoryLost"
+    is MessageContent.MemberChange.Added -> "MemberChange.Added"
+    is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
+    is MessageContent.MissedCall -> "MissedCall"
+    is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
+    is MessageContent.TeamMemberRemoved -> "TeamMemberRemoved"
+    null -> "Unknown"
+}
 
 sealed class MessagePreviewContent {
 

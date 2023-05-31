@@ -57,13 +57,16 @@ class RetryFailedMessageUseCase internal constructor(
 
     /**
      * Function that enables resending of failed message to a given conversation with the strategy of fire & forget.
-     * This message needs to have status FAILED, if it's an asset message, the asset may or may not be already uploaded, it will be uploaded
-     * if needed. The resending and asset reupload (if required) is scheduled but not awaited, so returning [Either.Right] doesn't mean that
+     * This message must have a status of [Message.Status.FAILED].
+     *
+     * If it's an asset message, the asset may or may not be already uploaded. The asset will be uploaded if needed.
+     *
+     * The resending and possible reuploading of assets are scheduled but not awaited, so returning [Either.Right] doesn't mean that
      * the message has been sent successfully.
      *
      * @param messageId the id of the failed message to be resent
      * @param conversationId the id of the conversation where the failed message wants to be resent
-     * @return [Either.Left] in case the message could not be found or has invalid status, [Either.Right] otherwise.Note that this doesn't
+     * @return [Either.Left] in case the message could not be found or has invalid status, [Either.Right] otherwise. Note that this doesn't
      * imply that the send will succeed, it just confirms that resending is the valid action for this message and it has been started.
      */
     suspend operator fun invoke(messageId: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
