@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
 
@@ -36,8 +35,7 @@ class MessageSendingInterceptorImpl(
     private val messageRepository: MessageRepository
 ) : MessageSendingInterceptor {
 
-    override suspend fun prepareMessage(originalMsg: Message.Sendable): Either<CoreFailure, Message.Sendable> {
-        val message = updateMessageWithLatestData(originalMsg)
+    override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
 
         val replyMessageContent = message.content
 
@@ -63,16 +61,5 @@ class MessageSendingInterceptorImpl(
                     )
                 )
             }
-    }
-
-    private suspend fun updateMessageWithLatestData(originalMsg: Message.Sendable): Message.Sendable {
-        // We delegate the responsibility of fetching the correct expiration data to the message repository. That way we add an extra layer
-        // of security in case the app was providing wrong data and not checking correctly the enforced data from the conversation (i.e. if
-        // in the future we implement message forwarding feature, kalium will determine the correct expiration data to use)
-        val shouldQueryMessageData = originalMsg is Message.Regular
-        return if (shouldQueryMessageData) {
-            messageRepository.getMessageByIdWithLatestExpirationData(originalMsg.conversationId, originalMsg.id)
-                .fold({ originalMsg }, { it as Message.Sendable })
-        } else originalMsg
     }
 }

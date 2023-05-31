@@ -199,11 +199,6 @@ class MessageDAOImpl(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
-    override suspend fun getMessageByIdWithLatestExpirationData(id: String, conversationId: QualifiedIDEntity): MessageEntity? =
-        withContext(coroutineContext) {
-            queries.selectByIdWithLatestExpirationData(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
-        }
-
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,

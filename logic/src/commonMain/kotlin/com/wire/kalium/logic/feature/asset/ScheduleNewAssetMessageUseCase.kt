@@ -39,6 +39,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -81,8 +83,7 @@ interface ScheduleNewAssetMessageUseCase {
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?,
-        expireAfter: Duration?
+        assetHeight: Int?
     ): ScheduleNewAssetMessageResult
 }
 
@@ -97,6 +98,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
+    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
@@ -108,7 +110,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
-        expireAfter: Duration?
     ): ScheduleNewAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -116,6 +117,17 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         // Create a unique message ID
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
+
+        val messageTimer = selfDeleteTimer(conversationId, true).first().let {
+            when(it) {
+                SelfDeletionTimer.Disabled -> null
+                is SelfDeletionTimer.Enabled -> it.userDuration
+                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
+                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
+            }
+        }.let {
+            if(it == Duration.ZERO) null else it
+        }
 
         return withContext(dispatcher.io) {
             // We persist the asset with temporary id and message right away so that it can be displayed on the conversation screen loading
@@ -128,7 +140,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 assetMimeType = assetMimeType,
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
-                expireAfter = expireAfter,
+                expireAfter = messageTimer,
                 expectsReadConfirmation = expectsReadConfirmation
             ).onSuccess { (currentAssetMessageContent, message) ->
                 // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
@@ -197,11 +209,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         status = Message.Status.PENDING,
                         editStatus = Message.EditStatus.NotEdited,
                         expectsReadConfirmation = expectsReadConfirmation,
-                        expirationData = expireAfter?.let { duration ->
-                            // normalize the duration in case it's 0 to null, so that the message is not expirable in that case
-                            if (duration == Duration.ZERO) null
-                            else Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
-                        },
+                        expirationData = expireAfter?.let { Message.ExpirationData(it) },
                         isSelfMessage = true
                     )
                     // We persist the asset message right away so that it can be displayed on the conversation screen loading

@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -53,6 +55,7 @@ class SendTextMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
+    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -60,7 +63,6 @@ class SendTextMessageUseCase internal constructor(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        expireAfter: Duration? = null,
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
@@ -69,6 +71,15 @@ class SendTextMessageUseCase internal constructor(
 
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
+        val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
+            when(it) {
+                SelfDeletionTimer.Disabled -> null
+                is SelfDeletionTimer.Enabled -> it.userDuration
+                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
+                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
+            }
+        }
+
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
@@ -91,11 +102,7 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                expirationData = expireAfter?.let { duration ->
-                    // normalize the duration in case it's 0 to null, so that the message is not expired in that case
-                    if (duration == Duration.ZERO) null
-                    else Message.ExpirationData(expireAfter, Message.ExpirationData.SelfDeletionStatus.NotStarted)
-                },
+                expirationData = messageTimer?.let { Message.ExpirationData(it) },
                 isSelfMessage = true
             )
             persistMessage(message)

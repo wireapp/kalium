@@ -1134,10 +1134,10 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            userStorage,
             userPropertyRepository,
             incrementalSyncRepository,
             protoContentMapper,
+            observeSelfDeletingMessages,
             this
         )
     val users: UserScope

@@ -562,22 +562,6 @@ SELECT * FROM Message ORDER BY Message.creation_date DESC LIMIT ? OFFSET ?;
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
-selectByIdWithLatestExpirationData {
-    UPDATE Message
-    SET expire_after_millis = (
-      SELECT
-        CASE
-          WHEN message_timer IS NULL OR message_timer = 0 THEN COALESCE(user_message_timer, expire_after_millis)
-          ELSE message_timer
-        END AS expire_after_millis
-      FROM Conversation
-      WHERE Conversation.qualified_id = Message.conversation_id
-    )
-    WHERE id = :message_id AND conversation_id = :conversation_id;
-
-    SELECT * FROM MessageDetailsView WHERE id = :message_id AND conversationId = :conversation_id;
-}
-
 countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
