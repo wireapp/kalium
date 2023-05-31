@@ -128,7 +128,7 @@ class RetryFailedMessageUseCase internal constructor(
                     status = Message.Status.PENDING,
                     isSelfMessage = true
                 )
-                retrySendingMessage(message)
+                retrySendingMessage(editMessage)
             }
 
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
