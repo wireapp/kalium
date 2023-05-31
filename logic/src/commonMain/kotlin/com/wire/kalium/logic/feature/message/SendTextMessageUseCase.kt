@@ -72,14 +72,13 @@ class SendTextMessageUseCase internal constructor(
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
-            when(it) {
+            when (it) {
                 SelfDeletionTimer.Disabled -> null
                 is SelfDeletionTimer.Enabled -> it.userDuration
                 is SelfDeletionTimer.Enforced.ByGroup -> it.duration
                 is SelfDeletionTimer.Enforced.ByTeam -> it.duration
             }
         }
-
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(

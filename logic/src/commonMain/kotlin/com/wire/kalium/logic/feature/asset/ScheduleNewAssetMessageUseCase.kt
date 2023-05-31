@@ -119,14 +119,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         val messageTimer = selfDeleteTimer(conversationId, true).first().let {
-            when(it) {
+            when (it) {
                 SelfDeletionTimer.Disabled -> null
                 is SelfDeletionTimer.Enabled -> it.userDuration
                 is SelfDeletionTimer.Enforced.ByGroup -> it.duration
                 is SelfDeletionTimer.Enforced.ByTeam -> it.duration
             }
         }.let {
-            if(it == Duration.ZERO) null else it
+            if (it == Duration.ZERO) null else it
         }
 
         return withContext(dispatcher.io) {
