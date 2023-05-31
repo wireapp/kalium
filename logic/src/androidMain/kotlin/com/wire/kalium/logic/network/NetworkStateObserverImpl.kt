@@ -25,7 +25,6 @@ import android.net.NetworkCapabilities
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
 actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
