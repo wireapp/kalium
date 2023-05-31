@@ -84,7 +84,7 @@ class RetryFailedMessageUseCase internal constructor(
                                 message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
                                     retrySendingEditMessage(message)
 
-                                message is Message.Sendable -> messageSender.sendMessage(message)
+                                message is Message.Sendable -> retrySendingMessage(message)
 
                                 else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
                             }
@@ -96,6 +96,14 @@ class RetryFailedMessageUseCase internal constructor(
                 }
             }
             .map { /* returns Unit */ }
+
+    private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
+        messageSender.sendMessage(message)
+            .onFailure {
+                val type = message.content.getType()
+                kaliumLogger.e("Failed to retry sending message of type $type. Failure = $it")
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, type)
+            }
 
     private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
         when (val content = message.content) {
@@ -117,7 +125,7 @@ class RetryFailedMessageUseCase internal constructor(
                     status = Message.Status.PENDING,
                     isSelfMessage = true
                 )
-                messageSender.sendMessage(editMessage)
+                retrySendingMessage(message)
             }
 
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
@@ -152,7 +160,7 @@ class RetryFailedMessageUseCase internal constructor(
 
             else -> handleError("Asset message with upload status ${content.uploadStatus} cannot be retried")
         }
-            .onSuccess { messageSender.sendMessage(it) }
+            .onSuccess { retrySendingMessage(it) }
             .map { /* returns Unit */ }
 
     private suspend fun retryUploadingAsset(assetContent: AssetContent): Either<CoreFailure, AssetContent> =
