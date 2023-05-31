@@ -649,7 +649,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 lastReadDate = lastReadDate,
                 access = accessList,
                 accessRole = accessRoleList,
-                receiptMode = receiptMode
+                receiptMode = receiptMode,
+                messageTimer = null
             )
         }
     }
@@ -683,7 +684,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 lastReadDate = UserDatabaseDataGenerator.DEFAULT_DATE,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                receiptMode = ConversationEntity.ReceiptMode.DISABLED
+                receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+                messageTimer = null
             )
 
             conversationAdded.add(overlappingConversation)

@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
@@ -27,8 +29,10 @@ import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toS
 import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
@@ -71,7 +75,8 @@ interface UserConfigRepository {
 
 @Suppress("TooManyFunctions")
 class UserConfigDataSource(
-    private val userConfigStorage: UserConfigStorage
+    private val userConfigStorage: UserConfigStorage,
+    private val kaliumConfigs: KaliumConfigs
 ) : UserConfigRepository {
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
@@ -81,22 +86,49 @@ class UserConfigDataSource(
         userConfigStorage.setFileSharingAsNotified()
     }
 
-    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
-        wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
-            with(it) { FileSharingStatus(status, isStatusChanged) }
-        }
+    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
+        val serverSideConfig = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
+        val buildConfig = kaliumConfigs.fileRestrictionState
+        return deriveFileSharingStatus(serverSideConfig, buildConfig)
+    }
 
     override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> =
         userConfigStorage.isFileSharingEnabledFlow()
             .wrapStorageRequest()
             .map {
-                it.map { isFileSharingEnabledEntity ->
-                    FileSharingStatus(
-                        isFileSharingEnabledEntity.status,
-                        isFileSharingEnabledEntity.isStatusChanged
-                    )
-                }
+                val buildConfig = kaliumConfigs.fileRestrictionState
+                deriveFileSharingStatus(it, buildConfig)
             }
+
+    private fun deriveFileSharingStatus(
+        serverSideConfig: Either<StorageFailure, IsFileSharingEnabledEntity>,
+        buildConfig: BuildFileRestrictionState
+    ): Either<StorageFailure, FileSharingStatus> = when {
+        serverSideConfig.isLeft() -> serverSideConfig
+
+        serverSideConfig.value.status.not() -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = serverSideConfig.value.isStatusChanged,
+                state = FileSharingStatus.Value.Disabled
+            )
+        )
+
+        buildConfig is BuildFileRestrictionState.AllowSome -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = false,
+                state = FileSharingStatus.Value.EnabledSome(buildConfig.allowedType)
+            )
+        )
+
+        buildConfig is BuildFileRestrictionState.NoRestriction -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = serverSideConfig.value.isStatusChanged,
+                state = FileSharingStatus.Value.EnabledAll
+            )
+        )
+
+        else -> error("Unknown file restriction state: buildConfig: $buildConfig , serverConfig: $serverSideConfig")
+    }
 
     override fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         wrapStorageRequest { userConfigStorage.persistClassifiedDomainsStatus(enabled, domains) }

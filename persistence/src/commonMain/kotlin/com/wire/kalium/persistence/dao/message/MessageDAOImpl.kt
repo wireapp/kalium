@@ -336,7 +336,7 @@ class MessageDAOImpl(
     override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     ) = withContext(coroutineContext) {
         queries.promoteMessageToSentUpdatingServerTime(
@@ -360,5 +360,9 @@ class MessageDAOImpl(
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
+
+    override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {
+        unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
+    }
 
 }

@@ -120,13 +120,15 @@ interface MessageDAO {
     suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     )
 
     suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity>
 
     suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
+
+    suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long
 
     val platformExtensions: MessageExtensions
 }

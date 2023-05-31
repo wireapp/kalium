@@ -31,9 +31,11 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
 import com.wire.kalium.logic.feature.call.usecase.FlipToFrontCameraUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
@@ -42,7 +44,9 @@ import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCaseIm
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
@@ -53,6 +57,7 @@ import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
@@ -74,10 +79,10 @@ class CallsScope internal constructor(
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
-        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, callingParticipantsOrder)
+        get() = GetAllCallsWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 
     val establishedCall: ObserveEstablishedCallsUseCase
-        get() = ObserveEstablishedCallsUseCase(
+        get() = ObserveEstablishedCallsUseCaseImpl(
             callRepository = callRepository,
         )
 
@@ -100,15 +105,21 @@ class CallsScope internal constructor(
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager, syncManager, kaliumConfigs)
 
-    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager, kaliumConfigs)
+    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(
+        allCallsWithSortedParticipants,
+        callManager,
+        muteCall,
+        unMuteCall,
+        kaliumConfigs
+    )
 
-    val endCall: EndCallUseCase get() = EndCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
+    val endCall: EndCallUseCase get() = EndCallUseCaseImpl(callManager, callRepository, KaliumDispatcherImpl)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
 
-    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager, callRepository)
+    val muteCall: MuteCallUseCase get() = MuteCallUseCaseImpl(callManager, callRepository)
 
-    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager, callRepository)
+    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCaseImpl(callManager, callRepository)
 
     val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager, callRepository)
 

@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -63,7 +65,6 @@ import io.mockative.anything
 import io.mockative.eq
 import io.mockative.fun2
 import io.mockative.given
-import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
@@ -75,6 +76,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
@@ -89,6 +91,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -105,8 +109,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -120,6 +124,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -136,8 +142,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -152,6 +158,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -168,13 +176,13 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .with(matching { it.isNotEmpty() }, anything())
-                .wasInvoked(once)
-
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -197,6 +205,59 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPISucceedsWithChange_whenAddingServiceToConversation_thenShouldSucceed() = runTest {
+        val serviceID = ServiceId("service-id", "service-provider")
+        val addServiceRequest = AddServiceRequest(id = serviceID.id, provider = serviceID.provider)
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddServiceAPISucceedChanged()
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
+
+        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+            .shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addService)
+            .with(eq(addServiceRequest), eq(TestConversation.ID.toApi()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLSConversation_whenAddingServiceToConversation_theReturnError() = runTest {
+        val serviceID = ServiceId("service-id", "service-provider")
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .arrange()
+
+        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+            .shouldFail {
+                assertIs<MLSFailure>(it)
+                assertIs<UnsupportedOperationException>(it.exception)
+            }
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addService)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasNotInvoked()
     }
 
     @Test
@@ -624,6 +685,12 @@ class ConversationGroupRepositoryTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
+        val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
+
+        @Mock
+        val newGroupConversationStartedMessageCreator = mock(NewGroupConversationStartedMessageCreator::class)
+
+        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         val conversationGroupRepository =
@@ -634,6 +701,8 @@ class ConversationGroupRepositoryTest {
                 memberLeaveEventHandler,
                 conversationDAO,
                 conversationApi,
+                newConversationMembersRepository,
+                newGroupConversationStartedMessageCreator,
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -733,6 +802,19 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(
                     NetworkResponse.Success(
                         TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withAddServiceAPISucceedChanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addService)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
@@ -909,6 +991,20 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
                 .thenReturn(GUEST_ROOM_LINK_FLOW)
+        }
+
+        fun withSuccessfulNewConversationGroupStartedHandled() = apply {
+            given(newGroupConversationStartedMessageCreator)
+                .suspendFunction(newGroupConversationStartedMessageCreator::createSystemMessage)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulNewConversationMemberHandled() = apply {
+            given(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to conversationGroupRepository

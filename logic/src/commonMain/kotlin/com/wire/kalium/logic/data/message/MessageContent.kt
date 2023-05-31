@@ -179,6 +179,8 @@ sealed class MessageContent {
     sealed class MemberChange(open val members: List<UserId>) : System() {
         data class Added(override val members: List<UserId>) : MemberChange(members)
         data class Removed(override val members: List<UserId>) : MemberChange(members)
+        data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
+        data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -216,6 +218,10 @@ sealed class MessageContent {
         val receiptMode: Boolean
     ) : System()
 
+    data class ConversationMessageTimerChanged(
+        val messageTimer: Long?
+    ) : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
@@ -231,6 +237,7 @@ sealed class MessageContent {
     object CryptoSessionReset : System()
 
     object HistoryLost : System()
+    object ConversationCreated : System()
 }
 
 sealed class MessagePreviewContent {
@@ -258,6 +265,18 @@ sealed class MessagePreviewContent {
         ) : WithUser(senderName)
 
         data class MembersRemoved(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersFailedToAdd(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersCreationAdded(
             val senderName: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
