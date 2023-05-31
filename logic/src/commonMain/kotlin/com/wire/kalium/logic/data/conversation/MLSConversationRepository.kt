@@ -318,7 +318,7 @@ class MLSConversationDataSource(
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
 
-    suspend fun internalAddMemberToMLSGroup(
+    private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
         retryOnStaleMessage: Boolean
