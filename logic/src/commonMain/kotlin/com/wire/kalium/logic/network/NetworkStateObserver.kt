@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.network
 
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
@@ -27,7 +27,7 @@ import kotlin.time.Duration
 
 interface NetworkStateObserver {
 
-    fun observeNetworkState(): StateFlow<NetworkState>
+    fun observeNetworkState(): Flow<NetworkState>
 
     // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
