@@ -167,6 +167,7 @@ class MessageScope internal constructor(
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
+            observeSelfDeletingMessages,
             scope,
             dispatcher
         )
