@@ -157,6 +157,18 @@ class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
+    val retryFailedMessage: RetryFailedMessageUseCase
+        get() = RetryFailedMessageUseCase(
+            messageRepository,
+            assetRepository,
+            persistMessage,
+            scope,
+            dispatcher,
+            messageSender,
+            updateAssetMessageUploadStatus,
+            messageSendFailureHandler
+        )
+
     val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 

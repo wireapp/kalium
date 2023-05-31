@@ -109,15 +109,6 @@ class SendEditTextMessageUseCase internal constructor(
                 }
                 .flatMap {
                     messageSender.sendMessage(message)
-                        .onSuccess {
-                            // when succeeded, we modify the message id locally
-                            messageRepository.updateTextMessage(
-                                conversationId = message.conversationId,
-                                messageContent = content,
-                                newMessageId = editedMessageId,
-                                editTimeStamp = message.date
-                            )
-                        }
                 }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
     }

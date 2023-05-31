@@ -237,6 +237,8 @@ sealed class MessageContent {
     object HistoryLost : System()
 }
 
+fun MessageContent?.getType() = this?.let { it::class.simpleName } ?: "Unknown"
+
 sealed class MessagePreviewContent {
 
     sealed class WithUser(open val username: String?) : MessagePreviewContent() {
