@@ -22,11 +22,13 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
     fun fromDTO(data: FeatureConfigData.MLS?): MLSModel
+    fun fromDTO(data: FeatureConfigData.MLSMigration): MLSMigrationModel
     fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel
     fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
     fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
@@ -34,6 +36,8 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
     fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel
     fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel
+    fun fromModel(status: Status): FeatureFlagStatusDTO
+    fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -56,7 +60,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
                 mlsModel = fromDTO(mls),
-                e2EIModel = fromDTO(mlsE2EI)
+                e2EIModel = fromDTO(mlsE2EI),
+                mlsMigrationModel = mlsMigration?.let { fromDTO(it) }
             )
         }
 
@@ -75,6 +80,16 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         } ?: MLSModel(
             listOf(),
             Status.DISABLED
+        )
+
+    @Suppress("MagicNumber")
+    override fun fromDTO(data: FeatureConfigData.MLSMigration): MLSMigrationModel =
+        MLSMigrationModel(
+            data.config.startTime,
+            data.config.finaliseRegardlessAfter,
+            data.config.usersThreshold,
+            data.config.clientsThreshold,
+            fromDTO(data.status)
         )
 
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
@@ -117,5 +132,21 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 data?.config?.verificationExpirationNS ?: 0L
             ),
             fromDTO(data?.status ?: FeatureFlagStatusDTO.DISABLED)
+        )
+    override fun fromModel(status: Status): FeatureFlagStatusDTO =
+        when (status) {
+            Status.ENABLED -> FeatureFlagStatusDTO.ENABLED
+            Status.DISABLED -> FeatureFlagStatusDTO.DISABLED
+        }
+
+    override fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration =
+        FeatureConfigData.MLSMigration(
+            MLSMigrationConfigDTO(
+                model.startTime,
+                model.endTime,
+                model.usersThreshold,
+                model.clientsThreshold
+            ),
+            fromModel(model.status)
         )
 }
