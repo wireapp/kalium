@@ -43,6 +43,8 @@ import java.util.Base64
 import java.util.Collections
 import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.Response
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 sealed class ConversationRepository {
 
@@ -143,11 +145,13 @@ sealed class ConversationRepository {
             }
         }
 
+        @Suppress("LongParameterList")
         suspend fun sendTextMessage(
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
             mentions: List<MessageMention>,
+            messageTimer: Int?,
             quotedMessageId: String?
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
@@ -155,8 +159,42 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            val expireAfter = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
                             messages.sendTextMessage(
-                                conversationId, text, mentions, null, quotedMessageId
+                                conversationId, text, mentions, expireAfter, quotedMessageId
+                            ).fold({
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                            }, {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            })
+                        } else {
+                            Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        @Suppress("LongParameterList")
+        suspend fun updateTextMessage(
+            instance: Instance,
+            conversationId: ConversationId,
+            text: String?,
+            mentions: List<MessageMention>,
+            firstMessageId: String
+        ): Response = instance.coreLogic.globalScope {
+            return when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        if (text != null) {
+                            log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            messages.sendEditTextMessage(
+                                conversationId, firstMessageId, text, mentions
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
@@ -269,6 +307,7 @@ sealed class ConversationRepository {
                                     fileName,
                                     type,
                                     null,
+                                    null,
                                     null
                                 )
                             }
@@ -347,7 +386,8 @@ sealed class ConversationRepository {
                                 byteArray.size.toLong(),
                                 "image", type,
                                 width,
-                                height
+                                height,
+                                null
                             )
                             if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {

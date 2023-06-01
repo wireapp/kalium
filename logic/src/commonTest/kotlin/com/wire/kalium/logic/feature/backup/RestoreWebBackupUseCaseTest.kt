@@ -128,7 +128,7 @@ class RestoreWebBackupUseCaseTest {
         verify(arrangement.migrationDAO)
             .suspendFunction(arrangement.migrationDAO::insertConversation)
             .with(any())
-            .wasInvoked()
+            .wasNotInvoked()
         verify(arrangement.persistMigratedMessagesUseCase)
             .suspendFunction(arrangement.persistMigratedMessagesUseCase::invoke)
             .with(any(), any())

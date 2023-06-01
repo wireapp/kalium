@@ -29,15 +29,18 @@ import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
+import com.wire.kalium.testservice.models.SendEphemeralConfirmationDeliveredRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.UpdateTextRequest
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
+import javax.ws.rs.Consumes
 import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
@@ -48,6 +51,7 @@ import kotlin.streams.toList
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
+@Suppress("TooManyFunctions")
 class ConversationResources(private val instanceService: InstanceService) {
 
     private val log = LoggerFactory.getLogger(ConversationResources::class.java.name)
@@ -62,6 +66,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/clear")
     @Operation(summary = "Clear a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun clear(@PathParam("id") id: String, @Valid request: ClearConversationRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(request) {
@@ -75,9 +80,10 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/delete")
     @Operation(summary = "Delete a message locally")
-    fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun delete(@PathParam("id") id: String, @Valid request: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(deleteMessageRequest) {
+        with(request) {
             runBlocking {
                 ConversationRepository.deleteConversation(
                     instance,
@@ -93,9 +99,10 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/deleteEverywhere")
     @Operation(summary = "Delete a message for everyone")
-    fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest): Response {
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun deleteEverywhere(@PathParam("id") id: String, @Valid request: DeleteMessageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        return with(deleteMessageRequest) {
+        return with(request) {
             runBlocking {
                 ConversationRepository.deleteConversation(
                     instance,
@@ -110,9 +117,10 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/getMessages")
     @Operation(summary = "Get all messages")
-    fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun getMessages(@PathParam("id") id: String, @Valid request: GetMessagesRequest): List<Message> {
         val instance = instanceService.getInstanceOrThrow(id)
-        with(getMessagesRequest) {
+        with(request) {
             return runBlocking {
                 ConversationRepository.getMessages(
                     instance,
@@ -128,12 +136,13 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendConfirmationDelivered")
     @Operation(summary = "Send a delivery confirmation for a message")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendConfirmationDelivered(
         @PathParam("id") id: String,
-        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+        @Valid request: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        return with(sendConfirmationReadRequest) {
+        return with(request) {
             runBlocking {
                 ConversationRepository.sendConfirmation(
                     instance,
@@ -148,12 +157,13 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendConfirmationRead")
     @Operation(summary = "Send a read confirmation for a message")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendConfirmationRead(
         @PathParam("id") id: String,
-        @Valid sendConfirmationReadRequest: SendConfirmationReadRequest
+        @Valid request: SendConfirmationReadRequest
     ): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        return with(sendConfirmationReadRequest) {
+        return with(request) {
             runBlocking {
                 ConversationRepository.sendConfirmation(
                     instance,
@@ -165,19 +175,51 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationDelivered
-    // Send a delivery confirmation for an ephemeral message.
-
-    // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationRead
-    // Send a read confirmation for an ephemeral message.
+    @POST
+    @Path("/instance/{id}/sendEphemeralConfirmationDelivered")
+    @Operation(summary = "Send a delivery confirmation for an ephemeral message")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendEphemeralConfirmationDelivered(
+        @PathParam("id") id: String,
+        @Valid request: SendEphemeralConfirmationDeliveredRequest
+    ): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    ReceiptType.DELIVERED,
+                    firstMessageId
+                )
+                moreMessageIds?.stream()?.forEach { messageId ->
+                    runBlocking {
+                        ConversationRepository.deleteConversation(
+                            instance,
+                            ConversationId(conversationId, conversationDomain),
+                            messageId,
+                            true
+                        )
+                    }
+                }
+                ConversationRepository.deleteConversation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    firstMessageId,
+                    true
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendFile")
     @Operation(summary = "Send a file to a conversation")
-    fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
-        log.info("Instance $id: Send file with name ${sendFileRequest.fileName}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendFile(@PathParam("id") id: String, @Valid request: SendFileRequest): Response {
+        log.info("Instance $id: Send file with name ${request.fileName}")
         val instance = instanceService.getInstanceOrThrow(id)
-        return with(sendFileRequest) {
+        return with(request) {
             runBlocking {
                 ConversationRepository.sendFile(
                     instance,
@@ -196,6 +238,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendImage")
     @Operation(summary = "Send an image to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendImage(@PathParam("id") id: String, @Valid sendImageRequest: SendImageRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendImageRequest) {
@@ -218,6 +261,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendPing")
     @Operation(summary = "Send a ping to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendPingRequest) {
@@ -239,6 +283,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendReaction")
     @Operation(summary = "Send a reaction to a message")
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         return with(sendReactionRequest) {
@@ -259,9 +304,10 @@ class ConversationResources(private val instanceService: InstanceService) {
         summary = "Send a text message to a conversation",
         description = "This can include mentions and reply (buttons and link previews not yet implemented)"
     )
+    @Consumes(MediaType.APPLICATION_JSON)
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement buttons, link previews and ephemeral messages here
+        // TODO Implement buttons and link previews here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
@@ -283,7 +329,41 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     text,
                     mentions,
+                    messageTimer,
                     quotedMessageId
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/updateText")
+    @Operation(summary = "Update a text message in a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun updateText(@PathParam("id") id: String, @Valid updateTextRequest: UpdateTextRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        // TODO Implement buttons and link previews here
+        val mentions = when (updateTextRequest.mentions.size) {
+            0 -> emptyList<MessageMention>()
+            else -> {
+                updateTextRequest.mentions.stream().map { mention ->
+                    MessageMention(
+                        mention.start,
+                        mention.length,
+                        UserId(mention.userId, mention.userDomain),
+                        false
+                    )
+                }.toList()
+            }
+        }
+        return with(updateTextRequest) {
+            runBlocking {
+                ConversationRepository.updateTextMessage(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    text,
+                    mentions,
+                    firstMessageId
                 )
             }
         }
@@ -291,7 +371,4 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     // POST /api/v1/instance/{instanceId}/sendTyping
     // Send a typing indicator to a conversation.
-
-    // POST /api/v1/instance/{instanceId}/updateText
-    // Update a text message in a conversation.
 }

@@ -28,5 +28,6 @@ data class InstanceRequest(
     val email: String = "",
     val isTemporary: Boolean? = false,
     val name: String = "",
-    val password: String = ""
+    val password: String = "",
+    val verificationCode: String? = null,
 )

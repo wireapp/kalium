@@ -28,12 +28,28 @@ import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
 import java.net.Proxy
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?
+    proxyCredentials: ProxyCredentialsDTO?,
+    ignoreSSLCertificates: Boolean
 ): HttpClientEngine = OkHttp.create {
+
+    val okHttpClient = OkHttpClient.Builder()
+
+    if (ignoreSSLCertificates) okHttpClient.ignoreAllSSLErrors()
+
+    okHttpClient.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+        .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+        .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+        .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+
     // OkHttp doesn't support configuring ping intervals dynamically,
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
@@ -54,14 +70,31 @@ actual fun defaultHttpEngine(
             InetSocketAddress.createUnresolved(serverConfigDTOApiProxy?.host, serverConfigDTOApiProxy!!.port)
         )
 
-        val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)
-            .build()
-        preconfigured = client
-        webSocketFactory = KaliumWebSocketFactory(client)
+        val clientWithProxy = okHttpClient.proxy(proxy).build()
+        preconfigured = clientWithProxy
+        webSocketFactory = KaliumWebSocketFactory(clientWithProxy)
 
     } else {
-        val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).build()
+        val client = okHttpClient.build()
         preconfigured = client
         webSocketFactory = KaliumWebSocketFactory(client)
     }
+}
+
+fun OkHttpClient.Builder.ignoreAllSSLErrors(): OkHttpClient.Builder {
+    val naiveTrustManager = @Suppress("CustomX509TrustManager")
+    object : X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) = Unit
+        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) = Unit
+    }
+
+    val insecureSocketFactory = SSLContext.getInstance("SSL").apply {
+        val trustAllCerts = arrayOf<TrustManager>(naiveTrustManager)
+        init(null, trustAllCerts, SecureRandom())
+    }.socketFactory
+
+    sslSocketFactory(insecureSocketFactory, naiveTrustManager)
+    hostnameVerifier { _, _ -> true }
+    return this
 }

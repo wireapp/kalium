@@ -188,11 +188,12 @@ sealed class MessageEntity(
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
-        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST
+        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
+        CONVERSATION_CREATED
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD
     }
 
     enum class Visibility {
@@ -309,7 +310,9 @@ sealed class MessageEntityContent {
     data class TeamMemberRemoved(val userName: String) : System()
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
+    data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     object HistoryLost : System()
+    object ConversationCreated : System()
 }
 
 /**
@@ -371,6 +374,18 @@ sealed class MessagePreviewEntityContent {
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
 
+    data class MembersFailedToAdded(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class MembersCreationAdded(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
     data class MemberJoined(val senderName: String?) : MessagePreviewEntityContent()
 
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
@@ -378,7 +393,7 @@ sealed class MessagePreviewEntityContent {
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
-
+    data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     object CryptoSessionReset : MessagePreviewEntityContent()
     object Unknown : MessagePreviewEntityContent()
 

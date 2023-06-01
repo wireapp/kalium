@@ -24,5 +24,6 @@ import io.ktor.client.engine.HttpClientEngine
 
 expect fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null
+    proxyCredentials: ProxyCredentialsDTO? = null,
+    ignoreSSLCertificates: Boolean = false
 ): HttpClientEngine

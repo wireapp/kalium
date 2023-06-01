@@ -35,7 +35,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-    receiptMode = ConversationEntity.ReceiptMode.DISABLED
+    receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+    messageTimer = null
 )
 
 fun newConversationEntity(
@@ -54,5 +55,6 @@ fun newConversationEntity(
     lastModifiedDate = lastModified,
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-    receiptMode = ConversationEntity.ReceiptMode.DISABLED
+    receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+    messageTimer = null
 )

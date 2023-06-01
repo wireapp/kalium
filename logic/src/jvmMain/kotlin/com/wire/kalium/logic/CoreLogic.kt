@@ -39,9 +39,10 @@ import java.io.File
  */
 actual class CoreLogic(
     rootPath: String,
-    kaliumConfigs: KaliumConfigs
+    kaliumConfigs: KaliumConfigs,
+    userAgent: String
 ) : CoreLogicCommon(
-    rootPath = rootPath, kaliumConfigs = kaliumConfigs
+    rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
@@ -75,7 +76,8 @@ actual class CoreLogic(
             globalPreferences.value,
             globalCallManager,
             userStorageProvider,
-            networkStateObserver
+            networkStateObserver,
+            userAgent
         )
     }
 }

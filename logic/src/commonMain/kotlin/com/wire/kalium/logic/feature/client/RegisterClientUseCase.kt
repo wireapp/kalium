@@ -47,6 +47,9 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -124,6 +127,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
@@ -209,22 +213,24 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         clientType: ClientType? = null,
         cookieLabel: String?,
         secondFactorVerificationCode: String? = null,
-    ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
-        preKeyRepository.generateNewLastKey().flatMap { lastKey ->
-            Either.Right(
-                RegisterClientParam(
-                    password = password,
-                    capabilities = capabilities,
-                    preKeys = preKeys,
-                    lastKey = lastKey,
-                    deviceType = null,
-                    label = null,
-                    model = null,
-                    clientType = clientType,
-                    cookieLabel = cookieLabel,
-                    secondFactorVerificationCode = secondFactorVerificationCode,
+    ) = withContext(dispatchers.io) {
+        preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
+            preKeyRepository.generateNewLastKey().flatMap { lastKey ->
+                Either.Right(
+                    RegisterClientParam(
+                        password = password,
+                        capabilities = capabilities,
+                        preKeys = preKeys,
+                        lastKey = lastKey,
+                        deviceType = null,
+                        label = null,
+                        model = null,
+                        clientType = clientType,
+                        cookieLabel = cookieLabel,
+                        secondFactorVerificationCode = secondFactorVerificationCode,
+                    )
                 )
-            )
+            }
         }
     }
 }

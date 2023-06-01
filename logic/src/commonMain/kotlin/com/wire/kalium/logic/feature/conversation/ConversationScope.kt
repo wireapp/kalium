@@ -44,6 +44,8 @@ import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomL
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
+import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
@@ -132,6 +134,9 @@ class ConversationScope internal constructor(
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
 
+    val addServiceToConversationUseCase: AddServiceToConversationUseCase
+        get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
+
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository, conversationGroupRepository)
 
@@ -156,7 +161,7 @@ class ConversationScope internal constructor(
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
-        get() = UpdateConversationAccessRoleUseCase(conversationRepository)
+        get() = UpdateConversationAccessRoleUseCase(conversationRepository, conversationGroupRepository, syncManager)
 
     val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
@@ -213,4 +218,14 @@ class ConversationScope internal constructor(
         get() = ObserveGuestRoomLinkUseCaseImpl(
             conversationGroupRepository
         )
+
+    val updateMessageTimer: UpdateMessageTimerUseCase
+        get() = UpdateMessageTimerUseCaseImpl(
+            conversationGroupRepository,
+            persistMessage,
+            selfUserId
+        )
+
+    val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
+        get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
 }

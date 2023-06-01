@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -46,92 +46,146 @@ object MessageMapper {
         memberChangeType: MessageEntity.MemberChangeType?,
         isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
+        isEphemeral: Boolean,
+        isGroupConversation: Boolean,
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
-    ) = when (contentType) {
-        MessageEntity.ContentType.TEXT -> when {
-            isSelfMessage -> MessagePreviewEntityContent.Text(
-                senderName = senderName,
-                messageBody = text.requireField("text")
-            )
-
-            (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
-                senderName = senderName,
-                messageBody = text.requireField("text")
-            )
-
-            (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
-                senderName = senderName, messageBody = text.requireField("text")
-            )
-
-            else -> MessagePreviewEntityContent.Text(
-                senderName = senderName,
-                messageBody = text.requireField("text")
+    ): MessagePreviewEntityContent {
+        return if (isEphemeral) {
+            MessagePreviewEntityContent.Ephemeral(isGroupConversation)
+        } else {
+            mapContentType(
+                contentType,
+                senderName,
+                isSelfMessage,
+                memberChangeList,
+                memberChangeType,
+                isMentioningSelfUser,
+                isQuotingSelfUser,
+                text,
+                assetMimeType,
+                selfUserId,
+                senderUserId
             )
         }
+    }
 
-        MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
-            senderName = senderName,
-            type = assetMimeType?.let {
-                when {
-                    it.contains("image/") -> AssetTypeEntity.IMAGE
-                    it.contains("video/") -> AssetTypeEntity.VIDEO
-                    it.contains("audio/") -> AssetTypeEntity.AUDIO
-                    else -> AssetTypeEntity.GENERIC_ASSET
-                }
-            } ?: AssetTypeEntity.GENERIC_ASSET
-        )
+    // refactor this to not suppress it
+    @Suppress("LongMethod", "ComplexMethod")
+    private fun mapContentType(
+        contentType: MessageEntity.ContentType,
+        senderName: String?,
+        isSelfMessage: Boolean,
+        memberChangeList: List<QualifiedIDEntity>?,
+        memberChangeType: MessageEntity.MemberChangeType?,
+        isMentioningSelfUser: Boolean,
+        isQuotingSelfUser: Boolean?,
+        text: String?,
+        assetMimeType: String?,
+        selfUserId: QualifiedIDEntity?,
+        senderUserId: QualifiedIDEntity?
+    ): MessagePreviewEntityContent {
+        return when (contentType) {
+            MessageEntity.ContentType.TEXT -> when {
+                isSelfMessage -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
 
-        MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
-        MessageEntity.ContentType.MEMBER_CHANGE -> {
-            val userIdList = memberChangeList.requireField("memberChangeList")
-            when (memberChangeType.requireField("memberChangeType")) {
-                MessageEntity.MemberChangeType.ADDED -> {
-                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
-                        MessagePreviewEntityContent.MemberJoined(senderName)
-                    } else {
-                        MessagePreviewEntityContent.MembersAdded(
+                (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+
+                (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+                    senderName = senderName, messageBody = text.requireField("text")
+                )
+
+                else -> MessagePreviewEntityContent.Text(
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
+                )
+            }
+
+            MessageEntity.ContentType.ASSET -> MessagePreviewEntityContent.Asset(
+                senderName = senderName,
+                type = assetMimeType?.let {
+                    when {
+                        it.contains("image/") -> AssetTypeEntity.IMAGE
+                        it.contains("video/") -> AssetTypeEntity.VIDEO
+                        it.contains("audio/") -> AssetTypeEntity.AUDIO
+                        else -> AssetTypeEntity.GENERIC_ASSET
+                    }
+                } ?: AssetTypeEntity.GENERIC_ASSET
+            )
+
+            MessageEntity.ContentType.KNOCK -> MessagePreviewEntityContent.Knock(senderName = senderName)
+            MessageEntity.ContentType.MEMBER_CHANGE -> {
+                val userIdList = memberChangeList.requireField("memberChangeList")
+                when (memberChangeType.requireField("memberChangeType")) {
+                    MessageEntity.MemberChangeType.ADDED -> {
+                        if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                            MessagePreviewEntityContent.MemberJoined(senderName)
+                        } else {
+                            MessagePreviewEntityContent.MembersAdded(
+                                senderName = senderName,
+                                isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                                otherUserIdList = userIdList.filterNot { it == selfUserId },
+                            )
+                        }
+                    }
+
+                    MessageEntity.MemberChangeType.REMOVED -> {
+                        if (userIdList.contains(senderUserId) && userIdList.size == 1) {
+                            MessagePreviewEntityContent.MemberLeft(senderName)
+                        } else {
+                            MessagePreviewEntityContent.MembersRemoved(
+                                senderName = senderName,
+                                isContainSelfUserId = userIdList
+                                    .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                                otherUserIdList = userIdList.filterNot { it == selfUserId },
+                            )
+                        }
+                    }
+
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                        MessagePreviewEntityContent.MembersFailedToAdded(
                             senderName = senderName,
                             isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                             otherUserIdList = userIdList.filterNot { it == selfUserId },
                         )
                     }
-                }
 
-                MessageEntity.MemberChangeType.REMOVED -> {
-                    if (userIdList.contains(senderUserId) && userIdList.size == 1) {
-                        MessagePreviewEntityContent.MemberLeft(senderName)
-                    } else {
-                        MessagePreviewEntityContent.MembersRemoved(
-                            senderName = senderName,
-                            isContainSelfUserId = userIdList
-                                .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
-                            otherUserIdList = userIdList.filterNot { it == selfUserId },
-                        )
-                    }
+                    MessageEntity.MemberChangeType.CREATION_ADDED -> MessagePreviewEntityContent.MembersCreationAdded(
+                        senderName = senderName,
+                        isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        otherUserIdList = userIdList.filterNot { it == selfUserId },
+                    )
                 }
             }
+
+            MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
+            MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
+                senderName = senderName,
+                type = AssetTypeEntity.GENERIC_ASSET
+            )
+
+            MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
+                adminName = senderName
+            )
+
+            MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
+            MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
         }
-
-        MessageEntity.ContentType.MISSED_CALL -> MessagePreviewEntityContent.MissedCall(senderName = senderName)
-        MessageEntity.ContentType.RESTRICTED_ASSET -> MessagePreviewEntityContent.Asset(
-            senderName = senderName,
-            type = AssetTypeEntity.GENERIC_ASSET
-        )
-
-        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessagePreviewEntityContent.ConversationNameChange(
-            adminName = senderName
-        )
-
-        MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
-        MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
-        MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
-        MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
-        MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
-        MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
-        MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -142,6 +196,7 @@ object MessageMapper {
         date: Instant,
         visibility: MessageEntity.Visibility,
         senderUserId: UserIDEntity,
+        isEphemeral: Boolean,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
         senderIsDeleted: Boolean?,
@@ -168,6 +223,8 @@ object MessageMapper {
             memberChangeType = memberChangeType,
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
+            isEphemeral = isEphemeral,
+            isGroupConversation = conversationType == ConversationEntity.Type.GROUP,
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,
@@ -299,7 +356,7 @@ object MessageMapper {
         senderCompleteAssetId: QualifiedIDEntity?,
         senderAvailabilityStatus: UserAvailabilityStatusEntity,
         senderUserType: UserTypeEntity,
-        senderBotService: BotEntity?,
+        senderBotService: BotIdEntity?,
         senderIsDeleted: Boolean,
         isSelfMessage: Boolean,
         text: String?,
@@ -345,7 +402,8 @@ object MessageMapper {
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
-        conversationReceiptModeChanged: Boolean?
+        conversationReceiptModeChanged: Boolean?,
+        conversationMessageTimerChanged: Long?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -428,6 +486,11 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
+                messageTimer = conversationMessageTimerChanged
+            )
+
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
         }
 
         return createMessageEntity(

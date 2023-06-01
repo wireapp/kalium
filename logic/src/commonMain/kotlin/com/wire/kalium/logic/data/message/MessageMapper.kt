@@ -47,7 +47,6 @@ interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
-    fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType?
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -168,26 +167,6 @@ class MessageMapperImpl(
     }
 
     @Suppress("ComplexMethod")
-    override fun fromPreviewEntityToUnreadEventCount(message: MessagePreviewEntity): UnreadEventType? {
-        return when (message.content) {
-            is MessagePreviewEntityContent.Asset -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.ConversationNameChange -> null
-            is MessagePreviewEntityContent.Knock -> UnreadEventType.KNOCK
-            is MessagePreviewEntityContent.MentionedSelf -> UnreadEventType.MENTION
-            is MessagePreviewEntityContent.MissedCall -> UnreadEventType.MISSED_CALL
-            is MessagePreviewEntityContent.QuotedSelf -> UnreadEventType.REPLY
-            is MessagePreviewEntityContent.TeamMemberRemoved -> null
-            is MessagePreviewEntityContent.Text -> UnreadEventType.MESSAGE
-            is MessagePreviewEntityContent.CryptoSessionReset -> null
-            MessagePreviewEntityContent.Unknown -> null
-            is MessagePreviewEntityContent.MembersRemoved -> null
-            is MessagePreviewEntityContent.MemberJoined -> null
-            is MessagePreviewEntityContent.MemberLeft -> null
-            is MessagePreviewEntityContent.MembersAdded -> null
-        }
-    }
-
-    @Suppress("ComplexMethod")
     override fun fromMessageToLocalNotificationMessage(
         message: NotificationMessageEntity
     ): LocalNotificationMessage? {
@@ -236,6 +215,8 @@ class MessageMapperImpl(
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
+            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_CREATED -> null
         }
     }
 
@@ -305,6 +286,7 @@ class MessageMapperImpl(
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
     }
 
+    @Suppress("ComplexMethod")
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
         is MessageContent.MemberChange -> {
             val memberUserIdList = this.members.map { it.toDao() }
@@ -314,6 +296,12 @@ class MessageMapperImpl(
 
                 is MessageContent.MemberChange.Removed ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
+
+                is MessageContent.MemberChange.CreationAdded ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
+
+                is MessageContent.MemberChange.FailedToAdd ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
             }
         }
 
@@ -324,6 +312,8 @@ class MessageMapperImpl(
         is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
         is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
+        is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
+        is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -389,12 +379,15 @@ class MessageMapperImpl(
         else -> MessageContent.QuotedMessageDetails.Invalid
     }
 
+    @Suppress("ComplexMethod")
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { it.toModel() }
             when (this.memberChangeType) {
                 MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
             }
         }
 
@@ -405,6 +398,8 @@ class MessageMapperImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+        is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
+        is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
     }
 }
 
@@ -439,6 +434,19 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
+    is MessagePreviewEntityContent.MembersCreationAdded -> MessagePreviewContent.WithUser.MembersCreationAdded(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
+    is MessagePreviewEntityContent.MembersFailedToAdded -> MessagePreviewContent.WithUser.MembersFailedToAdd(
+        senderName = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
+    is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)

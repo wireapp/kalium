@@ -290,7 +290,7 @@ class IncrementalSyncManagerTest {
             .withWorkerReturning(flowThatFailsOnFirstTime())
             .withDisconnectConnectionPolicy()
             .withRecoveringFromFailure()
-            .withNextExponentialDuration(10.seconds)
+            .withNextExponentialDuration(1.seconds)
             .arrange()
 
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
@@ -335,7 +335,7 @@ class IncrementalSyncManagerTest {
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
-            withNextExponentialDuration(10.seconds)
+            withNextExponentialDuration(1.seconds)
         }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {

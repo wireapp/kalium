@@ -25,6 +25,8 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.MockEngine
@@ -51,14 +53,18 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-internal interface ApiTest {
+internal abstract class ApiTest {
+
+    init {
+        KaliumUserAgentProvider.setUserAgent("test/useragent")
+    }
 
     private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
 
     private val loadToken: suspend () -> BearerTokens?
         get() = {
-            val session = TEST_SESSION_NAMAGER.session() ?: error("missing user session")
+            val session = TEST_SESSION_NAMAGER.session()
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
 
@@ -79,23 +85,30 @@ internal interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedNetworkClient(
+    protected fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: suspend (HttpRequestData.() -> Unit) = {}
-    ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
+        assertion: suspend (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String> = mutableMapOf()
+    ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
     fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
-        assertion: suspend (HttpRequestData.() -> Unit) = {}
+        assertion: suspend (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>?
     ): AuthenticatedNetworkClient {
+        val head: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
                 content = responseBody,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
+                headers = HeadersImpl(head)
             )
         }
         return AuthenticatedNetworkContainerV0(
@@ -306,6 +319,7 @@ internal interface ApiTest {
 
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json.withParameter("charset", "UTF-8"))
+    fun HttpRequestData.assertJsonJose() = assertContentType(ContentType.Application.JoseJson.withParameter("charset", "UTF-8"))
     fun HttpRequestData.assertContentType(contentType: ContentType) =
         assertTrue(
             contentType.match(this.body.contentType ?: ContentType.Any),

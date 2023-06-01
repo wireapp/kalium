@@ -26,7 +26,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class UserSearchApiV0Test : ApiTest {
+internal class UserSearchApiV0Test : ApiTest() {
 
     @Test
     fun givenRequestWithSearchQueryAndDomain_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =

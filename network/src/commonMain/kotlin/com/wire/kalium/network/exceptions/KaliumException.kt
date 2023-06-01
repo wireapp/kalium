@@ -139,6 +139,10 @@ fun KaliumException.InvalidRequestError.isInvalidHandle(): Boolean {
     return errorResponse.label == INVALID_HANDLE
 }
 
+fun KaliumException.InvalidRequestError.isTooManyRequests(): Boolean {
+    return errorResponse.code == HttpStatusCode.TooManyRequests.value
+}
+
 fun KaliumException.InvalidRequestError.isHandleExists(): Boolean {
     return errorResponse.label == HANDLE_EXISTS
 }

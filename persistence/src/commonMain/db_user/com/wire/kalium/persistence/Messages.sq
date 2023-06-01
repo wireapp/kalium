@@ -175,6 +175,16 @@ CREATE TABLE MessageConversationReceiptModeChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationTimerChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      message_timer INTEGER DEFAULT(NULL),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -275,7 +285,8 @@ QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
-ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
+ConversationTimerChangedContent.message_timer AS messageTimerChanged
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -295,6 +306,7 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 -- end joins for quoted messages
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
+LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
@@ -306,6 +318,7 @@ AS SELECT
     Message.creation_date AS date,
     Message.visibility AS visibility,
     Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
     User.name AS senderName,
     User.connection_status AS senderConnectionStatus,
     User.deleted AS senderIsDeleted,
@@ -499,6 +512,10 @@ insertConversationReceiptModeChanged:
 INSERT OR IGNORE INTO MessageConversationReceiptModeChangedContent(message_id, conversation_id, receipt_mode)
 VALUES(?, ?, ?);
 
+insertConversationMessageTimerChanged:
+INSERT OR IGNORE INTO MessageConversationTimerChangedContent(message_id, conversation_id, message_timer)
+VALUES(?, ?, ?);
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -520,13 +537,13 @@ SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetContent {
-    UPDATE MessageAssetContent
+    UPDATE OR ROLLBACK Message
+    SET visibility = :visibility
+    WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
+
+    UPDATE OR ROLLBACK MessageAssetContent
     SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
-
-    UPDATE Message
-    SET visibility = :visibility
-    WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
 updateMessageTextContent:
@@ -549,7 +566,7 @@ countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ?  ORDER BY MessageDetailsView.date DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
@@ -598,7 +615,9 @@ WHERE message_id IN (
 
 promoteMessageToSentUpdatingServerTime {
 UPDATE Message
-SET creation_date = :server_creation_date, status = 'SENT'
+SET
+    creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
+    status = 'SENT'
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
 UPDATE OR IGNORE Message

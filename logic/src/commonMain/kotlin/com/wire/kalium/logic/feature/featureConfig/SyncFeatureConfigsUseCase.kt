@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.configuration.SelfDeletingMessagesStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -30,7 +30,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
@@ -39,6 +40,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /**
  * This use case is to get the file sharing status of the team management settings from the server and
@@ -51,14 +55,13 @@ internal interface SyncFeatureConfigsUseCase {
 internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
     private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
-            // TODO handle other feature flags
+            // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             handleGuestRoomLinkFeatureFlag(it.guestRoomLinkModel)
             handleFileSharingStatus(it.fileSharingModel)
             handleMLSStatus(it.mlsModel)
@@ -98,16 +101,20 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
-        if (kaliumConfigs.fileRestrictionEnabled) {
-            userConfigRepository.setFileSharingStatus(false, null)
-        } else {
-            val status: Boolean = model.status == Status.ENABLED
-            val isStatusChanged = when (isFileSharingEnabledUseCase().isFileSharingEnabled) {
-                null, status -> false
-                else -> true
+        val newStatus: Boolean = model.status == Status.ENABLED
+        val currentStatus = userConfigRepository.isFileSharingEnabled()
+        val isStatusChanged: Boolean = when (currentStatus) {
+            is Either.Left -> false
+            is Either.Right -> {
+                when (currentStatus.value.state) {
+                    FileSharingStatus.Value.Disabled -> newStatus
+                    FileSharingStatus.Value.EnabledAll -> !newStatus
+                    // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
+                    is FileSharingStatus.Value.EnabledSome -> !newStatus
+                }
             }
-            userConfigRepository.setFileSharingStatus(status, isStatusChanged)
         }
+        userConfigRepository.setFileSharingStatus(newStatus, isStatusChanged)
     }
 
     private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
@@ -131,14 +138,24 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setSelfDeletingMessagesStatus(SelfDeletingMessagesStatus(false, null, null))
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
+                TeamSettingsSelfDeletionStatus(
+                    enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                    hasFeatureChanged = null
+                )
+            )
         } else {
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
-            userConfigRepository.setSelfDeletingMessagesStatus(
-                SelfDeletingMessagesStatus(
-                    selfDeletingMessagesEnabled,
-                    null, // when syncing the initial status, we don't know if the status has changed so we set it to null
-                    model.config.enforcedTimeoutSeconds
+            val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
+            val selfDeletionTimer = when {
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
+                selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
+                else -> SelfDeletionTimer.Disabled
+            }
+            userConfigRepository.setTeamSettingsSelfDeletionStatus(
+                TeamSettingsSelfDeletionStatus(
+                    enforcedSelfDeletionTimer = selfDeletionTimer,
+                    hasFeatureChanged = null, // when syncing the initial status, we don't know if the status changed so we set it to null
                 )
             )
         }

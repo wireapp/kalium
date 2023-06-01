@@ -40,15 +40,22 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.util.computeIfAbsent
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
-class AuthenticationScopeProvider {
+class AuthenticationScopeProvider(
+    private val userAgent: String
+) {
 
-    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>, AuthenticationScope> by lazy {
+    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>,
+            AuthenticationScope> by lazy {
         ConcurrentMutableMap()
     }
 
-    fun provide(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?): AuthenticationScope =
+    fun provide(
+        serverConfig: ServerConfig,
+        proxyCredentials: ProxyCredentials?
+    ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
+                userAgent,
                 serverConfig,
                 proxyCredentials
             )
@@ -56,6 +63,7 @@ class AuthenticationScopeProvider {
 }
 
 class AuthenticationScope(
+    private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
@@ -63,7 +71,8 @@ class AuthenticationScope(
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) }
+            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
+            userAgent
         )
     }
     private val loginRepository: LoginRepository

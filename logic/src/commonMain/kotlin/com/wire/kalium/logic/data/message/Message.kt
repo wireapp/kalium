@@ -274,6 +274,13 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+                is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
+                    typeKey to "conversationMessageTimerChanged"
+                )
+
+                is MessageContent.ConversationCreated -> mutableMapOf(
+                    typeKey to "conversationCreated"
+                )
             }
 
             val standardProperties = mapOf(

@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.plugins.darwinTargets
+import com.wire.kalium.plugins.appleTargets
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -104,7 +104,7 @@ kotlin {
                 implementation(libs.coreCryptoAndroid)
             }
         }
-        val darwinMain by getting {
+        val appleMain by getting {
             dependencies {
                 implementation(libs.coreCrypto)
             }
@@ -112,6 +112,6 @@ kotlin {
     }
 }
 
-project.darwinTargets().forEach {
+project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
 }

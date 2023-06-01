@@ -45,6 +45,8 @@ class ByteArrayConverter : ContentConverter {
 
 public val ContentType.Message.Mls: ContentType
     get() = ContentType("message", "mls")
+public val ContentType.Application.JoseJson: ContentType
+    get() = ContentType("application", "jose+json")
 
 public val ContentType.Application.XProtoBuf: ContentType
     get() = ContentType("application", "x-protobuf")

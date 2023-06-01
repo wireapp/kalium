@@ -57,23 +57,33 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetMessageAssetUseCaseTest {
 
-    @Test
-    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest(testDispatcher.default) {
-        // Given
+    private fun getSuccessfulFlowArrangement(
+        conversationId: ConversationId = ConversationId("some-conversation-id", "some-domain.com"),
+        messageId: String = "some-message-id",
+        downloadStatus: Message.DownloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
+        uploadStatus: Message.UploadStatus = Message.UploadStatus.UPLOADED,
+        encryptedPath: Path = "output_encrypted_path".toPath(),
+    ): Arrangement {
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
         val (fakeFileSystem, rootPath) = createFileSystem()
-        val encryptedPath = "output_encrypted_path".toPath()
         val rawDataPath = copyDataToDummyPath(expectedDecodedAsset, rootPath, fakeFileSystem)
         val rawDataSource = fakeFileSystem.source(rawDataPath)
         val encryptedDataSink = fakeFileSystem.sink(encryptedPath)
         encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
+        return Arrangement()
+            .withSuccessfulFlow(conversationId, messageId, encryptedPath, randomAES256Key, downloadStatus, uploadStatus)
+    }
 
+    @Test
+    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest(testDispatcher.default) {
+        // Given
+        val encryptedPath = "output_encrypted_path".toPath()
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
-        val (_, getMessageAsset) = Arrangement()
-            .withSuccessfulFlow(someConversationId, someMessageId, encryptedPath, randomAES256Key)
-            .arrange()
+        val (_, getMessageAsset) =
+            getSuccessfulFlowArrangement(conversationId = someConversationId, messageId = someMessageId, encryptedPath = encryptedPath)
+                .arrange()
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId).await()
@@ -122,12 +132,58 @@ class GetMessageAssetUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAssetNotDownloadedButAlreadyUploaded_whenGettingAsset_thenFetchAssetAndDownloadIfNeeded() = runTest(testDispatcher.default) {
+        // Given
+        val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+        val someMessageId = "some-message-id"
+        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(
+            someConversationId, someMessageId, Message.DownloadStatus.NOT_DOWNLOADED, Message.UploadStatus.UPLOADED
+        ).arrange()
+
+        // When
+        getMessageAsset(someConversationId, someMessageId).await()
+
+        // Then
+        verify(arrangement.assetDataSource)
+            .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
+            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(true))
+            .wasInvoked(once)
+        verify(arrangement.updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+            .with(matching { it == Message.DownloadStatus.SAVED_INTERNALLY }, eq(someConversationId), eq(someMessageId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAssetStoredButUploadFailed_whenGettingAsset_thenFetchAssetFromLocalWithoutDownloading() = runTest(testDispatcher.default) {
+        // Given
+        val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+        val someMessageId = "some-message-id"
+        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(
+            someConversationId, someMessageId, Message.DownloadStatus.SAVED_INTERNALLY, Message.UploadStatus.FAILED_UPLOAD
+        ).arrange()
+
+        // When
+        getMessageAsset(someConversationId, someMessageId).await()
+
+        // Then
+        verify(arrangement.assetDataSource)
+            .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
+            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(false))
+            .wasInvoked(once)
+        verify(arrangement.updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+            .with(matching { it == Message.DownloadStatus.SAVED_INTERNALLY }, eq(someConversationId), eq(someMessageId))
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
-        private val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
         val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
@@ -143,26 +199,27 @@ class GetMessageAssetUseCaseTest {
         val someAssetId = "some-asset-id"
         val someAssetToken = "==some-asset-token"
 
-        private val mockedImageMessage by lazy {
+        val mockedImageContent by lazy {
+            AssetContent(
+                sizeInBytes = 1000,
+                name = "some_asset.jpg",
+                mimeType = "image/jpeg",
+                metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
+                remoteData = AssetContent.RemoteData(
+                    otrKey = encryptionKey.data,
+                    sha256 = ByteArray(16),
+                    assetId = someAssetId,
+                    assetToken = someAssetToken,
+                    assetDomain = "some-asset-domain.com",
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                ),
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+            )
+        }
+        val mockedImageMessage by lazy {
             Message.Regular(
                 id = msgId,
-                content = MessageContent.Asset(
-                    AssetContent(
-                        sizeInBytes = 1000,
-                        name = "some_asset.jpg",
-                        mimeType = "image/jpeg",
-                        metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
-                        remoteData = AssetContent.RemoteData(
-                            otrKey = encryptionKey.data,
-                            sha256 = ByteArray(16),
-                            assetId = someAssetId,
-                            assetToken = someAssetToken,
-                            assetDomain = "some-asset-domain.com",
-                            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                        ),
-                        downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
-                    )
-                ),
+                content = MessageContent.Asset(mockedImageContent),
                 conversationId = convId,
                 date = "22-03-2022",
                 senderUserId = userId,
@@ -180,7 +237,9 @@ class GetMessageAssetUseCaseTest {
             conversationId: ConversationId,
             messageId: String,
             encodedPath: Path,
-            secretKey: AES256Key
+            secretKey: AES256Key,
+            downloadStatus: Message.DownloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
+            uploadStatus: Message.UploadStatus = Message.UploadStatus.UPLOADED
         ): Arrangement {
             convId = conversationId
             msgId = messageId
@@ -188,7 +247,18 @@ class GetMessageAssetUseCaseTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(mockedImageMessage))
+                .thenReturn(
+                    Either.Right(
+                        mockedImageMessage.copy(
+                            content = MessageContent.Asset(
+                                mockedImageContent.copy(
+                                    downloadStatus = downloadStatus,
+                                    uploadStatus = uploadStatus
+                                )
+                            )
+                        )
+                    )
+                )
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(
@@ -196,7 +266,9 @@ class GetMessageAssetUseCaseTest {
                     anything(),
                     anything(),
                     anything(),
+                    anything(),
                     matching { it.data.contentEquals(secretKey.data) },
+                    anything(),
                     anything()
                 )
                 .thenReturn(Either.Right(encodedPath))
@@ -232,7 +304,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(any(), any(), any(), anything(), any(), any())
+                .whenInvokedWith(any(), any(), any(), anything(), any(), any(), any())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }

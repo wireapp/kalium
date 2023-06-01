@@ -49,8 +49,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         authTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
-    ): Result =
-        sessionRepository.doesValidSessionExist(authTokens.userId).fold(
+    ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->

@@ -19,16 +19,24 @@
 package com.wire.kalium.api.v0.teams
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.model.ServiceDetailsResponseJson
 import com.wire.kalium.model.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
-class TeamsApiV0Test : ApiTest {
+internal class TeamsApiV0Test : ApiTest() {
 
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =
@@ -63,11 +71,61 @@ class TeamsApiV0Test : ApiTest {
             teamsApi.deleteConversation(conversationId, teamId = DUMMY_TEAM_ID)
         }
 
+    @Test
+    fun givenAValidWhitelistedServicesRequest_whenGettingWhitelistedServices_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                SERVICES_LIST_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertGet()
+                    assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/services/whitelisted")
+                    assertQueryParameter("size", "2")
+                }
+            )
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+            teamsApi.whiteListedServices(DUMMY_TEAM_ID, 2).also {
+                assertIs<NetworkResponse.Success<ServiceDetailResponse>>(it)
+                assertEquals(SERVICES_LIST_RESPONSE.serializableData, it.value)
+            }
+        }
+
+    @Test
+    fun givenInvalidTeamId_whenGettingWhitelistedServices_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val errorResponse = ErrorResponseJson.valid(
+                ErrorResponse(
+                    code = HttpStatusCode.NotFound.value,
+                    message = "Team not found",
+                    label = "team.not.found"
+                )
+            )
+            val networkClient = mockAuthenticatedNetworkClient(
+                errorResponse.rawJson,
+                statusCode = HttpStatusCode.NotFound,
+                assertion = {
+                    assertGet()
+                    assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/services/whitelisted")
+                    assertQueryParameter("size", "2")
+                }
+            )
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+            teamsApi.whiteListedServices(DUMMY_TEAM_ID, 2).also {
+                assertIs<NetworkResponse.Error>(it)
+                assertIs<KaliumException.InvalidRequestError>(it.kException)
+                assertEquals(
+                    HttpStatusCode.NotFound.value,
+                    (it.kException as KaliumException.InvalidRequestError).errorResponse.code
+                )
+            }
+        }
+
     private companion object {
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
         const val DUMMY_TEAM_ID = "770b0623-ffd5-4e08-8092-7a6b9b9ca3b4"
         val GET_TEAM_MEMBER_CLIENT_RESPONSE = TeamsResponsesJson.GetTeamsMembers.validGetTeamsMembers
+        val SERVICES_LIST_RESPONSE = ServiceDetailsResponseJson.valid
     }
 }

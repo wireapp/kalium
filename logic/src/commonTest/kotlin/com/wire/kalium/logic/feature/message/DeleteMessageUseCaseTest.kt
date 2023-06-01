@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
@@ -68,7 +69,7 @@ class DeleteMessageUseCaseTest {
             .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
-            .withMessageByStatus(Message.Status.SENT)
+            .withTextMessage(Message.Status.SENT)
             .arrange()
 
         // when
@@ -102,7 +103,7 @@ class DeleteMessageUseCaseTest {
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
-            .withMessageByStatus(Message.Status.FAILED)
+            .withTextMessage(Message.Status.FAILED)
             .arrange()
 
         // when
@@ -134,7 +135,7 @@ class DeleteMessageUseCaseTest {
             .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
-            .withMessageByStatus(Message.Status.SENT)
+            .withTextMessage(Message.Status.SENT)
             .arrange()
 
         // when
@@ -203,6 +204,46 @@ class DeleteMessageUseCaseTest {
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
+            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAEphemeralSentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
+        // given
+        val deleteForEveryone = true
+
+        val (arrangement, deleteMessageUseCase) = Arrangement()
+            .withSendMessageSucceed()
+            .withSelfUser(TestUser.SELF)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withCompletedSlowSync()
+            .withMessageRepositoryDeletionSucceed()
+            .withTextMessage(
+                Message.Status.SENT,
+                expirationData = Message.ExpirationData(
+                    expireAfter = 10.seconds,
+                    selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                )
+            )
+            .arrange()
+
+        // when
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+
+        // then
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching { message ->
+                    message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
+                },
+                anything()
+            )
+            .wasInvoked(exactly = once)
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::deleteMessage)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
     }
@@ -277,6 +318,13 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withMessageRepositoryDeletionSucceed() = apply{
+            given(messageRepository)
+                .suspendFunction(messageRepository::deleteMessage)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withMessageRepositoryDeleteMessageSucceed() = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::deleteMessage)
@@ -284,11 +332,11 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withMessageByStatus(status: Message.Status) = apply {
+        fun withTextMessage(status: Message.Status, expirationData: Message.ExpirationData? = null) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status)))
+                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData)))
         }
 
         fun withAssetMessage() = apply {

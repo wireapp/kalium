@@ -19,6 +19,7 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
@@ -29,17 +30,20 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  *
  * @see commonDokkaConfig
  */
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 fun Project.configureDefaultMultiplatform(
-    enableDarwin: Boolean,
+    enableApple: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
-    includeNativeInterop: Boolean
+    includeNativeInterop: Boolean,
+    androidNamespaceSuffix: String = this.name
 ) {
     val kotlinExtension = extensions.findByName("kotlin") as? KotlinMultiplatformExtension
     check(kotlinExtension != null) {
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
+        targetHierarchy.default()
         jvm { commonJvmConfig(includeNativeInterop) }
 
         android { commmonKotlinAndroidTargetConfig() }
@@ -48,14 +52,14 @@ fun Project.configureDefaultMultiplatform(
             js { commonJsConfig(enableJsTests) }
         }
 
-        if (enableDarwin) {
-            commonDarwinMultiplatformConfig()
+        if (enableApple) {
+            commonAppleMultiplatformConfig()
         }
     }
 
     (this as org.gradle.api.plugins.ExtensionAware).extensions
         .configure<com.android.build.gradle.LibraryExtension>("android") {
-            commonAndroidLibConfig(includeNativeInterop)
+            commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
         }
 
     // Add common runner and rules to Android Instrumented Tests
