@@ -148,6 +148,14 @@ internal class ConversationDAOImpl internal constructor(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
+    override suspend fun getAllProteusTeamConversations(teamId: String): Flow<List<ConversationViewEntity>> {
+        return conversationQueries.selectAllTeamProteusConversations(teamId)
+            .asFlow()
+            .mapToList()
+            .flowOn(coroutineContext)
+            .map { it.map(conversationMapper::toModel) }
+    }
+
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()

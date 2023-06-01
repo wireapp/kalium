@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions")
@@ -147,4 +148,15 @@ interface ConversationApi {
         conversationId: ConversationId,
         messageTimer: Long?
     ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate>
+
+    suspend fun updateProtocol(
+        conversationId: ConversationId,
+        protocol: ConvProtocol
+    ): NetworkResponse<UpdateConversationProtocolResponse>
+
+    companion object {
+        fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
+            APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
+        )
+    }
 }
