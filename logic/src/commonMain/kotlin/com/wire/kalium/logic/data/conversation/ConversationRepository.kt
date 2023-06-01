@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
@@ -110,6 +111,7 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
+    suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -370,6 +372,12 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
+
+    override suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, Flow<List<Conversation>>> =
+        wrapStorageRequest {
+            conversationDAO.getAllProteusTeamConversations(teamId.value)
+                .map { it.map(conversationMapper::fromDaoModel) }
+        }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
         combine(
