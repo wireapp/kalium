@@ -120,11 +120,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingMixedConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
-        conversationDAO.insertConversation(conversationEntity5)
-        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+        conversationDAO.insertConversation(conversationEntity6)
+        insertTeamUserAndMember(team, user2, conversationEntity6.id)
         val result =
-            conversationDAO.getConversationIdByGroupID((conversationEntity5.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId)
-        assertEquals(conversationEntity5.id, result)
+            conversationDAO.getConversationIdByGroupID((conversationEntity6.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId)
+        assertEquals(conversationEntity6.id, result)
     }
     @Test
     fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
@@ -137,12 +137,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingMixedConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
-        conversationDAO.insertConversation(conversationEntity5)
+        conversationDAO.insertConversation(conversationEntity6)
         conversationDAO.insertConversation(conversationEntity3)
-        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+        insertTeamUserAndMember(team, user2, conversationEntity6.id)
         val result =
             conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
-        assertEquals(listOf(conversationEntity5.toViewEntity(user2)), result)
+        assertEquals(listOf(conversationEntity6.toViewEntity(user2)), result)
     }
 
     @Test
@@ -228,13 +228,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingMixedConversation_whenAddingMembersByGroupId_ThenAllMembersCanBeRetrieved() = runTest {
-        conversationDAO.insertConversation(conversationEntity5)
+        conversationDAO.insertConversation(conversationEntity6)
         conversationDAO.insertMembers(
             listOf(member1, member2),
-            (conversationEntity5.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId
+            (conversationEntity6.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId
         )
 
-        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity5.id).first().toSet())
+        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity6.id).first().toSet())
     }
 
     @Test
@@ -878,13 +878,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenMixedConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
         // given
-        conversationDAO.insertConversation(conversationEntity5)
+        conversationDAO.insertConversation(conversationEntity6)
 
         // when
-        val result = conversationDAO.getConversationProtocolInfo(conversationEntity5.id)
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity6.id)
 
         // then
-        assertEquals(conversationEntity5.protocolInfo, result)
+        assertEquals(conversationEntity6.protocolInfo, result)
     }
 
     @Test
@@ -1141,7 +1141,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = null
         )
 
-        val conversationEntity5 = ConversationEntity(
+        val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
             "conversation5",
             ConversationEntity.Type.GROUP,
