@@ -1,0 +1,4 @@
+import kotlin.Boolean;
+
+ALTER TABLE Conversation ADD COLUMN incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0;
+ALTER TABLE User ADD COLUMN incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0;
