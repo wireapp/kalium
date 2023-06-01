@@ -35,17 +35,19 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.logic.feature.message.ephemeral.SelfDeleteMessageSenderHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.isPositiveNotNull
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
@@ -130,6 +132,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
+    private val selfDeleteMessageSenderHandler: SelfDeleteMessageSenderHandler,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -144,7 +147,7 @@ internal class MessageSenderImpl internal constructor(
                     else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
                 result
                     .onFailure {
-                        val type = message.content.getType()
+                        val type = getType(message.content) ?: "Unknown"
                         logger.i("Failed to send message of type $type. Failure = $it")
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                             failure = it,
@@ -216,7 +219,15 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
+            }.onSuccess {
+                startSelfDeletionIfNeeded(message)
             }
+    }
+
+    private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
+        if (message is Message.Regular && message.expirationData?.expireAfter.isPositiveNotNull()) {
+            selfDeleteMessageSenderHandler.enqueueSelfDeletion(message)
+        }
     }
 
     private suspend fun attemptToSendWithProteus(
