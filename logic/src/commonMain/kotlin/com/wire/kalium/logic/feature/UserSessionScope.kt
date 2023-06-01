@@ -56,6 +56,10 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
+import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
+import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
@@ -488,8 +492,23 @@ class UserSessionScope internal constructor(
             memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
+            newConversationMembersRepository,
+            newGroupConversationStartedMessageCreator,
             userId,
             selfTeamId
+        )
+
+    private val newGroupConversationStartedMessageCreator: NewGroupConversationStartedMessageCreator
+        get() = NewGroupConversationStartedMessageCreatorImpl(
+            persistMessage,
+            userId
+        )
+
+    private val newConversationMembersRepository: NewConversationMembersRepository
+        get() = NewConversationMembersRepositoryImpl(
+            persistMessage,
+            userStorage.database.conversationDAO,
+            userId
         )
 
     private val messageRepository: MessageRepository
@@ -526,7 +545,9 @@ class UserSessionScope internal constructor(
         )
 
     private val serviceRepository: ServiceRepository
-        get() = ServiceDataSource(serviceDAO = userStorage.database.serviceDAO)
+        get() = ServiceDataSource(
+            serviceDAO = userStorage.database.serviceDAO
+        )
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
@@ -1238,8 +1259,10 @@ class UserSessionScope internal constructor(
 
     val service: ServiceScope
         get() = ServiceScope(
-        serviceRepository
-    )
+            serviceRepository,
+            teamRepository,
+            selfTeamId
+        )
 
     val calls: CallsScope
         get() = CallsScope(

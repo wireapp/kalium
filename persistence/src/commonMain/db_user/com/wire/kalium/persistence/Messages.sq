@@ -553,13 +553,13 @@ SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetContent {
-    UPDATE MessageAssetContent
+    UPDATE OR ROLLBACK Message
+    SET visibility = :visibility
+    WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
+
+    UPDATE OR ROLLBACK MessageAssetContent
     SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
-
-    UPDATE Message
-    SET visibility = :visibility
-    WHERE id = :messageId AND conversation_id = : conversationId;
 }
 
 updateMessageTextContent:
@@ -631,7 +631,9 @@ WHERE message_id IN (
 
 promoteMessageToSentUpdatingServerTime {
 UPDATE Message
-SET creation_date = :server_creation_date, status = 'SENT'
+SET
+    creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
+    status = 'SENT'
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
 UPDATE OR IGNORE Message
