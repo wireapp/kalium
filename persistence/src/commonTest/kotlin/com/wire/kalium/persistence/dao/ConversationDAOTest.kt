@@ -152,6 +152,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversations_ThenAllProteusTeamConversationsCanBeRetrieved() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity4)
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+
+        val result =
+            conversationDAO.getAllProteusTeamConversations(teamId)
+
+        assertEquals(listOf(conversationEntity5.toViewEntity()), result.first())
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
@@ -1057,6 +1070,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null
+        )
+        val conversationEntity5 = ConversationEntity(
+            QualifiedIDEntity("5", "wire.com"),
+            "conversation1",
+            ConversationEntity.Type.GROUP,
+            teamId,
+            ConversationEntity.ProtocolInfo.Proteus,
+            creatorId = "someValue",
+            lastNotificationDate = null,
+            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+            messageTimer = null
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

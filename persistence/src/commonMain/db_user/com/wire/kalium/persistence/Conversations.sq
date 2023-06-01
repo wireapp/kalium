@@ -239,6 +239,9 @@ ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
+selectAllTeamProteusConversations:
+SELECT * FROM ConversationDetails WHERE type IS 'GROUP' AND protocol IS 'PROTEUS' AND teamId = ?;
+
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 

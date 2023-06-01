@@ -27,6 +27,8 @@ import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
@@ -91,6 +93,48 @@ internal class ConversationApiV4Test : ApiTest() {
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub"
         )
+    }
+
+    @Test
+    fun given200Response_whenUpdatingConversationProtocol_thenEventIsParsedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validUpdateProtocol.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPut()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        val response = conversationApi.updateProtocol(conversationId, ConvProtocol.MIXED)
+
+        assertIs<NetworkResponse.Success<UpdateConversationProtocolResponse>>(response)
+        assertIs<UpdateConversationProtocolResponse.ProtocolUpdated>(response.value)
+        assertEquals(
+            EventContentDTOJson.validUpdateProtocol.serializableData,
+            (response.value as UpdateConversationProtocolResponse.ProtocolUpdated).event
+        )
+    }
+
+    @Test
+    fun given204Response_whenUpdatingConversationProtocol_thenEventIsParsedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        val response = conversationApi.updateProtocol(conversationId, ConvProtocol.MIXED)
+
+        assertIs<NetworkResponse.Success<UpdateConversationProtocolResponse>>(response)
+        assertIs<UpdateConversationProtocolResponse.ProtocolUnchanged>(response.value)
     }
 
     @Test
@@ -233,6 +277,7 @@ internal class ConversationApiV4Test : ApiTest() {
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_PROTOCOL = "protocol"
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }
 }
