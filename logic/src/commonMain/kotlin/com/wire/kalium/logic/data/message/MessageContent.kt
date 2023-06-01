@@ -273,6 +273,9 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MissedCall -> "MissedCall"
     is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
     is MessageContent.TeamMemberRemoved -> "TeamMemberRemoved"
+    is MessageContent.ConversationCreated -> "ConversationCreated"
+    is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
+    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     null -> "Unknown"
 }
 
