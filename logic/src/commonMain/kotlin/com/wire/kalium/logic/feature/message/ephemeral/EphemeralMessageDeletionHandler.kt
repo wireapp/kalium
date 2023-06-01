@@ -42,7 +42,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override fun enqueueSelfDeletion(message: Message.Regular) {
-        val canBeDeleted = when(message.status) {
+        val canBeDeleted = when (message.status) {
             Message.Status.PENDING -> false
             Message.Status.SENT,
             Message.Status.READ,
