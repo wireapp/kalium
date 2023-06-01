@@ -119,6 +119,11 @@ class NewConversationMembersRepositoryTest {
 
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching { it.content is CreationAdded })
+            .wasInvoked(once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
                 it.content is FailedToAdd
             })
