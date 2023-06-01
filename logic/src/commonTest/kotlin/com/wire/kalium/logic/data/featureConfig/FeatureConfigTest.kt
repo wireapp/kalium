@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.data.featureConfig
 
+import kotlinx.datetime.Instant
+
 object FeatureConfigTest {
 
     @Suppress("LongParameterList")
@@ -40,7 +42,14 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED)
+        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
+        mlsMigrationModel: MLSMigrationModel = MLSMigrationModel(
+            Instant.DISTANT_FUTURE,
+            Instant.DISTANT_FUTURE,
+            100,
+            100,
+            Status.ENABLED
+        )
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -55,6 +64,7 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel,
         ssoModel,
         validateSAMLEmailsModel,
-        mlsModel
+        mlsModel,
+        mlsMigrationModel
     )
 }
