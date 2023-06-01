@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
@@ -35,7 +38,9 @@ data class KaliumConfigs(
     val wipeOnDeviceRemoval: Boolean = false,
     val wipeOnRootedDevice: Boolean = false,
     val isWebSocketEnabledByDefault: Boolean = false,
-    val certPinningConfig: Map<String, List<String>> = emptyMap()
+    val certPinningConfig: Map<String, List<String>> = emptyMap(),
+    // Interval between attempts to advance the proteus to MLS migration
+    val mlsMigrationInterval: Duration = 24.hours
 )
 
 sealed interface BuildFileRestrictionState {

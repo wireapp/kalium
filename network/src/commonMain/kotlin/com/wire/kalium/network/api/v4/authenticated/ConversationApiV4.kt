@@ -106,9 +106,4 @@ internal open class ConversationApiV4 internal constructor(
                 setBody(GenerateGuestLinkRequest(password))
             }
         }
-
-    companion object {
-        const val PATH_GROUP_INFO = "groupinfo"
-        const val PATH_SUBCONVERSATIONS = "subconversations"
-    }
 }
