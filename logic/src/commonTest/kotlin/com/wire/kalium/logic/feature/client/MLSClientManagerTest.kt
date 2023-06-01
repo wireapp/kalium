@@ -48,7 +48,7 @@ class MLSClientManagerTest {
     fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSEnabled(false)
+                .withIsAllowedToRegisterMLSClient(false)
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -64,7 +64,7 @@ class MLSClientManagerTest {
     fun givenMLSClientIsNotRegistered_whenObservingSyncFinishes_thenMLSClientIsRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSEnabled(true)
+                .withIsAllowedToRegisterMLSClient(true)
                 .withHasRegisteredMLSClient(Either.Right(false))
                 .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
                 .withRegisterMLSClientSuccessful()
@@ -87,7 +87,7 @@ class MLSClientManagerTest {
     fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withIsMLSEnabled(true)
+                .withIsAllowedToRegisterMLSClient(true)
                 .withHasRegisteredMLSClient(Either.Right(true))
                 .arrange()
 
@@ -114,7 +114,7 @@ class MLSClientManagerTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val isMLSEnabled = mock(classOf<IsMLSEnabledUseCase>())
+        val isAllowedToRegisterMLSClient = mock(classOf<IsAllowedToRegisterMLSClientUseCase>())
 
         @Mock
         val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
@@ -140,16 +140,16 @@ class MLSClientManagerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withIsMLSEnabled(enabled: Boolean) = apply {
-            given(isMLSEnabled)
-                .function(isMLSEnabled::invoke)
+        fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {
+            given(isAllowedToRegisterMLSClient)
+                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
                 .whenInvoked()
                 .thenReturn(enabled)
         }
 
         fun arrange() = this to MLSClientManagerImpl(
             clientIdProvider,
-            isMLSEnabled,
+            isAllowedToRegisterMLSClient,
             incrementalSyncRepository,
             lazy { slowSyncRepository },
             lazy { clientRepository },
