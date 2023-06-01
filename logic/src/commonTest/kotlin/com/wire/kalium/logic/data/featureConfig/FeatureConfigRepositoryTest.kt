@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -41,6 +42,8 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -74,6 +77,13 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
                 emptyList(),
+                Status.ENABLED
+            ),
+            MLSMigrationModel(
+                Instant.DISTANT_FUTURE,
+                Instant.DISTANT_FUTURE,
+                100,
+                100,
                 Status.ENABLED
             )
         )
@@ -149,7 +159,11 @@ class FeatureConfigRepositoryTest {
                 ConvProtocol.MLS,
                 emptyList(),
                 1
-            ), FeatureFlagStatusDTO.ENABLED)
+            ), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 100),
+                FeatureFlagStatusDTO.ENABLED
+            )
         )
 
         @Mock
