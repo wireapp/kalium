@@ -89,7 +89,10 @@ enum class ConvProtocol {
     PROTEUS,
 
     @SerialName("mls")
-    MLS;
+    MLS,
+
+    @SerialName("mixed")
+    MIXED;
 
     override fun toString(): String {
         return this.name.lowercase()

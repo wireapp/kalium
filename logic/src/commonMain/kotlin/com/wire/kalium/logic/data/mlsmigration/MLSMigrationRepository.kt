@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.persistence.dao.MetadataDAO
+import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -46,9 +48,24 @@ internal class MLSMigrationRepositoryImpl(
     private val featureConfigMapper: FeatureConfigMapper = MapperProvider.featureConfigMapper()
 ) : MLSMigrationRepository {
 
+    @Suppress("MagicNumber")
     override suspend fun fetchMigrationConfiguration(): Either<CoreFailure, Unit> {
         return wrapApiRequest { featureConfigApi.featureConfigs() }
-            .flatMap { it.mlsMigration?.let { setMigrationConfiguration(featureConfigMapper.fromDTO(it)) } ?: Either.Right(Unit) }
+            .flatMap {
+                it.mlsMigration?.let { mlsMigration ->
+                    setMigrationConfiguration(featureConfigMapper.fromDTO(mlsMigration))
+                } ?: run {
+                    setMigrationConfiguration(
+                        MLSMigrationModel( // TODO jacob debugging values while not implemented on BE
+                            Instant.DISTANT_PAST,
+                            Instant.DISTANT_PAST,
+                            100,
+                            100,
+                            Status.ENABLED
+                        )
+                    )
+                }
+            }
     }
 
     override suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel> =

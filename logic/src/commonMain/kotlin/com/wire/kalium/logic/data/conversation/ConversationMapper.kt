@@ -117,6 +117,7 @@ internal class ConversationMapperImpl(
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
         ConvProtocol.PROTEUS -> Protocol.PROTEUS
         ConvProtocol.MLS -> Protocol.MLS
+        ConvProtocol.MIXED -> Protocol.MLS // TODO jacob create separate case for mixed
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -355,7 +356,7 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(
+            ConvProtocol.MLS, ConvProtocol.MIXED -> ProtocolInfo.MLS( // TODO jacob create separate case for the MIXED case
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
