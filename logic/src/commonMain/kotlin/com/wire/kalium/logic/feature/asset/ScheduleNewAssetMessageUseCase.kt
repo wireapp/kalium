@@ -109,6 +109,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 ) : ScheduleNewAssetMessageUseCase {
 
     private var outGoingAssetUploadJob: Job? = null
+
+    @Suppress("LongMethod")
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -161,11 +163,11 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         }
                     }
                     launch {
-                    uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
-                        .onSuccess {
-                            // We delete asset added temporarily that was used to show the loading
-                            assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
-                        }
+                        uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                            .onSuccess {
+                                // We delete asset added temporarily that was used to show the loading
+                                assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
+                            }
                     }.invokeOnCompletion { cause ->
                         if (cause is CancellationException) {
                             kaliumLogger.d(
