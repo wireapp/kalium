@@ -201,6 +201,11 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
@@ -907,6 +912,14 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
         )
 
+    private val mlsMigrator: MLSMigrator
+        get() = MLSMigratorImpl(
+            selfTeamId,
+            conversationRepository,
+            mlsConversationRepository,
+            authenticatedNetworkContainer.conversationApi
+        )
+
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
         incrementalSyncRepository,
         lazy { clientRepository },
@@ -920,7 +933,7 @@ class UserSessionScope internal constructor(
         lazy { users.timestampKeyRepository })
 
     internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
-        isMLSEnabled,
+        isAllowedToRegisterMLSClient,
         incrementalSyncRepository,
         lazy { slowSyncRepository },
         lazy { clientRepository },
@@ -929,6 +942,15 @@ class UserSessionScope internal constructor(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
             )
         })
+    internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
+            kaliumConfigs,
+            featureSupport,
+            incrementalSyncRepository,
+            lazy { clientRepository },
+            lazy { users.timestampKeyRepository },
+            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, mlsMigrator) },
+            lazy { mlsMigrationRepository }
+    )
 
     internal val mlsMigrationRepository get() =
         MLSMigrationRepositoryImpl(
