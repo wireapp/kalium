@@ -122,7 +122,7 @@ interface MessageDAO {
     suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     )
 

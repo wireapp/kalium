@@ -48,6 +48,7 @@ carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
 protobufCodegen = "0.9.1"
 annotation = "1.2.0"
+apache-tika = "2.8.0"
 
 [plugins]
 # Home-made convention plugins
@@ -167,6 +168,7 @@ pbandk-runtime-macX64 = { module = "pro.streem.pbandk:pbandk-runtime-macosx64", 
 pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm64", version.ref = "pbandk" }
 pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
+apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }

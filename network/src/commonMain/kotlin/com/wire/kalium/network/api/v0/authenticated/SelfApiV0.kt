@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -35,7 +36,6 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 
 internal open class SelfApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -62,14 +62,17 @@ internal open class SelfApiV0 internal constructor(
 
     override suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean> =
         sessionManager.session()?.refreshToken?.let { cookie ->
-            httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
-                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
-                setBody(UpdateEmailRequest(email))
-            }.let { response ->
-                when {
-                    response.status.value == HttpStatusCode.NoContent.value -> NetworkResponse.Success(false, response)
-                    response.status.isSuccess() -> NetworkResponse.Success(true, response)
-                    else -> wrapKaliumResponse { response }
+            wrapKaliumResponse<Unit> {
+                httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
+                    header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
+                    setBody(UpdateEmailRequest(email))
+                }
+            }.flatMap { successResponse ->
+                with(successResponse) {
+                    when (httpCode) {
+                        HttpStatusCode.NoContent.value -> NetworkResponse.Success(false, headers, httpCode)
+                        else -> NetworkResponse.Success(true, headers, httpCode)
+                    }
                 }
             }
         } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
