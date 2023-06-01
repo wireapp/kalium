@@ -43,6 +43,7 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
@@ -105,12 +106,15 @@ private enum class CommitStrategy {
     ABORT
 }
 
-private fun CoreFailure.getStrategy(retryOnClientMismatch: Boolean = true): CommitStrategy {
+private fun CoreFailure.getStrategy(
+    retryOnClientMismatch: Boolean = true,
+    retryOnStaleMessage: Boolean = true
+): CommitStrategy {
     return if (this is NetworkFailure.ServerMiscommunication && this.kaliumException is KaliumException.InvalidRequestError) {
         if (this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
-            this.kaliumException.isMlsStaleMessage() ||
+            this.kaliumException.isMlsStaleMessage() && retryOnStaleMessage ||
             this.kaliumException.isMlsCommitMissingReferences()
         ) {
             CommitStrategy.KEEP_AND_RETRY
@@ -200,7 +204,6 @@ class MLSConversationDataSource(
                     idMapper.toCryptoModel(groupID)
                 )
             }
-
         }
     }
 
@@ -322,8 +325,15 @@ class MLSConversationDataSource(
     }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
+
+    private suspend fun internalAddMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        retryOnStaleMessage: Boolean
+    ): Either<CoreFailure, Unit> =
         commitPendingProposals(groupID).flatMap {
-            retryOnCommitFailure(groupID) {
+            retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         val clientKeyPackageList = keyPackages
@@ -412,7 +422,11 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members)
+                internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
+                    wrapMLSRequest {
+                        mlsClient.wipeConversation(groupID.toCrypto())
+                    }
+                }
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(
@@ -426,25 +440,32 @@ class MLSConversationDataSource(
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,
         retryOnClientMismatch: Boolean = true,
+        retryOnStaleMessage: Boolean = true,
         operation: suspend () -> Either<CoreFailure, Unit>
     ) =
         operation()
             .flatMapLeft {
-                handleCommitFailure(it, groupID, retryOnClientMismatch, operation)
+                handleCommitFailure(it, groupID, retryOnClientMismatch, retryOnStaleMessage, operation)
             }
 
     private suspend fun handleCommitFailure(
         failure: CoreFailure,
         groupID: GroupID,
         retryOnClientMismatch: Boolean,
+        retryOnStaleMessage: Boolean,
         retryOperation: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
-        return when (failure.getStrategy(retryOnClientMismatch)) {
+        return when (
+            failure.getStrategy(
+                retryOnClientMismatch = retryOnClientMismatch,
+                retryOnStaleMessage = retryOnStaleMessage
+            )
+        ) {
             CommitStrategy.KEEP_AND_RETRY -> keepCommitAndRetry(groupID)
             CommitStrategy.DISCARD_AND_RETRY -> discardCommitAndRetry(groupID, retryOperation)
             CommitStrategy.ABORT -> return discardCommit(groupID).flatMap { Either.Left(failure) }
         }.flatMapLeft {
-            handleCommitFailure(it, groupID, retryOnClientMismatch, retryOperation)
+            handleCommitFailure(it, groupID, retryOnClientMismatch, retryOnStaleMessage, retryOperation)
         }
     }
 

@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+
 data class KaliumConfigs(
     val isChangeEmailEnabled: Boolean = false,
     val forceConstantBitrateCalls: Boolean = false,
@@ -39,7 +42,9 @@ data class KaliumConfigs(
     val selfDeletingMessages: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,
     val wipeOnDeviceRemoval: Boolean = false,
-    val wipeOnRootedDevice: Boolean = false
+    val wipeOnRootedDevice: Boolean = false,
+    // Interval between attempts to advance the proteus to MLS migration
+    val mlsMigrationInterval: Duration = 24.hours
 )
 
 sealed interface BuildFileRestrictionState {
