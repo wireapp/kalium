@@ -22,6 +22,7 @@ import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.AppLock
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConferenceCalling
@@ -38,8 +39,10 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import kotlinx.datetime.Instant
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->
@@ -124,6 +127,10 @@ object FeatureConfigJson {
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             MLS(
                 MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(1), 1),
+                FeatureFlagStatusDTO.ENABLED
+            ),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 90),
                 FeatureFlagStatusDTO.ENABLED
             )
         ),
