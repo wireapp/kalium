@@ -19,15 +19,25 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV4
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.http.HttpStatusCode
+import io.ktor.client.request.put
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import okio.IOException
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -43,4 +53,30 @@ internal open class ConversationApiV4 internal constructor(
             apiModelMapper.fromApiV4(conversationResponseV4)
         }
 
+    override suspend fun updateProtocol(
+        conversationId: ConversationId,
+        protocol: ConvProtocol
+    ): NetworkResponse<UpdateConversationProtocolResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL") {
+            setBody(UpdateConversationProtocolRequest(protocol))
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(
+                    UpdateConversationProtocolResponse.ProtocolUnchanged, httpResponse
+                )
+                else -> {
+                    wrapKaliumResponse<EventContentDTO.Conversation.ProtocolUpdate> { httpResponse }
+                        .mapSuccess {
+                            UpdateConversationProtocolResponse.ProtocolUpdated(it)
+                        }
+                }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    companion object {
+        const val PATH_PROTOCOL = "protocol"
+    }
 }
