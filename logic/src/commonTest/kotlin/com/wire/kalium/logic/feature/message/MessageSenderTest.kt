@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
+import com.wire.kalium.logic.feature.message.ephemeral.SelfDeleteMessageSenderHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -727,6 +728,9 @@ class MessageSenderTest {
         @Mock
         val userRepository = configure(mock(UserRepository::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val selfDeleteMessageHandler = mock(SelfDeleteMessageSenderHandler::class)
+
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -746,7 +750,8 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             messageSendingInterceptor = messageSendingInterceptor,
             userRepository = userRepository,
-            scope = testScope
+            scope = testScope,
+            selfDeleteMessageSenderHandler = selfDeleteMessageHandler
         )
 
         fun withGetMessageById(failing: Boolean = false) = apply {

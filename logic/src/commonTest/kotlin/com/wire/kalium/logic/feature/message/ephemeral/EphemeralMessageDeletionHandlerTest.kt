@@ -42,7 +42,8 @@ class EphemeralMessageDeletionHandlerTest {
                 expireAfter = 1.seconds,
                 selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
             ),
-            isSelfMessage = false
+            isSelfMessage = false,
+            status = Message.Status.SENT
         )
 
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
@@ -82,7 +83,8 @@ class EphemeralMessageDeletionHandlerTest {
                 expireAfter = 1.seconds,
                 selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
             ),
-            isSelfMessage = false
+            isSelfMessage = false,
+            status = Message.Status.SENT
         )
 
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
@@ -141,7 +143,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
@@ -178,7 +181,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(
@@ -285,7 +289,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDelete = listOf(
@@ -331,7 +336,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDelete = listOf(
@@ -376,7 +382,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val twoSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -385,7 +392,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val threeSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -394,7 +402,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 3.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val fourSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -403,7 +412,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 4.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDelete = listOf(
@@ -464,7 +474,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val twoSecondEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -473,7 +484,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val threeSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -482,7 +494,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 3.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val fourSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -491,7 +504,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 4.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDelete = listOf(
@@ -551,7 +565,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val twoSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -559,7 +574,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = false
+                isSelfMessage = false,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDeletePastTheTime = listOf(
@@ -599,7 +615,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val twoSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -607,7 +624,8 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
-                isSelfMessage = true
+                isSelfMessage = true,
+                status = Message.Status.SENT
             )
 
             val pendingMessagesToDeletePastTheTime = listOf(
