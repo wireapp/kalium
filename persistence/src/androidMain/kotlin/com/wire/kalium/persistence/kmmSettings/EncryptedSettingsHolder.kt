@@ -29,32 +29,35 @@ private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.UserSettings -> "_${this.fileName}_master_key_"
 }
 
-@Synchronized
-private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
-    MasterKey
-        .Builder(context, keyAlias)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .setRequestStrongBoxBacked(true)
-        .build()
+internal actual object EncryptedSettingsBuilder {
+    @Synchronized
+    private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
+        MasterKey
+            .Builder(context, keyAlias)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .setRequestStrongBoxBacked(true)
+            .build()
 
-@Synchronized
-internal actual fun encryptedSettingsBuilder(
-    options: SettingOptions,
-    param: EncryptedSettingsPlatformParam
-): Settings {
-    return SharedPreferencesSettings(
-        if (options.shouldEncryptData) {
-            EncryptedSharedPreferences.create(
-                param.appContext,
-                options.fileName,
-                getOrCreateMasterKey(param.appContext, options.keyAlias()),
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-            )
-        } else {
-            param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
-        }, false
-    )
+    @Synchronized
+    fun build(
+        options: SettingOptions,
+        param: EncryptedSettingsPlatformParam
+    ): Settings {
+        return SharedPreferencesSettings(
+            if (options.shouldEncryptData) {
+                EncryptedSharedPreferences.create(
+                    param.appContext,
+                    options.fileName,
+                    getOrCreateMasterKey(param.appContext, options.keyAlias()),
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
+            } else {
+                param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
+            }, false
+        )
+    }
+
 }
 
 internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
