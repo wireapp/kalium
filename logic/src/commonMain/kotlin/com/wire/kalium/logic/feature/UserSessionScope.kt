@@ -96,6 +96,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
+import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
@@ -958,6 +959,12 @@ class UserSessionScope internal constructor(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
             )
         })
+
+    internal val mlsMigrationRepository get() =
+        MLSMigrationRepositoryImpl(
+            authenticatedNetworkContainer.featureConfigApi,
+            userStorage.database.metadataDAO
+        )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(
