@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either

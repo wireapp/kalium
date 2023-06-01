@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -45,7 +45,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 

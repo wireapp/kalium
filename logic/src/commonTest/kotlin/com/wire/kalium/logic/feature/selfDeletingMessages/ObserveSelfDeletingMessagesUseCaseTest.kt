@@ -22,12 +22,6 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -43,7 +37,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
