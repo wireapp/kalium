@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
 internal class FeatureConfigApiV0Test : ApiTest() {
 
     @Test
-    fun givenValidRequest_WhenCallingTheFileSharingApi_SuccessResponseExpected() = runTest {
+    fun givenValidRequest_WhenCallingTheFeatureConfigApi_SuccessResponseExpected() = runTest {
         // Given
         val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
@@ -55,7 +55,7 @@ internal class FeatureConfigApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenInValidRequestWithInsufficientPermission_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
+    fun givenInValidRequestWithInsufficientPermission_WhenCallingTheFeatureConfigApi_ErrorResponseExpected() = runTest {
         // Given
         val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
@@ -79,7 +79,7 @@ internal class FeatureConfigApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenInValidRequestWithNoTeam_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
+    fun givenInValidRequestWithNoTeam_WhenCallingFeatureConfigApi_ErrorResponseExpected() = runTest {
         // Given
         val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
