@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.featureConfigs
 
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,13 +54,16 @@ data class FeatureConfigResponse(
     @SerialName("mls")
     val mls: FeatureConfigData.MLS?,
     @SerialName("mlsE2EId")
-    val mlsE2EI: FeatureConfigData.E2EI?
+    val mlsE2EI: FeatureConfigData.E2EI?,
+    @SerialName("mlsMigration")
+    val mlsMigration: FeatureConfigData.MLSMigration?
 )
 
 @Serializable
 enum class FeatureFlagStatusDTO {
     @SerialName("enabled")
     ENABLED,
+
     @SerialName("disabled")
     DISABLED;
 }
@@ -77,6 +81,7 @@ data class ClassifiedDomainsConfigDTO(
     @SerialName("domains")
     val domains: List<String>
 )
+
 @Serializable
 data class MLSConfigDTO(
     @SerialName("protocolToggleUsers")
@@ -87,6 +92,22 @@ data class MLSConfigDTO(
     val allowedCipherSuites: List<Int>,
     @SerialName("defaultCipherSuite")
     val defaultCipherSuite: Int
+)
+
+@Serializable
+data class MLSMigrationConfigDTO(
+    // migration start timestamp
+    @SerialName("startTime")
+    val startTime: Instant,
+    // timestamp of the date until the migration has to finalise
+    @SerialName("finaliseRegardlessAfter")
+    val finaliseRegardlessAfter: Instant,
+    // percentage of migrated users needed for migration to finalize (0-100)
+    @SerialName("usersThreshold")
+    val usersThreshold: Int,
+    // percentage of migrated clients needed for migration to finalize (0-100)
+    @SerialName("clientsThreshold")
+    val clientsThreshold: Int
 )
 
 @Serializable
@@ -218,6 +239,15 @@ sealed class FeatureConfigData {
     data class E2EI(
         @SerialName("config")
         val config: E2EIConfigDTO,
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("mlsMigration")
+    @Serializable
+    data class MLSMigration(
+        @SerialName("config")
+        val config: MLSMigrationConfigDTO,
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
