@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
@@ -36,6 +37,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
@@ -273,14 +275,6 @@ internal open class ConversationApiV0 internal constructor(
             APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
         )
 
-    override suspend fun fetchSubconversationGroupInfo(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<ByteArray> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
-        )
-
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId,
@@ -288,6 +282,14 @@ internal open class ConversationApiV0 internal constructor(
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(
             APINotSupported("MLS: deleteSubconversation api is only available on API V3")
+        )
+
+    override suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
         )
 
     override suspend fun leaveSubconversation(
@@ -375,6 +377,12 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
         }
+
+    override suspend fun updateProtocol(
+        conversationId: ConversationId,
+        protocol: ConvProtocol
+    ): NetworkResponse<UpdateConversationProtocolResponse> =
+        ConversationApi.getApiNotSupportError("updateProtocol")
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
