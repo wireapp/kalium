@@ -17,11 +17,8 @@ import kotlin.coroutines.CoroutineContext
 internal interface EphemeralMessageDeletionHandler {
 
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
-    fun enqueuePendingSelfDeletionMessages()
-}
-
-internal interface SelfDeleteMessageSenderHandler {
     fun enqueueSelfDeletion(message: Message.Regular)
+    fun enqueuePendingSelfDeletionMessages()
 }
 
 internal class EphemeralMessageDeletionHandlerImpl(
@@ -30,7 +27,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
     userSessionCoroutineScope: CoroutineScope
-) : EphemeralMessageDeletionHandler, SelfDeleteMessageSenderHandler, CoroutineScope by userSessionCoroutineScope {
+) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 

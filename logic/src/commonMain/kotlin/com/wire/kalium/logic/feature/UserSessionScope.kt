@@ -1131,7 +1131,8 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            this,
+            selfConversationIdProvider,
+            this
         )
     val messages: MessageScope
         get() = MessageScope(
