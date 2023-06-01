@@ -91,6 +91,7 @@ interface ScheduleNewAssetMessageUseCase {
     ): ScheduleNewAssetMessageResult
 }
 
+// TODO: https://github.com/wireapp/kalium/pull/1727, see Vitor comment
 @Suppress("LongParameterList")
 internal class ScheduleNewAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
