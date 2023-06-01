@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
@@ -36,6 +37,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
@@ -383,6 +385,12 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
         }
+
+    override suspend fun updateProtocol(
+        conversationId: ConversationId,
+        protocol: ConvProtocol
+    ): NetworkResponse<UpdateConversationProtocolResponse> =
+        ConversationApi.getApiNotSupportError("updateProtocol")
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
