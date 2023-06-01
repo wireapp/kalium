@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
 
 interface MessageSendingInterceptor {
-    suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable>
+    suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable>
 }
 
 class MessageSendingInterceptorImpl(
@@ -35,24 +35,25 @@ class MessageSendingInterceptorImpl(
     private val messageRepository: MessageRepository
 ) : MessageSendingInterceptor {
 
-    override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
-        val replyMessageContent = message.content
+    override suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable> {
+
+        val replyMessageContent = originalMessage.content
 
         if (replyMessageContent !is MessageContent.Text
-            || message !is Message.Regular
+            || originalMessage !is Message.Regular
             || replyMessageContent.quotedMessageReference == null
         ) {
-            return Either.Right(message)
+            return Either.Right(originalMessage)
         }
 
-        return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
-            .map { originalMessage ->
+        return messageRepository.getMessageById(originalMessage.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
+            .map { persistedMessage ->
                 val encodedMessageContent = messageContentEncoder.encodeMessageContent(
-                    messageDate = originalMessage.date,
-                    messageContent = originalMessage.content
+                    messageDate = persistedMessage.date,
+                    messageContent = persistedMessage.content
                 )
 
-                message.copy(
+                originalMessage.copy(
                     content = replyMessageContent.copy(
                         quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
                             quotedMessageSha256 = encodedMessageContent?.sha256Digest
