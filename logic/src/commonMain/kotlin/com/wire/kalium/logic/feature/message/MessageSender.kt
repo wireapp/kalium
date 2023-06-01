@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -147,7 +148,7 @@ internal class MessageSenderImpl internal constructor(
                     else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
                 result
                     .onFailure {
-                        val type = getType(message.content) ?: "Unknown"
+                        val type = message.content.getType()
                         logger.i("Failed to send message of type $type. Failure = $it")
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                             failure = it,
@@ -160,8 +161,6 @@ internal class MessageSenderImpl internal constructor(
             }
         }
     }
-
-    private fun getType(messageContent: MessageContent?) = messageContent?.let { it::class.simpleName }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor
