@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.util.time.Second
+import kotlinx.datetime.Instant
 
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
@@ -36,7 +37,8 @@ data class FeatureConfigModel(
     val ssoModel: ConfigsStatusModel,
     val validateSAMLEmailsModel: ConfigsStatusModel,
     val mlsModel: MLSModel,
-    val e2EIModel: E2EIModel
+    val e2EIModel: E2EIModel,
+    val mlsMigrationModel: MLSMigrationModel?
 )
 
 enum class Status {
@@ -78,6 +80,14 @@ data class SelfDeletingMessagesConfigModel(
 
 data class MLSModel(
     val allowedUsers: List<PlainId>,
+    val status: Status
+)
+
+data class MLSMigrationModel(
+    val startTime: Instant,
+    val endTime: Instant,
+    val usersThreshold: Int,
+    val clientsThreshold: Int,
     val status: Status
 )
 
