@@ -1225,6 +1225,46 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun whenUpdatingMessagesTableAfterSendingAMessageAndServerTimeIsNull_thenMessageIsMarkedAsSentAndPendingMessagesTimeIsAdjusted() =
+        runTest {
+            val messageToSend = newRegularMessageEntity(
+                id = "messageToSend",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                date = Instant.fromEpochMilliseconds(123),
+                expectsReadConfirmation = true,
+                status = MessageEntity.Status.PENDING
+            )
+
+            val pendingMessage = newRegularMessageEntity(
+                id = "pendingMessage",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                date = Instant.fromEpochMilliseconds(125),
+                expectsReadConfirmation = true,
+                status = MessageEntity.Status.PENDING
+            )
+
+            conversationDAO.insertConversation(conversationEntity1)
+            userDAO.upsertUsers(listOf(userEntity1))
+            messageDAO.insertOrIgnoreMessages(listOf(messageToSend, pendingMessage))
+
+            messageDAO.promoteMessageToSentUpdatingServerTime(conversationEntity1.id, messageToSend.id, null, 1)
+
+            messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).also {
+                assertNotNull(it)
+                assertEquals(MessageEntity.Status.SENT, it.status)
+                assertEquals(Instant.fromEpochMilliseconds(123), it.date)
+            }
+
+            messageDAO.getMessageById(pendingMessage.id, conversationEntity1.id).also {
+                assertNotNull(it)
+                assertEquals(MessageEntity.Status.PENDING, it.status)
+                assertEquals(Instant.fromEpochMilliseconds(125 + 1), it.date)
+            }
+        }
+
+    @Test
     fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
