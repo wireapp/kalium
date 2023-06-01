@@ -40,8 +40,10 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import kotlinx.datetime.Instant
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->
@@ -128,7 +130,11 @@ object FeatureConfigJson {
                 MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED)
+            FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 90),
+                FeatureFlagStatusDTO.ENABLED
+            )
         ),
         featureConfigResponseSerializer
     )
